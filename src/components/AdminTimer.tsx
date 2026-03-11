@@ -290,6 +290,29 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
     toast({ description: "時長已套用 / Duration Applied" });
   };
 
+  const toggleSaverMode = async (enter: boolean) => {
+    setIsSaverMode(enter);
+    try {
+      if (enter) {
+        if (document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+        } else if ((document.documentElement as any).webkitRequestFullscreen) { // Safari workaround
+          await ((document.documentElement as any).webkitRequestFullscreen)();
+        }
+      } else {
+        if (document.fullscreenElement) {
+          if (document.exitFullscreen) {
+            await document.exitFullscreen();
+          } else if ((document as any).webkitExitFullscreen) { // Safari workaround
+            await ((document as any).webkitExitFullscreen)();
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Fullscreen request failed:", e);
+    }
+  };
+
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
@@ -426,7 +449,7 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
             </div>
             
             <Button 
-              onClick={() => setIsSaverMode(true)}
+              onClick={() => toggleSaverMode(true)}
               variant="outline"
               className="bg-transparent border-white/20 text-white hover:bg-white/10 hover:text-white rounded-xl h-12 px-6 font-black text-[10px] uppercase tracking-widest transition-all"
             >
@@ -460,7 +483,7 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
       {isSaverMode && (
         <div 
           className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center cursor-pointer"
-          onClick={() => setIsSaverMode(false)}
+          onClick={() => toggleSaverMode(false)}
         >
           <div className={cn(
             "text-[10px] sm:text-[14px] font-black uppercase tracking-[0.4em] mb-4 sm:mb-8 transition-all duration-1000",
