@@ -147,33 +147,9 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
         audio.play().catch(e => console.warn("Background audio blocked:", e));
       } else if (audioMode === 'short' && shortBeepRef.current) {
         const audio = shortBeepRef.current;
+        audio.currentTime = 0;
         audio.volume = 1.0;
-        
-        let playCount = 0;
-        const wait = (ms: number) => new Promise(res => setTimeout(res, ms));
-        
-        const playBeeps = async () => {
-          for (let i = 0; i < 3; i++) {
-            // 第一聲短音 (0.2秒)
-            audio.currentTime = 0;
-            audio.play().catch(e => console.warn("Background audio blocked:", e));
-            await wait(200);
-            audio.pause();
-            
-            // 間隔 (0.15秒)
-            await wait(150);
-            
-            // 第二聲短音 (0.2秒)
-            audio.currentTime = 0;
-            audio.play().catch(e => console.warn("Background audio blocked:", e));
-            await wait(200);
-            audio.pause();
-            
-            // 每一輪之間的較長停頓 (0.6秒)
-            if (i < 2) await wait(600);
-          }
-        };
-        playBeeps();
+        audio.play().catch(e => console.warn("Background audio blocked:", e));
       }
       
       // Attempt to trigger system notification (works in background/lock screen if authorized)
