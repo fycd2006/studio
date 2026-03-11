@@ -39,6 +39,7 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
   const wakeLockRef = useRef<any>(null);
   const playedMilestonesRef = useRef<Set<number>>(new Set());
   const alarmAudioRef = useRef<HTMLAudioElement | null>(null);
+  const shortBeepRef = useRef<HTMLAudioElement | null>(null);
   const silentLoopRef = useRef<HTMLAudioElement | null>(null);
   const lastCheckTimeRef = useRef<number>(Date.now());
   
@@ -56,6 +57,9 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
   const [s, setS] = useState(timer.duration % 60);
 
   const ALARM_URL = "https://raw.githubusercontent.com/freeCodeCamp/cdn/master/build/testable-projects-fcc/audio/BeepSound.wav"; 
+  // 使用相同的 wav 音檔以確保 iOS 支援度，ogg 常常在 iPhone Safari 上失敗
+  const SHORT_BEEP_URL = "https://raw.githubusercontent.com/freeCodeCamp/cdn/master/build/testable-projects-fcc/audio/BeepSound.wav"; 
+  
   // 1-second silent audio base64 to keep JS alive in background (iOS/Android workaround)
   const SILENT_AUDIO_BASE64 = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
 
@@ -63,12 +67,16 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
     alarmAudioRef.current = new Audio(ALARM_URL);
     alarmAudioRef.current.load();
     
+    shortBeepRef.current = new Audio(SHORT_BEEP_URL);
+    shortBeepRef.current.load();
+    
     silentLoopRef.current = new Audio(SILENT_AUDIO_BASE64);
     silentLoopRef.current.loop = true;
     silentLoopRef.current.volume = 0.01; // nearly silent just in case
     
     return () => {
       alarmAudioRef.current = null;
+      shortBeepRef.current = null;
       if (silentLoopRef.current) {
         silentLoopRef.current.pause();
         silentLoopRef.current = null;
@@ -124,7 +132,7 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
     }
   }, [timer.duration, timer.isRunning]);
 
-  const triggerAlarm = useCallback((title: string, description: string, isDestructive = false) => {
+  const triggerAlarm = useCallback((title: string, description: string, audioMode: 'short' | 'long' = 'long', isDestructive = false) => {
     toast({ 
       title, 
       description, 
@@ -132,11 +140,30 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
     });
     
     if (audioUnlocked) {
-      if (alarmAudioRef.current) {
+      if (audioMode === 'long' && alarmAudioRef.current) {
         const audio = alarmAudioRef.current;
         audio.currentTime = 0;
         audio.volume = 1.0;
         audio.play().catch(e => console.warn("Background audio blocked:", e));
+      } else if (audioMode === 'short' && shortBeepRef.current) {
+        const audio = shortBeepRef.current;
+        audio.volume = 1.0;
+        
+        let playCount = 0;
+        const playTripleBeep = () => {
+          if (playCount < 3) {
+            audio.currentTime = 0;
+            audio.play().catch(e => console.warn("Background audio blocked:", e));
+            
+            // 讓聲音只播 0.3 秒就卡斷，製造出「短音」的效果
+            setTimeout(() => {
+              audio.pause();
+              playCount++;
+              setTimeout(playTripleBeep, 400); // 停頓 0.4 秒後播下一個短音
+            }, 300);
+          }
+        };
+        playTripleBeep();
       }
       
       // Attempt to trigger system notification (works in background/lock screen if authorized)
@@ -160,13 +187,13 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
     
     // 3 分鐘提醒 (180秒)
     if (remaining <= 180 && remaining > 0 && !playedMilestonesRef.current.has(180)) {
-      triggerAlarm("剩餘 3 分鐘！ / 3 Minutes Left!", "請各關卡準備換關 / Prepare for rotation.");
+      triggerAlarm("剩餘 3 分鐘！ / 3 Minutes Left!", "請各關卡準備換關 / Prepare for rotation.", 'short');
       playedMilestonesRef.current.add(180);
     }
 
     // 時間到提醒 (0秒)
     if (remaining === 0 && !playedMilestonesRef.current.has(0)) {
-      triggerAlarm("換關時間到！ / Time for Rotation!", "請各小隊進行換關 / Please rotate stations.", true);
+      triggerAlarm("換關時間到！ / Time for Rotation!", "請各小隊進行換關 / Please rotate stations.", 'long', true);
       playedMilestonesRef.current.add(0);
     }
   }, [timer.isRunning, timer.targetEndTime, triggerAlarm]);
