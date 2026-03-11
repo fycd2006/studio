@@ -38,7 +38,6 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
   
   const wakeLockRef = useRef<any>(null);
   const playedMilestonesRef = useRef<Set<number>>(new Set());
-  const alarmAudioRef = useRef<HTMLAudioElement | null>(null);
   const silentLoopRef = useRef<HTMLAudioElement | null>(null);
   const lastCheckTimeRef = useRef<number>(Date.now());
   
@@ -55,23 +54,23 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
   const [m, setM] = useState(Math.floor((timer.duration % 3600) / 60));
   const [s, setS] = useState(timer.duration % 60);
 
+  // 音檔網址
   const ALARM_URL = "https://raw.githubusercontent.com/freeCodeCamp/cdn/master/build/testable-projects-fcc/audio/BeepSound.wav"; 
-  // 一個真正的短促「嗶」聲 (0.2秒左右)
   const SHORT_BEEP_URL = "https://www.soundjay.com/buttons/beep-07.wav"; 
   
   // 1-second silent audio base64 to keep JS alive in background (iOS/Android workaround)
   const SILENT_AUDIO_BASE64 = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
 
+  // 使用真正的 HTMLAudioElement 綁定來突破 iOS 限制
+  const alarmAudioHtmlRef = useRef<HTMLAudioElement | null>(null);
+  const shortBeepHtmlRef = useRef<HTMLAudioElement | null>(null);
+
   useEffect(() => {
-    alarmAudioRef.current = new Audio(ALARM_URL);
-    alarmAudioRef.current.load();
-    
     silentLoopRef.current = new Audio(SILENT_AUDIO_BASE64);
     silentLoopRef.current.loop = true;
     silentLoopRef.current.volume = 0.01; // nearly silent just in case
     
     return () => {
-      alarmAudioRef.current = null;
       if (silentLoopRef.current) {
         silentLoopRef.current.pause();
         silentLoopRef.current = null;
@@ -135,15 +134,14 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
     });
     
     if (audioUnlocked) {
-      if (audioMode === 'long' && alarmAudioRef.current) {
-        const audio = alarmAudioRef.current;
+      if (audioMode === 'long' && alarmAudioHtmlRef.current) {
+        const audio = alarmAudioHtmlRef.current;
         audio.currentTime = 0;
         audio.volume = 1.0;
         audio.play().catch(e => console.warn("Background audio blocked:", e));
-      } else if (audioMode === 'short') {
+      } else if (audioMode === 'short' && shortBeepHtmlRef.current) {
         // 短音連播 3 聲
-        // 使用獨立的 new Audio() 實例避免 iOS Safari 封殺重複播放，並使用真正的短音檔
-        const BEEP_URL = "https://www.soundjay.com/buttons/beep-07.wav";
+        const audio = shortBeepHtmlRef.current;
         const schedule = [
           0,     // 第 1 聲
           400,   // 第 2 聲
@@ -151,9 +149,9 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
         ];
         schedule.forEach(delay => {
           setTimeout(() => {
-            const beep = new Audio(BEEP_URL);
-            beep.volume = 1.0;
-            beep.play().catch(e => console.warn("Beep blocked:", e));
+            audio.currentTime = 0;
+            audio.volume = 1.0;
+            audio.play().catch(e => console.warn("Beep blocked:", e));
           }, delay);
         });
       }
@@ -215,10 +213,11 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
     const newStatus = !audioUnlocked;
     if (newStatus) {
       try {
-        // 使用全新的 Audio 實例確保按鈕點擊時必定能播放
-        const beep = new Audio(SHORT_BEEP_URL);
-        beep.volume = 1.0;
-        await beep.play();
+        if (shortBeepHtmlRef.current) {
+          shortBeepHtmlRef.current.currentTime = 0;
+          shortBeepHtmlRef.current.volume = 1.0;
+          await shortBeepHtmlRef.current.play();
+        }
         
         // Request Notification Permission
           if ('Notification' in window) {
@@ -486,6 +485,10 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
           </div>
         </div>
       )}
+
+      {/* 隱藏的音檔 DOM 元素，這是 iOS/Safari 唯一最穩定的播放方式 */}
+      <audio ref={alarmAudioHtmlRef} src={ALARM_URL} preload="auto" />
+      <audio ref={shortBeepHtmlRef} src={SHORT_BEEP_URL} preload="auto" />
     </div>
   );
 }
