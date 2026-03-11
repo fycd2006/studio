@@ -280,6 +280,11 @@ export function usePlans() {
     updatePlan(activePlanId, snapshotData);
   }, [db, activePlanId, activePlanVersions, updatePlan]);
 
+  const deletePlanVersion = useCallback((versionId: string) => {
+    if (!db) return;
+    deleteDocumentNonBlocking(doc(db, 'planVersions', versionId));
+  }, [db]);
+
   const reorderPlans = useCallback((category: PlanCategory, startIndex: number, endIndex: number) => {
     if (!db || !activeCampId) return;
     pushPlanHistory();
@@ -324,7 +329,7 @@ export function usePlans() {
     tables: allTables.filter(t => t.campId === activeCampId), 
     activePlan: allPlans.find(p => p.id === activePlanId) || null,
     activePlanId, setActivePlanId, updatePlan, deletePlan, addPlan, reorderPlans,
-    activePlanVersions, savePlanVersion, restorePlanVersion,
+    activePlanVersions, savePlanVersion, restorePlanVersion, deletePlanVersion,
     undoPlan, redoPlan, canUndoPlan: planHistory.past.length > 0, canRedoPlan: planHistory.future.length > 0,
     addTable, updateTable, deleteTable,
     undoTable, redoTable, canUndoTable: tableHistory.past.length > 0, canRedoTable: tableHistory.future.length > 0,

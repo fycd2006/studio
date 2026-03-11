@@ -44,7 +44,8 @@ export default function Home() {
     timer,
     activePlanVersions,
     savePlanVersion,
-    restorePlanVersion
+    restorePlanVersion,
+    deletePlanVersion
   } = usePlans();
 
   return (
@@ -100,6 +101,7 @@ export default function Home() {
               versions={activePlanVersions}
               onSaveVersion={savePlanVersion}
               onRestoreVersion={restorePlanVersion}
+              onDeleteVersion={deletePlanVersion}
             />
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center h-full text-center p-8 space-y-6 animate-in fade-in zoom-in-95 duration-500">

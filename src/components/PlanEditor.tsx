@@ -48,7 +48,7 @@ import {
 } from "@/components/ui/sheet";
 import { format } from "date-fns";
 import dynamic from "next/dynamic";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useRef } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const FabricCanvas = dynamic(
@@ -88,12 +88,14 @@ interface PlanEditorProps {
   versions?: PlanVersion[];
   onSaveVersion?: (name: string) => void;
   onRestoreVersion?: (versionId: string) => void;
+  onDeleteVersion?: (versionId: string) => void;
 }
 
-export function PlanEditor({ plan, onUpdate, isSaving, onUndo, onRedo, canUndo, canRedo, versions = [], onSaveVersion, onRestoreVersion }: PlanEditorProps) {
+export function PlanEditor({ plan, onUpdate, isSaving, onUndo, onRedo, canUndo, canRedo, versions = [], onSaveVersion, onRestoreVersion, onDeleteVersion }: PlanEditorProps) {
   const { toast } = useToast();
   const [isVersionSheetOpen, setIsVersionSheetOpen] = useState(false);
   const [newVersionName, setNewVersionName] = useState("");
+  const lastSavedPlanRef = useRef(JSON.stringify(plan));
 
   const handleSaveVersion = () => {
     if (!newVersionName.trim()) {
@@ -106,10 +108,32 @@ export function PlanEditor({ plan, onUpdate, isSaving, onUndo, onRedo, canUndo, 
   };
 
   const handleRestoreVersion = (version: PlanVersion) => {
+    const currentSnapshot = JSON.stringify(plan);
+    const hasUnsavedChanges = currentSnapshot !== lastSavedPlanRef.current;
+    
+    if (hasUnsavedChanges) {
+      const shouldSave = confirm(
+        `目前的教案內容已有更動，是否要先儲存當前版本再切換？\n\n按「確定」= 先儲存再切換\n按「取消」= 不儲存直接切換`
+      );
+      if (shouldSave) {
+        const autoName = `自動儲存 (切換前) - ${format(new Date(), "MM/dd HH:mm")}`;
+        onSaveVersion?.(autoName);
+        toast({ title: "已自動儲存當前版本" });
+      }
+    }
+    
     if (confirm(`確定要還原到版本「${version.name}」嗎？這會覆蓋目前的教案內容。`)) {
       onRestoreVersion?.(version.id);
+      lastSavedPlanRef.current = JSON.stringify(version.snapshot);
       setIsVersionSheetOpen(false);
       toast({ title: "已還原版本" });
+    }
+  };
+
+  const handleDeleteVersion = (version: PlanVersion) => {
+    if (confirm(`確定要刪除版本「${version.name}」嗎？此操作無法復原。`)) {
+      onDeleteVersion?.(version.id);
+      toast({ title: "已刪除版本", description: version.name });
     }
   };
 
@@ -249,14 +273,24 @@ export function PlanEditor({ plan, onUpdate, isSaving, onUndo, onRedo, canUndo, 
                                 {format(new Date(version.createdAt), "MM/dd HH:mm")}
                               </time>
                             </div>
+                            <div className="flex gap-2">
                             <Button 
                               variant="outline" 
                               size="sm" 
                               onClick={() => handleRestoreVersion(version)}
-                              className="w-full text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-orange-600 border-slate-200 h-8 hover:bg-orange-50"
+                              className="flex-1 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-orange-600 border-slate-200 h-8 hover:bg-orange-50"
                             >
-                              <Undo2 className="h-3.5 w-3.5 mr-1.5" /> 還原此版本
+                              <Undo2 className="h-3.5 w-3.5 mr-1.5" /> 還原
                             </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => handleDeleteVersion(version)}
+                              className="text-[10px] font-black uppercase tracking-widest text-rose-400 hover:text-rose-600 border-slate-200 h-8 hover:bg-rose-50 px-2.5"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                            </div>
                           </div>
                         </div>
                       ))}

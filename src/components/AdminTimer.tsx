@@ -2,6 +2,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -56,7 +57,7 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
 
   // 音檔網址
   const ALARM_URL = "https://raw.githubusercontent.com/freeCodeCamp/cdn/master/build/testable-projects-fcc/audio/BeepSound.wav"; 
-  const SHORT_BEEP_URL = "https://www.soundjay.com/buttons/beep-07.wav"; 
+  const SHORT_BEEP_URL = "/beep.wav"; 
   
   // 1-second silent audio base64 to keep JS alive in background (iOS/Android workaround)
   const SILENT_AUDIO_BASE64 = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
@@ -140,12 +141,15 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
         audio.volume = 1.0;
         audio.play().catch(e => console.warn("Background audio blocked:", e));
       } else if (audioMode === 'short' && shortBeepHtmlRef.current) {
-        // 短音連播 3 聲
+        // 短音連播 2 次（雙音）× 3 輪
         const audio = shortBeepHtmlRef.current;
         const schedule = [
-          0,     // 第 1 聲
-          400,   // 第 2 聲
-          800,   // 第 3 聲
+          0,     // 第 1 輪第 1 聲
+          300,   // 第 1 輪第 2 聲
+          1000,  // 第 2 輪第 1 聲
+          1300,  // 第 2 輪第 2 聲
+          2000,  // 第 3 輪第 1 聲
+          2300,  // 第 3 輪第 2 聲
         ];
         schedule.forEach(delay => {
           setTimeout(() => {
@@ -461,9 +465,9 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
         </Card>
       </div>
 
-      {isSaverMode && (
+      {isSaverMode && createPortal(
         <div 
-          className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center cursor-pointer"
+          className="fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center cursor-pointer"
           onClick={() => toggleSaverMode(false)}
         >
           <div className={cn(
@@ -483,7 +487,8 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
           <div className="absolute bottom-12 text-[#222] text-[10px] font-black tracking-widest uppercase">
             輕觸螢幕離開 / Tap to Wake
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* 隱藏的音檔 DOM 元素，這是 iOS/Safari 唯一最穩定的播放方式 */}
