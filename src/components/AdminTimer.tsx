@@ -150,20 +150,30 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
         audio.volume = 1.0;
         
         let playCount = 0;
-        const playTripleBeep = () => {
-          if (playCount < 3) {
+        const wait = (ms: number) => new Promise(res => setTimeout(res, ms));
+        
+        const playBeeps = async () => {
+          for (let i = 0; i < 3; i++) {
+            // 第一聲短音 (0.2秒)
             audio.currentTime = 0;
             audio.play().catch(e => console.warn("Background audio blocked:", e));
+            await wait(200);
+            audio.pause();
             
-            // 讓聲音只播 0.3 秒就卡斷，製造出「短音」的效果
-            setTimeout(() => {
-              audio.pause();
-              playCount++;
-              setTimeout(playTripleBeep, 400); // 停頓 0.4 秒後播下一個短音
-            }, 300);
+            // 間隔 (0.15秒)
+            await wait(150);
+            
+            // 第二聲短音 (0.2秒)
+            audio.currentTime = 0;
+            audio.play().catch(e => console.warn("Background audio blocked:", e));
+            await wait(200);
+            audio.pause();
+            
+            // 每一輪之間的較長停頓 (0.6秒)
+            if (i < 2) await wait(600);
           }
         };
-        playTripleBeep();
+        playBeeps();
       }
       
       // Attempt to trigger system notification (works in background/lock screen if authorized)
