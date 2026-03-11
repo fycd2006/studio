@@ -28,8 +28,8 @@ export default function RootLayout({
         <FirebaseClientProvider>
           {children}
         </FirebaseClientProvider>
-        <Script id="register-sw" strategy="afterInteractive">
-          {`
+        <Script id="register-sw" strategy="afterInteractive" dangerouslySetInnerHTML={{
+          __html: `
             if ('serviceWorker' in navigator) {
               window.addEventListener('load', function() {
                 navigator.serviceWorker.register('/sw.js').then(function(registration) {
@@ -39,8 +39,8 @@ export default function RootLayout({
                 });
               });
             }
-          `}
-        </Script>
+          `
+        }} />
       </body>
     </html>
   );

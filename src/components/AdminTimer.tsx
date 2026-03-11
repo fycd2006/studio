@@ -57,8 +57,8 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
   const [s, setS] = useState(timer.duration % 60);
 
   const ALARM_URL = "https://raw.githubusercontent.com/freeCodeCamp/cdn/master/build/testable-projects-fcc/audio/BeepSound.wav"; 
-  // 使用相同的 wav 音檔以確保 iOS 支援度，ogg 常常在 iPhone Safari 上失敗
-  const SHORT_BEEP_URL = "https://raw.githubusercontent.com/freeCodeCamp/cdn/master/build/testable-projects-fcc/audio/BeepSound.wav"; 
+  // 一個真正的短促「嗶」聲 (0.2秒左右)
+  const SHORT_BEEP_URL = "https://www.soundjay.com/buttons/beep-07.wav"; 
   
   // 1-second silent audio base64 to keep JS alive in background (iOS/Android workaround)
   const SILENT_AUDIO_BASE64 = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
@@ -147,8 +147,8 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
         audio.play().catch(e => console.warn("Background audio blocked:", e));
       } else if (audioMode === 'short') {
         // 短音連播 3 聲
-        // 使用獨立的 new Audio() 實例避免 iOS Safari 封殺重複播放
-        const BEEP_URL = "https://raw.githubusercontent.com/freeCodeCamp/cdn/master/build/testable-projects-fcc/audio/BeepSound.wav";
+        // 使用獨立的 new Audio() 實例避免 iOS Safari 封殺重複播放，並使用真正的短音檔
+        const BEEP_URL = "https://www.soundjay.com/buttons/beep-07.wav";
         const schedule = [
           0,     // 第 1 聲
           400,   // 第 2 聲
