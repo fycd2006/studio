@@ -12,7 +12,8 @@ import {
   Volume2,
   VolumeX,
   Pause,
-  BellRing
+  BellRing,
+  Moon
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -47,6 +48,8 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
     }
     return false;
   });
+
+  const [isSaverMode, setIsSaverMode] = useState(false);
 
   const [h, setH] = useState(Math.floor(timer.duration / 3600));
   const [m, setM] = useState(Math.floor((timer.duration % 3600) / 60));
@@ -384,6 +387,15 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
                 <span className="text-[8px] font-black text-orange-400/80 uppercase tracking-widest mt-1">Status: {timer.isRunning ? "RUNNING" : "STANDBY"}</span>
               </div>
             </div>
+            
+            <Button 
+              onClick={() => setIsSaverMode(true)}
+              variant="outline"
+              className="bg-transparent border-white/20 text-white hover:bg-white/10 hover:text-white rounded-xl h-12 px-6 font-black text-[10px] uppercase tracking-widest transition-all"
+            >
+              <Moon className="h-4 w-4 mr-2" />
+              黑屏省電模式 / Saver
+            </Button>
           </div>
           <div className="flex-1 flex flex-col items-center justify-center w-full relative z-10">
             <div className={cn(
@@ -407,6 +419,31 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
           </div>
         </Card>
       </div>
+
+      {isSaverMode && (
+        <div 
+          className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center cursor-pointer"
+          onClick={() => setIsSaverMode(false)}
+        >
+          <div className={cn(
+            "text-[10px] sm:text-[14px] font-black uppercase tracking-[0.4em] mb-4 sm:mb-8 transition-all duration-1000",
+            isCritical ? "text-rose-900 animate-pulse" : "text-[#222]"
+          )}>
+            {isCritical ? "注意剩餘時間 / Warning" : isFinished ? "時間到 / Time's Up" : "黑屏省電模式 / Saver Mode"}
+          </div>
+          
+          <div className={cn(
+            "font-headline font-black transition-all duration-1000 text-center text-[clamp(5rem,25vw,20rem)] leading-none tracking-tighter",
+            isCritical ? "text-rose-700 animate-pulse" : isFinished ? "text-rose-600" : "text-[#333]"
+          )}>
+            {formatTime(timer.timeLeft)}
+          </div>
+          
+          <div className="absolute bottom-12 text-[#222] text-[10px] font-black tracking-widest uppercase">
+            輕觸螢幕離開 / Tap to Wake
+          </div>
+        </div>
+      )}
     </div>
   );
 }
