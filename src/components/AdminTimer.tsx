@@ -146,16 +146,13 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
         audio.volume = 1.0;
         audio.play().catch(e => console.warn("Background audio blocked:", e));
       } else if (audioMode === 'short') {
-        // 短音連播 2 次（雙音）× 3 輪
+        // 短音連播 3 聲
         // 使用獨立的 new Audio() 實例避免 iOS Safari 封殺重複播放
         const BEEP_URL = "https://raw.githubusercontent.com/freeCodeCamp/cdn/master/build/testable-projects-fcc/audio/BeepSound.wav";
         const schedule = [
-          0,     // 第 1 輪第 1 聲
-          350,   // 第 1 輪第 2 聲
-          1100,  // 第 2 輪第 1 聲
-          1450,  // 第 2 輪第 2 聲
-          2200,  // 第 3 輪第 1 聲
-          2550,  // 第 3 輪第 2 聲
+          0,     // 第 1 聲
+          400,   // 第 2 聲
+          800,   // 第 3 聲
         ];
         schedule.forEach(delay => {
           setTimeout(() => {
