@@ -145,11 +145,25 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
         audio.currentTime = 0;
         audio.volume = 1.0;
         audio.play().catch(e => console.warn("Background audio blocked:", e));
-      } else if (audioMode === 'short' && shortBeepRef.current) {
-        const audio = shortBeepRef.current;
-        audio.currentTime = 0;
-        audio.volume = 1.0;
-        audio.play().catch(e => console.warn("Background audio blocked:", e));
+      } else if (audioMode === 'short') {
+        // 短音連播 2 次（雙音）× 3 輪
+        // 使用獨立的 new Audio() 實例避免 iOS Safari 封殺重複播放
+        const BEEP_URL = "https://raw.githubusercontent.com/freeCodeCamp/cdn/master/build/testable-projects-fcc/audio/BeepSound.wav";
+        const schedule = [
+          0,     // 第 1 輪第 1 聲
+          350,   // 第 1 輪第 2 聲
+          1100,  // 第 2 輪第 1 聲
+          1450,  // 第 2 輪第 2 聲
+          2200,  // 第 3 輪第 1 聲
+          2550,  // 第 3 輪第 2 聲
+        ];
+        schedule.forEach(delay => {
+          setTimeout(() => {
+            const beep = new Audio(BEEP_URL);
+            beep.volume = 1.0;
+            beep.play().catch(e => console.warn("Beep blocked:", e));
+          }, delay);
+        });
       }
       
       // Attempt to trigger system notification (works in background/lock screen if authorized)
@@ -208,10 +222,10 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
   const testAudio = async () => {
     const newStatus = !audioUnlocked;
     if (newStatus) {
-      if (alarmAudioRef.current) {
+      if (shortBeepRef.current) {
         try {
-          alarmAudioRef.current.currentTime = 0;
-          await alarmAudioRef.current.play();
+          shortBeepRef.current.currentTime = 0;
+          await shortBeepRef.current.play();
           
           // Request Notification Permission
           if ('Notification' in window) {
