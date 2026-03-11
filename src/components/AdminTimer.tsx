@@ -38,6 +38,7 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
   const wakeLockRef = useRef<any>(null);
   const playedMilestonesRef = useRef<Set<number>>(new Set());
   const alarmAudioRef = useRef<HTMLAudioElement | null>(null);
+  const silentLoopRef = useRef<HTMLAudioElement | null>(null);
   const lastCheckTimeRef = useRef<number>(Date.now());
   
   const [audioUnlocked, setAudioUnlocked] = useState<boolean>(() => {
@@ -52,12 +53,23 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
   const [s, setS] = useState(timer.duration % 60);
 
   const ALARM_URL = "https://raw.githubusercontent.com/freeCodeCamp/cdn/master/build/testable-projects-fcc/audio/BeepSound.wav"; 
+  // 1-second silent audio base64 to keep JS alive in background (iOS/Android workaround)
+  const SILENT_AUDIO_BASE64 = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
 
   useEffect(() => {
     alarmAudioRef.current = new Audio(ALARM_URL);
     alarmAudioRef.current.load();
+    
+    silentLoopRef.current = new Audio(SILENT_AUDIO_BASE64);
+    silentLoopRef.current.loop = true;
+    silentLoopRef.current.volume = 0.01; // nearly silent just in case
+    
     return () => {
       alarmAudioRef.current = null;
+      if (silentLoopRef.current) {
+        silentLoopRef.current.pause();
+        silentLoopRef.current = null;
+      }
     };
   }, []);
 
@@ -81,12 +93,25 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
   useEffect(() => {
     if (timer.isRunning) {
       requestWakeLock();
+      
+      // Start silent audio loop to keep background JS execution alive
+      if (audioUnlocked && silentLoopRef.current) {
+        silentLoopRef.current.play().catch(e => console.warn("Silent loop blocked:", e));
+      }
     } else {
       releaseWakeLock();
       playedMilestonesRef.current.clear();
+      
+      // Pause silent audio loop
+      if (silentLoopRef.current) {
+        silentLoopRef.current.pause();
+      }
     }
-    return () => releaseWakeLock();
-  }, [timer.isRunning]);
+    return () => {
+      releaseWakeLock();
+      if (silentLoopRef.current) silentLoopRef.current.pause();
+    };
+  }, [timer.isRunning, audioUnlocked]);
 
   useEffect(() => {
     if (!timer.isRunning) {
@@ -103,11 +128,24 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
       variant: isDestructive ? "destructive" : "default" 
     });
     
-    if (audioUnlocked && alarmAudioRef.current) {
-      const audio = alarmAudioRef.current;
-      audio.currentTime = 0;
-      audio.volume = 1.0;
-      audio.play().catch(e => console.warn("Background audio blocked:", e));
+    if (audioUnlocked) {
+      if (alarmAudioRef.current) {
+        const audio = alarmAudioRef.current;
+        audio.currentTime = 0;
+        audio.volume = 1.0;
+        audio.play().catch(e => console.warn("Background audio blocked:", e));
+      }
+      
+      // Attempt to trigger system notification (works in background/lock screen if authorized)
+      if ('Notification' in window && 'serviceWorker' in navigator && Notification.permission === 'granted') {
+        navigator.serviceWorker.ready.then(registration => {
+          registration.showNotification(title, {
+            body: description,
+            vibrate: isDestructive ? [500, 200, 500, 200, 500] : [200, 100, 200],
+            requireInteraction: true // Keeps notification on screen until user interacts
+          } as any);
+        });
+      }
     }
   }, [audioUnlocked, toast]);
 
@@ -158,11 +196,24 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
         try {
           alarmAudioRef.current.currentTime = 0;
           await alarmAudioRef.current.play();
+          
+          // Request Notification Permission
+          if ('Notification' in window) {
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+              console.log("Notification permission granted!");
+            }
+          }
+          
+          if (silentLoopRef.current && timer.isRunning) {
+            silentLoopRef.current.play().catch(e => console.warn("Silent loop blocked:", e));
+          }
+
           setAudioUnlocked(true);
           localStorage.setItem('camp-audio-unlocked', 'true');
           toast({
-            title: "音效已解鎖 / Audio Unlocked",
-            description: "倒數結束與最後 3 分鐘系統將發出提醒 / Alerts enabled.",
+            title: "音效與通知解鎖 / Audio & Notifications Unlocked",
+            description: "倒數結束與最後 3 分鐘系統將發出提醒（包含背景通知）/ Alerts enabled.",
           });
         } catch (e) {
           toast({

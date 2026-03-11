@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { LessonPlan, PlanCategory, Camp, RotationTableData, UserSettings } from '@/types/plan';
+import { LessonPlan, PlanCategory, Camp, RotationTableData, UserSettings, PlanVersion } from '@/types/plan';
 import { 
   useUser, 
   useFirestore, 
@@ -15,7 +15,7 @@ import {
   initiateAnonymousSignIn,
   useAuth
 } from '@/firebase';
-import { collection, query, doc, orderBy } from 'firebase/firestore';
+import { collection, query, doc, orderBy, where } from 'firebase/firestore';
 
 export function usePlans() {
   const { user, isUserLoading } = useUser();
@@ -60,6 +60,13 @@ export function usePlans() {
   const [viewMode, setViewMode] = useState<'editor' | 'admin'>('editor');
   
   const [localTimeLeft, setLocalTimeLeft] = useState(0);
+
+  const versionsQuery = useMemoFirebase(() => {
+    if (!db || !user || !activePlanId) return null;
+    return query(collection(db, 'planVersions'), where('planId', '==', activePlanId), orderBy('createdAt', 'desc'));
+  }, [db, user, activePlanId]);
+  const { data: versionsData } = useCollection<PlanVersion>(versionsQuery);
+  const activePlanVersions = versionsData || [];
 
   // History state for plans
   const [planHistory, setPlanHistory] = useState<{ past: LessonPlan[][], future: LessonPlan[][] }>({ past: [], future: [] });
@@ -247,6 +254,32 @@ export function usePlans() {
     deleteDocumentNonBlocking(doc(db, 'lessonPlans', id));
   }, [db, pushPlanHistory]);
 
+  const savePlanVersion = useCallback((name: string) => {
+    if (!db || !user || !activePlanId) return;
+    const currentPlan = allPlans.find(p => p.id === activePlanId);
+    if (!currentPlan) return;
+    
+    const versionId = Math.random().toString(36).substr(2, 9);
+    const newVersion: PlanVersion = {
+      id: versionId,
+      planId: activePlanId,
+      name,
+      createdAt: Date.now(),
+      snapshot: { ...currentPlan }
+    };
+    setDocumentNonBlocking(doc(db, 'planVersions', versionId), newVersion, { merge: true });
+  }, [db, user, activePlanId, allPlans]);
+
+  const restorePlanVersion = useCallback((versionId: string) => {
+    if (!db || !activePlanId) return;
+    const versionToRestore = activePlanVersions.find(v => v.id === versionId);
+    if (!versionToRestore) return;
+    
+    // We update the current plan with the snapshot data, except for the plan's ID and updatedAt
+    const { id: _planId, updatedAt, ...snapshotData } = versionToRestore.snapshot;
+    updatePlan(activePlanId, snapshotData);
+  }, [db, activePlanId, activePlanVersions, updatePlan]);
+
   const reorderPlans = useCallback((category: PlanCategory, startIndex: number, endIndex: number) => {
     if (!db || !activeCampId) return;
     pushPlanHistory();
@@ -291,6 +324,7 @@ export function usePlans() {
     tables: allTables.filter(t => t.campId === activeCampId), 
     activePlan: allPlans.find(p => p.id === activePlanId) || null,
     activePlanId, setActivePlanId, updatePlan, deletePlan, addPlan, reorderPlans,
+    activePlanVersions, savePlanVersion, restorePlanVersion,
     undoPlan, redoPlan, canUndoPlan: planHistory.past.length > 0, canRedoPlan: planHistory.future.length > 0,
     addTable, updateTable, deleteTable,
     undoTable, redoTable, canUndoTable: tableHistory.past.length > 0, canRedoTable: tableHistory.future.length > 0,

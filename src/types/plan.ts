@@ -97,6 +97,14 @@ export interface LessonPlan {
   isPreDepartureChecked?: boolean;
 }
 
+export interface PlanVersion {
+  id: string;
+  planId: string;
+  name: string;
+  createdAt: number;
+  snapshot: LessonPlan;
+}
+
 /** 
  * 選項折衷方案：內部選項維持純中文以減少視覺混亂
  * Values for the category dropdown, simplified to Chinese only as requested.

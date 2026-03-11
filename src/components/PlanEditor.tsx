@@ -1,7 +1,7 @@
 
 "use client"
 
-import { LessonPlan, SCHEDULE_OPTIONS } from "@/types/plan";
+import { LessonPlan, SCHEDULE_OPTIONS, PlanVersion } from "@/types/plan";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MarkdownArea } from "@/components/MarkdownArea";
@@ -25,7 +25,9 @@ import {
   Target,
   Layout,
   Undo2,
-  Redo2
+  Redo2,
+  History,
+  Save
 } from "lucide-react";
 import { 
   DropdownMenu, 
@@ -36,8 +38,17 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { exportToDocx, exportToPdf } from "@/lib/export-utils";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { 
+  Sheet, 
+  SheetContent, 
+  SheetHeader, 
+  SheetTitle, 
+  SheetDescription,
+  SheetTrigger 
+} from "@/components/ui/sheet";
+import { format } from "date-fns";
 import dynamic from "next/dynamic";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const FabricCanvas = dynamic(
@@ -74,10 +85,33 @@ interface PlanEditorProps {
   onRedo?: () => void;
   canUndo?: boolean;
   canRedo?: boolean;
+  versions?: PlanVersion[];
+  onSaveVersion?: (name: string) => void;
+  onRestoreVersion?: (versionId: string) => void;
 }
 
-export function PlanEditor({ plan, onUpdate, isSaving, onUndo, onRedo, canUndo, canRedo }: PlanEditorProps) {
+export function PlanEditor({ plan, onUpdate, isSaving, onUndo, onRedo, canUndo, canRedo, versions = [], onSaveVersion, onRestoreVersion }: PlanEditorProps) {
   const { toast } = useToast();
+  const [isVersionSheetOpen, setIsVersionSheetOpen] = useState(false);
+  const [newVersionName, setNewVersionName] = useState("");
+
+  const handleSaveVersion = () => {
+    if (!newVersionName.trim()) {
+      toast({ title: "請輸入版本名稱", variant: "destructive" });
+      return;
+    }
+    onSaveVersion?.(newVersionName);
+    setNewVersionName("");
+    toast({ title: "版本已儲存" });
+  };
+
+  const handleRestoreVersion = (version: PlanVersion) => {
+    if (confirm(`確定要還原到版本「${version.name}」嗎？這會覆蓋目前的教案內容。`)) {
+      onRestoreVersion?.(version.id);
+      setIsVersionSheetOpen(false);
+      toast({ title: "已還原版本" });
+    }
+  };
 
   const handleExportDocx = async () => {
     try {
@@ -146,6 +180,91 @@ export function PlanEditor({ plan, onUpdate, isSaving, onUndo, onRedo, canUndo, 
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+
+            <Sheet open={isVersionSheetOpen} onOpenChange={setIsVersionSheetOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="sm" className="rounded-2xl transition-all font-black gap-2 h-11 px-4 border-slate-200 text-slate-600 hover:text-orange-600 hover:border-orange-200 text-[11px] uppercase tracking-widest bg-white">
+                  <History className="h-4 w-4" /> 紀錄 
+                  {versions.length > 0 && (
+                    <span className="ml-1 bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-md text-[9px]">{versions.length}</span>
+                  )}
+                </Button>
+              </SheetTrigger>
+              <SheetContent className="w-full sm:max-w-md bg-[#FFFBF7] p-0 flex flex-col border-l-slate-200 no-print z-[100]">
+                <div className="p-6 pb-2">
+                  <SheetHeader>
+                    <SheetTitle className="font-headline font-black text-2xl text-slate-900 tracking-tight flex items-center gap-2">
+                      <History className="h-5 w-5 text-orange-600" /> 版本紀錄
+                    </SheetTitle>
+                    <SheetDescription className="text-slate-500 font-bold text-xs">
+                      儲存教案的歷史紀錄，隨時可以還原到先前的版本。
+                    </SheetDescription>
+                  </SheetHeader>
+                </div>
+                
+                <div className="px-6 py-4 border-b border-slate-200 bg-white/50 space-y-3">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest hidden">新建版本</label>
+                  <div className="flex gap-2">
+                    <Input 
+                      placeholder="輸入版本名稱 (例: 初稿, 修改後)" 
+                      value={newVersionName}
+                      onChange={(e) => setNewVersionName(e.target.value)}
+                      className="bg-white border-slate-200 shadow-sm h-11 font-bold text-sm"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleSaveVersion();
+                        }
+                      }}
+                    />
+                    <Button 
+                      onClick={handleSaveVersion}
+                      className="h-11 bg-orange-600 hover:bg-orange-700 text-white shadow-md px-4 font-black"
+                    >
+                      <Save className="h-4 w-4 flex-shrink-0" />
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                  {versions.length === 0 ? (
+                    <div className="text-center py-10 flex flex-col items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-300">
+                        <History className="h-5 w-5" />
+                      </div>
+                      <p className="text-slate-400 font-bold text-sm">還沒有任何版本紀錄</p>
+                    </div>
+                  ) : (
+                    <div className="relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-200 before:to-transparent">
+                      {versions.map((version, index) => (
+                        <div key={version.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active py-2">
+                          <div className="flex items-center justify-center w-10 h-10 rounded-full border border-white bg-slate-50 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 text-slate-400 z-10 transition-colors group-hover:bg-orange-50 group-hover:text-orange-600">
+                            <CheckCircle2 className="h-4 w-4" />
+                          </div>
+                          
+                          <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-white p-4 rounded-2xl shadow-sm border border-slate-100 transition-all hover:shadow-md group-hover:border-orange-100">
+                            <div className="flex flex-col gap-1 mb-3">
+                              <h4 className="font-black text-slate-800 text-sm line-clamp-1">{version.name}</h4>
+                              <time className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
+                                {format(new Date(version.createdAt), "MM/dd HH:mm")}
+                              </time>
+                            </div>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => handleRestoreVersion(version)}
+                              className="w-full text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-orange-600 border-slate-200 h-8 hover:bg-orange-50"
+                            >
+                              <Undo2 className="h-3.5 w-3.5 mr-1.5" /> 還原此版本
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </header>
 

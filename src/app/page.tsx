@@ -41,7 +41,10 @@ export default function Home() {
     setViewMode,
     isSaving,
     audioEnabled,
-    timer
+    timer,
+    activePlanVersions,
+    savePlanVersion,
+    restorePlanVersion
   } = usePlans();
 
   return (
@@ -94,6 +97,9 @@ export default function Home() {
               onRedo={redoPlan}
               canUndo={canUndoPlan}
               canRedo={canRedoPlan}
+              versions={activePlanVersions}
+              onSaveVersion={savePlanVersion}
+              onRestoreVersion={restorePlanVersion}
             />
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center h-full text-center p-8 space-y-6 animate-in fade-in zoom-in-95 duration-500">
