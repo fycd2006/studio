@@ -39,7 +39,6 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
   const wakeLockRef = useRef<any>(null);
   const playedMilestonesRef = useRef<Set<number>>(new Set());
   const alarmAudioRef = useRef<HTMLAudioElement | null>(null);
-  const shortBeepRef = useRef<HTMLAudioElement | null>(null);
   const silentLoopRef = useRef<HTMLAudioElement | null>(null);
   const lastCheckTimeRef = useRef<number>(Date.now());
   
@@ -67,16 +66,12 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
     alarmAudioRef.current = new Audio(ALARM_URL);
     alarmAudioRef.current.load();
     
-    shortBeepRef.current = new Audio(SHORT_BEEP_URL);
-    shortBeepRef.current.load();
-    
     silentLoopRef.current = new Audio(SILENT_AUDIO_BASE64);
     silentLoopRef.current.loop = true;
     silentLoopRef.current.volume = 0.01; // nearly silent just in case
     
     return () => {
       alarmAudioRef.current = null;
-      shortBeepRef.current = null;
       if (silentLoopRef.current) {
         silentLoopRef.current.pause();
         silentLoopRef.current = null;
@@ -219,12 +214,13 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
   const testAudio = async () => {
     const newStatus = !audioUnlocked;
     if (newStatus) {
-      if (shortBeepRef.current) {
-        try {
-          shortBeepRef.current.currentTime = 0;
-          await shortBeepRef.current.play();
-          
-          // Request Notification Permission
+      try {
+        // 使用全新的 Audio 實例確保按鈕點擊時必定能播放
+        const beep = new Audio(SHORT_BEEP_URL);
+        beep.volume = 1.0;
+        await beep.play();
+        
+        // Request Notification Permission
           if ('Notification' in window) {
             const permission = await Notification.requestPermission();
             if (permission === 'granted') {
@@ -249,7 +245,6 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
             variant: "destructive"
           });
         }
-      }
     } else {
       setAudioUnlocked(false);
       localStorage.setItem('camp-audio-unlocked', 'false');
