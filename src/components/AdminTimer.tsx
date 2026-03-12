@@ -189,7 +189,8 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
     const remaining = Math.max(0, Math.floor((timer.targetEndTime - currentTime) / 1000));
 
     // Pre-wake notification ~5 seconds before 3-minute warning (190~181秒)
-    if (remaining <= 190 && remaining > 180 && !playedMilestonesRef.current.has(185)) {
+    // Only trigger if total duration is greater than 3 minutes
+    if (timer.duration > 180 && remaining <= 190 && remaining > 180 && !playedMilestonesRef.current.has(185)) {
       if ('Notification' in window && 'serviceWorker' in navigator && Notification.permission === 'granted') {
         navigator.serviceWorker.ready.then(registration => {
           registration.showNotification("⏱ 即將提醒 / Alert Incoming", {
@@ -203,8 +204,8 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
       playedMilestonesRef.current.add(185);
     }
     
-    // 3 分鐘提醒 (180秒)
-    if (remaining <= 180 && remaining > 0 && !playedMilestonesRef.current.has(180)) {
+    // 3 分鐘提醒 (180秒) - only if total duration > 3 minutes
+    if (timer.duration > 180 && remaining <= 180 && remaining > 0 && !playedMilestonesRef.current.has(180)) {
       triggerAlarm("剩餘 3 分鐘！ / 3 Minutes Left!", "請各關卡準備換關 / Prepare for rotation.", 'short');
       playedMilestonesRef.current.add(180);
     }
@@ -230,7 +231,7 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
       triggerAlarm("換關時間到！ / Time for Rotation!", "請各小隊進行換關 / Please rotate stations.", 'long', true);
       playedMilestonesRef.current.add(0);
     }
-  }, [timer.isRunning, timer.targetEndTime, triggerAlarm]);
+  }, [timer.isRunning, timer.targetEndTime, timer.duration, triggerAlarm]);
 
   useEffect(() => {
     setNow(new Date());
