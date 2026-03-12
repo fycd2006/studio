@@ -188,8 +188,8 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
     const currentTime = Date.now();
     const remaining = Math.max(0, Math.floor((timer.targetEndTime - currentTime) / 1000));
 
-    // Pre-wake notification 5 seconds before 3-minute warning (185秒)
-    if (remaining <= 185 && remaining > 180 && !playedMilestonesRef.current.has(185)) {
+    // Pre-wake notification ~5 seconds before 3-minute warning (190~181秒)
+    if (remaining <= 190 && remaining > 180 && !playedMilestonesRef.current.has(185)) {
       if ('Notification' in window && 'serviceWorker' in navigator && Notification.permission === 'granted') {
         navigator.serviceWorker.ready.then(registration => {
           registration.showNotification("⏱ 即將提醒 / Alert Incoming", {
@@ -209,8 +209,8 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
       playedMilestonesRef.current.add(180);
     }
 
-    // Pre-wake notification 1 second before timer ends (1秒)
-    if (remaining <= 1 && remaining > 0 && !playedMilestonesRef.current.has(1)) {
+    // Pre-wake notification ~3 seconds before timer ends (3~1秒)
+    if (remaining <= 3 && remaining > 0 && !playedMilestonesRef.current.has(1)) {
       if ('Notification' in window && 'serviceWorker' in navigator && Notification.permission === 'granted') {
         navigator.serviceWorker.ready.then(registration => {
           registration.showNotification("⏱ 換關倒數 / Rotation Now!", {
