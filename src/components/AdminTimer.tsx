@@ -196,7 +196,7 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
             body: "3 分鐘提醒即將響起 / 3-min warning coming up",
             vibrate: [100],
             tag: 'pre-wake-3min',
-            silent: false,
+            silent: true,
           } as any);
         });
       }
@@ -217,7 +217,7 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
             body: "時間即將到！ / Time is up!",
             vibrate: [200, 100, 200],
             tag: 'pre-wake-end',
-            silent: false,
+            silent: true,
             requireInteraction: true,
           } as any);
         });
