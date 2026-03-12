@@ -112,8 +112,15 @@ export function usePlans() {
       future: [current, ...prev.future]
     }));
 
+    const previousIds = new Set(previous.map(p => p.id));
+    current.forEach(p => {
+      if (!previousIds.has(p.id)) {
+        deleteDocumentNonBlocking(doc(db, 'lessonPlans', p.id));
+      }
+    });
+
     previous.forEach(p => {
-      updateDocumentNonBlocking(doc(db, 'lessonPlans', p.id), { ...p, updatedAt: Date.now() });
+      setDocumentNonBlocking(doc(db, 'lessonPlans', p.id), { ...p, updatedAt: Date.now() }, { merge: true });
     });
   }, [planHistory, db]);
 
@@ -127,8 +134,15 @@ export function usePlans() {
       future: prev.future.slice(1)
     }));
 
+    const nextIds = new Set(next.map(p => p.id));
+    current.forEach(p => {
+      if (!nextIds.has(p.id)) {
+        deleteDocumentNonBlocking(doc(db, 'lessonPlans', p.id));
+      }
+    });
+
     next.forEach(p => {
-      updateDocumentNonBlocking(doc(db, 'lessonPlans', p.id), { ...p, updatedAt: Date.now() });
+      setDocumentNonBlocking(doc(db, 'lessonPlans', p.id), { ...p, updatedAt: Date.now() }, { merge: true });
     });
   }, [planHistory, db]);
 
@@ -142,8 +156,15 @@ export function usePlans() {
       future: [current, ...prev.future]
     }));
 
+    const previousIds = new Set(previous.map(t => t.id));
+    current.forEach(t => {
+      if (!previousIds.has(t.id)) {
+        deleteDocumentNonBlocking(doc(db, 'rotationTables', t.id));
+      }
+    });
+
     previous.forEach(t => {
-      updateDocumentNonBlocking(doc(db, 'rotationTables', t.id), t);
+      setDocumentNonBlocking(doc(db, 'rotationTables', t.id), t, { merge: true });
     });
   }, [tableHistory, db]);
 
@@ -157,8 +178,15 @@ export function usePlans() {
       future: prev.future.slice(1)
     }));
 
+    const nextIds = new Set(next.map(t => t.id));
+    current.forEach(t => {
+      if (!nextIds.has(t.id)) {
+        deleteDocumentNonBlocking(doc(db, 'rotationTables', t.id));
+      }
+    });
+
     next.forEach(t => {
-      updateDocumentNonBlocking(doc(db, 'rotationTables', t.id), t);
+      setDocumentNonBlocking(doc(db, 'rotationTables', t.id), t, { merge: true });
     });
   }, [tableHistory, db]);
 
