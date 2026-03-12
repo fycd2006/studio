@@ -5,7 +5,7 @@ import { FirebaseClientProvider } from '@/firebase';
 import Script from 'next/script';
 
 export const metadata: Metadata = {
-  title: 'Camp Plan Studio',
+  title: 'NTUT CD Camp',
   description: 'Professional Camp Lesson Plan Management',
   icons: {
     icon: '/favicon.ico',
