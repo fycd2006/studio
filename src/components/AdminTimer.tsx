@@ -187,11 +187,42 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
 
     const currentTime = Date.now();
     const remaining = Math.max(0, Math.floor((timer.targetEndTime - currentTime) / 1000));
+
+    // Pre-wake notification 5 seconds before 3-minute warning (185秒)
+    if (remaining <= 185 && remaining > 180 && !playedMilestonesRef.current.has(185)) {
+      if ('Notification' in window && 'serviceWorker' in navigator && Notification.permission === 'granted') {
+        navigator.serviceWorker.ready.then(registration => {
+          registration.showNotification("⏱ 即將提醒 / Alert Incoming", {
+            body: "3 分鐘提醒即將響起 / 3-min warning coming up",
+            vibrate: [100],
+            tag: 'pre-wake-3min',
+            silent: false,
+          } as any);
+        });
+      }
+      playedMilestonesRef.current.add(185);
+    }
     
     // 3 分鐘提醒 (180秒)
     if (remaining <= 180 && remaining > 0 && !playedMilestonesRef.current.has(180)) {
       triggerAlarm("剩餘 3 分鐘！ / 3 Minutes Left!", "請各關卡準備換關 / Prepare for rotation.", 'short');
       playedMilestonesRef.current.add(180);
+    }
+
+    // Pre-wake notification 1 second before timer ends (1秒)
+    if (remaining <= 1 && remaining > 0 && !playedMilestonesRef.current.has(1)) {
+      if ('Notification' in window && 'serviceWorker' in navigator && Notification.permission === 'granted') {
+        navigator.serviceWorker.ready.then(registration => {
+          registration.showNotification("⏱ 換關倒數 / Rotation Now!", {
+            body: "時間即將到！ / Time is up!",
+            vibrate: [200, 100, 200],
+            tag: 'pre-wake-end',
+            silent: false,
+            requireInteraction: true,
+          } as any);
+        });
+      }
+      playedMilestonesRef.current.add(1);
     }
 
     // 時間到提醒 (0秒)
