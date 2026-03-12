@@ -90,26 +90,50 @@ export function usePlans() {
   }, [allTables]);
 
   const pushPlanHistory = useCallback(() => {
-    setPlanHistory(prev => ({
-      past: [...prev.past.slice(-20), lastPlanStateRef.current],
-      future: []
-    }));
+    setPlanHistory(prev => {
+      const snapshot = lastPlanStateRef.current;
+      // Skip if the snapshot is identical to the last entry in past
+      const last = prev.past[prev.past.length - 1];
+      if (last && JSON.stringify(last) === JSON.stringify(snapshot)) {
+        return prev;
+      }
+      return {
+        past: [...prev.past.slice(-20), snapshot],
+        future: []
+      };
+    });
   }, []);
 
   const pushTableHistory = useCallback(() => {
-    setTableHistory(prev => ({
-      past: [...prev.past.slice(-20), lastTableStateRef.current],
-      future: []
-    }));
+    setTableHistory(prev => {
+      const snapshot = lastTableStateRef.current;
+      const last = prev.past[prev.past.length - 1];
+      if (last && JSON.stringify(last) === JSON.stringify(snapshot)) {
+        return prev;
+      }
+      return {
+        past: [...prev.past.slice(-20), snapshot],
+        future: []
+      };
+    });
   }, []);
 
   const undoPlan = useCallback(() => {
     if (planHistory.past.length === 0 || !db) return;
-    const previous = planHistory.past[planHistory.past.length - 1];
     const current = lastPlanStateRef.current;
+    const currentJson = JSON.stringify(current);
+    
+    // Find the most recent past entry that is actually different from current
+    let targetIdx = planHistory.past.length - 1;
+    while (targetIdx >= 0 && JSON.stringify(planHistory.past[targetIdx]) === currentJson) {
+      targetIdx--;
+    }
+    if (targetIdx < 0) return; // No different state to undo to
+    
+    const previous = planHistory.past[targetIdx];
     
     setPlanHistory(prev => ({
-      past: prev.past.slice(0, prev.past.length - 1),
+      past: prev.past.slice(0, targetIdx),
       future: [current, ...prev.future]
     }));
 
@@ -149,11 +173,20 @@ export function usePlans() {
 
   const undoTable = useCallback(() => {
     if (tableHistory.past.length === 0 || !db) return;
-    const previous = tableHistory.past[tableHistory.past.length - 1];
     const current = lastTableStateRef.current;
+    const currentJson = JSON.stringify(current);
+
+    // Find the most recent past entry that is actually different from current
+    let targetIdx = tableHistory.past.length - 1;
+    while (targetIdx >= 0 && JSON.stringify(tableHistory.past[targetIdx]) === currentJson) {
+      targetIdx--;
+    }
+    if (targetIdx < 0) return;
+
+    const previous = tableHistory.past[targetIdx];
 
     setTableHistory(prev => ({
-      past: prev.past.slice(0, prev.past.length - 1),
+      past: prev.past.slice(0, targetIdx),
       future: [current, ...prev.future]
     }));
 
