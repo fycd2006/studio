@@ -1,0 +1,10 @@
+{
+  "placeholderImages": [
+    {
+      "id": "chong-de-logo",
+      "description": "NTUT Chong De Camp Logo",
+      "imageUrl": "https://images.unsplash.com/photo-1560171712-230919920800?q=80&w=400&h=400&auto=format&fit=crop",
+      "imageHint": "community education"
+    }
+  ]
+}

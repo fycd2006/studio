@@ -1,0 +1,119 @@
+
+export type PlanCategory = 'activity' | 'teaching';
+
+export interface PropItem {
+  id: string;
+  name: string;
+  quantity: string;
+  unit: string;
+  remarks?: string;
+  isFromClub?: boolean;
+  isToPurchase?: boolean;
+}
+
+export interface CampItem {
+  id: string;
+  usage: string;
+  name: string;
+  isPacked?: boolean;
+  isChecked?: boolean;
+}
+
+export interface Camp {
+  id: string;
+  name: string;
+  startDate?: string;
+  endDate?: string;
+  meeting1Date?: string;
+  meeting2Date?: string;
+  meeting3Date?: string;
+  ownerId: string;
+  createdAt: number;
+  campItems?: CampItem[];
+}
+
+export interface Station {
+  id: string;
+  name: string;
+  location: string;
+  lead: string;
+  assistant: string;
+}
+
+export interface RotationRound {
+  cells: string[];
+}
+
+export interface TeamOrder {
+  id: string;
+  name: string;
+  stations: string[];
+}
+
+export interface RotationTableData {
+  id: string;
+  campId: string;
+  ownerId: string;
+  title: string;
+  day: string;
+  stations: Station[];
+  rounds: RotationRound[]; 
+  teamOrders: TeamOrder[];
+}
+
+export interface UserSettings {
+  duration: number;
+  timeLeft: number;
+  targetEndTime?: number;
+  isRunning: boolean;
+  isReminderSet: boolean;
+  isAlarmSet: boolean;
+  updatedAt: number;
+}
+
+export interface LessonPlan {
+  id: string;
+  campId: string;
+  ownerId: string;
+  category: PlanCategory;
+  scheduledName: string;
+  activityName: string;
+  members: string;
+  time: string;
+  location: string;
+  purpose: string;
+  process: string;
+  content: string; 
+  divisionOfLabor: string; 
+  props: PropItem[]; 
+  remarks: string; 
+  openingClosingRemarks: string; 
+  canvasData?: string | null; 
+  canvasHeight?: number | null; 
+  googleDocUrl: string;
+  order: number;
+  updatedAt: number;
+  isPropsPacked?: boolean;
+  isPreDepartureChecked?: boolean;
+}
+
+export interface PlanVersion {
+  id: string;
+  planId: string;
+  name: string;
+  createdAt: number;
+  snapshot: LessonPlan;
+}
+
+/** 
+ * 選項折衷方案：內部選項維持純中文以減少視覺混亂
+ * Values for the category dropdown, simplified to Chinese only as requested.
+ */
+export const SCHEDULE_OPTIONS = [
+  '劇本',
+  '起床遊戲',
+  '大地遊戲',
+  '科學闖關',
+  '科學實驗',
+  '科學手作',
+];

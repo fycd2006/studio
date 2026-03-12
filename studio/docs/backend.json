@@ -1,0 +1,113 @@
+
+{
+  "entities": {
+    "Camp": {
+      "title": "Camp",
+      "type": "object",
+      "description": "Represents a camp project.",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "startDate": { "type": "string", "format": "date" },
+        "endDate": { "type": "string", "format": "date" },
+        "meeting1Date": { "type": "string", "format": "date" },
+        "meeting2Date": { "type": "string", "format": "date" },
+        "meeting3Date": { "type": "string", "format": "date" },
+        "ownerId": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "name", "ownerId", "createdAt"]
+    },
+    "LessonPlan": {
+      "title": "LessonPlan",
+      "type": "object",
+      "description": "Represents a lesson plan within a camp.",
+      "properties": {
+        "id": { "type": "string" },
+        "campId": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "category": { "type": "string", "enum": ["activity", "teaching"] },
+        "scheduledName": { "type": "string" },
+        "activityName": { "type": "string" },
+        "members": { "type": "string" },
+        "time": { "type": "string" },
+        "location": { "type": "string" },
+        "purpose": { "type": "string" },
+        "process": { "type": "string" },
+        "content": { "type": "string" },
+        "divisionOfLabor": { "type": "string" },
+        "props": { "type": "array", "items": { "$ref": "#/backend/entities/PropItem" } },
+        "remarks": { "type": "string" },
+        "openingClosingRemarks": { "type": "string" },
+        "canvasData": { "type": "string" },
+        "canvasHeight": { "type": "number" },
+        "googleDocUrl": { "type": "string" },
+        "order": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["id", "campId", "ownerId", "category", "activityName", "order", "updatedAt"]
+    },
+    "PropItem": {
+      "title": "PropItem",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "quantity": { "type": "string" },
+        "unit": { "type": "string" },
+        "remarks": { "type": "string" }
+      }
+    },
+    "RotationTable": {
+      "title": "RotationTable",
+      "type": "object",
+      "description": "Represents a rotation table for games.",
+      "properties": {
+        "id": { "type": "string" },
+        "campId": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "title": { "type": "string" },
+        "day": { "type": "string" },
+        "stations": { "type": "array" },
+        "rounds": { "type": "array" },
+        "teamOrders": { "type": "array" }
+      },
+      "required": ["id", "campId", "ownerId", "title"]
+    },
+    "UserSettings": {
+      "title": "UserSettings",
+      "type": "object",
+      "description": "User specific application settings and timer config.",
+      "properties": {
+        "duration": { "type": "number" },
+        "timeLeft": { "type": "number" },
+        "targetEndTime": { "type": "number" },
+        "isRunning": { "type": "boolean" },
+        "isReminderSet": { "type": "boolean" },
+        "isAlarmSet": { "type": "boolean" },
+        "updatedAt": { "type": "number" }
+      }
+    }
+  },
+  "auth": {
+    "providers": ["anonymous"]
+  },
+  "firestore": {
+    "/camps/{campId}": {
+      "schema": "Camp",
+      "description": "Collection of camp projects."
+    },
+    "/lessonPlans/{planId}": {
+      "schema": "LessonPlan",
+      "description": "Collection of lesson plans."
+    },
+    "/rotationTables/{tableId}": {
+      "schema": "RotationTable",
+      "description": "Collection of rotation tables."
+    },
+    "/userSettings/{userId}": {
+      "schema": "UserSettings",
+      "description": "User settings and timer configuration."
+    }
+  }
+}
