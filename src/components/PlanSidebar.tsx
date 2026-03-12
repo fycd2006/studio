@@ -164,8 +164,17 @@ export function PlanSidebar({
         <SidebarHeader className="bg-white border-b border-orange-100 px-4 py-4">
           <div className="flex items-center justify-between group-data-[collapsible=icon]:justify-center">
             <div className="flex items-center gap-2.5 group-data-[collapsible=icon]:hidden">
-              <div className="w-9 h-9 rounded-xl bg-orange-600 flex items-center justify-center text-white shadow-lg shadow-orange-100 shrink-0">
-                <Sparkles className="h-5 w-5" />
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden bg-white shadow-sm border border-orange-100/50 p-0.5">
+                <img 
+                  src="/logo.png" 
+                  alt="Logo" 
+                  className="w-full h-full object-contain" 
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                  }} 
+                />
+                <Sparkles className="h-5 w-5 text-orange-600 hidden" />
               </div>
               <div className="flex flex-col">
                 <h1 className="text-[12px] font-black text-slate-950 tracking-tight leading-none uppercase">
