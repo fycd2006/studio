@@ -1,4 +1,4 @@
-
+﻿
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -210,10 +210,10 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
   };
 
   const fontSizes = [
-    { label: "小 / S", size: "12px" },
-    { label: "中 / M", size: "16px" },
-    { label: "大 / L", size: "20px" },
-    { label: "特大 / XL", size: "24px" },
+    { label: "撠?/ S", size: "12px" },
+    { label: "銝?/ M", size: "16px" },
+    { label: "憭?/ L", size: "20px" },
+    { label: "?孵之 / XL", size: "24px" },
   ];
 
   return (
@@ -225,7 +225,7 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
       )}
 
       <div className={cn(
-        "border rounded-2xl bg-[#F8F9FA] overflow-visible transition-all duration-300 relative",
+        "border rounded-2xl bg-white overflow-visible transition-all duration-300 relative",
         isFocused ? "border-primary/40 shadow-xl" : "shadow-sm border-slate-200"
       )}>
         {selectedImage && (
@@ -261,7 +261,7 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
                           {size.label}
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent className="text-[10px] font-bold">縮放 / Scale</TooltipContent>
+                      <TooltipContent className="text-[10px] font-bold">蝮格 / Scale</TooltipContent>
                     </Tooltip>
                   ))}
                 </div>
@@ -271,13 +271,13 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
                     <TooltipTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20" onClick={() => toggleStyle('borderRadius', '24px')}><CircleIcon className="h-4 w-4" /></Button>
                     </TooltipTrigger>
-                    <TooltipContent className="text-[10px] font-bold">圓角 / Round</TooltipContent>
+                    <TooltipContent className="text-[10px] font-bold">?? / Round</TooltipContent>
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20" onClick={() => toggleStyle('boxShadow', '0 20px 25px -5px rgba(0,0,0,0.1)')}><Layers className="h-4 w-4" /></Button>
                     </TooltipTrigger>
-                    <TooltipContent className="text-[10px] font-bold">陰影 / Shadow</TooltipContent>
+                    <TooltipContent className="text-[10px] font-bold">?啣蔣 / Shadow</TooltipContent>
                   </Tooltip>
                 </div>
 
@@ -292,13 +292,13 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
                     <TooltipTrigger asChild>
                       <Button variant="ghost" size="icon" className={cn("h-8 w-8 text-white hover:bg-white/20", selectedImage.style.display === 'inline-block' && "bg-orange-600")} onClick={() => toggleStyle('display', 'inline-block')}><Layout className="h-4 w-4" /></Button>
                     </TooltipTrigger>
-                    <TooltipContent className="text-[10px] font-bold">行內排列 / Inline</TooltipContent>
+                    <TooltipContent className="text-[10px] font-bold">銵?? / Inline</TooltipContent>
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button variant="ghost" size="icon" className={cn("h-8 w-8 text-white hover:bg-white/20", selectedImage.style.display === 'block' && "bg-orange-600")} onClick={() => toggleStyle('display', 'block')}><AlignCenter className="h-4 w-4" /></Button>
                     </TooltipTrigger>
-                    <TooltipContent className="text-[10px] font-bold">置中 / Center</TooltipContent>
+                    <TooltipContent className="text-[10px] font-bold">蝵桐葉 / Center</TooltipContent>
                   </Tooltip>
                 </div>
 
@@ -307,13 +307,13 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
                     <TooltipTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20" onClick={clearImageFormat}><RotateCcw className="h-4 w-4" /></Button>
                     </TooltipTrigger>
-                    <TooltipContent className="text-[10px] font-bold">重設 / Reset</TooltipContent>
+                    <TooltipContent className="text-[10px] font-bold">?身 / Reset</TooltipContent>
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-400 hover:bg-rose-500 hover:text-white" onClick={deleteImage}><Trash2 className="h-4 w-4" /></Button>
                     </TooltipTrigger>
-                    <TooltipContent className="text-[10px] font-bold">刪除 / Del</TooltipContent>
+                    <TooltipContent className="text-[10px] font-bold">?芷 / Del</TooltipContent>
                   </Tooltip>
                 </div>
               </TooltipProvider>
@@ -321,13 +321,13 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
           </div>
         )}
 
-        <div className="flex items-center flex-wrap gap-1 p-2 border-b border-slate-200/60 no-print sticky top-0 z-40 bg-[#F8F9FA]/90 backdrop-blur-md rounded-t-2xl shadow-sm">
+        <div className="flex items-center flex-wrap gap-1 p-1 border-b border-slate-100 no-print sticky top-0 z-40 bg-white/95 backdrop-blur-md rounded-t-2xl">
           <TooltipProvider>
             {[
-              { icon: Bold, title: "粗體 / Bold", action: () => execCommand("bold") },
-              { icon: Italic, title: "斜體 / Italic", action: () => execCommand("italic") },
-              { icon: Underline, title: "底線 / Underline", action: () => execCommand("underline") },
-              { icon: Strikethrough, title: "刪除線 / Strike", action: () => execCommand("strikeThrough") },
+              { icon: Bold, title: "蝎? / Bold", action: () => execCommand("bold") },
+              { icon: Italic, title: "?? / Italic", action: () => execCommand("italic") },
+              { icon: Underline, title: "摨? / Underline", action: () => execCommand("underline") },
+              { icon: Strikethrough, title: "?芷蝺?/ Strike", action: () => execCommand("strikeThrough") },
             ].map((btn, i) => (
               <Tooltip key={i}>
                 <TooltipTrigger asChild>
@@ -368,7 +368,7 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
                   </div>
                 </PopoverContent>
               </Popover>
-              <TooltipContent side="bottom" className="text-[9px] font-black uppercase">字體 / Font Size</TooltipContent>
+              <TooltipContent side="bottom" className="text-[9px] font-black uppercase">摮? / Font Size</TooltipContent>
             </Tooltip>
 
             <Tooltip>
@@ -388,17 +388,17 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
                   </div>
                 </PopoverContent>
               </Popover>
-              <TooltipContent side="bottom" className="text-[9px] font-black uppercase">顏色 / Color</TooltipContent>
+              <TooltipContent side="bottom" className="text-[9px] font-black uppercase">憿 / Color</TooltipContent>
             </Tooltip>
 
             <div className="w-[1px] h-4 bg-slate-200 mx-1" />
 
             {[
-              { icon: List, title: "項目 / Bullet", action: () => execCommand("insertUnorderedList") },
-              { icon: ListOrdered, title: "清單 / List", action: () => execCommand("insertOrderedList") },
-              { icon: AlignLeft, title: "左 / Left", action: () => execCommand("justifyLeft") },
-              { icon: AlignCenter, title: "中 / Center", action: () => execCommand("justifyCenter") },
-              { icon: AlignRight, title: "右 / Right", action: () => execCommand("justifyRight") },
+              { icon: List, title: "? / Bullet", action: () => execCommand("insertUnorderedList") },
+              { icon: ListOrdered, title: "皜 / List", action: () => execCommand("insertOrderedList") },
+              { icon: AlignLeft, title: "撌?/ Left", action: () => execCommand("justifyLeft") },
+              { icon: AlignCenter, title: "銝?/ Center", action: () => execCommand("justifyCenter") },
+              { icon: AlignRight, title: "??/ Right", action: () => execCommand("justifyRight") },
             ].map((btn, i) => (
               <Tooltip key={i}>
                 <TooltipTrigger asChild>
@@ -418,12 +418,12 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
                   <Eraser className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-[9px] font-black uppercase">清除 / Clear</TooltipContent>
+              <TooltipContent side="bottom" className="text-[9px] font-black uppercase">皜 / Clear</TooltipContent>
             </Tooltip>
           </TooltipProvider>
         </div>
 
-        <div className="p-4 md:p-8 bg-transparent min-h-[400px] relative rounded-b-2xl flex justify-center overflow-x-auto">
+        <div className="p-0.5 bg-white min-h-[300px] relative rounded-b-2xl">
           <div
             ref={editorRef}
             contentEditable
@@ -433,14 +433,14 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
             onBlur={() => setIsFocused(false)}
             onPaste={handlePaste}
             className={cn(
-              "w-[210mm] max-w-full min-h-[297mm] p-8 md:p-12 bg-white outline-none prose prose-slate prose-sm transition-all duration-300 shadow-md ring-1 ring-slate-900/5 rounded-sm shrink-0",
-              "focus:shadow-lg focus:ring-slate-900/10",
+              "w-full max-w-full min-h-[290px] p-4 md:p-8 bg-white outline-none prose prose-slate prose-sm transition-all duration-300",
+              "focus:ring-0",
               "[&_ul]:list-disc [&_ol]:list-decimal [&_ul,&_ol]:ml-6 [&_ol]:my-3",
-              "[&_p]:leading-[1.8] [&_p]:mb-4 [&_p]:text-slate-800",
+              "[&_p]:leading-[1.7] [&_p]:mb-3 [&_p]:text-slate-700",
               "[&_img]:cursor-pointer [&_img]:transition-all [&_img]:duration-300 [&_img]:shadow-md [&_img:hover]:shadow-lg [&_img]:rounded-xl [&_img]:inline-block [&_img]:max-w-full [&_img]:align-top",
-              "empty:before:content-[attr(data-placeholder)] empty:before:text-slate-300 empty:before:font-medium"
+              "empty:before:content-[attr(placeholder)] empty:before:text-slate-300 empty:before:font-medium"
             )}
-            data-placeholder={`撰寫教案內容... (支援貼上圖片) / Write content here... (Supports pasting images)`}
+            placeholder={`?啣神???批捆... (?舀鞎潔???) / Write content here... (Supports pasting images)`}
           />
         </div>
       </div>

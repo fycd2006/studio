@@ -12,7 +12,11 @@ import {
   Image as ImageIcon,
   Trash2,
   MousePointer2,
-  Minus
+  Minus,
+  Hand,
+  ZoomIn,
+  ZoomOut,
+  Maximize
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -27,6 +31,7 @@ interface FabricCanvasProps {
 }
 
 export function FabricCanvas({ initialData, initialHeight = 500, onSave }: FabricCanvasProps) {
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fabricRef = useRef<fabric.Canvas | null>(null);
   const onSaveRef = useRef(onSave);
@@ -35,8 +40,37 @@ export function FabricCanvas({ initialData, initialHeight = 500, onSave }: Fabri
   
   const [brushColor, setBrushColor] = useState("#336699");
   const [brushSize, setBrushSize] = useState(3);
-  const [activeTool, setActiveTool] = useState<'pen' | 'select'>('select');
+  const [activeTool, setActiveTool] = useState<'pen' | 'select' | 'pan' | 'shape'>('select');
   const [canvasHeight, setCanvasHeight] = useState(initialHeight || 500);
+  const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
+
+  const activeToolRef = useRef(activeTool);
+  const brushColorRef = useRef(brushColor);
+  const brushSizeRef = useRef(brushSize);
+  const pendingShapeRef = useRef<'rect' | 'circle' | 'triangle' | 'line' | 'text' | null>(null);
+  const lastSavedData = useRef(initialData);
+
+  useEffect(() => {
+    activeToolRef.current = activeTool;
+    brushColorRef.current = brushColor;
+    brushSizeRef.current = brushSize;
+  }, [activeTool, brushColor, brushSize]);
+
+  // Sync initialData changes from external sources (like Undo/Redo)
+  useEffect(() => {
+    if (
+      fabricRef.current && 
+      initialData && 
+      initialData !== lastSavedData.current && 
+      typeof initialData === 'string' && 
+      initialData.trim().startsWith('{')
+    ) {
+      fabricRef.current.loadFromJSON(initialData, () => {
+        fabricRef.current?.renderAll();
+        lastSavedData.current = initialData;
+      });
+    }
+  }, [initialData]);
 
   useEffect(() => {
     onSaveRef.current = onSave;
@@ -86,33 +120,155 @@ export function FabricCanvas({ initialData, initialHeight = 500, onSave }: Fabri
   }, []);
 
   useEffect(() => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current || !wrapperRef.current) return;
 
     const canvas = new fabric.Canvas(canvasRef.current, {
-      width: 1000,
-      height: canvasHeight,
       backgroundColor: "transparent",
-      uniScaleTransform: true, 
     });
+
+    (canvas as any).uniScaleTransform = true;
 
     fabricRef.current = canvas;
 
-    if (initialData && typeof initialData === 'string' && initialData.trim().startsWith('{')) {
+    const VIRTUAL_WIDTH = 1000;
+    
+    const resizeCanvas = () => {
+      const wrapper = wrapperRef.current;
+      if (!wrapper || !fabricRef.current) return;
+      
+      const targetWidth = wrapper.clientWidth || wrapper.getBoundingClientRect().width;
+      const scale = targetWidth / VIRTUAL_WIDTH;
+      
+      const currentZoom = fabricRef.current.getZoom();
+      const needsInitialZoom = isInitialLoad.current;
+      
+      fabricRef.current.setDimensions({
+        width: targetWidth,
+        height: canvasHeight * scale
+      });
+      
+      if (needsInitialZoom) {
+        fabricRef.current.setZoom(scale);
+      }
+    };
+
+    if (isInitialLoad.current && initialData && typeof initialData === 'string' && initialData.trim().startsWith('{')) {
       try {
         canvas.loadFromJSON(initialData, () => {
+          resizeCanvas();
           canvas.renderAll();
           isInitialLoad.current = false;
         });
       } catch (e) {
+        resizeCanvas();
         isInitialLoad.current = false;
       }
-    } else {
+    } else if (isInitialLoad.current) {
+      resizeCanvas();
       isInitialLoad.current = false;
     }
+
+    const resizeObserver = new ResizeObserver(() => {
+      resizeCanvas();
+    });
+    
+    resizeObserver.observe(wrapperRef.current);
+
+    // Zoom & Pan Event Listeners
+    let isDragging = false;
+    let lastPosX = 0;
+    let lastPosY = 0;
+
+    canvas.on('mouse:down', function (opt) {
+      const evt = opt.e as any;
+
+      if (activeToolRef.current === 'shape' && pendingShapeRef.current) {
+        const type = pendingShapeRef.current;
+        const color = brushColorRef.current;
+        const size = brushSizeRef.current;
+        const pointer = canvas.getPointer(opt.e);
+        
+        const common = { 
+          left: pointer.x, 
+          top: pointer.y, 
+          originX: 'center',
+          originY: 'center',
+          fill: color + "20", 
+          stroke: color, 
+          strokeWidth: 2,
+          lockScalingFlip: true 
+        };
+
+        let object: fabric.Object | undefined;
+        switch (type) {
+          case 'rect': object = new fabric.Rect({ ...common, width: 100, height: 100 }); break;
+          case 'circle': object = new fabric.Circle({ ...common, radius: 50 }); break;
+          case 'triangle': object = new fabric.Triangle({ ...common, width: 100, height: 100 }); break;
+          case 'line': object = new fabric.Line([pointer.x - 50, pointer.y, pointer.x + 50, pointer.y], { stroke: color, strokeWidth: size }); break;
+          case 'text': object = new fabric.IText('雙擊編輯', { ...common, fill: color, strokeWidth: size > 5 ? 2 : 0, fontWeight: size > 5 ? 'bold' : 'normal', fontSize: 22 }); break;
+        }
+
+        if (object) {
+          canvas.add(object);
+          canvas.setActiveObject(object);
+          canvas.renderAll();
+        }
+
+        pendingShapeRef.current = null;
+        // Need to use state setter, but we can't reliably call it from inside the useEffect without ref. Just dispatch event.
+        window.dispatchEvent(new CustomEvent('fabric:tool_reset'));
+        return;
+      }
+
+      if (activeToolRef.current === 'pan' || evt.altKey || evt.button === 1) {
+        isDragging = true;
+        canvas.selection = false;
+        lastPosX = evt.clientX || (evt.touches && evt.touches[0].clientX) || 0;
+        lastPosY = evt.clientY || (evt.touches && evt.touches[0].clientY) || 0;
+      }
+    });
+
+    canvas.on('mouse:move', function (opt) {
+      if (isDragging) {
+        const e = opt.e as any;
+        const vpt = canvas.viewportTransform;
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
+        if (vpt) {
+          vpt[4] += clientX - lastPosX;
+          vpt[5] += clientY - lastPosY;
+          canvas.requestRenderAll();
+          lastPosX = clientX;
+          lastPosY = clientY;
+        }
+      }
+    });
+
+    canvas.on('mouse:up', function (opt) {
+      if (isDragging) {
+        if (canvas.viewportTransform) {
+          canvas.setViewportTransform(canvas.viewportTransform);
+        }
+        isDragging = false;
+        canvas.selection = activeToolRef.current === 'select';
+      }
+    });
+
+    canvas.on('mouse:wheel', function (opt) {
+      const delta = opt.e.deltaY;
+      let zoom = canvas.getZoom();
+      zoom *= 0.999 ** delta;
+      if (zoom > 20) zoom = 20;
+      if (zoom < 0.05) zoom = 0.05;
+      canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
+      opt.e.preventDefault();
+      opt.e.stopPropagation();
+    });
 
     const handleSave = () => {
       if (fabricRef.current && !isInitialLoad.current) {
         const json = JSON.stringify(fabricRef.current.toJSON());
+        lastSavedData.current = json;
         onSaveRef.current(json, canvasHeight);
       }
     };
@@ -140,16 +296,82 @@ export function FabricCanvas({ initialData, initialHeight = 500, onSave }: Fabri
       }
     };
 
+    const handleBeforePrint = () => {
+      if (!fabricRef.current) return;
+      const canvas = fabricRef.current;
+      const canvasAny = canvas as any;
+      
+      // Save current state
+      canvasAny.originalViewportTransform = [...(canvas.viewportTransform || [])];
+      canvasAny.originalWidth = canvas.getWidth();
+      canvasAny.originalHeight = canvas.getHeight();
+      
+      // Calculate bounding box of all objects
+      const objects = canvas.getObjects();
+      if (objects.length > 0) {
+        // Reset viewport temporarily to calculate true bounds
+        canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+        
+        let minX = Infinity, minY = Infinity, mxX = -Infinity, mxY = -Infinity;
+        objects.forEach(obj => {
+          const br = obj.getBoundingRect(true, true);
+          if (br.left < minX) minX = br.left;
+          if (br.top < minY) minY = br.top;
+          if (br.left + br.width > mxX) mxX = br.left + br.width;
+          if (br.top + br.height > mxY) mxY = br.top + br.height;
+        });
+
+        const padding = 20;
+        const contentWidth = mxX - minX + padding * 2;
+        const contentHeight = mxY - minY + padding * 2;
+        
+        // Target max width for A4 print
+        const printWidth = 800;
+        const scale = Math.min(1, printWidth / contentWidth);
+        const printHeight = contentHeight * scale;
+
+        canvas.setDimensions({ width: printWidth, height: printHeight });
+        canvas.setViewportTransform([scale, 0, 0, scale, -(minX - padding) * scale, -(minY - padding) * scale]);
+      }
+      canvas.renderAll();
+    };
+
+    const handleAfterPrint = () => {
+      if (!fabricRef.current) return;
+      const canvas = fabricRef.current;
+      const canvasAny = canvas as any;
+      const origVpt = canvasAny.originalViewportTransform as number[];
+      const origWidth = canvasAny.originalWidth as number;
+      const origHeight = canvasAny.originalHeight as number;
+
+      if (origVpt && origWidth && origHeight) {
+        canvas.setDimensions({ width: origWidth, height: origHeight });
+        canvas.setViewportTransform(origVpt);
+        canvas.renderAll();
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('beforeprint', handleBeforePrint);
+    window.addEventListener('afterprint', handleAfterPrint);
+
+    const handleToolReset = () => {
+      setTool('select');
+    };
+    window.addEventListener('fabric:tool_reset', handleToolReset as EventListener);
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('beforeprint', handleBeforePrint);
+      window.removeEventListener('afterprint', handleAfterPrint);
+      window.removeEventListener('fabric:tool_reset', handleToolReset as EventListener);
+      resizeObserver.disconnect();
       if (fabricRef.current) {
         fabricRef.current.dispose();
       }
       fabricRef.current = null;
     };
-  }, [canvasHeight, initialData, copy, cut, paste]);
+  }, [canvasHeight, copy, cut, paste]);
 
   useEffect(() => {
     if (fabricRef.current) {
@@ -158,59 +380,124 @@ export function FabricCanvas({ initialData, initialHeight = 500, onSave }: Fabri
     }
   }, [canvasHeight]);
 
-  const setTool = (tool: 'pen' | 'select') => {
+  const setTool = (tool: 'pen' | 'select' | 'pan' | 'shape') => {
     setActiveTool(tool);
     if (!fabricRef.current) return;
     
     if (tool === 'select') {
       fabricRef.current.isDrawingMode = false;
+      fabricRef.current.selection = true;
+      fabricRef.current.defaultCursor = 'default';
+      fabricRef.current.getObjects().forEach(obj => {
+        obj.selectable = true;
+        obj.evented = true;
+      });
+      pendingShapeRef.current = null;
     } else if (tool === 'pen') {
       fabricRef.current.isDrawingMode = true;
+      fabricRef.current.selection = false;
+      fabricRef.current.defaultCursor = 'default';
       const brush = new fabric.PencilBrush(fabricRef.current);
       brush.color = brushColor;
       brush.width = brushSize;
       fabricRef.current.freeDrawingBrush = brush;
+    } else if (tool === 'pan') {
+      fabricRef.current.isDrawingMode = false;
+      fabricRef.current.selection = false;
+      fabricRef.current.defaultCursor = 'grab';
+      fabricRef.current.getObjects().forEach(obj => {
+        obj.selectable = false;
+        obj.evented = false;
+      });
+    } else if (tool === 'shape') {
+      fabricRef.current.isDrawingMode = false;
+      fabricRef.current.selection = false;
+      fabricRef.current.defaultCursor = 'crosshair';
+      fabricRef.current.getObjects().forEach(obj => {
+        obj.selectable = false;
+        obj.evented = false;
+      });
     }
   };
 
-  const addShape = (type: 'rect' | 'circle' | 'triangle' | 'line' | 'text') => {
+  const handleZoomIn = () => {
     if (!fabricRef.current) return;
-    setTool('select');
-    
-    let object: fabric.Object;
-    const center = fabricRef.current.getCenter();
-    const common = { 
-      left: center.left, 
-      top: center.top, 
-      fill: brushColor + "20", 
-      stroke: brushColor, 
-      strokeWidth: 2,
-      lockScalingFlip: true 
-    };
+    let zoom = fabricRef.current.getZoom();
+    zoom *= 1.2;
+    if (zoom > 20) zoom = 20;
+    fabricRef.current.zoomToPoint(
+      { x: fabricRef.current.width! / 2, y: fabricRef.current.height! / 2 }, 
+      zoom
+    );
+  };
 
-    switch (type) {
-      case 'rect':
-        object = new fabric.Rect({ ...common, width: 120, height: 80, rx: 8, ry: 8 });
-        break;
-      case 'circle':
-        object = new fabric.Circle({ ...common, radius: 50 });
-        break;
-      case 'triangle':
-        object = new fabric.Triangle({ ...common, width: 100, height: 100 });
-        break;
-      case 'line':
-        object = new fabric.Line([center.left - 50, center.top, center.left + 50, center.top], { stroke: brushColor, strokeWidth: brushSize });
-        break;
-      case 'text':
-        object = new fabric.IText('雙擊編輯', { ...common, fill: brushColor, fontSize: 22, fontWeight: 'bold' });
-        break;
-      default:
-        return;
+  const handleZoomOut = () => {
+    if (!fabricRef.current) return;
+    let zoom = fabricRef.current.getZoom();
+    zoom /= 1.2;
+    if (zoom < 0.05) zoom = 0.05;
+    fabricRef.current.zoomToPoint(
+      { x: fabricRef.current.width! / 2, y: fabricRef.current.height! / 2 }, 
+      zoom
+    );
+  };
+
+  const handleFitAll = () => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+
+    const objects = canvas.getObjects();
+    if (objects.length === 0) {
+      // If empty, reset to default zoom and center
+      canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+      return;
     }
+
+    // Temporarily reset viewport to measure true absolute bounding box
+    const currentVpt = [...(canvas.viewportTransform || [])];
+    canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+
+    let minX = Infinity, minY = Infinity, mxX = -Infinity, mxY = -Infinity;
+    objects.forEach(obj => {
+      const br = obj.getBoundingRect(true, true);
+      if (br.left < minX) minX = br.left;
+      if (br.top < minY) minY = br.top;
+      if (br.left + br.width > mxX) mxX = br.left + br.width;
+      if (br.top + br.height > mxY) mxY = br.top + br.height;
+    });
+
+    // Restore old viewport back before applying new one
+    canvas.setViewportTransform(currentVpt);
+
+    const padding = 40;
+    const contentWidth = mxX - minX + padding * 2;
+    const contentHeight = mxY - minY + padding * 2;
+
+    const vpWidth = canvas.getWidth();
+    const vpHeight = canvas.getHeight();
+
+    // Calculate scale required to fit both width and height
+    const scaleX = vpWidth / contentWidth;
+    const scaleY = vpHeight / contentHeight;
+    let scale = Math.min(scaleX, scaleY);
     
-    fabricRef.current.add(object);
-    fabricRef.current.setActiveObject(object);
-    fabricRef.current.renderAll();
+    if (scale > 2) scale = 2; // don't zoom in too much on tiny items
+    if (scale < 0.05) scale = 0.05;
+
+    // Calculate the pan required to center the bounding box
+    const scaledContentWidth = (mxX - minX) * scale;
+    const scaledContentHeight = (mxY - minY) * scale;
+    
+    const panX = (vpWidth - scaledContentWidth) / 2 - (minX * scale);
+    const panY = (vpHeight - scaledContentHeight) / 2 - (minY * scale);
+
+    canvas.setViewportTransform([scale, 0, 0, scale, panX, panY]);
+    canvas.requestRenderAll();
+  };
+
+  const selectShape = (type: 'rect' | 'circle' | 'triangle' | 'line' | 'text') => {
+    pendingShapeRef.current = type;
+    setTool('shape');
   };
 
   const addImage = () => {
@@ -219,17 +506,61 @@ export function FabricCanvas({ initialData, initialHeight = 500, onSave }: Fabri
     input.accept = 'image/*';
     input.onchange = (e: any) => {
       const file = e.target.files[0];
+      if (!file) return;
       const reader = new FileReader();
       reader.onload = (event: any) => {
-        fabric.Image.fromURL(event.target.result, (img) => {
-          if (img && fabricRef.current) {
-            img.set({ lockScalingFlip: true });
-            img.scaleToWidth(300);
-            fabricRef.current.add(img);
-            fabricRef.current.centerObject(img);
-            fabricRef.current.renderAll();
+        const imgObj = new Image();
+        imgObj.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_SIDE = 800;
+          let width = imgObj.width;
+          let height = imgObj.height;
+
+          if (width > height && width > MAX_SIDE) {
+            height = Math.round((height * MAX_SIDE) / width);
+            width = MAX_SIDE;
+          } else if (height > width && height > MAX_SIDE) {
+            width = Math.round((width * MAX_SIDE) / height);
+            height = MAX_SIDE;
           }
-        });
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(imgObj, 0, 0, width, height);
+
+          // Compress to JPEG with 75% quality to significantly reduce base64 size
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.75);
+
+          fabric.Image.fromURL(compressedDataUrl, (img) => {
+            if (img && fabricRef.current) {
+              img.set({ lockScalingFlip: true });
+              img.scaleToWidth(300);
+              
+              const vpt = fabricRef.current.viewportTransform;
+              const zoom = fabricRef.current.getZoom();
+              const width = fabricRef.current.getWidth();
+              const height = fabricRef.current.getHeight();
+
+              if (vpt && width && height) {
+                const screenCenterX = (width / 2 - vpt[4]) / zoom;
+                const screenCenterY = (height / 2 - vpt[5]) / zoom;
+                
+                img.set({
+                  left: screenCenterX,
+                  top: screenCenterY,
+                  originX: 'center',
+                  originY: 'center'
+                });
+              }
+              
+              fabricRef.current.add(img);
+              fabricRef.current.setActiveObject(img);
+              fabricRef.current.renderAll();
+            }
+          });
+        };
+        imgObj.src = event.target.result;
       };
       reader.readAsDataURL(file);
     };
@@ -255,6 +586,12 @@ export function FabricCanvas({ initialData, initialHeight = 500, onSave }: Fabri
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
+              <Button variant={activeTool === 'pan' ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-lg" onClick={() => setTool('pan')}><Hand className="h-4 w-4" /></Button>
+            </TooltipTrigger>
+            <TooltipContent className="text-[10px] font-bold">平移 / Pan</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
               <Button variant={activeTool === 'pen' ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-lg" onClick={() => setTool('pen')}><Pencil className="h-4 w-4" /></Button>
             </TooltipTrigger>
             <TooltipContent className="text-[10px] font-bold">筆記 / Pen</TooltipContent>
@@ -263,53 +600,107 @@ export function FabricCanvas({ initialData, initialHeight = 500, onSave }: Fabri
         
         <Separator orientation="vertical" className="h-4 mx-1" />
 
-        <Popover>
+        <Popover open={isColorPickerOpen} onOpenChange={setIsColorPickerOpen}>
           <PopoverTrigger asChild>
             <div className="w-5 h-5 rounded-full cursor-pointer border border-white ring-1 ring-slate-200" style={{ backgroundColor: brushColor }} />
           </PopoverTrigger>
           <PopoverContent className="w-48 p-3 rounded-2xl shadow-2xl">
             <div className="grid grid-cols-4 gap-2">
               {['#336699', '#3b82f6', '#ef4444', '#22c55e', '#f97316', '#a855f7', '#000000', '#94a3b8'].map(c => (
-                <div key={c} className="w-8 h-8 rounded-full cursor-pointer border-2 border-transparent hover:border-primary transition-all" style={{ backgroundColor: c }} onClick={() => setBrushColor(c)} />
+                <div key={c} className="w-8 h-8 rounded-full cursor-pointer border-2 border-transparent hover:border-primary transition-all" style={{ backgroundColor: c }} onClick={() => {
+                  setBrushColor(c);
+                  setIsColorPickerOpen(false);
+                  if (fabricRef.current) {
+                    const activeObjects = fabricRef.current.getActiveObjects();
+                    if (activeObjects.length > 0) {
+                      activeObjects.forEach(obj => {
+                        if (obj.type === 'i-text' || obj.type === 'text') {
+                          obj.set('fill', c);
+                          obj.set('stroke', c);
+                        } else if (obj.type === 'line') {
+                          obj.set('stroke', c);
+                        } else {
+                          obj.set('stroke', c);
+                          obj.set('fill', c + "20");
+                        }
+                      });
+                      fabricRef.current.requestRenderAll();
+                      fabricRef.current.fire('object:modified');
+                    }
+                  }
+                }} />
               ))}
-            </div>
-            <div className="mt-4 px-1">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">粗細 / Stroke</p>
-              <Slider value={[brushSize]} min={1} max={30} step={1} onValueChange={([v]) => setBrushSize(v)} />
             </div>
           </PopoverContent>
         </Popover>
+
+        {activeTool !== 'pan' && (
+          <div 
+            className="flex items-center gap-2 px-2 w-32 ml-1"
+            onPointerUp={() => {
+              if (fabricRef.current && fabricRef.current.getActiveObjects().length > 0) {
+                fabricRef.current.fire('object:modified');
+              }
+            }}
+          >
+            <span className="text-[10px] text-slate-400 font-bold whitespace-nowrap">粗細</span>
+            <Slider 
+              value={[brushSize]} 
+              min={1} 
+              max={30} 
+              step={1} 
+              onValueChange={([v]) => {
+                setBrushSize(v);
+                if (fabricRef.current) {
+                  const activeObjects = fabricRef.current.getActiveObjects();
+                  if (activeObjects.length > 0) {
+                    activeObjects.forEach(obj => {
+                      if (obj.type === 'i-text' || obj.type === 'text') {
+                        const textObj = obj as fabric.IText;
+                        textObj.set('strokeWidth', v > 5 ? 2 : 0);
+                        textObj.set('fontWeight', v > 5 ? 'bold' : 'normal');
+                      } else {
+                        obj.set('strokeWidth', v);
+                      }
+                    });
+                    fabricRef.current.requestRenderAll();
+                  }
+                }
+              }} 
+            />
+          </div>
+        )}
 
         <Separator orientation="vertical" className="h-4 mx-1" />
 
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => addShape('text')}><Type className="h-4 w-4" /></Button>
+              <Button variant={activeTool === 'shape' && pendingShapeRef.current === 'text' ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-lg" onClick={() => selectShape('text')}><Type className="h-4 w-4" /></Button>
             </TooltipTrigger>
             <TooltipContent className="text-[10px] font-bold">文字 / Text</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => addShape('rect')}><Square className="h-4 w-4" /></Button>
+              <Button variant={activeTool === 'shape' && pendingShapeRef.current === 'rect' ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-lg" onClick={() => selectShape('rect')}><Square className="h-4 w-4" /></Button>
             </TooltipTrigger>
             <TooltipContent className="text-[10px] font-bold">矩形 / Rect</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => addShape('circle')}><CircleIcon className="h-4 w-4" /></Button>
+              <Button variant={activeTool === 'shape' && pendingShapeRef.current === 'circle' ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-lg" onClick={() => selectShape('circle')}><CircleIcon className="h-4 w-4" /></Button>
             </TooltipTrigger>
             <TooltipContent className="text-[10px] font-bold">圓形 / Circle</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => addShape('triangle')}><Triangle className="h-4 w-4" /></Button>
+              <Button variant={activeTool === 'shape' && pendingShapeRef.current === 'triangle' ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-lg" onClick={() => selectShape('triangle')}><Triangle className="h-4 w-4" /></Button>
             </TooltipTrigger>
             <TooltipContent className="text-[10px] font-bold">三角形 / Tri</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => addShape('line')}><Minus className="h-4 w-4" /></Button>
+              <Button variant={activeTool === 'shape' && pendingShapeRef.current === 'line' ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-lg" onClick={() => selectShape('line')}><Minus className="h-4 w-4" /></Button>
             </TooltipTrigger>
             <TooltipContent className="text-[10px] font-bold">直線 / Line</TooltipContent>
           </Tooltip>
@@ -321,7 +712,29 @@ export function FabricCanvas({ initialData, initialHeight = 500, onSave }: Fabri
           </Tooltip>
         </TooltipProvider>
 
-        <div className="flex-1" />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={handleZoomIn}><ZoomIn className="h-4 w-4" /></Button>
+            </TooltipTrigger>
+            <TooltipContent className="text-[10px] font-bold">放大 / Zoom In</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={handleZoomOut}><ZoomOut className="h-4 w-4" /></Button>
+            </TooltipTrigger>
+            <TooltipContent className="text-[10px] font-bold">縮小 / Zoom Out</TooltipContent>
+          </Tooltip>
+          
+          <Separator orientation="vertical" className="h-4 mx-1" />
+          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={handleFitAll}><Maximize className="h-4 w-4" /></Button>
+            </TooltipTrigger>
+            <TooltipContent className="text-[10px] font-bold">適合視窗 / Fit All</TooltipContent>
+          </Tooltip>
+
+          <div className="flex-1" />
 
         <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-500 hover:bg-rose-50 rounded-lg" onClick={() => {
           const activeObjects = fabricRef.current?.getActiveObjects();
@@ -332,8 +745,8 @@ export function FabricCanvas({ initialData, initialHeight = 500, onSave }: Fabri
         }}><Trash2 className="h-4 w-4" /></Button>
       </div>
 
-      <div className="overflow-hidden bg-slate-50 flex justify-center dot-grid relative border-none">
-        <canvas ref={canvasRef} className="max-w-full" />
+      <div ref={wrapperRef} className="overflow-hidden bg-slate-50 flex justify-center dot-grid relative border-none w-full">
+        <canvas ref={canvasRef} />
       </div>
     </div>
   );

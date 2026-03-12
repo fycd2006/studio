@@ -367,7 +367,35 @@ export function PlanEditor({ plan, onUpdate, isSaving, onUndo, onRedo, canUndo, 
 
             {isScript ? (
               <div className="space-y-8 pt-4">
-                <MarkdownArea label="劇本內容 / Script Content" value={plan.content} onChange={(val) => handlePlanUpdate({ content: val })} />
+                <section>
+                  <SectionHeader title="教案成員 / Members" icon={Users} />
+                  <Input 
+                    value={plan.members} 
+                    onChange={(e) => handlePlanUpdate({ members: e.target.value })} 
+                    placeholder="主講、助教、示範組員 / Speakers, TAs, Demonstrators..." 
+                    className="h-11 bg-white border-slate-200 rounded-xl px-5 text-[13px] font-bold shadow-none text-slate-950" 
+                  />
+                </section>
+
+                <section>
+                  <SectionHeader title="教案目的 / Purpose" icon={Target} />
+                  <MarkdownArea value={plan.purpose} onChange={(val) => handlePlanUpdate({ purpose: val })} />
+                </section>
+
+                <section>
+                  <SectionHeader title="劇本內容 / Script Content" icon={FileText} />
+                  <MarkdownArea value={plan.content} onChange={(val) => handlePlanUpdate({ content: val })} />
+                </section>
+
+                <section>
+                  <SectionHeader title="道具需求 / Props List" icon={Package} />
+                  <PropsTable value={plan.props} onChange={(val) => handlePlanUpdate({ props: val })} />
+                </section>
+
+                <section>
+                  <SectionHeader title="備註事項 / Remarks" icon={StickyNote} />
+                  <MarkdownArea value={plan.remarks} onChange={(val) => handlePlanUpdate({ remarks: val })} />
+                </section>
               </div>
             ) : (
               <>

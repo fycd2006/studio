@@ -349,8 +349,8 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
         </div>
 
         {!isLocked && (
-          <Card className="w-full p-10 rounded-[2.5rem] border border-slate-200 shadow-xl bg-white flex flex-col space-y-10">
-            <div className="flex items-center justify-between">
+          <Card className="w-full p-6 md:p-10 rounded-[2.5rem] border border-slate-200 shadow-xl bg-white flex flex-col space-y-8 md:space-y-10">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 md:gap-4">
               <div className="flex items-center gap-5">
                 <div className="p-3 bg-orange-50 rounded-xl border border-orange-200">
                   <ShieldCheck className="h-6 w-6 text-orange-600" />
@@ -362,7 +362,7 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
                   </p>
                 </div>
               </div>
-              <div className="flex flex-col items-end">
+              <div className="flex flex-col md:items-end">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">現在時間 / Current Time</span>
                 <span className="text-xl font-headline font-black text-slate-950 mt-1">
                   {now ? now.toLocaleTimeString('zh-TW', { hour12: false }) : "--:--:--"}
@@ -375,8 +375,8 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
                 <label className="text-[10px] font-black text-slate-950 uppercase tracking-[0.2em] px-1">
                   設定時長 / Set Duration (H:M:S)
                 </label>
-                <div className="flex items-center gap-4">
-                  <div className="flex-1 grid grid-cols-3 gap-4">
+                <div className="flex flex-col md:flex-row md:items-center gap-4">
+                  <div className="w-full md:flex-1 grid grid-cols-3 gap-3 md:gap-4">
                     {[ 
                       {val: h, set: setH, label: '時 / H'}, 
                       {val: m, set: setM, label: '分 / M'}, 
@@ -387,17 +387,17 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
                           type="number" 
                           value={item.val || ''} 
                           onChange={(e) => item.set(Math.min(99, parseInt(e.target.value) || 0))} 
-                          className="h-12 rounded-xl border border-slate-200 bg-slate-50 font-black text-center text-base focus:ring-0 text-slate-950" 
+                          className="h-12 rounded-xl border border-slate-200 bg-slate-50 font-black text-center text-base focus:ring-0 text-slate-950 w-full" 
                         />
-                        <span className="absolute -top-2.5 right-3 px-2 bg-white text-[8px] font-black text-orange-600 border border-slate-200 rounded-md uppercase">{item.label}</span>
+                        <span className="absolute -top-2.5 right-2 md:right-3 px-1 md:px-2 bg-white text-[8px] font-black text-orange-600 border border-slate-200 rounded-md uppercase">{item.label}</span>
                       </div>
                     ))}
                   </div>
-                  <Button onClick={updateDuration} className="h-12 px-8 rounded-xl font-black text-[10px] bg-slate-950 text-white uppercase tracking-widest">套用 / Apply</Button>
+                  <Button onClick={updateDuration} className="w-full md:w-auto h-12 px-8 rounded-xl font-black text-[10px] bg-slate-950 text-white uppercase tracking-widest shrink-0">套用 / Apply</Button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                 <Button 
                   onClick={toggleTimer} 
                   className={cn(
@@ -420,15 +420,15 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
           </Card>
         )}
 
-        <Card className="w-full rounded-[4rem] border-none shadow-2xl bg-slate-950 text-white flex flex-col items-center justify-between p-12 md:p-16 min-h-[450px] relative overflow-hidden">
+        <Card className="w-full rounded-[2.5rem] md:rounded-[4rem] border-none shadow-2xl bg-slate-950 text-white flex flex-col items-center justify-between p-6 md:p-12 lg:p-16 min-h-[450px] relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-full dot-grid opacity-5 pointer-events-none" />
-          <div className="w-full flex items-center justify-between mb-8 relative z-10">
-            <div className="flex items-center gap-5">
-              <div className="p-3 bg-white/10 rounded-xl backdrop-blur-md">
+          <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-6 mb-8 relative z-10">
+            <div className="flex items-center gap-4 w-full sm:w-auto overflow-hidden">
+              <div className="p-3 bg-white/10 rounded-xl backdrop-blur-md shrink-0">
                 <BellRing className="h-6 w-6 text-orange-400" />
               </div>
-              <div className="flex flex-col">
-                <h3 className="font-headline font-black text-white tracking-[0.3em] text-[10px] uppercase">同步顯示 / Broadcast Mode</h3>
+              <div className="flex flex-col min-w-0">
+                <h3 className="font-headline font-black text-white tracking-[0.2em] md:tracking-[0.3em] text-[10px] uppercase truncate">同步顯示/Broadcast</h3>
                 <span className="text-[8px] font-black text-orange-400/80 uppercase tracking-widest mt-1">Status: {timer.isRunning ? "RUNNING" : "STANDBY"}</span>
               </div>
             </div>
@@ -436,7 +436,7 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
             <Button 
               onClick={() => toggleSaverMode(true)}
               variant="outline"
-              className="bg-transparent border-white/20 text-white hover:bg-white/10 hover:text-white rounded-xl h-12 px-6 font-black text-[10px] uppercase tracking-widest transition-all"
+              className="w-full sm:w-auto bg-transparent border-white/20 text-white hover:bg-white/10 hover:text-white rounded-xl h-12 px-6 font-black text-[10px] uppercase tracking-widest transition-all shrink-0"
             >
               <Moon className="h-4 w-4 mr-2" />
               黑屏省電模式 / Saver
@@ -467,8 +467,8 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
 
       {isSaverMode && createPortal(
         <div 
-          className="fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center cursor-pointer"
-          onClick={() => toggleSaverMode(false)}
+          className="fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center cursor-pointer select-none"
+          onDoubleClick={() => toggleSaverMode(false)}
         >
           <div className={cn(
             "text-[10px] sm:text-[14px] font-black uppercase tracking-[0.4em] mb-4 sm:mb-8 transition-all duration-1000",
@@ -485,7 +485,7 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
           </div>
           
           <div className="absolute bottom-12 text-[#222] text-[10px] font-black tracking-widest uppercase">
-            輕觸螢幕離開 / Tap to Wake
+            點擊兩下離開 / Double Tap to Wake
           </div>
         </div>,
         document.body

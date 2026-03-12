@@ -365,27 +365,42 @@ export function PlanEditor({ plan, onUpdate, isSaving, onUndo, onRedo, canUndo, 
               </div>
             </section>
 
-            {isScript ? (
-              <div className="space-y-8 pt-4">
-                <MarkdownArea label="劇本內容 / Script Content" value={plan.content} onChange={(val) => handlePlanUpdate({ content: val })} />
-              </div>
-            ) : (
-              <>
-                <section>
-                  <SectionHeader title="教案成員 / Members" icon={Users} />
-                  <Input 
-                    value={plan.members} 
-                    onChange={(e) => handlePlanUpdate({ members: e.target.value })} 
-                    placeholder="主講、助教、示範組員 / Speakers, TAs, Demonstrators..." 
-                    className="h-11 bg-white border-slate-200 rounded-xl px-5 text-[13px] font-bold shadow-none text-slate-950" 
-                  />
-                </section>
+            <div className="space-y-12 pt-4">
+              <section>
+                <SectionHeader title="教案成員 / Members" icon={Users} />
+                <Input 
+                  value={plan.members} 
+                  onChange={(e) => handlePlanUpdate({ members: e.target.value })} 
+                  placeholder="主講、助教、示範組員 / Speakers, TAs, Demonstrators..." 
+                  className="h-11 bg-white border-slate-200 rounded-xl px-5 text-[13px] font-bold shadow-none text-slate-950" 
+                />
+              </section>
 
-                <section>
-                  <SectionHeader title="教案目的 / Purpose" icon={Target} />
-                  <MarkdownArea value={plan.purpose} onChange={(val) => handlePlanUpdate({ purpose: val })} />
-                </section>
+              <section>
+                <SectionHeader title="教案目的 / Purpose" icon={Target} />
+                <MarkdownArea value={plan.purpose} onChange={(val) => handlePlanUpdate({ purpose: val })} />
+              </section>
 
+              {isScript && (
+                <section>
+                  <SectionHeader title="劇本內容 / Script Content" icon={FileText} />
+                  <MarkdownArea value={plan.content} onChange={(val) => handlePlanUpdate({ content: val })} />
+                </section>
+              )}
+
+              <section>
+                <SectionHeader title="道具需求 / Props List" icon={Package} />
+                <PropsTable value={plan.props} onChange={(val) => handlePlanUpdate({ props: val })} />
+              </section>
+
+              <section>
+                <SectionHeader title="備註事項 / Remarks" icon={StickyNote} />
+                <MarkdownArea value={plan.remarks} onChange={(val) => handlePlanUpdate({ remarks: val })} />
+              </section>
+            </div>
+
+            {!isScript && (
+              <div className="space-y-12 pt-12">
                 <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-2">
                     <SectionHeader title="教案時間 / Time" icon={Clock} />
@@ -412,22 +427,22 @@ export function PlanEditor({ plan, onUpdate, isSaving, onUndo, onRedo, canUndo, 
                   <MarkdownArea value={plan.process} onChange={(val) => handlePlanUpdate({ process: val })} />
                 </section>
 
-                <section className="space-y-2">
+                <section className="space-y-4">
                   <SectionHeader title="詳細內容與圖解 / Illustration" icon={FileText} />
                   
                   {hasCanvas ? (
                     <div className="space-y-1">
-                      <div className="flex justify-end">
+                      <div className="flex justify-end border border-b-0 border-slate-200 rounded-t-xl overflow-hidden">
                         <Button 
                           variant="ghost" 
                           size="sm" 
                           onClick={() => handlePlanUpdate({ canvasData: null, canvasHeight: null })}
-                          className="h-7 px-3 text-[9px] font-black text-rose-500 uppercase tracking-widest"
+                          className="h-9 px-4 text-[9px] font-black text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-none w-full md:w-auto uppercase tracking-widest transition-colors"
                         >
                           <Trash2 className="h-3.5 w-3.5 mr-1.5" /> 移除畫板 / Remove Canvas
                         </Button>
                       </div>
-                      <div className="canvas-container bg-white overflow-hidden">
+                      <div className="canvas-container bg-white overflow-hidden border border-slate-200 rounded-b-xl shadow-inner">
                         <FabricCanvas 
                           initialData={plan.canvasData || '{}'} 
                           initialHeight={plan.canvasHeight || 500} 
@@ -441,9 +456,9 @@ export function PlanEditor({ plan, onUpdate, isSaving, onUndo, onRedo, canUndo, 
                         variant="outline" 
                         size="sm" 
                         onClick={() => handlePlanUpdate({ canvasData: '{}', canvasHeight: 500 })}
-                        className="h-9 px-5 text-[10px] font-black text-orange-600 border-orange-200 hover:bg-orange-600 hover:text-white gap-2 rounded-xl uppercase tracking-widest"
+                        className="h-10 px-6 text-[11px] font-black text-orange-600 border-orange-200 hover:bg-orange-600 hover:text-white gap-2 rounded-xl uppercase tracking-widest shadow-sm transition-all"
                       >
-                        <Plus className="h-3.5 w-3.5" /> 啟動畫板 / Launch Canvas
+                        <Plus className="h-4 w-4" /> 啟動畫板 / Launch Canvas
                       </Button>
                     </div>
                   )}
@@ -457,20 +472,10 @@ export function PlanEditor({ plan, onUpdate, isSaving, onUndo, onRedo, canUndo, 
                 </section>
 
                 <section>
-                  <SectionHeader title="道具需求 / Props List" icon={Package} />
-                  <PropsTable value={plan.props} onChange={(val) => handlePlanUpdate({ props: val })} />
-                </section>
-
-                <section>
-                  <SectionHeader title="備註事項 / Remarks" icon={StickyNote} />
-                  <MarkdownArea value={plan.remarks} onChange={(val) => handlePlanUpdate({ remarks: val })} />
-                </section>
-
-                <section>
                   <SectionHeader title="開場與結語 / Remarks" icon={StickyNote} />
                   <MarkdownArea value={plan.openingClosingRemarks} onChange={(val) => handlePlanUpdate({ openingClosingRemarks: val })} />
                 </section>
-              </>
+              </div>
             )}
           </CardContent>
         </Card>

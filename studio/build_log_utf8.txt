@@ -1,0 +1,58 @@
+﻿
+> camp-plan-studio@1.0.1 build
+> next build
+
+node.exe : unhandledRejec
+tion [Error: Cannot find 
+module 'caniuse-lite/dist
+/unpacker/agents'
+位於 線路:1 字元:1
++ & "C:\Program Files\nod
+ejs/node.exe" "C:\Program
+ Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo       
+       : NotSpecified:   
+  (unhandledReject...n   
+ packer/agents':Strin    
+g) [], RemoteExcepti    o
+n
+    + FullyQualifiedErro 
+   rId : NativeCommandE  
+  rror
+ 
+Require stack:
+- C:\Users\ntutuser-2256\
+Documents\110360231Jeffre
+y Chen\撏噸\NTUT Chong De 
+Camp\studio\node_modules\
+next\dist\compiled\browse
+rslist\index.js
+- C:\Users\ntutuser-2256\
+Documents\110360231Jeffre
+y Chen\撏噸\NTUT Chong De 
+Camp\studio\node_modules\
+next\dist\build\utils.js
+- C:\Users\ntutuser-2256\
+Documents\110360231Jeffre
+y Chen\撏噸\NTUT Chong De 
+Camp\studio\node_modules\
+next\dist\build\entries.j
+s
+- C:\Users\ntutuser-2256\
+Documents\110360231Jeffre
+y Chen\撏噸\NTUT Chong De 
+Camp\studio\node_modules\
+next\dist\build\index.js
+- C:\Users\ntutuser-2256\
+Documents\110360231Jeffre
+y Chen\撏噸\NTUT Chong De 
+Camp\studio\node_modules\
+next\dist\cli\next-build.
+js] {
+  code: 'MODULE_NOT_FOUND
+',
+  requireStack: [Array]
+}

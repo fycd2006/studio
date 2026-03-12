@@ -375,8 +375,8 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
                 <label className="text-[10px] font-black text-slate-950 uppercase tracking-[0.2em] px-1">
                   設定時長 / Set Duration (H:M:S)
                 </label>
-                <div className="flex items-center gap-4">
-                  <div className="flex-1 grid grid-cols-3 gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 mt-2">
+                  <div className="flex-1 grid grid-cols-3 gap-3 sm:gap-4">
                     {[ 
                       {val: h, set: setH, label: '時 / H'}, 
                       {val: m, set: setM, label: '分 / M'}, 
@@ -387,33 +387,33 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
                           type="number" 
                           value={item.val || ''} 
                           onChange={(e) => item.set(Math.min(99, parseInt(e.target.value) || 0))} 
-                          className="h-12 rounded-xl border border-slate-200 bg-slate-50 font-black text-center text-base focus:ring-0 text-slate-950" 
+                          className="h-14 sm:h-16 rounded-2xl border border-slate-200 bg-slate-50 font-black text-center text-xl sm:text-2xl focus:ring-2 focus:ring-orange-500/20 text-slate-950 transition-all shadow-inner" 
                         />
-                        <span className="absolute -top-2.5 right-3 px-2 bg-white text-[8px] font-black text-orange-600 border border-slate-200 rounded-md uppercase">{item.label}</span>
+                        <span className="absolute -top-3 right-2 sm:right-3 px-2 sm:px-3 py-0.5 bg-white text-[9px] sm:text-[10px] font-black text-orange-600 border border-slate-200 rounded-lg uppercase shadow-sm">{item.label}</span>
                       </div>
                     ))}
                   </div>
-                  <Button onClick={updateDuration} className="h-12 px-8 rounded-xl font-black text-[10px] bg-slate-950 text-white uppercase tracking-widest">套用 / Apply</Button>
+                  <Button onClick={updateDuration} className="w-full sm:w-auto h-14 sm:h-16 px-10 rounded-2xl font-black text-[11px] sm:text-xs bg-slate-950 hover:bg-slate-800 text-white uppercase tracking-widest shadow-xl transition-all">套用 / Apply</Button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-6">
+              <div className="flex flex-col sm:grid sm:grid-cols-2 gap-4 sm:gap-6">
                 <Button 
                   onClick={toggleTimer} 
                   className={cn(
-                    "h-14 rounded-2xl font-black text-[11px] gap-3 shadow-xl transition-all uppercase tracking-widest",
+                    "h-14 sm:h-16 rounded-2xl font-black text-[11px] sm:text-xs gap-3 shadow-xl transition-all uppercase tracking-widest",
                     timer.isRunning ? "bg-rose-500 hover:bg-rose-600" : "bg-orange-600 hover:bg-orange-700"
                   )}
                 >
-                  {timer.isRunning ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+                  {timer.isRunning ? <Pause className="h-5 sm:h-6 w-5 sm:w-6" /> : <Play className="h-5 sm:h-6 w-5 sm:w-6" />}
                   {timer.isRunning ? "停止同步 / Stop Sync" : "啟動同步 / Start Sync"}
                 </Button>
                 <Button 
                   variant="outline" 
-                  className="h-14 rounded-2xl font-black text-[11px] gap-3 border border-slate-200 uppercase tracking-widest text-slate-950 hover:bg-orange-50 shadow-sm" 
+                  className="h-14 sm:h-16 rounded-2xl font-black text-[11px] sm:text-xs gap-3 border-2 border-slate-200 uppercase tracking-widest text-slate-950 hover:bg-orange-50 hover:border-orange-200 hover:text-orange-600 shadow-sm transition-all" 
                   onClick={resetTimer}
                 >
-                  <RotateCcw className="h-5 w-5" /> 重設 / Reset
+                  <RotateCcw className="h-5 sm:h-6 w-5 sm:w-6" /> 重設 / Reset
                 </Button>
               </div>
             </div>

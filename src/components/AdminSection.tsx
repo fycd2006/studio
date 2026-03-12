@@ -366,88 +366,8 @@ export function AdminSection({
     );
   };
 
-  const renderOverviewTable = (title: string, groups: Record<string, LessonPlan[]>) => (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-8">
-      <div className="bg-slate-100 py-3 px-4 border-b border-slate-200">
-        <h2 className="text-center font-black text-slate-800 tracking-wider uppercase text-lg">{title}</h2>
-      </div>
-      
-      <div className="w-full overflow-x-auto touch-pan-x touch-pan-y scrollbar-hide overscroll-x-contain">
-        <table className="w-full text-sm text-left min-w-[800px]">
-          <thead className="bg-slate-50 text-slate-600 text-[11px] sm:text-xs font-black uppercase">
-            <tr>
-              <th className="px-2 md:px-4 py-2 md:py-3 border-r border-slate-200 min-w-[100px] border-b border-slate-200">遊戲種類</th>
-              <th className="px-2 md:px-4 py-2 md:py-3 border-r border-slate-200 border-b border-slate-200 min-w-[150px]">名稱</th>
-              <th className="px-2 md:px-4 py-2 md:py-3 border-r border-slate-200 border-b border-slate-200 min-w-[120px]">關主</th>
-              <th className="px-2 md:px-4 py-2 md:py-3 border-r border-slate-200 border-b border-slate-200 min-w-[200px]">所需物品</th>
-              <th className="px-2 md:px-4 py-2 md:py-3 border-r border-slate-200 bg-orange-50/80 text-orange-800 min-w-[120px] text-center border-b border-slate-200">是否道具齊全與裝袋</th>
-              <th className="px-2 md:px-4 py-2 md:py-3 bg-emerald-50/80 text-emerald-800 min-w-[120px] text-center border-b border-slate-200">出發前確認</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Object.keys(groups).length === 0 ? (
-              <tr><td colSpan={6} className="text-center py-8 text-slate-500 font-bold">目前沒有教案</td></tr>
-            ) : null}
-            
-            {Object.entries(groups).map(([categoryName, catePlans], gIndex) => (
-              catePlans.map((plan, pIndex) => (
-                <tr key={plan.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                  {pIndex === 0 && (
-                    <td className="px-2 md:px-4 py-2 md:py-3 font-black text-xs sm:text-sm text-slate-800 border-r border-slate-200 align-top" rowSpan={catePlans.length}>
-                      {categoryName}
-                    </td>
-                  )}
-                  <td className="px-2 md:px-4 py-2 md:py-3 font-bold text-xs sm:text-sm text-slate-700 border-r border-slate-200 align-top">
-                    {plan.activityName || '-'}
-                  </td>
-                  <td className="px-2 md:px-4 py-2 md:py-3 text-xs sm:text-sm text-slate-600 border-r border-slate-200 align-top">
-                    {plan.members || '-'}
-                  </td>
-                  <td className="px-2 md:px-4 py-2 md:py-3 text-slate-600 border-r border-slate-200 text-xs sm:text-sm">
-                    {plan.props.length > 0 ? (
-                      <ul className="list-disc list-inside space-y-1">
-                        {plan.props.map(prop => (
-                          <li key={prop.id}>
-                            <span className="font-bold text-slate-800">{prop.name}</span> * {prop.quantity} {prop.unit === 'custom' ? '' : prop.unit}
-                            {prop.remarks && <span className="text-slate-400 ml-1">({prop.remarks})</span>}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <span className="text-slate-400 italic font-medium">無所需物品</span>
-                    )}
-                  </td>
-                  <td className="px-2 md:px-4 py-2 md:py-3 border-r border-slate-200 text-center align-middle">
-                    <div className="flex justify-center items-center h-full">
-                      <Checkbox 
-                        checked={plan.isPropsPacked || false} 
-                        disabled={isLocked}
-                        onCheckedChange={(c) => onUpdatePlan(plan.id, { isPropsPacked: c === true })}
-                        className="h-5 w-5 border-2"
-                      />
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-center align-middle">
-                    <div className="flex justify-center items-center h-full">
-                      <Checkbox 
-                        checked={plan.isPreDepartureChecked || false} 
-                        disabled={isLocked}
-                        onCheckedChange={(c) => onUpdatePlan(plan.id, { isPreDepartureChecked: c === true })}
-                        className="h-5 w-5 border-2"
-                      />
-                    </div>
-                  </td>
-                </tr>
-              ))
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-
-  const renderCampItemsTable = () => {
-    // Group camp items by usage
+  const renderCombinedTable = () => {
+    // Group camp items
     const usageGroups = campItems.reduce((acc, item) => {
       const u = item.usage || '未分類 / Uncategorized';
       if (!acc[u]) { acc[u] = []; }
@@ -456,14 +376,14 @@ export function AdminSection({
     }, {} as Record<string, CampItem[]>);
 
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-orange-200/60 overflow-hidden mb-8">
-        <div className="bg-gradient-to-r from-orange-500 to-amber-500 py-3 px-4 flex justify-between items-center">
-          <h2 className="text-center font-black text-white tracking-wider uppercase text-lg">營期物品</h2>
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-8">
+        <div className="bg-slate-100 py-3 px-4 flex justify-between items-center border-b border-slate-200">
+          <h2 className="text-center font-black text-slate-800 tracking-wider uppercase text-lg">活動、教學與營期物品總表</h2>
           {!isLocked && (
             <Button 
                onClick={handleAddCampItem}
                size="sm" 
-               className="h-7 text-[10px] gap-1 px-3 bg-white/20 text-white hover:bg-white/30 border-0 rounded-lg shadow-sm backdrop-blur-sm"
+               className="h-7 text-[10px] gap-1 px-3 bg-orange-600 text-white hover:bg-orange-700 border-0 rounded-lg shadow-sm"
             >
               <Plus className="h-3 w-3" /> 新增營期物品
             </Button>
@@ -471,26 +391,127 @@ export function AdminSection({
         </div>
         
         <div className="w-full overflow-x-auto touch-pan-x touch-pan-y scrollbar-hide overscroll-x-contain">
-          <table className="w-full text-sm text-left min-w-[600px]">
-            <thead className="bg-orange-50/80 text-orange-900 text-[11px] sm:text-xs font-black uppercase">
+          <table className="w-full text-sm text-left min-w-[1000px]">
+            <thead className="bg-slate-50 text-slate-600 text-[11px] sm:text-xs font-black uppercase">
               <tr>
-                <th className="px-2 md:px-4 py-2 md:py-3 border-r border-orange-200/50 min-w-[120px] border-b border-b-orange-200/80">用處</th>
-                <th className="px-2 md:px-4 py-2 md:py-3 border-r border-orange-200/50 border-b border-b-orange-200/80 min-w-[150px]">名稱</th>
-                <th className="px-2 md:px-4 py-2 md:py-3 border-r border-orange-200/50 bg-orange-100/60 min-w-[100px] text-center border-b border-b-orange-200/80">是否物品齊全</th>
-                <th className="px-2 md:px-4 py-2 md:py-3 border-r border-orange-200/50 bg-emerald-100/60 text-emerald-900 min-w-[100px] text-center border-b border-b-orange-200/80">出發前確認</th>
-                {!isLocked && <th className="px-2 md:px-4 py-2 md:py-3 bg-orange-50/80 w-16 border-b border-b-orange-200/80 text-center">操作</th>}
+                <th className="px-2 md:px-4 py-2 md:py-3 border-r border-slate-200 min-w-[120px] border-b border-slate-200">類別 / 用途</th>
+                <th className="px-2 md:px-4 py-2 md:py-3 border-r border-slate-200 border-b border-slate-200 min-w-[150px]">名稱</th>
+                <th className="px-2 md:px-4 py-2 md:py-3 border-r border-slate-200 border-b border-slate-200 min-w-[120px]">關主 / 負責人</th>
+                <th className="px-2 md:px-4 py-2 md:py-3 border-r border-slate-200 border-b border-slate-200 min-w-[200px]">道具細項</th>
+                <th className="px-2 md:px-4 py-2 md:py-3 border-r border-slate-200 bg-orange-50/80 text-orange-800 min-w-[120px] text-center border-b border-slate-200">是否齊全與裝袋</th>
+                <th className="px-2 md:px-4 py-2 md:py-3 border-r border-slate-200 bg-emerald-50/80 text-emerald-800 min-w-[120px] text-center border-b border-slate-200">出發前確認</th>
+                {!isLocked && <th className="px-2 md:px-4 py-2 md:py-3 w-16 border-b border-slate-200 text-center">操作</th>}
               </tr>
             </thead>
+            
+            {/* 1. 活動組 */}
             <tbody>
-              {Object.keys(usageGroups).length === 0 ? (
-                <tr><td colSpan={isLocked ? 4 : 5} className="text-center py-8 text-slate-500 font-bold">目前沒有營期物品資料</td></tr>
-              ) : null}
-              
-              {Object.entries(usageGroups).map(([usageName, items], gIndex) => (
-                items.map((item, pIndex) => (
-                  <tr key={item.id} className="border-b border-slate-100 hover:bg-orange-50/40 transition-colors group">
+              <tr className="bg-orange-100/50"><td colSpan={isLocked ? 6 : 7} className="px-4 py-2 font-black text-orange-800 text-sm">1. 活動組 - 教案道具確認</td></tr>
+              {Object.keys(activityGroups).length === 0 ? (
+                <tr><td colSpan={isLocked ? 6 : 7} className="text-center py-4 text-slate-400 font-bold">目前沒有活動教案</td></tr>
+              ) : Object.entries(activityGroups).map(([categoryName, catePlans]) => (
+                catePlans.map((plan, pIndex) => (
+                  <tr key={`act-${plan.id}`} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                     {pIndex === 0 && (
-                      <td className="px-2 md:px-4 py-2 md:py-3 font-black text-xs sm:text-sm text-slate-800 border-r border-orange-100 align-top bg-orange-50/40" rowSpan={items.length}>
+                      <td className="px-2 md:px-4 py-2 md:py-3 font-black text-xs sm:text-sm text-slate-800 border-r border-slate-200 align-top" rowSpan={catePlans.length}>
+                        {categoryName}
+                      </td>
+                    )}
+                    <td className="px-2 md:px-4 py-2 md:py-3 font-bold text-xs sm:text-sm text-slate-700 border-r border-slate-200 align-top">
+                      {plan.activityName || '-'}
+                    </td>
+                    <td className="px-2 md:px-4 py-2 md:py-3 text-xs sm:text-sm text-slate-600 border-r border-slate-200 align-top">
+                      {plan.members || '-'}
+                    </td>
+                    <td className="px-2 md:px-4 py-2 md:py-3 text-slate-600 border-r border-slate-200 text-xs sm:text-sm">
+                      {plan.props.length > 0 ? (
+                        <ul className="list-disc list-inside space-y-1">
+                          {plan.props.map(prop => (
+                            <li key={prop.id}>
+                              <span className="font-bold text-slate-800">{prop.name}</span> * {prop.quantity} {prop.unit === 'custom' ? '' : prop.unit}
+                              {prop.remarks && <span className="text-slate-400 ml-1">({prop.remarks})</span>}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <span className="text-slate-400 italic font-medium">無所需物品</span>
+                      )}
+                    </td>
+                    <td className="px-2 md:px-4 py-2 md:py-3 border-r border-slate-200 text-center align-middle">
+                      <div className="flex justify-center items-center h-full">
+                        <Checkbox checked={plan.isPropsPacked || false} disabled={isLocked} onCheckedChange={(c) => onUpdatePlan(plan.id, { isPropsPacked: c === true })} className="h-5 w-5 border-2" />
+                      </div>
+                    </td>
+                    <td className="px-2 md:px-4 py-2 md:py-3 border-r border-slate-200 text-center align-middle">
+                      <div className="flex justify-center flex-col items-center h-full">
+                        <Checkbox checked={plan.isPreDepartureChecked || false} disabled={isLocked} onCheckedChange={(c) => onUpdatePlan(plan.id, { isPreDepartureChecked: c === true })} className="h-5 w-5 border-2" />
+                      </div>
+                    </td>
+                    {!isLocked && <td className="px-4 py-3 text-center align-middle border-l border-slate-200"></td>}
+                  </tr>
+                ))
+              ))}
+            </tbody>
+
+            {/* 2. 教學組 */}
+            <tbody>
+              <tr className="bg-blue-100/50"><td colSpan={isLocked ? 6 : 7} className="px-4 py-2 font-black text-blue-800 text-sm">2. 教學組 - 教案道具確認</td></tr>
+              {Object.keys(teachingGroups).length === 0 ? (
+                <tr><td colSpan={isLocked ? 6 : 7} className="text-center py-4 text-slate-400 font-bold">目前沒有教學教案</td></tr>
+              ) : Object.entries(teachingGroups).map(([categoryName, catePlans]) => (
+                catePlans.map((plan, pIndex) => (
+                  <tr key={`tch-${plan.id}`} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                    {pIndex === 0 && (
+                      <td className="px-2 md:px-4 py-2 md:py-3 font-black text-xs sm:text-sm text-slate-800 border-r border-slate-200 align-top" rowSpan={catePlans.length}>
+                        {categoryName}
+                      </td>
+                    )}
+                    <td className="px-2 md:px-4 py-2 md:py-3 font-bold text-xs sm:text-sm text-slate-700 border-r border-slate-200 align-top">
+                      {plan.activityName || '-'}
+                    </td>
+                    <td className="px-2 md:px-4 py-2 md:py-3 text-xs sm:text-sm text-slate-600 border-r border-slate-200 align-top">
+                      {plan.members || '-'}
+                    </td>
+                    <td className="px-2 md:px-4 py-2 md:py-3 text-slate-600 border-r border-slate-200 text-xs sm:text-sm">
+                      {plan.props.length > 0 ? (
+                        <ul className="list-disc list-inside space-y-1">
+                          {plan.props.map(prop => (
+                            <li key={prop.id}>
+                              <span className="font-bold text-slate-800">{prop.name}</span> * {prop.quantity} {prop.unit === 'custom' ? '' : prop.unit}
+                              {prop.remarks && <span className="text-slate-400 ml-1">({prop.remarks})</span>}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <span className="text-slate-400 italic font-medium">無所需物品</span>
+                      )}
+                    </td>
+                    <td className="px-2 md:px-4 py-2 md:py-3 border-r border-slate-200 text-center align-middle">
+                      <div className="flex justify-center items-center h-full">
+                        <Checkbox checked={plan.isPropsPacked || false} disabled={isLocked} onCheckedChange={(c) => onUpdatePlan(plan.id, { isPropsPacked: c === true })} className="h-5 w-5 border-2" />
+                      </div>
+                    </td>
+                    <td className="px-2 md:px-4 py-2 md:py-3 border-r border-slate-200 text-center align-middle">
+                      <div className="flex justify-center items-center h-full">
+                        <Checkbox checked={plan.isPreDepartureChecked || false} disabled={isLocked} onCheckedChange={(c) => onUpdatePlan(plan.id, { isPreDepartureChecked: c === true })} className="h-5 w-5 border-2" />
+                      </div>
+                    </td>
+                    {!isLocked && <td className="px-4 py-3 text-center align-middle border-l border-slate-200"></td>}
+                  </tr>
+                ))
+              ))}
+            </tbody>
+
+            {/* 3. 營期物品 */}
+            <tbody>
+              <tr className="bg-emerald-100/50"><td colSpan={isLocked ? 6 : 7} className="px-4 py-2 font-black text-emerald-800 text-sm">3. 營期其他物品確認</td></tr>
+              {Object.keys(usageGroups).length === 0 ? (
+                <tr><td colSpan={isLocked ? 6 : 7} className="text-center py-4 text-slate-400 font-bold">目前沒有營期物品資料</td></tr>
+              ) : Object.entries(usageGroups).map(([usageName, items]) => (
+                items.map((item, pIndex) => (
+                  <tr key={`cmp-${item.id}`} className="border-b border-slate-100 hover:bg-slate-50 transition-colors group">
+                    {pIndex === 0 && (
+                      <td className="px-2 md:px-4 py-2 md:py-3 font-black text-xs sm:text-sm text-slate-800 border-r border-slate-200 align-top" rowSpan={items.length}>
                         {isLocked ? (
                            usageName
                         ) : (
@@ -498,7 +519,6 @@ export function AdminSection({
                              <PropInput 
                                 value={item.usage}
                                 onChange={(v) => {
-                                  // Update all items in this group
                                   items.forEach(i => handleUpdateCampItem(i.id, { usage: v }));
                                 }}
                                 disabled={isLocked}
@@ -509,7 +529,7 @@ export function AdminSection({
                         )}
                       </td>
                     )}
-                    <td className="px-1 md:px-2 py-1 md:py-2 border-r border-slate-200 align-middle">
+                    <td className="px-2 md:px-4 py-2 md:py-3 border-r border-slate-200 align-middle">
                        <PropInput 
                           value={item.name}
                           onChange={(v) => handleUpdateCampItem(item.id, { name: v })}
@@ -517,7 +537,13 @@ export function AdminSection({
                           className="font-bold text-slate-700"
                         />
                     </td>
-                    <td className="px-4 py-3 border-r border-slate-200 text-center align-middle">
+                    <td className="px-2 md:px-4 py-2 md:py-3 text-xs sm:text-sm text-slate-400 border-r border-slate-200 align-middle text-center">
+                      -
+                    </td>
+                    <td className="px-2 md:px-4 py-2 md:py-3 text-xs sm:text-sm text-slate-400 border-r border-slate-200 align-middle text-center">
+                      -
+                    </td>
+                    <td className="px-2 md:px-4 py-2 md:py-3 border-r border-slate-200 text-center align-middle">
                       <div className="flex justify-center items-center h-full">
                         <Checkbox 
                           checked={item.isPacked || false} 
@@ -527,7 +553,7 @@ export function AdminSection({
                         />
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-center align-middle">
+                    <td className="px-2 md:px-4 py-2 md:py-3 border-r border-slate-200 text-center align-middle">
                       <div className="flex justify-center items-center h-full">
                         <Checkbox 
                           checked={item.isChecked || false} 
@@ -778,13 +804,7 @@ export function AdminSection({
                     )}
                      {activePropsTab === 'activity' && renderPropTable('活動組', activityPropsFlattened)}
                      {activePropsTab === 'teaching' && renderPropTable('教學組', teachingPropsFlattened)}
-                     {activePropsTab === 'all-props' && (
-                       <>
-                         {renderOverviewTable('1. 活動組 - 教案道具確認', activityGroups)}
-                         {renderOverviewTable('2. 教學組 - 教案道具確認', teachingGroups)}
-                         {renderCampItemsTable()}
-                       </>
-                     )}
+                     {activePropsTab === 'all-props' && renderCombinedTable()}
                   </div>
                 </div>
               </div>
