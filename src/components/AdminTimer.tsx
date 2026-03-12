@@ -455,7 +455,10 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
             )}>
               {formatTime(timer.timeLeft)}
             </div>
-            <div className="w-full max-w-2xl h-4 bg-white/5 rounded-full overflow-hidden mt-12 border border-white/10 p-0.5">
+            <div className="text-[14px] md:text-[18px] font-black text-slate-400 mt-4 tracking-[0.2em]">
+              {now ? now.toLocaleTimeString('zh-TW', { hour12: false }) : "--:--:--"}
+            </div>
+            <div className="w-full max-w-2xl h-4 bg-white/5 rounded-full overflow-hidden mt-8 border border-white/10 p-0.5">
               <div className={cn(
                 "h-full transition-all duration-1000 rounded-full",
                 isCritical ? "bg-gradient-to-r from-rose-600 to-rose-400" : isFinished ? "bg-rose-800" : "bg-gradient-to-r from-orange-600 to-orange-400"
@@ -482,6 +485,9 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
             isCritical ? "text-rose-700 animate-pulse" : isFinished ? "text-rose-600" : "text-[#333]"
           )}>
             {formatTime(timer.timeLeft)}
+          </div>
+          <div className="text-[14px] sm:text-[24px] font-black text-[#666] mt-4 sm:mt-8 tracking-[0.2em]">
+            {now ? now.toLocaleTimeString('zh-TW', { hour12: false }) : "--:--:--"}
           </div>
           
           <div className="absolute bottom-12 text-[#222] text-[10px] font-black tracking-widest uppercase">
