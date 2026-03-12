@@ -16,6 +16,7 @@ import {
   useAuth
 } from '@/firebase';
 import { collection, query, doc, orderBy, where } from 'firebase/firestore';
+import { getCorrectedNow } from '@/hooks/use-server-time';
 
 export function usePlans() {
   const { user, isUserLoading } = useUser();
@@ -190,11 +191,49 @@ export function usePlans() {
     });
   }, [tableHistory, db]);
 
+  // Web Worker ref for background-resistant timer
+  const workerRef = useRef<Worker | null>(null);
+
   useEffect(() => {
     if (!settings) return;
     
+    // Initialize Web Worker if supported
+    if (typeof Worker !== 'undefined' && !workerRef.current) {
+      try {
+        workerRef.current = new Worker('/timer-worker.js');
+        workerRef.current.onmessage = (e) => {
+          const { type, remaining } = e.data;
+          if (type === 'tick') {
+            setLocalTimeLeft(remaining);
+            if (remaining === 0 && settings.isRunning) {
+              updateDocumentNonBlocking(doc(db!, 'userSettings', 'global'), { 
+                isRunning: false, 
+                timeLeft: 0,
+                updatedAt: Date.now() 
+              });
+            }
+          }
+        };
+        console.log('[TimerWorker] initialized');
+      } catch (err) {
+        console.warn('[TimerWorker] Failed to initialize, using fallback:', err);
+      }
+    }
+
+    // Send state to Web Worker or run fallback
+    if (settings.isRunning && settings.targetEndTime && workerRef.current) {
+      workerRef.current.postMessage({
+        type: 'start',
+        data: { targetEndTime: settings.targetEndTime, timeOffset: 0 }
+      });
+    } else if (!settings.isRunning && workerRef.current) {
+      workerRef.current.postMessage({ type: 'stop' });
+      setLocalTimeLeft(settings.timeLeft || 0);
+    }
+
+    // Fallback: setInterval for browsers without Web Worker support
     const tick = () => {
-      const currentTime = Date.now();
+      const currentTime = getCorrectedNow();
       if (settings.isRunning && settings.targetEndTime) {
         const remaining = Math.max(0, Math.floor((settings.targetEndTime - currentTime) / 1000));
         setLocalTimeLeft(remaining);
@@ -211,18 +250,32 @@ export function usePlans() {
       }
     };
 
-    tick();
-    const interval = setInterval(tick, 1000);
+    // If no Worker, use setInterval as fallback
+    let interval: ReturnType<typeof setInterval> | null = null;
+    if (!workerRef.current) {
+      tick();
+      interval = setInterval(tick, 1000);
+    } else {
+      // Even with Worker, do an initial tick to set state immediately
+      tick();
+    }
     
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         tick();
+        // Re-sync Worker when tab becomes visible
+        if (workerRef.current && settings.isRunning && settings.targetEndTime) {
+          workerRef.current.postMessage({
+            type: 'start',
+            data: { targetEndTime: settings.targetEndTime, timeOffset: 0 }
+          });
+        }
       }
     };
     
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => {
-      clearInterval(interval);
+      if (interval) clearInterval(interval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [settings, db]);

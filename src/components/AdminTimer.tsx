@@ -14,10 +14,13 @@ import {
   VolumeX,
   Pause,
   BellRing,
-  Moon
+  Moon,
+  Wifi,
+  WifiOff
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { useServerTime } from "@/hooks/use-server-time";
 
 interface AdminTimerProps {
   timer: {
@@ -37,6 +40,9 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
   const [now, setNow] = useState<Date | null>(null);
   const { toast } = useToast();
   
+  // Initialize NTP-like server time sync
+  useServerTime();
+  
   const wakeLockRef = useRef<any>(null);
   const playedMilestonesRef = useRef<Set<number>>(new Set());
   const silentLoopRef = useRef<HTMLAudioElement | null>(null);
@@ -50,6 +56,20 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
   });
 
   const [isSaverMode, setIsSaverMode] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
+
+  // Track online/offline status
+  useEffect(() => {
+    setIsOnline(navigator.onLine);
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const [h, setH] = useState(Math.floor(timer.duration / 3600));
   const [m, setM] = useState(Math.floor((timer.duration % 3600) / 60));
@@ -216,7 +236,16 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
     }
 
     // Pre-wake notification ~3 seconds before timer ends (3~1秒)
+    // Also warm up audio context by playing at near-zero volume
     if (remaining <= 3 && remaining > 0 && !playedMilestonesRef.current.has(1)) {
+      // Audio warm-up: silently play to activate hardware Audio Context
+      if (audioUnlocked && alarmAudioHtmlRef.current) {
+        const audio = alarmAudioHtmlRef.current;
+        audio.currentTime = 0;
+        audio.volume = 0.01;
+        audio.play().then(() => { audio.pause(); audio.volume = 1.0; }).catch(() => {});
+      }
+      
       if ('Notification' in window && 'serviceWorker' in navigator && Notification.permission === 'granted') {
         navigator.serviceWorker.ready.then(registration => {
           registration.showNotification("⏱ 換關倒數 / Rotation Now!", {
@@ -482,7 +511,14 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
               </div>
               <div className="flex flex-col min-w-0">
                 <h3 className="font-headline font-black text-white tracking-[0.2em] md:tracking-[0.3em] text-[10px] uppercase truncate">同步顯示/Broadcast</h3>
-                <span className="text-[8px] font-black text-orange-400/80 uppercase tracking-widest mt-1">Status: {timer.isRunning ? "RUNNING" : "STANDBY"}</span>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-[8px] font-black text-orange-400/80 uppercase tracking-widest">Status: {timer.isRunning ? "RUNNING" : "STANDBY"}</span>
+                  {!isOnline && (
+                    <span className="flex items-center gap-1 text-[8px] font-black text-amber-400 uppercase tracking-widest animate-pulse">
+                      <WifiOff className="h-3 w-3" /> 離線中 / Offline
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
             
