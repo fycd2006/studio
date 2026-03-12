@@ -96,16 +96,26 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
     }
   };
 
+  // Always keep screen awake when this component is mounted
+  useEffect(() => {
+    requestWakeLock();
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') requestWakeLock();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      releaseWakeLock();
+    };
+  }, []);
+
   useEffect(() => {
     if (timer.isRunning) {
-      requestWakeLock();
-      
       // Start silent audio loop to keep background JS execution alive
       if (audioUnlocked && silentLoopRef.current) {
         silentLoopRef.current.play().catch(e => console.warn("Silent loop blocked:", e));
       }
     } else {
-      releaseWakeLock();
       playedMilestonesRef.current.clear();
       
       // Pause silent audio loop
@@ -114,7 +124,6 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
       }
     }
     return () => {
-      releaseWakeLock();
       if (silentLoopRef.current) silentLoopRef.current.pause();
     };
   }, [timer.isRunning, audioUnlocked]);
