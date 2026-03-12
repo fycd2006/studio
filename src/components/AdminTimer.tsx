@@ -517,6 +517,7 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
       {isSaverMode && createPortal(
         <div 
           className="fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center cursor-pointer select-none"
+          style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
           onDoubleClick={() => toggleSaverMode(false)}
         >
           <div className={cn(
