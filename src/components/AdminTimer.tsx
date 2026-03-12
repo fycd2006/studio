@@ -323,6 +323,13 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
 
   const toggleSaverMode = async (enter: boolean) => {
     setIsSaverMode(enter);
+    
+    // Dynamically change theme-color for PWA status bar
+    const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeColorMeta) {
+      themeColorMeta.setAttribute('content', enter ? '#000000' : '#ea580c');
+    }
+    
     try {
       if (enter) {
         if (document.documentElement.requestFullscreen) {
