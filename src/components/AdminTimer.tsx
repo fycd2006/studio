@@ -175,7 +175,12 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
           registration.showNotification(title, {
             body: description,
             vibrate: isDestructive ? [500, 200, 500, 200, 500] : [200, 100, 200],
-            requireInteraction: true // Keeps notification on screen until user interacts
+            requireInteraction: true,
+            tag: isDestructive ? 'timer-end' : 'timer-warning',
+            renotify: true,
+            actions: isDestructive ? [
+              { action: 'dismiss', title: '知道了 / Dismiss' }
+            ] : [],
           } as any);
         });
       }
