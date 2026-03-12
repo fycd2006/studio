@@ -12,11 +12,11 @@ import {
   ChevronsLeft, 
   ChevronsRight,
   ShieldCheck,
-  Calendar,
   Settings2,
   BellRing,
   Sparkles,
-  Package2
+  Package2,
+  FileText
 } from "lucide-react";
 import { LessonPlan, PlanCategory, Camp } from "@/types/plan";
 import { Button } from "@/components/ui/button";
@@ -161,10 +161,10 @@ export function PlanSidebar({
   return (
     <>
       <Sidebar collapsible="icon" className="border-r border-slate-300 bg-white">
-        <SidebarHeader className="bg-white border-b border-orange-100 px-4 py-4">
-          <div className="flex items-center justify-between group-data-[collapsible=icon]:justify-center">
-            <div className="flex items-center gap-2.5 group-data-[collapsible=icon]:hidden">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden bg-white shadow-sm border border-orange-100/50 p-0.5">
+        <SidebarHeader className="bg-white border-b border-orange-100 px-4 py-4 group-data-[collapsible=icon]:px-2">
+          <div className="flex items-center justify-between group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden bg-white shadow-sm border border-orange-100/50 p-0.5 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8">
                 <img 
                   src="/logo.png" 
                   alt="Logo" 
@@ -176,9 +176,9 @@ export function PlanSidebar({
                 />
                 <Sparkles className="h-5 w-5 text-orange-600 hidden" />
               </div>
-              <div className="flex flex-col">
+              <div className="flex flex-col group-data-[collapsible=icon]:hidden">
                 <h1 className="text-[12px] font-black text-slate-950 tracking-tight leading-none uppercase">
-                  NTUT CHONG DE CAMP
+                  NTUT CD CAMP
                 </h1>
                 <span className="text-[8px] font-black text-orange-600 uppercase tracking-widest mt-1">VOLUNTEER STUDIO</span>
               </div>
@@ -188,7 +188,7 @@ export function PlanSidebar({
                 variant="ghost"
                 size="icon"
                 onClick={toggleSidebar}
-                className="h-8 w-8 rounded-lg text-slate-400 hover:bg-orange-50 hover:text-orange-600 transition-all"
+                className="h-8 w-8 rounded-lg text-slate-400 hover:bg-orange-50 hover:text-orange-600 transition-all shrink-0"
               >
                 {isCollapsed ? <ChevronsRight className="h-5 w-5" /> : <ChevronsLeft className="h-5 w-5" />}
               </Button>
@@ -244,8 +244,8 @@ export function PlanSidebar({
               className={cn(
                 "group relative flex items-center gap-3 p-3 rounded-2xl transition-all duration-300 cursor-pointer border",
                 viewMode === 'admin' 
-                  ? "bg-orange-600 text-white border-orange-600 shadow-lg"
-                  : "bg-white text-slate-950 hover:bg-orange-50 border-transparent hover:border-orange-200"
+                  ? "bg-orange-600 text-white border-orange-600 shadow-lg group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center"
+                  : "bg-white text-slate-950 hover:bg-orange-50 border-transparent hover:border-orange-200 group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center"
               )}
               onClick={() => setViewMode('admin')}
             >
@@ -300,6 +300,7 @@ export function PlanSidebar({
                                       {...provided.draggableProps}
                                       className={cn(
                                         "group relative flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all duration-200 cursor-pointer border-l-2",
+                                        "group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:border-l-0 group-data-[collapsible=icon]:py-2",
                                         activePlanId === plan.id && viewMode === 'editor'
                                           ? "bg-orange-50 text-orange-600 border-orange-500" 
                                           : "bg-white text-slate-950 border-transparent hover:bg-slate-50",
@@ -312,6 +313,9 @@ export function PlanSidebar({
                                     >
                                       <div {...provided.dragHandleProps} className="opacity-0 group-hover:opacity-40 group-data-[collapsible=icon]:hidden">
                                         <GripVertical className="h-4 w-4" />
+                                      </div>
+                                      <div className="hidden group-data-[collapsible=icon]:block">
+                                        <FileText className={cn("h-4 w-4 shrink-0", activePlanId === plan.id ? "text-orange-600" : "text-slate-400")} />
                                       </div>
                                       <div className="flex-1 truncate text-[11px] font-black group-data-[collapsible=icon]:hidden uppercase">
                                         {planTitle}
