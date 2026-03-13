@@ -27,7 +27,11 @@ import {
   Undo2,
   Redo2,
   History,
-  Save
+  Save,
+  Eye,
+  Filter,
+  ArrowLeft,
+  RotateCcw
 } from "lucide-react";
 import { 
   DropdownMenu, 
@@ -48,8 +52,9 @@ import {
 } from "@/components/ui/sheet";
 import { format } from "date-fns";
 import dynamic from "next/dynamic";
-import { useCallback, useState, useRef } from "react";
+import { useCallback, useState, useRef, useMemo } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { computeDiff, getChangedFields, type DiffSegment } from "@/lib/text-diff";
 
 const FabricCanvas = dynamic(
   () => import("@/components/FabricCanvas").then((mod) => mod.FabricCanvas),
@@ -96,6 +101,20 @@ export function PlanEditor({ plan, onUpdate, isSaving, onUndo, onRedo, canUndo, 
   const [isVersionSheetOpen, setIsVersionSheetOpen] = useState(false);
   const [newVersionName, setNewVersionName] = useState("");
   const lastSavedPlanRef = useRef(JSON.stringify(plan));
+  const [previewVersion, setPreviewVersion] = useState<PlanVersion | null>(null);
+  const [showNamedOnly, setShowNamedOnly] = useState(false);
+
+  // Filter versions: hide auto-saved snapshots when filter is on
+  const filteredVersions = useMemo(() => {
+    if (!showNamedOnly) return versions;
+    return versions.filter(v => !v.name.startsWith('自動儲存'));
+  }, [versions, showNamedOnly]);
+
+  // Compute changed fields for preview
+  const previewChangedFields = useMemo(() => {
+    if (!previewVersion) return [];
+    return getChangedFields(previewVersion.snapshot as any, plan as any);
+  }, [previewVersion, plan]);
 
   const handleSaveVersion = () => {
     if (!newVersionName.trim()) {
@@ -108,31 +127,21 @@ export function PlanEditor({ plan, onUpdate, isSaving, onUndo, onRedo, canUndo, 
   };
 
   const handleRestoreVersion = (version: PlanVersion) => {
-    const currentSnapshot = JSON.stringify(plan);
-    const hasUnsavedChanges = currentSnapshot !== lastSavedPlanRef.current;
-    
-    if (hasUnsavedChanges) {
-      const shouldSave = confirm(
-        `目前的教案內容已有更動，是否要先儲存當前版本再切換？\n\n按「確定」= 先儲存再切換\n按「取消」= 不儲存直接切換`
-      );
-      if (shouldSave) {
-        const autoName = `自動儲存 (切換前) - ${format(new Date(), "MM/dd HH:mm")}`;
-        onSaveVersion?.(autoName);
-        toast({ title: "已自動儲存當前版本" });
-      }
-    }
-    
-    if (confirm(`確定要還原到版本「${version.name}」嗎？這會覆蓋目前的教案內容。`)) {
-      onRestoreVersion?.(version.id);
-      lastSavedPlanRef.current = JSON.stringify(version.snapshot);
-      setIsVersionSheetOpen(false);
-      toast({ title: "已還原版本" });
-    }
+    // Auto-save current state before restoring
+    const autoName = `自動儲存 (還原前) - ${format(new Date(), "MM/dd HH:mm")}`;
+    onSaveVersion?.(autoName);
+
+    onRestoreVersion?.(version.id);
+    lastSavedPlanRef.current = JSON.stringify(version.snapshot);
+    setPreviewVersion(null);
+    setIsVersionSheetOpen(false);
+    toast({ title: "已還原版本", description: `從「${version.name}」還原，還原前的狀態已自動儲存。` });
   };
 
   const handleDeleteVersion = (version: PlanVersion) => {
     if (confirm(`確定要刪除版本「${version.name}」嗎？此操作無法復原。`)) {
       onDeleteVersion?.(version.id);
+      if (previewVersion?.id === version.id) setPreviewVersion(null);
       toast({ title: "已刪除版本", description: version.name });
     }
   };
@@ -214,23 +223,22 @@ export function PlanEditor({ plan, onUpdate, isSaving, onUndo, onRedo, canUndo, 
                   )}
                 </Button>
               </SheetTrigger>
-              <SheetContent className="w-full sm:max-w-md bg-[#FFFBF7] p-0 flex flex-col border-l-slate-200 no-print z-[100]">
+              <SheetContent className="w-full sm:max-w-lg bg-[#FFFBF7] p-0 flex flex-col border-l-slate-200 no-print z-[100]">
                 <div className="p-6 pb-2">
                   <SheetHeader>
                     <SheetTitle className="font-headline font-black text-2xl text-slate-900 tracking-tight flex items-center gap-2">
                       <History className="h-5 w-5 text-orange-600" /> 版本紀錄
                     </SheetTitle>
                     <SheetDescription className="text-slate-500 font-bold text-xs">
-                      儲存教案的歷史紀錄，隨時可以還原到先前的版本。
+                      儲存教案的歷史紀錄，點擊預覽差異後再決定是否還原。
                     </SheetDescription>
                   </SheetHeader>
                 </div>
                 
                 <div className="px-6 py-4 border-b border-slate-200 bg-white/50 space-y-3">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest hidden">新建版本</label>
                   <div className="flex gap-2">
                     <Input 
-                      placeholder="輸入版本名稱 (例: 初稿, 修改後)" 
+                      placeholder="輸入版本名稱 (例: 冬令營_雨天備案)" 
                       value={newVersionName}
                       onChange={(e) => setNewVersionName(e.target.value)}
                       className="bg-white border-slate-200 shadow-sm h-11 font-bold text-sm"
@@ -248,10 +256,85 @@ export function PlanEditor({ plan, onUpdate, isSaving, onUndo, onRedo, canUndo, 
                       <Save className="h-4 w-4 flex-shrink-0" />
                     </Button>
                   </div>
+                  <button
+                    onClick={() => setShowNamedOnly(!showNamedOnly)}
+                    className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border transition-all ${
+                      showNamedOnly 
+                        ? 'bg-orange-50 border-orange-200 text-orange-600' 
+                        : 'bg-white border-slate-200 text-slate-400 hover:text-slate-600'
+                    }`}
+                  >
+                    <Filter className="h-3 w-3" />
+                    {showNamedOnly ? '只顯示命名版本' : '顯示全部版本'}
+                  </button>
                 </div>
 
+                {/* Preview Panel */}
+                {previewVersion && (
+                  <div className="px-6 py-4 border-b border-orange-200 bg-orange-50/50 space-y-4 max-h-[40vh] overflow-y-auto">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => setPreviewVersion(null)} className="text-slate-400 hover:text-slate-600">
+                          <ArrowLeft className="h-4 w-4" />
+                        </button>
+                        <div>
+                          <h4 className="font-black text-sm text-slate-800 flex items-center gap-2">
+                            <Eye className="h-4 w-4 text-orange-500" /> 預覽：{previewVersion.name}
+                          </h4>
+                          <time className="text-[9px] font-black tracking-widest text-slate-400 uppercase">
+                            {format(new Date(previewVersion.createdAt), "yyyy/MM/dd HH:mm")}
+                          </time>
+                        </div>
+                      </div>
+                      <Button 
+                        size="sm"
+                        onClick={() => handleRestoreVersion(previewVersion)}
+                        className="bg-orange-600 hover:bg-orange-700 text-white text-[10px] font-black uppercase tracking-widest h-8 px-4 rounded-xl"
+                      >
+                        <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> 還原為此版本
+                      </Button>
+                    </div>
+
+                    {previewChangedFields.length === 0 ? (
+                      <p className="text-sm text-slate-400 font-bold text-center py-4">此版本與目前內容完全相同</p>
+                    ) : (
+                      <div className="space-y-3">
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">有 {previewChangedFields.length} 個欄位不同：</p>
+                        {previewChangedFields.map((fieldName) => {
+                          const fieldKey = Object.entries({
+                            activityName: '活動名稱', scheduledName: '類別', members: '教案成員',
+                            time: '教案時間', location: '教案地點', purpose: '教案目的',
+                            process: '教案流程', content: '詳細內容', divisionOfLabor: '人力分工',
+                            remarks: '備註事項', openingClosingRemarks: '開場與結語',
+                          }).find(([, label]) => label === fieldName)?.[0];
+
+                          if (!fieldKey) return <div key={fieldName} className="text-xs font-bold text-slate-500">{fieldName}（已變更）</div>;
+
+                          const oldVal = String((previewVersion.snapshot as any)[fieldKey] || '');
+                          const newVal = String((plan as any)[fieldKey] || '');
+                          const diff = computeDiff(oldVal, newVal);
+
+                          return (
+                            <div key={fieldName} className="bg-white rounded-xl p-3 border border-slate-100">
+                              <h5 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">{fieldName}</h5>
+                              <div className="text-xs leading-relaxed whitespace-pre-wrap break-words font-medium">
+                                {diff.map((seg, i) => {
+                                  if (seg.type === 'same') return <span key={i}>{seg.text}</span>;
+                                  if (seg.type === 'add') return <span key={i} className="bg-emerald-100 text-emerald-800 px-0.5 rounded">{seg.text}</span>;
+                                  if (seg.type === 'remove') return <span key={i} className="bg-rose-100 text-rose-600 line-through px-0.5 rounded">{seg.text}</span>;
+                                  return null;
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                  {versions.length === 0 ? (
+                  {filteredVersions.length === 0 ? (
                     <div className="text-center py-10 flex flex-col items-center gap-3">
                       <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-300">
                         <History className="h-5 w-5" />
@@ -260,15 +343,34 @@ export function PlanEditor({ plan, onUpdate, isSaving, onUndo, onRedo, canUndo, 
                     </div>
                   ) : (
                     <div className="relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-200 before:to-transparent">
-                      {versions.map((version, index) => (
+                      {filteredVersions.map((version) => {
+                        const isAutoSave = version.name.startsWith('自動儲存');
+                        const isSelected = previewVersion?.id === version.id;
+                        return (
                         <div key={version.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active py-2">
-                          <div className="flex items-center justify-center w-10 h-10 rounded-full border border-white bg-slate-50 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 text-slate-400 z-10 transition-colors group-hover:bg-orange-50 group-hover:text-orange-600">
-                            <CheckCircle2 className="h-4 w-4" />
+                          <div className={`flex items-center justify-center w-10 h-10 rounded-full border border-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 transition-colors ${
+                            isSelected ? 'bg-orange-100 text-orange-600 ring-2 ring-orange-300' 
+                            : isAutoSave ? 'bg-slate-50 text-slate-300 group-hover:bg-slate-100 group-hover:text-slate-500' 
+                            : 'bg-slate-50 text-orange-400 group-hover:bg-orange-50 group-hover:text-orange-600'
+                          }`}>
+                            {isAutoSave ? <History className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
                           </div>
                           
-                          <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-white p-4 rounded-2xl shadow-sm border border-slate-100 transition-all hover:shadow-md group-hover:border-orange-100">
+                          <div className={`w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-2xl shadow-sm border transition-all cursor-pointer ${
+                            isSelected ? 'bg-orange-50 border-orange-200 shadow-md' 
+                            : 'bg-white border-slate-100 hover:shadow-md group-hover:border-orange-100'
+                          }`}
+                            onClick={() => setPreviewVersion(isSelected ? null : version)}
+                          >
                             <div className="flex flex-col gap-1 mb-3">
-                              <h4 className="font-black text-slate-800 text-sm line-clamp-1">{version.name}</h4>
+                              <div className="flex items-center gap-2">
+                                <h4 className={`font-black text-sm line-clamp-1 ${
+                                  isAutoSave ? 'text-slate-400' : 'text-slate-800'
+                                }`}>{version.name}</h4>
+                                {!isAutoSave && (
+                                  <span className="bg-orange-100 text-orange-600 text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase">Named</span>
+                                )}
+                              </div>
                               <time className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
                                 {format(new Date(version.createdAt), "MM/dd HH:mm")}
                               </time>
@@ -277,15 +379,17 @@ export function PlanEditor({ plan, onUpdate, isSaving, onUndo, onRedo, canUndo, 
                             <Button 
                               variant="outline" 
                               size="sm" 
-                              onClick={() => handleRestoreVersion(version)}
-                              className="flex-1 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-orange-600 border-slate-200 h-8 hover:bg-orange-50"
+                              onClick={(e) => { e.stopPropagation(); setPreviewVersion(version); }}
+                              className={`flex-1 text-[10px] font-black uppercase tracking-widest border-slate-200 h-8 ${
+                                isSelected ? 'text-orange-600 bg-orange-50' : 'text-slate-600 hover:text-orange-600 hover:bg-orange-50'
+                              }`}
                             >
-                              <Undo2 className="h-3.5 w-3.5 mr-1.5" /> 還原
+                              <Eye className="h-3.5 w-3.5 mr-1.5" /> 預覽
                             </Button>
                             <Button 
                               variant="outline" 
                               size="sm" 
-                              onClick={() => handleDeleteVersion(version)}
+                              onClick={(e) => { e.stopPropagation(); handleDeleteVersion(version); }}
                               className="text-[10px] font-black uppercase tracking-widest text-rose-400 hover:text-rose-600 border-slate-200 h-8 hover:bg-rose-50 px-2.5"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
@@ -293,7 +397,8 @@ export function PlanEditor({ plan, onUpdate, isSaving, onUndo, onRedo, canUndo, 
                             </div>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
