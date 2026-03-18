@@ -5,13 +5,15 @@ import { RotationTableData, LessonPlan, PropItem, Camp, CampItem } from "@/types
 import { AdminTimer } from "@/components/AdminTimer";
 import { AdminRotationTable } from "@/components/AdminRotationTable";
 import { Button } from "@/components/ui/button";
-import { Clock, Table as TableIcon, Plus, ShieldCheck, Lock, Unlock, Calendar, Undo2, Redo2, Package2, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { ShieldCheck, Lock, Unlock, Calendar, Undo2, Redo2, Package2, ZoomIn, ZoomOut, RotateCcw, Layout, FileText, Sparkles, Clock, Table as TableIcon, Plus } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminDialog } from "@/components/AdminDialog";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -247,9 +249,12 @@ export function AdminSection({
     }, {} as Record<string, { plan: LessonPlan; prop: PropItem }[]>);
 
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-orange-200/60 overflow-hidden mb-8">
-        <div className="bg-gradient-to-r from-orange-500 to-amber-500 py-3 px-4 flex justify-between items-center">
-          <h2 className="font-black text-white tracking-wider uppercase text-lg">{title}</h2>
+      <Card className="glass-card rounded-[2.5rem] border-none overflow-hidden mb-12 shadow-2xl shadow-primary/5">
+        <div className="bg-gradient-to-r from-primary via-primary to-secondary py-5 px-8 flex justify-between items-center">
+          <h2 className="font-headline font-black text-white tracking-widest uppercase text-lg flex items-center gap-3">
+             <Package2 className="w-5 h-5" />
+             {title}
+          </h2>
         </div>
       
         <div className="w-full overflow-x-auto touch-pan-x touch-pan-y scrollbar-hide overscroll-x-contain">
@@ -362,7 +367,7 @@ export function AdminSection({
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
     );
   };
 
@@ -376,16 +381,19 @@ export function AdminSection({
     }, {} as Record<string, CampItem[]>);
 
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-8">
-        <div className="bg-slate-100 py-3 px-4 flex justify-between items-center border-b border-slate-200">
-          <h2 className="text-center font-black text-slate-800 tracking-wider uppercase text-lg">活動、教學與營期物品總表</h2>
+      <Card className="glass-card rounded-[2.5rem] border-none overflow-hidden mb-12 shadow-2xl shadow-primary/5">
+        <div className="bg-gradient-to-r from-slate-800 to-slate-900 py-5 px-8 flex justify-between items-center">
+          <h2 className="font-headline font-black text-white tracking-widest uppercase text-lg flex items-center gap-3">
+            <Layout className="w-5 h-5 text-primary" />
+            活動、教學與營期物品總表
+          </h2>
           {!isLocked && (
             <Button 
                onClick={handleAddCampItem}
                size="sm" 
-               className="h-7 text-[10px] gap-1 px-3 bg-orange-600 text-white hover:bg-orange-700 border-0 rounded-lg shadow-sm"
+               className="h-10 px-6 bg-primary text-white hover:bg-primary/90 border-0 rounded-2xl shadow-xl shadow-primary/20 font-black text-[10px] tracking-widest uppercase"
             >
-              <Plus className="h-3 w-3" /> 新增營期物品
+              <Plus className="h-4 w-4 mr-2" /> 新增營期物品
             </Button>
           )}
         </div>
@@ -581,38 +589,39 @@ export function AdminSection({
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
     );
   };
 
   return (
-    <div className="h-full flex flex-col bg-[#FFFBF7] overflow-hidden animate-in fade-in duration-1000 relative">
-      <header className="px-4 md:px-8 py-4 border-b border-orange-100/30 flex items-center justify-between no-print bg-white/95 backdrop-blur-2xl sticky top-0 z-40 shrink-0">
-        <div className="flex items-center gap-3">
-          <SidebarTrigger className="md:hidden -ml-2 h-8 w-8 text-slate-400" />
-          <div className="w-9 h-9 rounded-xl bg-orange-600 flex items-center justify-center text-white shadow-lg shrink-0">
-            <ShieldCheck className="h-4.5 w-4.5" />
+    <div className="h-full flex flex-col bg-background overflow-hidden page-enter relative scrollbar-hide transition-colors duration-300">
+      <header className="px-6 md:px-10 py-5 flex items-center justify-between no-print bg-card/80 dark:bg-card/60 backdrop-blur-2xl sticky top-0 z-40 shrink-0 border-b border-border">
+        <div className="flex items-center gap-4">
+          <SidebarTrigger className="md:hidden -ml-2 h-10 w-10 text-muted-foreground bg-card rounded-xl shadow-sm border border-border" />
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white shadow-xl shadow-primary/20 dark:shadow-primary/10 shrink-0 rotate-3">
+            <ShieldCheck className="h-6 w-6" />
           </div>
           <div className="flex flex-col">
-            <h2 className="text-[12px] font-black text-slate-800 tracking-tight leading-none uppercase">
-              行政組管理 / Admin Management
+            <Badge variant="outline" className="w-fit bg-primary/5 text-primary border-primary/10 mb-1 rounded-full px-2 py-0 font-bold text-[9px] uppercase tracking-tighter">Admin Control</Badge>
+            <h2 className="text-xl md:text-2xl font-headline font-bold text-foreground tracking-tight leading-none uppercase flex items-center gap-2">
+              行政管理 <span className="text-primary/30 font-thin italic text-sm">Dashboard</span>
             </h2>
           </div>
         </div>
 
         <div className="flex items-center gap-4">
           <Button 
-            variant={isLocked ? "ghost" : "secondary"} 
+            variant={isLocked ? "ghost" : "default"} 
             size="sm" 
             onClick={handleUnlockClick}
             className={cn(
-              "rounded-xl font-black text-[10px] gap-2 h-9 px-4 md:px-6 transition-all tracking-widest",
+              "rounded-xl font-bold text-[11px] gap-2 h-11 px-6 transition-all tracking-widest uppercase cursor-pointer btn-press",
               isLocked 
-                ? "text-slate-500 hover:text-orange-600 hover:bg-orange-50" 
-                : "bg-orange-600 text-white hover:bg-orange-700 shadow-xl"
+                ? "text-muted-foreground hover:text-primary hover:bg-primary/5 border-transparent" 
+                : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-xl shadow-primary/20 dark:shadow-primary/10 border-none btn-shimmer"
             )}
           >
-            {isLocked ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
+            {isLocked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
             <span className="hidden sm:inline">{isLocked ? "管理員解鎖" : "解鎖中"}</span>
             <span className="sm:hidden">{isLocked ? "解鎖" : "鎖定"}</span>
           </Button>
@@ -629,7 +638,7 @@ export function AdminSection({
                 size="icon" 
                 onClick={onUndoTable} 
                 disabled={!canUndoTable || isLocked}
-                className="h-9 w-9 rounded-full bg-white/80 backdrop-blur-md shadow-lg border border-slate-200 text-slate-500 hover:text-orange-600 disabled:opacity-30"
+                className="h-9 w-9 rounded-full bg-card/80 backdrop-blur-md shadow-lg border border-border text-muted-foreground hover:text-primary disabled:opacity-30 cursor-pointer"
               >
                 <Undo2 className="h-4 w-4" />
               </Button>
@@ -643,7 +652,7 @@ export function AdminSection({
                 size="icon" 
                 onClick={onRedoTable} 
                 disabled={!canRedoTable || isLocked}
-                className="h-9 w-9 rounded-full bg-white/80 backdrop-blur-md shadow-lg border border-slate-200 text-slate-500 hover:text-orange-600 disabled:opacity-30"
+                className="h-9 w-9 rounded-full bg-card/80 backdrop-blur-md shadow-lg border border-border text-muted-foreground hover:text-primary disabled:opacity-30 cursor-pointer"
               >
                 <Redo2 className="h-4 w-4" />
               </Button>
@@ -655,16 +664,16 @@ export function AdminSection({
 
       <main className="flex-1 overflow-hidden flex flex-col min-h-0">
         <Tabs defaultValue="timer" className="flex-1 flex flex-col h-full overflow-hidden">
-          <div className="px-4 md:px-8 py-2.5 border-b border-orange-100/20 no-print bg-white shrink-0">
-            <TabsList className="bg-orange-50/50 p-1 rounded-xl border border-orange-100/10 w-full md:w-auto">
-              <TabsTrigger value="timer" className="flex-1 md:flex-none rounded-lg font-black text-[10px] gap-2 px-8 tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-orange-600">
-                <Clock className="h-3 w-3" /> 計時同步
+          <div className="px-4 md:px-8 py-4 border-b border-border no-print bg-card/50 dark:bg-card/30 backdrop-blur-xl shrink-0">
+            <TabsList className="bg-secondary/50 dark:bg-secondary p-1.5 rounded-xl border border-border w-full md:w-auto h-12">
+              <TabsTrigger value="timer" className="flex-1 md:flex-none rounded-xl font-bold text-[11px] gap-2 px-8 tracking-widest data-[state=active]:bg-primary data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 data-[state=active]:text-primary-foreground transition-all uppercase cursor-pointer">
+                <Clock className="h-4 w-4" /> 計時同步
               </TabsTrigger>
-              <TabsTrigger value="tables" className="flex-1 md:flex-none rounded-lg font-black text-[10px] gap-2 px-8 tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-orange-600">
-                <TableIcon className="h-3 w-3" /> 闖關表
+              <TabsTrigger value="tables" className="flex-1 md:flex-none rounded-xl font-bold text-[11px] gap-2 px-8 tracking-widest data-[state=active]:bg-primary data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 data-[state=active]:text-primary-foreground transition-all uppercase cursor-pointer">
+                <TableIcon className="h-4 w-4" /> 闖關表
               </TabsTrigger>
-              <TabsTrigger value="props" className="flex-1 md:flex-none rounded-lg font-black text-[10px] gap-2 px-8 tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-orange-600">
-                <Package2 className="h-3 w-3" /> 道具清單
+              <TabsTrigger value="props" className="flex-1 md:flex-none rounded-xl font-bold text-[11px] gap-2 px-8 tracking-widest data-[state=active]:bg-primary data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 data-[state=active]:text-primary-foreground transition-all uppercase cursor-pointer">
+                <Package2 className="h-4 w-4" /> 道具清單
               </TabsTrigger>
             </TabsList>
           </div>
@@ -678,17 +687,17 @@ export function AdminSection({
             </TabsContent>
 
             <TabsContent value="tables" className="m-0 data-[state=active]:flex flex-col h-full overflow-hidden">
-              <div className="px-4 md:px-8 py-3 bg-orange-50/10 border-b border-orange-100/20 flex items-center justify-between no-print">
+              <div className="px-4 md:px-8 py-3 bg-primary/5 border-b border-border flex items-center justify-between no-print">
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
-                    <Calendar className="h-3.5 w-3.5 text-orange-400 shrink-0" />
-                    <span className="text-[9px] font-black text-slate-500 tracking-widest hidden sm:inline">天數</span>
+                    <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
+                    <span className="text-[9px] font-bold text-muted-foreground tracking-widest hidden sm:inline">天數</span>
                   </div>
                   <Select value={selectedDay} onValueChange={setSelectedDay}>
-                    <SelectTrigger className="w-32 h-8 rounded-lg font-black text-[10px] border-orange-200 bg-white shadow-none">
+                    <SelectTrigger className="w-32 h-8 rounded-lg font-bold text-[10px] border-border bg-card shadow-none">
                       <SelectValue placeholder="選擇" />
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl border-orange-100 shadow-2xl">
+                    <SelectContent className="rounded-xl border-border shadow-2xl">
                       {dayOptions.map(day => (
                         <SelectItem key={day} value={day} className="rounded-lg font-bold text-xs">{day}</SelectItem>
                       ))}
@@ -697,7 +706,7 @@ export function AdminSection({
                 </div>
                 
                 {!isLocked && (
-                  <Button onClick={() => onAddTable(selectedDay)} variant="outline" size="sm" className="rounded-xl font-black gap-2 h-8 px-4 border-orange-200 text-orange-600 hover:bg-orange-600 hover:text-white transition-all text-[9px] tracking-widest shadow-sm">
+                  <Button onClick={() => onAddTable(selectedDay)} variant="outline" size="sm" className="rounded-xl font-bold gap-2 h-8 px-4 border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground transition-all text-[9px] tracking-widest shadow-sm btn-press cursor-pointer">
                     <Plus className="h-3 w-3" /> 新增
                   </Button>
                 )}
@@ -717,11 +726,11 @@ export function AdminSection({
                     ))
                   ) : (
                     <div className="flex flex-col items-center justify-center py-24 text-center space-y-6">
-                      <div className="w-16 h-16 rounded-3xl bg-white flex items-center justify-center text-orange-100 shadow-sm border border-orange-50">
+                      <div className="w-16 h-16 rounded-3xl bg-card flex items-center justify-center text-muted-foreground/30 shadow-sm border border-border">
                         <TableIcon className="h-6 w-6" />
                       </div>
                       <div className="space-y-1">
-                        <p className="text-[10px] font-black text-slate-900 tracking-widest">目前無資料</p>
+                        <p className="text-[10px] font-bold text-foreground tracking-widest">目前無資料</p>
                       </div>
                     </div>
                   )}
@@ -729,17 +738,17 @@ export function AdminSection({
               </div>
             </TabsContent>
 
-            <TabsContent value="props" className="m-0 data-[state=active]:flex flex-col h-full overflow-hidden bg-slate-50/50">
-              <div className="shrink-0 px-4 md:px-8 py-3 border-b border-orange-100/20 bg-orange-50/10 backdrop-blur-md flex items-center justify-between no-print">
-                <div className="flex items-center gap-2 p-1 bg-white/50 w-fit rounded-xl border border-orange-100/30">
+            <TabsContent value="props" className="m-0 data-[state=active]:flex flex-col h-full overflow-hidden bg-background">
+              <div className="shrink-0 px-4 md:px-8 py-3 border-b border-border bg-primary/5 backdrop-blur-md flex items-center justify-between no-print">
+                <div className="flex items-center gap-2 p-1 bg-card/50 w-fit rounded-xl border border-border">
                    {['activity', 'teaching', 'all-props'].map((tab) => (
                      <button
                        key={tab}
                        onClick={() => setActivePropsTab(tab as typeof activePropsTab)}
-                       className={cn("px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-200",
+                       className={cn("px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all duration-200",
                          activePropsTab === tab
-                           ? 'bg-orange-600 text-white shadow-md shadow-orange-600/20'
-                           : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+                           ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20'
+                           : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
                        )}
                      >
                        {tab === 'activity' ? '活動組' : tab === 'teaching' ? '教學組' : '各闖關道具與營期物品確認'}
@@ -748,19 +757,19 @@ export function AdminSection({
                 </div>
 
                 {/* Zoom controls */}
-                <div className="flex items-center gap-1.5 bg-white/80 backdrop-blur-md rounded-xl border border-slate-200 px-2 py-1 shadow-sm">
+                <div className="flex items-center gap-1.5 bg-card/80 backdrop-blur-md rounded-xl border border-border px-2 py-1 shadow-sm">
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={handleZoomOut}
                     disabled={propsZoom <= 0.3}
-                    className="h-7 w-7 rounded-lg text-slate-500 hover:text-orange-600 hover:bg-orange-50 disabled:opacity-30"
+                    className="h-7 w-7 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/5 disabled:opacity-30"
                   >
                     <ZoomOut className="h-3.5 w-3.5" />
                   </Button>
                   <button
                     onClick={handleZoomReset}
-                    className="min-w-[3rem] text-center text-[10px] font-black text-slate-600 hover:text-orange-600 transition-colors tracking-wider"
+                    className="min-w-[3rem] text-center text-[10px] font-bold text-muted-foreground hover:text-primary transition-colors tracking-wider"
                   >
                     {Math.round(propsZoom * 100)}%
                   </button>
@@ -769,7 +778,7 @@ export function AdminSection({
                     size="icon"
                     onClick={handleZoomIn}
                     disabled={propsZoom >= 2}
-                    className="h-7 w-7 rounded-lg text-slate-500 hover:text-orange-600 hover:bg-orange-50 disabled:opacity-30"
+                    className="h-7 w-7 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/5 disabled:opacity-30"
                   >
                     <ZoomIn className="h-3.5 w-3.5" />
                   </Button>
@@ -793,12 +802,12 @@ export function AdminSection({
                 >
                   <div className={cn("transition-opacity duration-300", isLocked ? "opacity-80" : "opacity-100")}>
                     {!isLocked && (
-                      <div className="mb-4 flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg border border-green-200 font-bold">
+                      <div className="mb-4 flex items-center gap-2 text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-500/10 px-3 py-2 rounded-lg border border-green-200 dark:border-green-500/20 font-bold">
                         <Unlock className="h-4 w-4" /> 解鎖成功，現在可以打勾編輯道具狀態。
                       </div>
                     )}
                     {isLocked && (
-                      <div className="mb-4 flex items-center gap-2 text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-lg border border-amber-200 font-bold">
+                      <div className="mb-4 flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 px-3 py-2 rounded-lg border border-amber-200 dark:border-amber-500/20 font-bold">
                         <Lock className="h-4 w-4" /> 管理員權限已鎖定。請點擊右上角解鎖以編輯道具狀態。
                       </div>
                     )}

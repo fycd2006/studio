@@ -5,6 +5,7 @@ import { usePlans } from "@/hooks/use-plans";
 import { PlanSidebar } from "@/components/PlanSidebar";
 import { PlanEditor } from "@/components/PlanEditor";
 import { AdminSection } from "@/components/AdminSection";
+import { Dashboard } from "@/components/Dashboard";
 import { Toaster } from "@/components/ui/toaster";
 import { Package2 } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -50,7 +51,7 @@ export default function Home() {
 
   return (
     <SidebarProvider>
-      <div className="flex h-screen w-full bg-slate-50 overflow-hidden font-body">
+      <div className="flex h-screen w-full bg-background overflow-hidden font-body transition-colors duration-300">
         <PlanSidebar
           camps={camps}
           activeCampId={activeCampId}
@@ -104,23 +105,13 @@ export default function Home() {
               onDeleteVersion={deletePlanVersion}
             />
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center h-full text-center p-8 space-y-6 animate-in fade-in zoom-in-95 duration-500">
-              <div className="absolute top-4 left-4 md:hidden">
-                <SidebarTrigger className="h-10 w-10 text-slate-500 bg-white shadow-sm border border-slate-200 rounded-lg" />
-              </div>
-              <div className="w-24 h-24 bg-primary/10 rounded-2xl flex items-center justify-center text-primary/40 transition-transform hover:scale-105 duration-300">
-                <Package2 className="h-12 w-12" />
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-2xl font-headline font-black text-slate-800 tracking-tight">
-                  啟動您的創意規劃 / Start Planning
-                </h3>
-                <p className="text-slate-500 max-w-sm mx-auto text-sm leading-relaxed font-bold">
-                  請從側邊欄選擇教案或進入行政管理開始使用。<br />
-                  Select a plan from the sidebar or enter Admin Mode.
-                </p>
-              </div>
-            </div>
+            <Dashboard 
+              camps={camps}
+              activeCampId={activeCampId}
+              plans={plans}
+              onSelectPlan={setActivePlanId}
+              onSetViewMode={setViewMode}
+            />
           )}
         </main>
         <Toaster />

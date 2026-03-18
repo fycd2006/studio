@@ -3,36 +3,73 @@
 @tailwind utilities;
 
 @layer base {
+  /* ═══════════════════════════════════════════════
+     🌞 LIGHT MODE — Warm Cream + Vibrant Orange
+     ═══════════════════════════════════════════════ */
   :root {
-    --background: 30 20% 98%;
-    --foreground: 20 50% 5%;
-    --card: 0 0% 100%;
-    --card-foreground: 20 50% 5%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 20 50% 5%;
-    --primary: 24 100% 50%; /* Vibrant Orange */
+    --background: 30 40% 98%;
+    --foreground: 20 20% 12%;
+    --card: 30 30% 97%;
+    --card-foreground: 20 20% 12%;
+    --popover: 30 30% 97%;
+    --popover-foreground: 20 20% 12%;
+    --primary: 24 95% 53%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 35 92% 63%;
-    --secondary-foreground: 20 50% 5%;
-    --muted: 30 20% 96%;
-    --muted-foreground: 20 10% 40%;
-    --accent: 24 100% 50%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 25 20% 85%; /* 加深邊框預設值 */
-    --input: 25 20% 85%;
-    --ring: 24 100% 50%;
-    --radius: 1rem;
-    
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 20 50% 5%;
-    --sidebar-primary: 24 100% 50%;
+    --secondary: 24 60% 95%;
+    --secondary-foreground: 24 80% 35%;
+    --muted: 30 15% 93%;
+    --muted-foreground: 20 10% 45%;
+    --accent: 32 95% 55%;
+    --accent-foreground: 20 20% 12%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 30 15% 88%;
+    --input: 30 15% 88%;
+    --ring: 24 95% 53%;
+    --radius: 1.25rem;
+
+    --sidebar-background: 30 30% 97%;
+    --sidebar-foreground: 20 20% 12%;
+    --sidebar-primary: 24 95% 53%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 24 100% 97%;
-    --sidebar-accent-foreground: 24 100% 40%;
-    --sidebar-border: 25 20% 92%;
-    --sidebar-ring: 24 100% 50%;
+    --sidebar-accent: 24 60% 95%;
+    --sidebar-accent-foreground: 24 80% 35%;
+    --sidebar-border: 30 15% 90%;
+    --sidebar-ring: 24 95% 53%;
+  }
+
+  /* ═══════════════════════════════════════════════
+     🌙 DARK MODE — Deep Navy + Neon Orange Glow
+     ═══════════════════════════════════════════════ */
+  .dark {
+    --background: 220 20% 8%;
+    --foreground: 30 20% 92%;
+    --card: 220 18% 11%;
+    --card-foreground: 30 20% 92%;
+    --popover: 220 18% 11%;
+    --popover-foreground: 30 20% 92%;
+    --primary: 24 100% 55%;
+    --primary-foreground: 220 20% 8%;
+    --secondary: 220 15% 16%;
+    --secondary-foreground: 24 90% 65%;
+    --muted: 220 15% 14%;
+    --muted-foreground: 220 10% 55%;
+    --accent: 32 100% 50%;
+    --accent-foreground: 220 20% 8%;
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 15% 18%;
+    --input: 220 15% 18%;
+    --ring: 24 100% 55%;
+
+    --sidebar-background: 220 18% 10%;
+    --sidebar-foreground: 30 20% 92%;
+    --sidebar-primary: 24 100% 55%;
+    --sidebar-primary-foreground: 220 20% 8%;
+    --sidebar-accent: 220 15% 16%;
+    --sidebar-accent-foreground: 24 90% 65%;
+    --sidebar-border: 220 15% 16%;
+    --sidebar-ring: 24 100% 55%;
   }
 }
 
@@ -48,12 +85,141 @@
   }
 }
 
+/* ═══════════════════════════════════════════════
+   Dot Grid Background
+   ═══════════════════════════════════════════════ */
 .dot-grid {
-  background-image: radial-gradient(circle, #fed7aa 0.8px, transparent 0.8px);
+  background-image: radial-gradient(circle, hsl(var(--primary) / 0.1) 0.8px, transparent 0.8px);
   background-size: 24px 24px;
 }
 
-/* 捲動條優化：強制深橘色以便識別 */
+/* ═══════════════════════════════════════════════
+   Glassmorphism Cards
+   ═══════════════════════════════════════════════ */
+.glass-card {
+  @apply bg-white/70 backdrop-blur-xl border border-white/20 shadow-xl shadow-slate-200/50;
+}
+.dark .glass-card {
+  @apply bg-white/[0.04] border-white/[0.06] shadow-none;
+  box-shadow: 0 0 0 1px hsl(var(--border)), 0 8px 32px hsl(220 20% 4% / 0.5);
+}
+
+/* ═══════════════════════════════════════════════
+   Neon Glow (Dark Mode accent)
+   ═══════════════════════════════════════════════ */
+.neon-glow {
+  box-shadow: 0 0 20px hsl(var(--primary) / 0.25), 0 0 60px hsl(var(--primary) / 0.1);
+}
+.dark .neon-glow {
+  box-shadow: 0 0 20px hsl(var(--primary) / 0.35), 0 0 80px hsl(var(--primary) / 0.15);
+}
+
+/* ═══════════════════════════════════════════════
+   Gradient Border Glow
+   ═══════════════════════════════════════════════ */
+.gradient-border {
+  position: relative;
+}
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.4), hsl(var(--accent) / 0.2), transparent);
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.gradient-border:hover::before {
+  opacity: 1;
+}
+
+/* ═══════════════════════════════════════════════
+   Button Shimmer Effect
+   ═══════════════════════════════════════════════ */
+.btn-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.btn-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.2), transparent);
+  transition: left 0.5s ease;
+}
+.btn-shimmer:hover::after {
+  left: 100%;
+}
+
+/* Active press animation for primary buttons */
+.btn-press:active {
+  transform: scale(0.97);
+  transition: transform 0.1s ease;
+}
+
+/* ═══════════════════════════════════════════════
+   Float Animation
+   ═══════════════════════════════════════════════ */
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+/* ═══════════════════════════════════════════════
+   Glow Pulse Animation (Dark Mode cards)
+   ═══════════════════════════════════════════════ */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 15px hsl(var(--primary) / 0.1); }
+  50% { box-shadow: 0 0 25px hsl(var(--primary) / 0.2); }
+}
+
+.dark .glow-card:hover {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════
+   Page Transition (Fade-in + Slide-up)
+   ═══════════════════════════════════════════════ */
+.page-enter {
+  animation: page-enter 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   Theme Toggle Spin Animation
+   ═══════════════════════════════════════════════ */
+@keyframes toggle-spin {
+  from { transform: rotate(0deg) scale(0.8); }
+  50% { transform: rotate(180deg) scale(1.15); }
+  to { transform: rotate(360deg) scale(1); }
+}
+
+.theme-toggle-spin {
+  animation: toggle-spin 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ═══════════════════════════════════════════════
+   Scrollbar
+   ═══════════════════════════════════════════════ */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -64,9 +230,36 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-orange-300 rounded-full hover:bg-orange-500 transition-colors;
+  @apply bg-primary/20 rounded-full hover:bg-primary/40 transition-colors;
 }
 
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ═══════════════════════════════════════════════
+   Reduced Motion
+   ═══════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .animate-float,
+  .theme-toggle-spin {
+    animation: none !important;
+  }
+  .btn-shimmer::after {
+    display: none;
+  }
+  .page-enter {
+    animation: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   Print Styles
+   ═══════════════════════════════════════════════ */
 @media print {
   @page {
     margin: 1cm;

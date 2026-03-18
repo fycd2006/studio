@@ -12,7 +12,8 @@ export default {
       fontFamily: {
         body: ['Inter', 'sans-serif'],
         headline: ['Space Grotesk', 'sans-serif'],
-        code: ['monospace'],
+        comic: ['Comic Neue', 'cursive'],
+        code: ['JetBrains Mono', 'monospace'],
       },
       colors: {
         background: 'hsl(var(--background))',
@@ -53,6 +54,20 @@ export default {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+      },
+      keyframes: {
+        shimmer: {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
+        },
+        'glow-pulse': {
+          '0%, 100%': { boxShadow: '0 0 15px hsl(var(--primary) / 0.1)' },
+          '50%': { boxShadow: '0 0 25px hsl(var(--primary) / 0.2)' },
+        },
+      },
+      animation: {
+        shimmer: 'shimmer 2s linear infinite',
+        'glow-pulse': 'glow-pulse 2s ease-in-out infinite',
       },
     },
   },

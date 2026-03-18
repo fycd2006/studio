@@ -220,13 +220,13 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
     <div className="space-y-2">
       {label && (
         <div className="flex items-center px-2">
-          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{label}</label>
+          <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{label}</label>
         </div>
       )}
 
       <div className={cn(
-        "border rounded-2xl bg-white overflow-visible transition-all duration-300 relative",
-        isFocused ? "border-primary/40 shadow-xl" : "shadow-sm border-slate-200"
+        "border rounded-2xl bg-card overflow-visible transition-all duration-300 relative",
+        isFocused ? "border-primary/40 shadow-xl" : "shadow-sm border-border"
       )}>
         {selectedImage && (
           <div 
@@ -321,7 +321,7 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
           </div>
         )}
 
-        <div className="flex items-center flex-wrap gap-1 p-1 border-b border-slate-100 no-print sticky top-0 z-40 bg-white/95 backdrop-blur-md rounded-t-2xl">
+        <div className="flex items-center flex-wrap gap-1 p-1 border-b border-border no-print sticky top-0 z-40 bg-card/95 backdrop-blur-md rounded-t-2xl">
           <TooltipProvider>
             {[
               { icon: Bold, title: "粗體 / Bold", action: () => execCommand("bold") },
@@ -331,7 +331,7 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
             ].map((btn, i) => (
               <Tooltip key={i}>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-primary transition-all" onMouseDown={(e) => { e.preventDefault(); btn.action(); }}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary transition-all" onMouseDown={(e) => { e.preventDefault(); btn.action(); }}>
                     <btn.icon className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
@@ -339,13 +339,13 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
               </Tooltip>
             ))}
             
-            <div className="w-[1px] h-4 bg-slate-200 mx-1" />
+            <div className="w-[1px] h-4 bg-border mx-1" />
 
             <Tooltip>
               <Popover>
                 <TooltipTrigger asChild>
                   <PopoverTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-primary transition-all">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary transition-all">
                       <FontIcon className="h-4 w-4" />
                     </Button>
                   </PopoverTrigger>
@@ -375,7 +375,7 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
               <Popover>
                 <TooltipTrigger asChild>
                   <PopoverTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-primary transition-all">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary transition-all">
                       <Palette className="h-4 w-4" />
                     </Button>
                   </PopoverTrigger>
@@ -391,7 +391,7 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
               <TooltipContent side="bottom" className="text-[9px] font-black uppercase">顏色 / Color</TooltipContent>
             </Tooltip>
 
-            <div className="w-[1px] h-4 bg-slate-200 mx-1" />
+            <div className="w-[1px] h-4 bg-border mx-1" />
 
             {[
               { icon: List, title: "項目 / Bullet", action: () => execCommand("insertUnorderedList") },
@@ -402,7 +402,7 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
             ].map((btn, i) => (
               <Tooltip key={i}>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-primary transition-all" onMouseDown={(e) => { e.preventDefault(); btn.action(); }}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary transition-all" onMouseDown={(e) => { e.preventDefault(); btn.action(); }}>
                     <btn.icon className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
@@ -414,7 +414,7 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
             
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-rose-500 transition-all" onMouseDown={(e) => { e.preventDefault(); execCommand("removeFormat"); }}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-rose-500 transition-all" onMouseDown={(e) => { e.preventDefault(); execCommand("removeFormat"); }}>
                   <Eraser className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
@@ -423,7 +423,7 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
           </TooltipProvider>
         </div>
 
-        <div className="p-0.5 bg-white min-h-[300px] relative rounded-b-2xl">
+        <div className="p-0.5 bg-card min-h-[300px] relative rounded-b-2xl">
           <div
             ref={editorRef}
             contentEditable
@@ -433,12 +433,13 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
             onBlur={() => setIsFocused(false)}
             onPaste={handlePaste}
             className={cn(
-              "w-full max-w-full min-h-[290px] p-4 md:p-8 bg-white outline-none prose prose-slate prose-sm transition-all duration-300",
+              "w-full max-w-full min-h-[290px] p-4 md:p-8 bg-card text-foreground outline-none prose prose-sm transition-all duration-300",
+              "dark:prose-invert",
               "focus:ring-0",
               "[&_ul]:list-disc [&_ol]:list-decimal [&_ul,&_ol]:ml-6 [&_ol]:my-3",
-              "[&_p]:leading-[1.7] [&_p]:mb-3 [&_p]:text-slate-700",
+              "[&_p]:leading-[1.7] [&_p]:mb-3 [&_p]:text-foreground",
               "[&_img]:cursor-pointer [&_img]:transition-all [&_img]:duration-300 [&_img]:shadow-md [&_img:hover]:shadow-lg [&_img]:rounded-xl [&_img]:inline-block [&_img]:max-w-full [&_img]:align-top",
-              "empty:before:content-[attr(placeholder)] empty:before:text-slate-300 empty:before:font-medium"
+              "empty:before:content-[attr(placeholder)] empty:before:text-muted-foreground empty:before:font-medium"
             )}
             placeholder={`撰寫教案內容... (支援貼上圖片) / Write content here... (Supports pasting images)`}
           />

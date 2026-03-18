@@ -2,11 +2,12 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { FirebaseClientProvider } from '@/firebase';
+import { ThemeProvider } from '@/components/ThemeProvider';
 import Script from 'next/script';
 
 export const metadata: Metadata = {
-  title: 'NTUT CD Camp',
-  description: 'Professional Camp Lesson Plan Management',
+  title: 'NTUT CD Camp — Volunteer Studio',
+  description: '匯聚創意火花，點燃營隊靈感。專業營隊教案協作平台。',
   icons: {
     icon: '/favicon.ico',
   },
@@ -18,23 +19,25 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="zh-TW" suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <meta name="theme-color" content="#ea580c" />
+        <meta name="theme-color" content="#F37216" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="CD Camp" />
         <link rel="apple-touch-icon" href="/logo.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@300;400;700&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <FirebaseClientProvider>
-          {children}
-        </FirebaseClientProvider>
+        <ThemeProvider>
+          <FirebaseClientProvider>
+            {children}
+          </FirebaseClientProvider>
+        </ThemeProvider>
         <Script id="register-sw" strategy="afterInteractive" dangerouslySetInnerHTML={{
           __html: `
             if ('serviceWorker' in navigator) {

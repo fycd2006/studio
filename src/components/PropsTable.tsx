@@ -62,7 +62,7 @@ function AutoExpandingTextarea({
       onInput={adjustHeight}
       placeholder={placeholder}
       rows={1}
-      className={cn("w-full resize-none border-none shadow-none focus:outline-none bg-transparent py-3 text-[13px] font-black text-slate-950 min-h-[44px] overflow-hidden leading-relaxed", className)}
+      className={cn("w-full resize-none border-none shadow-none focus:outline-none bg-transparent py-3 text-[13px] font-bold text-foreground min-h-[44px] overflow-hidden leading-relaxed", className)}
     />
   );
 }
@@ -102,7 +102,7 @@ function LocalInput({
         }
       }}
       placeholder={placeholder}
-      className={cn("w-full h-12 border-none shadow-none focus:outline-none bg-transparent text-center text-[13px] font-black text-slate-950", className)}
+      className={cn("w-full h-12 border-none shadow-none focus:outline-none bg-transparent text-center text-[13px] font-bold text-foreground", className)}
     />
   );
 }
@@ -137,27 +137,27 @@ export function PropsTable({ label, value = [], onChange }: PropsTableProps) {
   return (
     <div className="space-y-4">
       {label && (
-        <label className="text-[10px] font-black text-slate-950 uppercase tracking-[0.2em] px-1">
+        <label className="text-[10px] font-bold text-foreground uppercase tracking-[0.2em] px-1">
           {label}
         </label>
       )}
 
-      <div className="border border-slate-200 rounded-[1.5rem] overflow-x-auto bg-white shadow-xl scrollbar-hide">
+      <div className="border border-border dark:border-white/10 rounded-[1.5rem] overflow-x-auto bg-card dark:bg-neutral-900/80 shadow-xl scrollbar-hide">
         <Table className="min-w-[900px] table-auto">
-          <TableHeader className="bg-slate-50">
-            <TableRow className="border-b border-slate-200">
-              <TableHead className="min-w-[250px] font-black text-slate-950 border-r border-slate-200 h-12 text-[11px] uppercase tracking-wider">項目名稱 / Item Name</TableHead>
-              <TableHead className="w-[120px] font-black text-slate-950 border-r border-slate-200 text-center whitespace-nowrap text-[11px] uppercase tracking-wider">數量 / Qty</TableHead>
-              <TableHead className="w-[120px] font-black text-slate-950 border-r border-slate-200 text-center whitespace-nowrap text-[11px] uppercase tracking-wider">單位 / Unit</TableHead>
-              <TableHead className="min-w-[350px] font-black text-slate-950 border-r border-slate-200 text-[11px] uppercase tracking-wider">備註 / Remarks</TableHead>
-              <TableHead className="w-[80px] text-center no-print font-black text-slate-950 text-[11px] uppercase">DEL</TableHead>
+          <TableHeader className="bg-secondary/50 dark:bg-white/5">
+            <TableRow className="border-b border-border dark:border-white/10">
+              <TableHead className="min-w-[250px] font-bold text-foreground border-r border-border dark:border-white/10 h-12 text-[11px] uppercase tracking-wider">項目名稱 / Item Name</TableHead>
+              <TableHead className="w-[120px] font-bold text-foreground border-r border-border dark:border-white/10 text-center whitespace-nowrap text-[11px] uppercase tracking-wider">數量 / Qty</TableHead>
+              <TableHead className="w-[120px] font-bold text-foreground border-r border-border dark:border-white/10 text-center whitespace-nowrap text-[11px] uppercase tracking-wider">單位 / Unit</TableHead>
+              <TableHead className="min-w-[350px] font-bold text-foreground border-r border-border dark:border-white/10 text-[11px] uppercase tracking-wider">備註 / Remarks</TableHead>
+              <TableHead className="w-[80px] text-center no-print font-bold text-foreground text-[11px] uppercase">DEL</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {value && value.length > 0 ? (
               value.map((row) => (
-                <TableRow key={row.id} className="border-b border-slate-200 last:border-0 hover:bg-orange-50/10">
-                  <TableCell className="border-r border-slate-200 align-top p-0">
+                <TableRow key={row.id} className="border-b border-border dark:border-white/10 last:border-0 hover:bg-primary/5 transition-colors">
+                  <TableCell className="border-r border-border dark:border-white/10 align-top p-0">
                     <AutoExpandingTextarea 
                       value={row.name} 
                       onChange={(val) => handleUpdateRow(row.id, 'name', val)} 
@@ -165,21 +165,21 @@ export function PropsTable({ label, value = [], onChange }: PropsTableProps) {
                       className="px-4"
                     />
                   </TableCell>
-                  <TableCell className="border-r border-slate-200 text-center align-top p-0 whitespace-nowrap">
+                  <TableCell className="border-r border-border dark:border-white/10 text-center align-top p-0 whitespace-nowrap">
                     <LocalInput 
                       value={row.quantity} 
                       onChange={(val) => handleUpdateRow(row.id, 'quantity', val)} 
                       placeholder="1" 
                     />
                   </TableCell>
-                  <TableCell className="border-r border-slate-200 text-center align-top p-0 whitespace-nowrap">
+                  <TableCell className="border-r border-border dark:border-white/10 text-center align-top p-0 whitespace-nowrap">
                     <LocalInput 
                       value={row.unit} 
                       onChange={(val) => handleUpdateRow(row.id, 'unit', val)} 
                       placeholder="個 / Unit" 
                     />
                   </TableCell>
-                  <TableCell className="border-r border-slate-200 align-top p-0">
+                  <TableCell className="border-r border-border dark:border-white/10 align-top p-0">
                     <AutoExpandingTextarea 
                       value={row.remarks || ""} 
                       onChange={(val) => handleUpdateRow(row.id, 'remarks', val)} 
@@ -188,7 +188,7 @@ export function PropsTable({ label, value = [], onChange }: PropsTableProps) {
                     />
                   </TableCell>
                   <TableCell className="text-center no-print align-top pt-2">
-                    <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-rose-600" onClick={() => handleRemoveRow(row.id)}>
+                    <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-rose-600" onClick={() => handleRemoveRow(row.id)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </TableCell>
@@ -196,17 +196,17 @@ export function PropsTable({ label, value = [], onChange }: PropsTableProps) {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-20 text-slate-400 font-black uppercase tracking-widest text-[10px]">
+                <TableCell colSpan={5} className="text-center py-20 text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
                   目前無道具資訊 / No Items Listed
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
           <TableFooter className="bg-transparent no-print">
-            <TableRow className="border-t border-slate-200">
+            <TableRow className="border-t border-border dark:border-white/10">
               <TableCell colSpan={5} className="p-0">
                 <div className="flex justify-center p-5">
-                  <Button variant="outline" className="h-10 px-8 rounded-xl text-orange-700 border-orange-300 hover:bg-orange-600 hover:text-white gap-3 font-black uppercase tracking-widest text-[10px] transition-all shadow-md" onClick={handleAddRow}>
+                  <Button variant="outline" className="h-10 px-8 rounded-xl text-primary border-border hover:bg-primary hover:text-primary-foreground gap-3 font-bold uppercase tracking-widest text-[10px] transition-all shadow-md cursor-pointer" onClick={handleAddRow}>
                     <Plus className="h-4 w-4" /> 新增道具 / Add Item
                   </Button>
                 </div>

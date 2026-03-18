@@ -356,7 +356,7 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
     // Dynamically change theme-color for PWA status bar
     const themeColorMeta = document.querySelector('meta[name="theme-color"]');
     if (themeColorMeta) {
-      themeColorMeta.setAttribute('content', enter ? '#000000' : '#ea580c');
+      themeColorMeta.setAttribute('content', enter ? '#000000' : '#7C3AED');
     }
     
     try {
@@ -393,25 +393,25 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
   const isFinished = timer.timeLeft === 0;
 
   return (
-    <div className="w-full flex flex-col items-center p-6 md:p-12 space-y-10 bg-[#FFFBF7] overflow-y-auto min-h-full scrollbar-hide">
+    <div className="w-full flex flex-col items-center p-6 md:p-12 space-y-10 bg-background overflow-y-auto min-h-full scrollbar-hide transition-colors duration-300">
       <div className="w-full max-w-5xl flex flex-col space-y-10">
         
         <div className={cn(
-          "w-full p-8 border rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-8 shadow-xl transition-all duration-500",
-          audioUnlocked ? "bg-emerald-50 border-emerald-200" : "bg-orange-50 border-orange-200"
+          "w-full p-8 glass-card rounded-[2.5rem] border-none flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl shadow-primary/5 transition-all duration-500",
+          audioUnlocked ? "bg-emerald-50/50 dark:bg-emerald-500/5" : "bg-primary/5"
         )}>
           <div className="flex items-center gap-6 text-center md:text-left">
             <div className={cn(
-              "w-14 h-14 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg",
-              audioUnlocked ? "bg-emerald-600" : "bg-orange-600"
+              "w-14 h-14 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-xl",
+              audioUnlocked ? "bg-emerald-600" : "bg-primary"
             )}>
               {audioUnlocked ? <Volume2 className="h-7 w-7" /> : <VolumeX className="h-7 w-7" />}
             </div>
             <div>
-              <h4 className="font-headline font-black text-slate-950 text-base uppercase tracking-tight">
+              <h4 className="font-headline font-bold text-foreground text-base uppercase tracking-tight">
                 {audioUnlocked ? "音效解鎖：開啟 / Audio: Enabled" : "音效解鎖：鎖定 / Audio: Locked"}
               </h4>
-              <p className="text-slate-500 text-[10px] font-bold mt-1 uppercase tracking-widest">
+              <p className="text-muted-foreground text-[10px] font-bold mt-1 uppercase tracking-widest">
                 {audioUnlocked ? "系統將在時間到及剩餘 3 分鐘時發出提醒 / Alerts are active." : "請測試並授權音效以發出提醒 / Test to authorize audio."}
               </p>
             </div>
@@ -420,10 +420,10 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
             onClick={testAudio}
             variant={audioUnlocked ? "outline" : "default"}
             className={cn(
-              "rounded-xl px-10 h-12 font-black text-[10px] uppercase tracking-widest transition-all",
+              "rounded-2xl px-10 h-12 font-black text-[11px] uppercase tracking-widest transition-all",
               audioUnlocked 
-                ? "border-emerald-400 text-emerald-700" 
-                : "bg-orange-600 text-white"
+                ? "border-emerald-400 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400 bg-card" 
+                : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-xl shadow-primary/20 dark:shadow-primary/10 btn-shimmer"
             )}
           >
             {audioUnlocked ? "關閉音效 / Disable Audio" : "測試並解鎖 / Test & Unlock"}
@@ -431,22 +431,22 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
         </div>
 
         {!isLocked && (
-          <Card className="w-full p-6 md:p-10 rounded-[2.5rem] border border-slate-200 shadow-xl bg-white flex flex-col space-y-8 md:space-y-10">
+          <Card className="w-full p-6 md:p-10 rounded-[3rem] border-none shadow-2xl glass-card flex flex-col space-y-8 md:space-y-10">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 md:gap-4">
               <div className="flex items-center gap-5">
-                <div className="p-3 bg-orange-50 rounded-xl border border-orange-200">
-                  <ShieldCheck className="h-6 w-6 text-orange-600" />
+                <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10">
+                  <ShieldCheck className="h-7 w-7 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-headline font-black text-slate-950 tracking-tight text-sm uppercase">控制台 / Control</h3>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">
-                    狀態 / Status: {timer.isRunning ? "運行中 / Running" : "暫停 / Paused"}
+                  <h3 className="font-headline font-bold text-foreground tracking-tight text-base uppercase">控制台 / Control</h3>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">
+                    狀態 / Status: <span className={cn(timer.isRunning ? "text-primary" : "text-amber-500")}>{timer.isRunning ? "運行中 / Running" : "暫停 / Paused"}</span>
                   </p>
                 </div>
               </div>
               <div className="flex flex-col md:items-end">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">現在時間 / Current Time</span>
-                <span className="text-xl font-headline font-black text-slate-950 mt-1">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">現在時間 / Current Time</span>
+                <span className="text-2xl font-headline font-bold text-foreground mt-1">
                   {now ? now.toLocaleTimeString('zh-TW', { hour12: false }) : "--:--:--"}
                 </span>
               </div>
@@ -454,7 +454,7 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
 
             <div className="space-y-8">
               <div className="space-y-4">
-                <label className="text-[10px] font-black text-slate-950 uppercase tracking-[0.2em] px-1">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] px-1">
                   設定時長 / Set Duration (H:M:S)
                 </label>
                 <div className="flex flex-col md:flex-row md:items-center gap-4">
@@ -469,13 +469,13 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
                           type="number" 
                           value={item.val || ''} 
                           onChange={(e) => item.set(Math.min(99, parseInt(e.target.value) || 0))} 
-                          className="h-12 rounded-xl border border-slate-200 bg-slate-50 font-black text-center text-base focus:ring-0 text-slate-950 w-full" 
+                          className="h-14 rounded-2xl border-none bg-secondary font-bold text-center text-lg focus:ring-2 focus:ring-primary/20 text-foreground w-full shadow-inner" 
                         />
-                        <span className="absolute -top-2.5 right-2 md:right-3 px-1 md:px-2 bg-white text-[8px] font-black text-orange-600 border border-slate-200 rounded-md uppercase">{item.label}</span>
+                        <span className="absolute -top-3 right-3 px-2 bg-card text-[9px] font-bold text-primary border border-primary/10 rounded-md uppercase shadow-sm">{item.label}</span>
                       </div>
                     ))}
                   </div>
-                  <Button onClick={updateDuration} className="w-full md:w-auto h-12 px-8 rounded-xl font-black text-[10px] bg-slate-950 text-white uppercase tracking-widest shrink-0">套用 / Apply</Button>
+                  <Button onClick={updateDuration} className="w-full md:w-auto h-14 px-10 rounded-2xl font-bold text-[11px] bg-foreground text-background uppercase tracking-widest shrink-0 hover:opacity-90 transition-all active:scale-95 shadow-lg btn-press cursor-pointer">套用 / Apply</Button>
                 </div>
               </div>
 
@@ -483,19 +483,19 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
                 <Button 
                   onClick={toggleTimer} 
                   className={cn(
-                    "h-14 rounded-2xl font-black text-[11px] gap-3 shadow-xl transition-all uppercase tracking-widest",
-                    timer.isRunning ? "bg-rose-500 hover:bg-rose-600" : "bg-orange-600 hover:bg-orange-700"
+                    "h-16 rounded-[1.5rem] font-black text-xs gap-3 shadow-xl shadow-primary/20 transition-all uppercase tracking-[0.2em]",
+                    timer.isRunning ? "bg-rose-500 hover:bg-rose-600" : "bg-primary hover:bg-primary/90"
                   )}
                 >
-                  {timer.isRunning ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+                  {timer.isRunning ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
                   {timer.isRunning ? "停止同步 / Stop Sync" : "啟動同步 / Start Sync"}
                 </Button>
                 <Button 
                   variant="outline" 
-                  className="h-14 rounded-2xl font-black text-[11px] gap-3 border border-slate-200 uppercase tracking-widest text-slate-950 hover:bg-orange-50 shadow-sm" 
+                  className="h-16 rounded-[1.5rem] font-bold text-xs gap-3 border-2 border-border uppercase tracking-[0.2em] text-foreground hover:bg-primary/5 hover:border-primary/10 transition-all shadow-sm cursor-pointer btn-press" 
                   onClick={resetTimer}
                 >
-                  <RotateCcw className="h-5 w-5" /> 重設 / Reset
+                  <RotateCcw className="h-6 w-6" /> 重設 / Reset
                 </Button>
               </div>
             </div>
@@ -547,10 +547,10 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
             <div className="text-[14px] md:text-[18px] font-black text-slate-400 mt-4 tracking-[0.2em]">
               {now ? now.toLocaleTimeString('zh-TW', { hour12: false }) : "--:--:--"}
             </div>
-            <div className="w-full max-w-2xl h-4 bg-white/5 rounded-full overflow-hidden mt-8 border border-white/10 p-0.5">
+            <div className="w-full max-w-2xl h-6 bg-white/5 rounded-full overflow-hidden mt-8 border border-white/10 p-1 relative shadow-inner">
               <div className={cn(
-                "h-full transition-all duration-1000 rounded-full",
-                isCritical ? "bg-gradient-to-r from-rose-600 to-rose-400" : isFinished ? "bg-rose-800" : "bg-gradient-to-r from-orange-600 to-orange-400"
+                "h-full transition-all duration-1000 rounded-full shadow-lg",
+                isCritical ? "bg-gradient-to-r from-rose-600 to-rose-400" : isFinished ? "bg-rose-800" : "bg-gradient-to-r from-primary to-accent"
               )} style={{ width: `${progress}%` }} />
             </div>
           </div>
