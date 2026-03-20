@@ -1,4 +1,3 @@
-
 "use client"
 
 import { PropItem } from "@/types/plan";
@@ -15,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
 import { useRef, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n-context";
 
 function AutoExpandingTextarea({ 
   value, 
@@ -60,9 +60,7 @@ function AutoExpandingTextarea({
       }}
       onChange={(e) => setLocalValue(e.target.value)}
       onInput={adjustHeight}
-      placeholder={placeholder}
-      rows={1}
-      className={cn("w-full resize-none border-none shadow-none focus:outline-none bg-transparent py-3 text-[13px] font-bold text-foreground min-h-[44px] overflow-hidden leading-relaxed", className)}
+      className={cn("w-full resize-none border-none shadow-none focus:outline-none bg-transparent py-3 text-[13px] font-bold text-stone-900 dark:text-white placeholder:text-stone-300 dark:placeholder:text-slate-600 min-h-[44px] overflow-hidden leading-relaxed transition-colors", className)}
     />
   );
 }
@@ -102,7 +100,7 @@ function LocalInput({
         }
       }}
       placeholder={placeholder}
-      className={cn("w-full h-12 border-none shadow-none focus:outline-none bg-transparent text-center text-[13px] font-bold text-foreground", className)}
+      className={cn("w-full h-12 border-none shadow-none focus:outline-none bg-transparent text-center text-[13px] font-bold text-stone-900 dark:text-white placeholder:text-stone-300 dark:placeholder:text-slate-600 transition-colors", className)}
     />
   );
 }
@@ -114,6 +112,8 @@ interface PropsTableProps {
 }
 
 export function PropsTable({ label, value = [], onChange }: PropsTableProps) {
+  const { t } = useTranslation();
+
   const handleAddRow = () => {
     const newRow: PropItem = {
       id: Math.random().toString(36).substr(2, 9),
@@ -137,58 +137,58 @@ export function PropsTable({ label, value = [], onChange }: PropsTableProps) {
   return (
     <div className="space-y-4">
       {label && (
-        <label className="text-[10px] font-bold text-foreground uppercase tracking-[0.2em] px-1">
+        <label className="text-[10px] font-bold text-stone-400 dark:text-slate-500 uppercase tracking-[0.2em] px-1">
           {label}
         </label>
       )}
 
-      <div className="border border-border dark:border-white/10 rounded-[1.5rem] overflow-x-auto bg-card dark:bg-neutral-900/80 shadow-xl scrollbar-hide">
+      <div className="border border-stone-200 dark:border-white/5 rounded-[1.5rem] overflow-x-auto bg-white dark:bg-slate-900/50 shadow-xl shadow-stone-200/20 dark:shadow-none scrollbar-hide transition-colors">
         <Table className="min-w-[900px] table-auto">
-          <TableHeader className="bg-secondary/50 dark:bg-white/5">
-            <TableRow className="border-b border-border dark:border-white/10">
-              <TableHead className="min-w-[250px] font-bold text-foreground border-r border-border dark:border-white/10 h-12 text-[11px] uppercase tracking-wider">項目名稱 / Item Name</TableHead>
-              <TableHead className="w-[120px] font-bold text-foreground border-r border-border dark:border-white/10 text-center whitespace-nowrap text-[11px] uppercase tracking-wider">數量 / Qty</TableHead>
-              <TableHead className="w-[120px] font-bold text-foreground border-r border-border dark:border-white/10 text-center whitespace-nowrap text-[11px] uppercase tracking-wider">單位 / Unit</TableHead>
-              <TableHead className="min-w-[350px] font-bold text-foreground border-r border-border dark:border-white/10 text-[11px] uppercase tracking-wider">備註 / Remarks</TableHead>
-              <TableHead className="w-[80px] text-center no-print font-bold text-foreground text-[11px] uppercase">DEL</TableHead>
+          <TableHeader className="bg-stone-50/50 dark:bg-slate-900/50">
+            <TableRow className="border-b border-stone-200 dark:border-white/10">
+              <TableHead className="min-w-[250px] font-bold text-stone-900 dark:text-slate-400 border-r border-stone-200 dark:border-white/10 h-12 text-[10px] uppercase tracking-widest">{t('PROP_NAME')}</TableHead>
+              <TableHead className="w-[120px] font-bold text-stone-900 dark:text-slate-400 border-r border-stone-200 dark:border-white/10 text-center whitespace-nowrap text-[10px] uppercase tracking-widest">Qty</TableHead>
+              <TableHead className="w-[120px] font-bold text-stone-900 dark:text-slate-400 border-r border-stone-200 dark:border-white/10 text-center whitespace-nowrap text-[10px] uppercase tracking-widest">Unit</TableHead>
+              <TableHead className="min-w-[350px] font-bold text-stone-900 dark:text-slate-400 border-r border-stone-200 dark:border-white/10 text-[10px] uppercase tracking-widest">{t('OP_REMARKS')}</TableHead>
+              <TableHead className="w-[80px] text-center no-print font-bold text-stone-900 dark:text-slate-400 text-[10px] uppercase">{t('DELETE')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {value && value.length > 0 ? (
               value.map((row) => (
-                <TableRow key={row.id} className="border-b border-border dark:border-white/10 last:border-0 hover:bg-primary/5 transition-colors">
-                  <TableCell className="border-r border-border dark:border-white/10 align-top p-0">
+                <TableRow key={row.id} className="border-b border-stone-200 dark:border-white/5 last:border-0 hover:bg-stone-50/50 dark:hover:bg-white/5 transition-colors">
+                  <TableCell className="border-r border-stone-200 dark:border-white/10 align-top p-0">
                     <AutoExpandingTextarea 
                       value={row.name} 
                       onChange={(val) => handleUpdateRow(row.id, 'name', val)} 
-                      placeholder="道具名稱 / Item..." 
+                      placeholder={t('PROP_NAME')} 
                       className="px-4"
                     />
                   </TableCell>
-                  <TableCell className="border-r border-border dark:border-white/10 text-center align-top p-0 whitespace-nowrap">
+                  <TableCell className="border-r border-stone-200 dark:border-white/10 text-center align-top p-0 whitespace-nowrap">
                     <LocalInput 
                       value={row.quantity} 
                       onChange={(val) => handleUpdateRow(row.id, 'quantity', val)} 
                       placeholder="1" 
                     />
                   </TableCell>
-                  <TableCell className="border-r border-border dark:border-white/10 text-center align-top p-0 whitespace-nowrap">
+                  <TableCell className="border-r border-stone-200 dark:border-white/10 text-center align-top p-0 whitespace-nowrap">
                     <LocalInput 
                       value={row.unit} 
                       onChange={(val) => handleUpdateRow(row.id, 'unit', val)} 
-                      placeholder="個 / Unit" 
+                      placeholder="Unit" 
                     />
                   </TableCell>
-                  <TableCell className="border-r border-border dark:border-white/10 align-top p-0">
+                  <TableCell className="border-r border-stone-200 dark:border-white/10 align-top p-0">
                     <AutoExpandingTextarea 
                       value={row.remarks || ""} 
                       onChange={(val) => handleUpdateRow(row.id, 'remarks', val)} 
-                      placeholder="備註 / Details..." 
+                      placeholder={t('OP_REMARKS')} 
                       className="px-4"
                     />
                   </TableCell>
                   <TableCell className="text-center no-print align-top pt-2">
-                    <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-rose-600" onClick={() => handleRemoveRow(row.id)}>
+                    <Button variant="ghost" size="icon" className="h-9 w-9 text-stone-400 dark:text-slate-600 hover:text-rose-600 dark:hover:text-rose-400" onClick={() => handleRemoveRow(row.id)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </TableCell>
@@ -196,18 +196,22 @@ export function PropsTable({ label, value = [], onChange }: PropsTableProps) {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-20 text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
-                  目前無道具資訊 / No Items Listed
+                <TableCell colSpan={5} className="text-center py-20 text-stone-400 dark:text-slate-700 font-bold uppercase tracking-widest text-[10px]">
+                  {t('EMPTY_SLOT')}
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
           <TableFooter className="bg-transparent no-print">
-            <TableRow className="border-t border-border dark:border-white/10">
+            <TableRow className="border-t border-stone-200 dark:border-white/10">
               <TableCell colSpan={5} className="p-0">
                 <div className="flex justify-center p-5">
-                  <Button variant="outline" className="h-10 px-8 rounded-xl text-primary border-border hover:bg-primary hover:text-primary-foreground gap-3 font-bold uppercase tracking-widest text-[10px] transition-all shadow-md cursor-pointer" onClick={handleAddRow}>
-                    <Plus className="h-4 w-4" /> 新增道具 / Add Item
+                  <Button 
+                    variant="outline" 
+                    className="h-10 px-8 rounded-xl text-orange-600 dark:text-amber-400 border-stone-200 dark:border-white/10 hover:bg-orange-50 dark:hover:bg-amber-400/5 gap-3 font-bold uppercase tracking-widest text-[10px] transition-all shadow-sm" 
+                    onClick={handleAddRow}
+                  >
+                    <Plus className="h-4 w-4" /> {t('ADD_ITEM')}
                   </Button>
                 </div>
               </TableCell>

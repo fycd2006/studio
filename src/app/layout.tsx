@@ -3,6 +3,9 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { FirebaseClientProvider } from '@/firebase';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import { AuthProvider } from '@/lib/auth-context';
+import { I18nProvider } from '@/lib/i18n-context';
+import { AppShell } from '@/components/AppShell';
 import Script from 'next/script';
 
 export const metadata: Metadata = {
@@ -23,7 +26,7 @@ export default function RootLayout({
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <meta name="theme-color" content="#F37216" />
+        <meta name="theme-color" content="#0B132B" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="CD Camp" />
@@ -32,10 +35,16 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@300;400;700&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
-      <body className="font-body antialiased">
+      <body className="font-body antialiased" suppressHydrationWarning>
         <ThemeProvider>
           <FirebaseClientProvider>
-            {children}
+            <AuthProvider>
+              <I18nProvider>
+                <AppShell>
+                  {children}
+                </AppShell>
+              </I18nProvider>
+            </AuthProvider>
           </FirebaseClientProvider>
         </ThemeProvider>
         <Script id="register-sw" strategy="afterInteractive" dangerouslySetInnerHTML={{

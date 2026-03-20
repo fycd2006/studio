@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n-context";
 
 function CellInput({ 
   value, 
@@ -39,7 +40,7 @@ function CellInput({
 
   if (readOnly) {
     return (
-      <div className={cn("flex items-center justify-center h-full text-foreground font-bold text-xs sm:text-sm md:text-base px-1 md:px-2", className)}>
+      <div className={cn("flex items-center justify-center h-full text-slate-950 font-black text-xs sm:text-sm md:text-base px-1 md:px-2", className)}>
         {value || "--"}
       </div>
     );
@@ -61,7 +62,7 @@ function CellInput({
       }}
       placeholder={placeholder}
       className={cn(
-        "w-full h-full text-center border-none shadow-none focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all bg-card/50 hover:bg-primary/5 rounded-xl text-foreground font-bold text-xs sm:text-sm md:text-base px-1 md:px-2",
+        "w-full h-full text-center border-none shadow-none focus:outline-none focus:ring-1 focus:ring-amber-500/50 transition-all bg-stone-50/50 dark:bg-white/5 hover:bg-stone-100 dark:hover:bg-white/10 rounded-md text-stone-900 dark:text-white font-bold text-xs sm:text-sm md:text-base px-1 md:px-2 placeholder:text-stone-300 dark:placeholder:text-slate-600",
         className
       )}
     />
@@ -76,13 +77,14 @@ interface AdminRotationTableProps {
 }
 
 export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = true }: AdminRotationTableProps) {
+  const { t } = useTranslation();
   
   const addStation = () => {
     if (isReadOnly) return;
     const newStationId = Math.random().toString(36).substr(2, 9);
     const newStation: Station = {
       id: newStationId,
-      name: `關卡${table.stations.length + 1}`,
+      name: `${t('STATION_LABEL')}${table.stations.length + 1}`,
       location: '',
       lead: '',
       assistant: ''
@@ -134,12 +136,12 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
     onUpdate({ teamOrders: newTeams });
   };
 
-  const unifiedAddBtnStyle = "rounded-xl font-bold gap-2 h-8 md:h-10 px-4 md:px-6 border border-border text-primary hover:bg-primary hover:text-primary-foreground transition-all text-xs md:text-sm bg-card shadow-sm mx-auto tracking-widest btn-press cursor-pointer";
+  const unifiedAddBtnStyle = "rounded-xl font-bold gap-2 h-8 md:h-10 px-4 md:px-6 border border-stone-200 dark:border-white/10 text-orange-600 dark:text-amber-400 hover:bg-orange-600 dark:hover:bg-amber-400 hover:text-white dark:hover:text-slate-900 transition-all text-[10px] md:text-xs bg-white dark:bg-slate-800 shadow-sm mx-auto tracking-widest uppercase";
 
   return (
-    <Card className="glass-card rounded-[2.5rem] border-none shadow-2xl shadow-primary/5 overflow-hidden w-full max-w-4xl mx-auto mb-8">
+    <Card className="rounded-2xl border border-stone-200 dark:border-white/5 shadow-md bg-white dark:bg-slate-900/50 overflow-hidden w-full max-w-4xl mx-auto transition-colors">
       <CardContent className="p-0">
-        <div className="bg-gradient-to-r from-primary via-primary to-accent py-4 px-8 flex items-center justify-between">
+        <div className="bg-gradient-to-r from-stone-800 to-stone-900 dark:from-slate-800 dark:to-slate-950 py-2.5 px-6 flex items-center justify-between border-b border-stone-200 dark:border-white/10">
           <div className="w-8">
              {!isReadOnly && (
                 <button onClick={addStation} className="h-6 w-6 rounded-full bg-white/20 text-white hover:bg-white/40 shadow-sm transition-all flex items-center justify-center">
@@ -151,8 +153,8 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
             value={table.title} 
             readOnly={isReadOnly}
             onSave={(val) => onUpdate({ title: val })} 
-            className="font-headline font-black text-white text-base md:text-lg h-9 md:h-12 bg-transparent border border-transparent text-center shadow-none flex-1 tracking-tight hover:bg-orange-600/50 hover:text-white focus:bg-orange-700/50 focus:border-white/50 focus:text-white transition-all rounded-md placeholder:text-white/50" 
-            placeholder="輸入闖關表標題"
+            className="font-headline font-bold text-white text-base md:text-lg h-9 md:h-12 bg-transparent border border-transparent text-center shadow-none flex-1 tracking-tight hover:bg-white/10 hover:text-white focus:bg-white/10 focus:border-white/20 focus:text-white transition-all rounded-md placeholder:text-white/40" 
+            placeholder={t('ENTER_TITLE')}
           />
           <div className="w-8" />
         </div>
@@ -160,19 +162,19 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
         <div className="overflow-x-auto w-full scrollbar-hide">
           <table className="w-full border-collapse table-fixed min-w-[800px]">
             <thead>
-              <tr className="border-b border-border bg-secondary/30 backdrop-blur-sm">
-                <th className="w-[100px] md:w-[140px] p-1 border-r border-border bg-secondary/20">
+              <tr className="border-b border-stone-200 dark:border-white/10 bg-stone-50/50 dark:bg-slate-900/80">
+                <th className="w-[100px] md:w-[140px] p-1 border-r border-stone-200 dark:border-white/10 bg-stone-100/30 dark:bg-white/5">
                    <div className="flex flex-col items-center gap-1 p-1 md:p-2">
                     {isReadOnly ? (
-                      <span className="font-bold text-[10px] md:text-sm text-primary uppercase tracking-widest">{table.day || "Day 1"}</span>
+                      <span className="font-bold text-[10px] md:text-xs text-stone-500 dark:text-slate-400 uppercase tracking-widest">{table.day || "Day 1"}</span>
                     ) : (
                       <Select value={table.day || "Day 1"} onValueChange={(val) => onUpdate({ day: val })}>
-                        <SelectTrigger className="h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-sm text-primary bg-card border border-border shadow-none px-2">
+                        <SelectTrigger className="h-7 md:h-8 rounded-lg font-bold text-[10px] text-stone-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-stone-200 dark:border-white/10 shadow-none px-2">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           {["Day 1", "Day 2", "Day 3", "Day 4", "Day 5"].map(day => (
-                            <SelectItem key={day} value={day} className="font-bold text-xs md:text-sm">{day}</SelectItem>
+                            <SelectItem key={day} value={day} className="font-bold text-xs">{day}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -180,12 +182,12 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
                   </div>
                 </th>
                 {table.stations.map((s, idx) => (
-                  <th key={s.id} className="p-1 md:p-2 border-r border-border group/header relative bg-card/50">
+                  <th key={s.id} className="p-1 md:p-2 border-r border-stone-200 dark:border-white/10 group/header relative bg-white/30 dark:bg-slate-800/30">
                     <CellInput 
                       value={s.name} 
                       readOnly={isReadOnly}
                       onSave={(val) => updateStation(idx, { name: val })} 
-                      className="font-bold text-xs sm:text-sm md:text-base text-foreground h-8 md:h-10 bg-transparent" 
+                      className="font-bold text-xs sm:text-sm md:text-base text-stone-900 dark:text-white h-8 md:h-10 bg-transparent" 
                     />
                     {!isReadOnly && table.stations.length > 1 && (
                       <button onClick={() => removeStation(idx)} className="absolute -top-1 -right-1 h-3.5 w-3.5 bg-rose-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover/header:opacity-100 transition-all shadow-md z-20">
@@ -198,19 +200,19 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
             </thead>
             <tbody className="text-xs sm:text-sm md:text-base">
               {[
-                { label: '地點', key: 'location' as keyof Station, icon: MapPin },
-                { label: '主關主', key: 'lead' as keyof Station, icon: User },
-                { label: '副關主', key: 'assistant' as keyof Station, icon: UserPlus }
+                { label: t('LOCATION'), key: 'location' as keyof Station, icon: MapPin },
+                { label: t('LEAD'), key: 'lead' as keyof Station, icon: User },
+                { label: t('ASSISTANT'), key: 'assistant' as keyof Station, icon: UserPlus }
               ].map((row) => (
-                <tr key={row.label} className="border-b border-border hover:bg-primary/5 transition-colors">
-                  <td className="w-[100px] md:w-[140px] p-2 border-r border-border text-center font-bold text-[10px] sm:text-xs md:text-sm text-foreground tracking-widest bg-secondary/10">
+                <tr key={row.label} className="border-b border-stone-200 dark:border-white/5 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors">
+                  <td className="w-[100px] md:w-[140px] p-2 border-r border-stone-200 dark:border-white/10 text-center font-bold text-[10px] text-stone-500 dark:text-slate-400 tracking-widest bg-stone-50/30 dark:bg-white/5">
                     <div className="flex items-center justify-center gap-1.5 md:gap-2">
-                      <row.icon className="h-3 w-3 md:h-4 md:w-4 text-primary" />
+                      <row.icon className="h-3 w-3 md:h-4 md:w-4 text-stone-400 dark:text-slate-500" />
                       {row.label}
                     </div>
                   </td>
                   {table.stations.map((s, idx) => (
-                    <td key={s.id} className="p-1 md:p-2 border-r border-border">
+                    <td key={s.id} className="p-1 md:p-2 border-r border-stone-200 dark:border-white/10">
                       <CellInput 
                         value={String(s[row.key] || '')} 
                         readOnly={isReadOnly}
@@ -222,33 +224,30 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
                 </tr>
               ))}
 
-              <tr className="bg-secondary/40 border-b border-border">
+              <tr className="bg-stone-100/50 dark:bg-white/5 border-b border-stone-200 dark:border-white/10">
                 <td colSpan={table.stations.length + 1} className="py-2 px-4 md:py-3 md:px-6">
-                  <span className="text-[10px] md:text-sm font-bold text-foreground tracking-widest uppercase flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                    闖關隊伍安排
-                  </span>
+                  <span className="text-[10px] font-bold text-stone-400 dark:text-slate-500 tracking-widest uppercase">{t('STATION_ARRANGEMENT')}</span>
                 </td>
               </tr>
 
               {table.rounds.map((round, rIdx) => (
-                <tr key={rIdx} className="border-b border-border hover:bg-secondary/30">
-                  <td className="w-[100px] md:w-[140px] p-2 border-r border-border text-center bg-secondary/10">
-                    <span className="text-[10px] sm:text-xs md:text-sm font-bold text-muted-foreground tracking-widest">第 {rIdx + 1} 回合</span>
+                <tr key={rIdx} className="border-b border-stone-200 dark:border-white/5 hover:bg-stone-50 dark:hover:bg-white/5">
+                  <td className="w-[100px] md:w-[140px] p-2 border-r border-stone-200 dark:border-white/10 text-center bg-stone-50/20 dark:bg-white/5">
+                    <span className="text-[10px] font-bold text-stone-500 dark:text-slate-400 tracking-widest uppercase">{t('ROUND_NUMBER', { n: rIdx + 1 })}</span>
                   </td>
                   {table.stations.map((_, sIdx) => (
-                    <td key={sIdx} className="p-1 md:p-2 border-r border-border text-center">
+                    <td key={sIdx} className="p-1 md:p-2 border-r border-stone-200 dark:border-white/10 text-center">
                       <CellInput 
                         value={round.cells[sIdx] || ''} 
                         readOnly={isReadOnly}
                         onSave={(val) => updateRoundCell(rIdx, sIdx, val)} 
-                        className="font-bold text-xs sm:text-sm md:text-base text-foreground h-8 md:h-10" 
+                        className="font-bold text-xs sm:text-sm md:text-base text-stone-900 dark:text-white h-8 md:h-10" 
                       />
                     </td>
                   ))}
                   {!isReadOnly && (
-                    <td className="w-10 md:w-16 p-0 text-center border-b border-border">
-                      <button className="h-8 w-8 md:h-10 md:w-10 text-muted-foreground hover:text-rose-600 flex items-center justify-center mx-auto transition-colors" onClick={() => onUpdate({ rounds: table.rounds.filter((_, i) => i !== rIdx) })}>
+                    <td className="w-10 md:w-16 p-0 text-center border-b border-stone-200 dark:border-white/5">
+                      <button className="h-8 w-8 md:h-10 md:w-10 text-stone-400 dark:text-slate-600 hover:text-rose-600 dark:hover:text-rose-400 flex items-center justify-center mx-auto transition-colors" onClick={() => onUpdate({ rounds: table.rounds.filter((_, i) => i !== rIdx) })}>
                         <Trash2 className="h-4 w-4 md:h-5 md:w-5" />
                       </button>
                     </td>
@@ -257,27 +256,24 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
               ))}
               
               {!isReadOnly && (
-                <tr className="no-print border-b border-border">
-                  <td colSpan={table.stations.length + 2} className="p-2 md:p-3 text-center bg-primary/5">
+                <tr className="no-print border-b border-stone-200 dark:border-white/10">
+                  <td colSpan={table.stations.length + 2} className="p-2 md:p-3 text-center bg-transparent">
                     <Button variant="outline" size="sm" className={unifiedAddBtnStyle} onClick={() => onUpdate({ rounds: [...table.rounds, { cells: new Array(table.stations.length).fill('') }] })}>
-                      <Plus className="h-3 w-3 md:h-4 md:w-4" /> 新增回合
+                      <Plus className="h-3 w-3 md:h-4 md:w-4" /> {t('ADD_ROUND')}
                     </Button>
                   </td>
                 </tr>
               )}
 
-              <tr className="bg-secondary/40 border-b border-border">
+              <tr className="bg-stone-100/50 dark:bg-white/5 border-b border-stone-200 dark:border-white/10">
                 <td colSpan={table.stations.length + 2} className="py-2 px-4 md:py-3 md:px-6">
-                  <span className="text-[10px] md:text-sm font-bold text-foreground tracking-widest uppercase flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-                    闖關順序
-                  </span>
+                  <span className="text-[10px] font-bold text-stone-400 dark:text-slate-500 tracking-widest uppercase">{t('ROTATION_ORDER')}</span>
                 </td>
               </tr>
 
               {table.teamOrders.map((team, tIdx) => (
-                <tr key={team.id} className="border-b border-border hover:bg-secondary/30">
-                  <td className="w-[100px] md:w-[140px] p-2 border-r border-border text-center bg-secondary/10">
+                <tr key={team.id} className="border-b border-stone-200 dark:border-white/5 hover:bg-stone-50 dark:hover:bg-white/5">
+                  <td className="w-[100px] md:w-[140px] p-2 border-r border-stone-200 dark:border-white/10 text-center bg-stone-50/20">
                     <CellInput 
                       value={team.name} 
                       readOnly={isReadOnly}
@@ -286,22 +282,22 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
                         newTeams[tIdx] = { ...newTeams[tIdx], name: val };
                         onUpdate({ teamOrders: newTeams });
                       }} 
-                      className="font-bold text-xs sm:text-sm md:text-base text-foreground h-8 md:h-10" 
+                      className="font-bold text-xs sm:text-sm md:text-base text-stone-900 dark:text-white h-8 md:h-10" 
                     />
                   </td>
                   {table.stations.map((_, oIdx) => (
-                    <td key={oIdx} className="p-1 md:p-2 border-r border-border text-center">
+                    <td key={oIdx} className="p-1 md:p-2 border-r border-stone-200 dark:border-white/10 text-center">
                       <CellInput 
                         value={(team.stations && team.stations[oIdx]) || ''} 
                         readOnly={isReadOnly}
                         onSave={(val) => updateTeamOrder(tIdx, oIdx, val)} 
-                        className="font-bold text-xs sm:text-sm md:text-base text-primary h-8 md:h-10" 
+                        className="font-bold text-xs sm:text-sm md:text-base text-orange-600 dark:text-amber-400 h-8 md:h-10" 
                       />
                     </td>
                   ))}
                   {!isReadOnly && (
-                    <td className="w-10 md:w-16 p-0 text-center border-b border-border">
-                      <button className="h-8 w-8 md:h-10 md:w-10 text-muted-foreground hover:text-rose-600 flex items-center justify-center mx-auto transition-colors" onClick={() => onUpdate({ teamOrders: table.teamOrders.filter((_, i) => i !== tIdx) })}>
+                    <td className="w-10 md:w-16 p-0 text-center border-b border-stone-200 dark:border-white/5">
+                      <button className="h-8 w-8 md:h-10 md:w-10 text-stone-400 dark:text-slate-600 hover:text-rose-600 dark:hover:text-rose-400 flex items-center justify-center mx-auto transition-colors" onClick={() => onUpdate({ teamOrders: table.teamOrders.filter((_, i) => i !== tIdx) })}>
                         <Trash2 className="h-4 w-4 md:h-5 md:w-5" />
                       </button>
                     </td>
@@ -310,10 +306,10 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
               ))}
               
               {!isReadOnly && (
-                <tr className="no-print border-b border-border">
-                  <td className="p-2 md:p-3 text-center bg-primary/5" colSpan={table.stations.length + 2}>
-                    <Button variant="outline" size="sm" className={unifiedAddBtnStyle} onClick={() => onUpdate({ teamOrders: [...table.teamOrders, { id: Math.random().toString(36).substr(2, 9), name: `第${table.teamOrders.length + 1}小隊`, stations: new Array(table.stations.length).fill('') }] })}>
-                      <Plus className="h-3 w-3 md:h-4 md:w-4" /> 新增隊伍
+                <tr className="no-print border-b border-stone-200 dark:border-white/10">
+                  <td className="p-2 md:p-3 text-center bg-transparent" colSpan={table.stations.length + 2}>
+                    <Button variant="outline" size="sm" className={unifiedAddBtnStyle} onClick={() => onUpdate({ teamOrders: [...table.teamOrders, { id: Math.random().toString(36).substr(2, 9), name: `Team ${table.teamOrders.length + 1}`, stations: new Array(table.stations.length).fill('') }] })}>
+                      <Plus className="h-3 w-3 md:h-4 md:w-4" /> {t('ADD_TEAM')}
                     </Button>
                   </td>
                 </tr>
@@ -323,9 +319,9 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
         </div>
 
         {!isReadOnly && (
-          <div className="bg-primary/5 p-2 md:p-4 flex justify-end border-t border-border no-print">
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-500/10 font-bold text-[10px] sm:text-xs md:text-sm tracking-widest transition-all rounded-lg h-8 md:h-10 px-4" onClick={onDelete}>
-              <Trash2 className="h-4 w-4 md:h-5 md:w-5 mr-1" /> 刪除表格
+          <div className="bg-stone-50/10 dark:bg-white/5 p-2 md:p-4 flex justify-end border-t border-stone-200 dark:border-white/10 no-print">
+            <Button variant="ghost" size="sm" className="text-stone-400 dark:text-slate-600 hover:text-rose-700 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 font-bold text-[10px] sm:text-xs md:text-sm tracking-widest transition-all rounded-lg h-8 md:h-10 px-4" onClick={onDelete}>
+              <Trash2 className="h-4 w-4 md:h-5 md:w-5 mr-1" /> {t('DELETE_TABLE')}
             </Button>
           </div>
         )}

@@ -82,9 +82,9 @@ export const Sidebar = React.forwardRef<
   if (isMobile) {
     return (
       <Sheet open={openMobile} onOpenChange={setOpenMobile}>
-        <SheetContent side="left" className="w-[--sidebar-width] bg-white p-0 text-sidebar-foreground border-none flex flex-col h-full overflow-hidden shadow-2xl">
+        <SheetContent side="left" className="w-[--sidebar-width] bg-brand-navy p-0 text-sidebar-foreground border-none flex flex-col h-full overflow-hidden shadow-2xl">
           <SheetTitle className="sr-only">側邊欄選單</SheetTitle>
-          <div className="flex-1 w-full overflow-y-auto overflow-x-hidden scrollbar-hide bg-white">
+          <div className="flex-1 w-full overflow-y-auto overflow-x-hidden scrollbar-hide bg-brand-navy">
             {children}
           </div>
         </SheetContent>
@@ -128,6 +128,11 @@ export const SidebarContent = React.forwardRef<HTMLDivElement, React.ComponentPr
   <div ref={ref} data-sidebar="content" className={cn("flex min-h-0 flex-1 flex-col gap-1 overflow-auto group-data-[collapsible=icon]:overflow-hidden pb-52", className)} {...props} />
 ))
 SidebarContent.displayName = "SidebarContent"
+
+export const SidebarFooter = React.forwardRef<HTMLDivElement, React.ComponentProps<"div">>(({ className, ...props }, ref) => (
+  <div ref={ref} data-sidebar="footer" className={cn("flex flex-col gap-2 p-3", className)} {...props} />
+))
+SidebarFooter.displayName = "SidebarFooter"
 
 export const SidebarGroup = React.forwardRef<HTMLDivElement, React.ComponentProps<"div">>(({ className, ...props }, ref) => (
   <div ref={ref} data-sidebar="group" className={cn("relative flex w-full min-w-0 flex-col p-2", className)} {...props} />

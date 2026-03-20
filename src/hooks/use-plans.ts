@@ -56,7 +56,19 @@ export function usePlans() {
   }, [db, user]);
   const { data: settings } = useDoc<UserSettings>(settingsRef);
 
-  const [activeCampId, setActiveCampId] = useState<string | null>(null);
+  const [activeCampId, setActiveCampId] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('activeCampId');
+    }
+    return null;
+  });
+
+  useEffect(() => {
+    if (activeCampId) {
+      localStorage.setItem('activeCampId', activeCampId);
+    }
+  }, [activeCampId]);
+
   const [activePlanId, setActivePlanId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'editor' | 'admin'>('editor');
   
@@ -319,11 +331,15 @@ export function usePlans() {
     }
   }, [camps, activeCampId]);
 
-  const addCamp = useCallback((name: string, startDate?: string, endDate?: string) => {
+  const addCamp = useCallback((name: string, fields?: Partial<Camp>) => {
     if (!db || !user) return;
     const campId = Math.random().toString(36).substr(2, 9);
     const newCamp: Camp = { 
-      id: campId, name, startDate, endDate, ownerId: user.uid, createdAt: Date.now() 
+      id: campId, 
+      name, 
+      ...fields,
+      ownerId: user.uid, 
+      createdAt: Date.now() 
     };
     setDocumentNonBlocking(doc(db, 'camps', campId), newCamp, { merge: true });
     setActiveCampId(campId);
@@ -437,8 +453,15 @@ export function usePlans() {
     deleteDocumentNonBlocking(doc(db, 'rotationTables', id));
   }, [db, pushTableHistory]);
 
+  const toggleCampLock = useCallback((campId: string) => {
+    if (!db) return;
+    const camp = camps.find(c => c.id === campId);
+    if (!camp) return;
+    updateDocumentNonBlocking(doc(db, 'camps', campId), { isLocked: !camp.isLocked });
+  }, [db, camps]);
+
   return {
-    camps, activeCampId, setActiveCampId, addCamp, updateCamp, deleteCamp,
+    camps, activeCampId, setActiveCampId, addCamp, updateCamp, deleteCamp, toggleCampLock,
     plans: allPlans.filter(p => p.campId === activeCampId), 
     tables: allTables.filter(t => t.campId === activeCampId), 
     activePlan: allPlans.find(p => p.id === activePlanId) || null,

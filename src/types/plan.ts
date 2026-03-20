@@ -22,11 +22,21 @@ export interface CampItem {
 export interface Camp {
   id: string;
   name: string;
-  startDate?: string;
-  endDate?: string;
-  meeting1Date?: string;
-  meeting2Date?: string;
-  meeting3Date?: string;
+  startDate?: string; // Legacy
+  endDate?: string;   // Legacy
+  campStartDate?: string;
+  campEndDate?: string;
+  meeting1StartDate?: string;
+  meeting1EndDate?: string;
+  meeting2StartDate?: string;
+  meeting2EndDate?: string;
+  meeting3StartDate?: string;
+  meeting3EndDate?: string;
+  trainingStartDate?: string;
+  trainingEndDate?: string;
+  siteStartDate?: string;
+  siteEndDate?: string;
+  isLocked?: boolean;
   ownerId: string;
   createdAt: number;
   campItems?: CampItem[];

@@ -49,6 +49,29 @@ export default {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
+        sidebar: {
+          DEFAULT: 'hsl(var(--sidebar-background))',
+          foreground: 'hsl(var(--sidebar-foreground))',
+          primary: 'hsl(var(--sidebar-primary))',
+          'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
+          accent: 'hsl(var(--sidebar-accent))',
+          'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
+          border: 'hsl(var(--sidebar-border))',
+          ring: 'hsl(var(--sidebar-ring))',
+        },
+        // SaaS Brand Colors (Navy & Gold -> Updated to Warm Agency)
+        brand: {
+          navy: '#0B132B',
+          navyLight: '#1C2541',
+          gold: '#C5A059',
+          goldLight: '#D4AF37',
+          goldDark: '#B8860B',
+          // New Warm Palette
+          warmBg: '#FAF9F6', // stone-50/orange-50 mix
+          warmAccent: '#F97316', // orange-500
+          warmHighlight: '#FACC15', // yellow-400
+          warmText: '#292524', // stone-800
+        }
       },
       borderRadius: {
         lg: 'var(--radius)',
