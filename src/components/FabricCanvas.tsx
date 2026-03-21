@@ -13,16 +13,14 @@ import {
   Trash2,
   MousePointer2,
   Minus,
-  Hand,
-  ZoomIn,
-  ZoomOut,
-  Maximize
+  Hand
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useTheme } from "next-themes";
 
 interface FabricCanvasProps {
   initialData?: string | null;
@@ -38,23 +36,34 @@ export function FabricCanvas({ initialData, initialHeight = 500, onSave }: Fabri
   const clipboard = useRef<any>(null);
   const isInitialLoad = useRef(true);
   
-  const [brushColor, setBrushColor] = useState("#336699");
+  const { resolvedTheme } = useTheme();
+  const [brushColor, setBrushColor] = useState("");
+  const [userPickedColor, setUserPickedColor] = useState(false);
   const [brushSize, setBrushSize] = useState(3);
   const [activeTool, setActiveTool] = useState<'pen' | 'select' | 'pan' | 'shape'>('select');
   const [canvasHeight, setCanvasHeight] = useState(initialHeight || 500);
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
 
+  useEffect(() => {
+    if (!userPickedColor) {
+      setBrushColor(resolvedTheme === 'dark' ? '#f8fafc' : '#336699');
+    }
+  }, [resolvedTheme, userPickedColor]);
+
+  // Use effective color so UI renders immediately without waiting for effect
+  const activeColor = brushColor || (resolvedTheme === 'dark' ? '#f8fafc' : '#336699');
+
   const activeToolRef = useRef(activeTool);
-  const brushColorRef = useRef(brushColor);
+  const brushColorRef = useRef(activeColor);
   const brushSizeRef = useRef(brushSize);
   const pendingShapeRef = useRef<'rect' | 'circle' | 'triangle' | 'line' | 'text' | null>(null);
   const lastSavedData = useRef(initialData);
 
   useEffect(() => {
     activeToolRef.current = activeTool;
-    brushColorRef.current = brushColor;
+    brushColorRef.current = activeColor;
     brushSizeRef.current = brushSize;
-  }, [activeTool, brushColor, brushSize]);
+  }, [activeTool, activeColor, brushSize]);
 
   // Sync initialData changes from external sources (like Undo/Redo)
   useEffect(() => {
@@ -398,7 +407,7 @@ export function FabricCanvas({ initialData, initialHeight = 500, onSave }: Fabri
       fabricRef.current.selection = false;
       fabricRef.current.defaultCursor = 'default';
       const brush = new fabric.PencilBrush(fabricRef.current);
-      brush.color = brushColor;
+      brush.color = activeColor;
       brush.width = brushSize;
       fabricRef.current.freeDrawingBrush = brush;
     } else if (tool === 'pan') {
@@ -569,14 +578,14 @@ export function FabricCanvas({ initialData, initialHeight = 500, onSave }: Fabri
 
   useEffect(() => {
     if (fabricRef.current && activeTool === 'pen') {
-      (fabricRef.current.freeDrawingBrush as fabric.PencilBrush).color = brushColor;
+      (fabricRef.current.freeDrawingBrush as fabric.PencilBrush).color = activeColor;
       (fabricRef.current.freeDrawingBrush as fabric.PencilBrush).width = brushSize;
     }
-  }, [brushColor, brushSize, activeTool]);
+  }, [activeColor, brushSize, activeTool]);
 
   return (
-    <div className="flex flex-col gap-0 border-none bg-white rounded-xl overflow-hidden">
-      <div className="flex flex-wrap items-center gap-1 p-1 bg-white/40 backdrop-blur-md sticky top-0 z-10 border-b border-slate-100/30">
+    <div className="flex flex-col gap-0 border border-stone-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-xl overflow-hidden shadow-sm">
+      <div className="flex flex-wrap items-center gap-1 p-1 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md sticky top-0 z-10 border-b border-slate-100/30 dark:border-slate-800/80">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -602,13 +611,14 @@ export function FabricCanvas({ initialData, initialHeight = 500, onSave }: Fabri
 
         <Popover open={isColorPickerOpen} onOpenChange={setIsColorPickerOpen}>
           <PopoverTrigger asChild>
-            <div className="w-5 h-5 rounded-full cursor-pointer border border-white ring-1 ring-slate-200" style={{ backgroundColor: brushColor }} />
+            <div className="w-5 h-5 rounded-full cursor-pointer ring-1 ring-slate-200 dark:ring-slate-700 hover:ring-2 hover:ring-primary transition-all" style={{ backgroundColor: activeColor }} />
           </PopoverTrigger>
-          <PopoverContent className="w-48 p-3 rounded-2xl shadow-2xl">
+          <PopoverContent className="w-48 p-3 rounded-2xl shadow-2xl bg-white dark:bg-slate-800 border-stone-200 dark:border-slate-700">
             <div className="grid grid-cols-4 gap-2">
-              {['#336699', '#3b82f6', '#ef4444', '#22c55e', '#f97316', '#a855f7', '#000000', '#94a3b8'].map(c => (
-                <div key={c} className="w-8 h-8 rounded-full cursor-pointer border-2 border-transparent hover:border-primary transition-all" style={{ backgroundColor: c }} onClick={() => {
+              {['#336699', '#3b82f6', '#ef4444', '#22c55e', '#f97316', '#a855f7', '#000000', '#f8fafc'].map(c => (
+                <div key={c} className="w-8 h-8 rounded-full cursor-pointer border-2 border-slate-200 dark:border-slate-700 hover:border-primary transition-all shadow-sm" style={{ backgroundColor: c }} onClick={() => {
                   setBrushColor(c);
+                  setUserPickedColor(true);
                   setIsColorPickerOpen(false);
                   if (fabricRef.current) {
                     const activeObjects = fabricRef.current.getActiveObjects();
@@ -712,28 +722,6 @@ export function FabricCanvas({ initialData, initialHeight = 500, onSave }: Fabri
           </Tooltip>
         </TooltipProvider>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={handleZoomIn}><ZoomIn className="h-4 w-4" /></Button>
-            </TooltipTrigger>
-            <TooltipContent className="text-[10px] font-bold">放大 / Zoom In</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={handleZoomOut}><ZoomOut className="h-4 w-4" /></Button>
-            </TooltipTrigger>
-            <TooltipContent className="text-[10px] font-bold">縮小 / Zoom Out</TooltipContent>
-          </Tooltip>
-          
-          <Separator orientation="vertical" className="h-4 mx-1" />
-          
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={handleFitAll}><Maximize className="h-4 w-4" /></Button>
-            </TooltipTrigger>
-            <TooltipContent className="text-[10px] font-bold">適合視窗 / Fit All</TooltipContent>
-          </Tooltip>
-
           <div className="flex-1" />
 
         <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-500 hover:bg-rose-50 rounded-lg" onClick={() => {
@@ -745,7 +733,7 @@ export function FabricCanvas({ initialData, initialHeight = 500, onSave }: Fabri
         }}><Trash2 className="h-4 w-4" /></Button>
       </div>
 
-      <div ref={wrapperRef} className="overflow-hidden bg-slate-50 flex justify-center dot-grid relative border-none w-full">
+      <div ref={wrapperRef} className="overflow-hidden bg-slate-50 dark:bg-[#0a0a0b] flex justify-center dot-grid relative border-none w-full min-h-[500px]">
         <canvas ref={canvasRef} />
       </div>
     </div>

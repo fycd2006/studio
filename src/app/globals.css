@@ -1,6 +1,13 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer utilities {
+  .font-fira-code { font-family: 'Fira Code', monospace; }
+  .font-fira-sans { font-family: 'Fira Sans', sans-serif; }
+}
 
 @layer base {
   /* ═══════════════════════════════════════════════
@@ -91,6 +98,9 @@
 .dot-grid {
   background-image: radial-gradient(circle, hsl(var(--primary) / 0.1) 0.8px, transparent 0.8px);
   background-size: 24px 24px;
+}
+.dark .dot-grid {
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0.8px, transparent 0.8px);
 }
 
 /* ═══════════════════════════════════════════════

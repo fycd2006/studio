@@ -23,6 +23,8 @@ import {
   Lock,
   Unlock,
   Plus,
+  List,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +33,7 @@ import { Input } from "@/components/ui/input";
 
 export default function SettingsPage() {
   const { role, logout } = useAuth();
-  const { camps, activeCampId, setActiveCampId, deleteCamp, updateCamp, addCamp } = usePlans();
+  const { camps, activeCampId, setActiveCampId, deleteCamp, updateCamp, addCamp, activityTypes, addActivityType, removeActivityType } = usePlans();
   const { theme, setTheme } = useTheme();
   const { language, setLanguage, t } = useTranslation();
 
@@ -41,8 +43,11 @@ export default function SettingsPage() {
   const [newProjectName, setNewProjectName] = useState("");
   const [deleteInput, setDeleteInput] = useState("");
 
+  const [newActivityType, setNewActivityType] = useState("");
+
   const activeCamp = camps.find(c => c.id === activeCampId);
   const isAdmin = role === 'admin';
+
 
   const timelineFields = [
     { startKey: "meeting1StartDate" as const, endKey: "meeting1EndDate" as const, label: "一籌", icon: Clock },
@@ -283,6 +288,57 @@ export default function SettingsPage() {
                       </div>
                     );
                   })}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* ── ACTIVITY TYPES (ADMIN ONLY) ── */}
+          {isAdmin && (
+            <section className="space-y-6">
+              <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-500 dark:text-slate-400 flex items-center gap-3">
+                <List className="w-4 h-4 text-orange-500 dark:text-amber-400" /> 活動類型設定
+              </h2>
+              <div className="bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 rounded-xl p-8 shadow-sm transition-colors">
+                <div className="flex flex-col gap-6">
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {activityTypes?.map((type) => (
+                      <Badge key={type} className="px-3 py-1.5 flex items-center gap-2 bg-stone-100 dark:bg-slate-900 text-stone-700 dark:text-slate-300 border border-stone-200 dark:border-slate-700 hover:bg-stone-200 dark:hover:bg-slate-800 transition-colors">
+                        <span className="font-bold">{type}</span>
+                        <button 
+                          onClick={() => removeActivityType(type)}
+                          className="text-stone-400 hover:text-rose-500 transition-colors cursor-pointer focus:outline-none"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <Input
+                      placeholder="新增活動類型 (例如: 晚會活動)"
+                      value={newActivityType}
+                      onChange={(e) => setNewActivityType(e.target.value)}
+                      className="max-w-xs font-bold bg-stone-50 dark:bg-slate-900 border-stone-200 dark:border-slate-700 text-stone-900 dark:text-white"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && newActivityType.trim()) {
+                           addActivityType(newActivityType.trim());
+                           setNewActivityType(""); 
+                        }
+                      }}
+                    />
+                    <Button 
+                      onClick={() => {
+                        if (newActivityType.trim()) {
+                           addActivityType(newActivityType.trim());
+                           setNewActivityType("");
+                        }
+                      }}
+                      className="bg-stone-900 dark:bg-white text-white dark:text-slate-900 font-bold hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors cursor-pointer"
+                    >
+                      新增 / Add
+                    </Button>
+                  </div>
                 </div>
               </div>
             </section>

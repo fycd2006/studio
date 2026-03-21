@@ -15,8 +15,46 @@ import {
   initiateAnonymousSignIn,
   useAuth
 } from '@/firebase';
-import { collection, query, doc, orderBy, where } from 'firebase/firestore';
+import { collection, query, doc, orderBy, where, limit, getDocs } from 'firebase/firestore';
 import { getCorrectedNow } from '@/hooks/use-server-time';
+import { format } from 'date-fns';
+import * as jsondiffpatch from 'jsondiffpatch';
+
+const sanitizeForFirestore = (obj: any): any => {
+  if (obj === undefined) return null;
+  if (Array.isArray(obj)) {
+    return obj.map(item => item === undefined ? null : sanitizeForFirestore(item));
+  } else if (obj !== null && typeof obj === 'object') {
+    return Object.entries(obj).reduce((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = sanitizeForFirestore(value);
+      }
+      return acc;
+    }, {} as any);
+  }
+  return obj;
+};
+
+const jdp = jsondiffpatch.create({
+  // Use property filter to avoid diffing system fields if needed
+  propertyFilter: (name: string) => !['updatedAt'].includes(name),
+  objectHash: (obj: any) => obj.id || JSON.stringify(obj),
+});
+
+const VERSION_GROUPING_WINDOW = 10 * 60 * 1000; // 10 minutes
+const SNAPSHOT_INTERVAL = 10; // Save full snapshot every 10 versions
+
+const USER_COLORS = [
+  '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef', '#f43f5e'
+];
+
+function getAuthorColor(uid: string) {
+  let hash = 0;
+  for (let i = 0; i < uid.length; i++) {
+    hash = uid.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return USER_COLORS[Math.abs(hash) % USER_COLORS.length];
+}
 
 export function usePlans() {
   const { user, isUserLoading } = useUser();
@@ -384,31 +422,106 @@ export function usePlans() {
     deleteDocumentNonBlocking(doc(db, 'lessonPlans', id));
   }, [db, pushPlanHistory]);
 
-  const savePlanVersion = useCallback((name: string) => {
+  const savePlanVersion = useCallback(async (name: string, isAuto: boolean = false) => {
     if (!db || !user || !activePlanId) return;
     const currentPlan = allPlans.find(p => p.id === activePlanId);
     if (!currentPlan) return;
     
+    const now = Date.now();
+    return saveNewVersion(currentPlan, now, name, isAuto);
+  }, [db, user, activePlanId, allPlans, activePlanVersions]);
+
+  const getFullVersionState = useCallback(async (version: PlanVersion): Promise<LessonPlan> => {
+    if (version.type === 'snapshot' && version.snapshot) return version.snapshot;
+    
+    const q = query(
+      collection(db!, 'planVersions'), 
+      where('planId', '==', activePlanId), 
+      where('createdAt', '<=', version.createdAt),
+      orderBy('createdAt', 'desc')
+    );
+    const snapshot = await getDocs(q);
+    const versionsList = snapshot.docs.map(d => d.data() as PlanVersion);
+    
+    const snapshotIdx = versionsList.findIndex(v => v.type === 'snapshot');
+    if (snapshotIdx === -1) return allPlans.find(p => p.id === activePlanId)!;
+
+    let state = JSON.parse(JSON.stringify(versionsList[snapshotIdx].snapshot));
+    for (let i = snapshotIdx - 1; i >= 0; i--) {
+      if (versionsList[i].type === 'patch' && versionsList[i].delta) {
+        try {
+          // Deep clone to prevent mutation pollution in case patch fails halfway
+          const clonedState = JSON.parse(JSON.stringify(state));
+          state = jdp.patch(clonedState, versionsList[i].delta) || state;
+        } catch (err) {
+          console.error(`Patch failed at version ${versionsList[i].id}:`, err);
+          // Fallback: stop applying older patches and just read what we've successfully reconstructed
+          break;
+        }
+      }
+    }
+    return state;
+  }, [db, activePlanId, allPlans]);
+
+  const saveNewVersion = useCallback(async (currentPlan: LessonPlan, now: number, name: string, isAuto: boolean) => {
+    if (!db || !user || !activePlanId) return;
+    const latestVersion = activePlanVersions[0];
+
+    let precomputedDelta: any = undefined;
+
+    // Zero-change anti-spam verify
+    if (latestVersion) {
+      const previousState = await getFullVersionState(latestVersion);
+      precomputedDelta = jdp.diff(previousState, currentPlan);
+      if (!precomputedDelta) {
+        console.log("No changes detected in Auto-Save. Skipping version creation.");
+        return; // Drop the save entirely if zero changes
+      }
+    }
+
+    const shouldBeSnapshot = activePlanVersions.length === 0 || 
+                           activePlanVersions.length % SNAPSHOT_INTERVAL === 0 ||
+                           !isAuto;
+
     const versionId = Math.random().toString(36).substr(2, 9);
     const newVersion: PlanVersion = {
       id: versionId,
       planId: activePlanId,
-      name,
-      createdAt: Date.now(),
-      snapshot: { ...currentPlan }
+      name: isAuto ? `Auto Save - ${format(now, "HH:mm")}` : name,
+      createdAt: now,
+      type: shouldBeSnapshot ? 'snapshot' : 'patch',
+      authorId: user.uid,
+      authorName: user.displayName || 'Anonymous',
+      authorColor: getAuthorColor(user.uid),
     };
-    setDocumentNonBlocking(doc(db, 'planVersions', versionId), newVersion, { merge: true });
-  }, [db, user, activePlanId, allPlans]);
 
-  const restorePlanVersion = useCallback((versionId: string) => {
+    if (shouldBeSnapshot) {
+      newVersion.snapshot = JSON.parse(JSON.stringify(currentPlan));
+    } else {
+      newVersion.delta = sanitizeForFirestore(precomputedDelta);
+    }
+
+    setDocumentNonBlocking(doc(db, 'planVersions', versionId), newVersion, { merge: true });
+  }, [db, user, activePlanId, activePlanVersions, getFullVersionState]);
+
+  const autoSaveCurrentState = useCallback(() => {
+    savePlanVersion('Auto Save (Exit)', true);
+  }, [savePlanVersion]);
+
+  const restorePlanVersion = useCallback(async (versionId: string) => {
     if (!db || !activePlanId) return;
     const versionToRestore = activePlanVersions.find(v => v.id === versionId);
     if (!versionToRestore) return;
     
-    // We update the current plan with the snapshot data, except for the plan's ID and updatedAt
-    const { id: _planId, updatedAt, ...snapshotData } = versionToRestore.snapshot;
+    const fullState = await getFullVersionState(versionToRestore);
+    const { id: _planId, updatedAt, ...snapshotData } = fullState;
     updatePlan(activePlanId, snapshotData);
-  }, [db, activePlanId, activePlanVersions, updatePlan]);
+  }, [db, activePlanId, activePlanVersions, updatePlan, getFullVersionState]);
+
+  const updatePlanVersionName = useCallback((versionId: string, versionName: string) => {
+    if (!db) return;
+    updateDocumentNonBlocking(doc(db, 'planVersions', versionId), { versionName });
+  }, [db]);
 
   const deletePlanVersion = useCallback((versionId: string) => {
     if (!db) return;
@@ -466,7 +579,7 @@ export function usePlans() {
     tables: allTables.filter(t => t.campId === activeCampId), 
     activePlan: allPlans.find(p => p.id === activePlanId) || null,
     activePlanId, setActivePlanId, updatePlan, deletePlan, addPlan, reorderPlans,
-    activePlanVersions, savePlanVersion, restorePlanVersion, deletePlanVersion,
+    activePlanVersions, savePlanVersion, restorePlanVersion, updatePlanVersionName, deletePlanVersion, autoSaveCurrentState, getFullVersionState,
     undoPlan, redoPlan, canUndoPlan: planHistory.past.length > 0, canRedoPlan: planHistory.future.length > 0,
     addTable, updateTable, deleteTable,
     undoTable, redoTable, canUndoTable: tableHistory.past.length > 0, canRedoTable: tableHistory.future.length > 0,
@@ -491,6 +604,25 @@ export function usePlans() {
         if (!db) return;
         setDocumentNonBlocking(doc(db, 'userSettings', 'global'), { isRunning: false, timeLeft: settings?.duration || 40 * 60, targetEndTime: 0, updatedAt: Date.now() }, { merge: true });
       }
+    },
+    activityTypes: settings?.activityTypes || ['劇本', '大地遊戲', '科學闖關', '科學實驗', '手作課程', '相見歡', '起床遊戲'],
+    addActivityType: (newType: string) => {
+      if (!db) return;
+      const current = settings?.activityTypes || ['劇本', '大地遊戲', '科學闖關', '科學實驗', '手作課程', '相見歡', '起床遊戲'];
+      if (!current.includes(newType)) {
+        setDocumentNonBlocking(doc(db, 'userSettings', 'global'), { 
+          activityTypes: [...current, newType], 
+          updatedAt: Date.now() 
+        }, { merge: true });
+      }
+    },
+    removeActivityType: (typeToRemove: string) => {
+      if (!db) return;
+      const current = settings?.activityTypes || [];
+      setDocumentNonBlocking(doc(db, 'userSettings', 'global'), {
+        activityTypes: current.filter(t => t !== typeToRemove),
+        updatedAt: Date.now()
+      }, { merge: true });
     }
   };
 }

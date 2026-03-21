@@ -79,6 +79,7 @@ export interface UserSettings {
   isReminderSet: boolean;
   isAlarmSet: boolean;
   updatedAt: number;
+  activityTypes?: string[];
 }
 
 export interface LessonPlan {
@@ -111,8 +112,14 @@ export interface PlanVersion {
   id: string;
   planId: string;
   name: string;
+  versionName?: string;
   createdAt: number;
-  snapshot: LessonPlan;
+  type: 'snapshot' | 'patch';
+  authorId: string;
+  authorName: string;
+  authorColor: string;
+  snapshot?: LessonPlan; // Present only if type is 'snapshot'
+  delta?: any; // JSON diff from the previous version, present if type is 'patch'
 }
 
 /** 

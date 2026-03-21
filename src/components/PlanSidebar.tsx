@@ -96,7 +96,7 @@ export function PlanSidebar({
   const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
   const isCollapsed = state === "collapsed";
-  const isAdmin = role === 'admin';
+  const isAdmin = true; // Hardcoded true per user request to open access
 
   const { theme, setTheme } = useTheme();
   const { language, setLanguage } = useTranslation();
@@ -126,11 +126,7 @@ export function PlanSidebar({
     description: "您目前的權限為組員，如需修改請聯繫管理員。",
   });
 
-  const [adminDialog, setAdminDialog] = useState<{
-    open: boolean;
-    action: 'add' | 'settings';
-    category?: PlanCategory;
-  }>({ open: false, action: 'add' });
+  // Admin dialog no longer needed, everything is open
 
   const handleDragEnd = (result: any) => {
     if (!result.destination) return;
@@ -279,10 +275,9 @@ export function PlanSidebar({
                       <Button variant="ghost" size="icon"
                         className="h-6 w-6 text-stone-400 dark:text-slate-500 hover:text-orange-500 dark:hover:text-amber-400 hover:bg-stone-50 dark:hover:bg-white/5 cursor-pointer transition-colors"
                         onClick={() => {
-                          if (!isAdmin) { crewToast(); return; }
-                          setAdminDialog({ open: true, action: 'add', category: cat.key as PlanCategory });
+                          onAdd(cat.key as PlanCategory);
                         }}>
-                        {isAdmin ? <Plus className="h-3.5 w-3.5" /> : <Lock className="h-3 w-3" />}
+                        <Plus className="h-3.5 w-3.5" />
                       </Button>
                     </div>
 
@@ -295,7 +290,7 @@ export function PlanSidebar({
                                 const planTitle = plan.scheduledName
                                   ? `${plan.scheduledName} - ${plan.activityName || "..."}`
                                   : (plan.activityName || "...");
-                                const isActive = activePlanId === plan.id && pathname === '/';
+                                const isActive = activePlanId === plan.id || pathname === `/plans/${plan.id}`;
 
                                 return (
                                   <Draggable key={plan.id} draggableId={plan.id} index={index} isDragDisabled={!isAdmin}>
@@ -304,15 +299,15 @@ export function PlanSidebar({
                                         ref={provided.innerRef}
                                         {...provided.draggableProps}
                                         className={cn(
-                                          "group/item relative flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 cursor-pointer",
-                                          isActive ? "bg-orange-50 text-orange-600 dark:bg-amber-400/10 dark:text-amber-400" : "text-stone-500 dark:text-slate-400 hover:text-stone-900 dark:hover:text-slate-200 hover:bg-stone-50 dark:hover:bg-white/5",
-                                          snapshot.isDragging && "shadow-xl bg-white dark:bg-slate-800 z-50 border border-stone-100 dark:border-slate-700"
+                                          "group/item relative flex items-center gap-2 ml-1 px-3 py-2 rounded-lg transition-all duration-200 cursor-pointer overflow-hidden",
+                                          isActive ? "bg-orange-100/80 text-orange-700 dark:bg-amber-400/10 dark:text-amber-300 font-bold shadow-[0_0_0_1px_rgba(249,115,22,0.2)] dark:shadow-[0_0_0_1px_rgba(251,191,36,0.2)] border-transparent" : "text-stone-500 dark:text-slate-400 hover:text-stone-900 dark:hover:text-slate-200 hover:bg-stone-50 dark:hover:bg-white/5 font-medium border border-transparent",
+                                          snapshot.isDragging && "shadow-xl bg-white dark:bg-slate-800 z-50 border-stone-200 dark:border-slate-700"
                                         )}
                                         onClick={() => {
                                           if (pathname !== `/plans/${plan.id}`) router.push(`/plans/${plan.id}`);
                                         }}
                                       >
-                                        {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 bg-orange-500 dark:bg-amber-400 rounded-r-full" />}
+                                        {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[4px] h-5 bg-orange-500 dark:bg-amber-400 rounded-r-full shadow-sm" />}
                                         {isAdmin && (
                                           <div {...provided.dragHandleProps} className="opacity-0 group-hover/item:opacity-40">
                                             <GripVertical className="h-3.5 w-3.5" />
@@ -320,7 +315,7 @@ export function PlanSidebar({
                                         )}
                                         {!isAdmin && <div {...provided.dragHandleProps} />}
                                         <FileText className={cn("h-3.5 w-3.5 shrink-0", isActive ? "text-orange-600 dark:text-amber-400" : "text-stone-400 dark:text-slate-500")} />
-                                        <div className={cn("flex-1 truncate text-[11px] font-medium", isActive ? "text-orange-600 dark:text-amber-400" : "")}>
+                                        <div className={cn("flex-1 min-w-0 truncate text-[11px] font-medium", isActive ? "text-orange-600 dark:text-amber-400 max-w-full" : "max-w-full")}>
                                           {planTitle}
                                         </div>
                                         {isAdmin && (
@@ -472,15 +467,7 @@ export function PlanSidebar({
         </DialogContent>
       </Dialog>
 
-      <AdminDialog
-        open={adminDialog.open}
-        onOpenChange={(open) => setAdminDialog(prev => ({ ...prev, open }))}
-        title={adminDialog.action === 'add' ? "新增教案 / Add Plan" : "專案設定 / Settings"}
-        onConfirm={() => {
-          if (adminDialog.action === 'add' && adminDialog.category) onAdd(adminDialog.category);
-          else if (adminDialog.action === 'settings') setIsSettingsOpen(true);
-        }}
-      />
+      {/* End */}
     </>
   );
 }

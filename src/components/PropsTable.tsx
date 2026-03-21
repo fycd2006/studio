@@ -142,9 +142,9 @@ export function PropsTable({ label, value = [], onChange }: PropsTableProps) {
         </label>
       )}
 
-      <div className="border border-stone-200 dark:border-white/5 rounded-[1.5rem] overflow-x-auto bg-white dark:bg-slate-900/50 shadow-xl shadow-stone-200/20 dark:shadow-none scrollbar-hide transition-colors">
-        <Table className="min-w-[900px] table-auto">
-          <TableHeader className="bg-stone-50/50 dark:bg-slate-900/50">
+      <div className="border border-stone-200 dark:border-white/5 rounded-[1.5rem] overflow-hidden bg-white dark:bg-slate-900/50 shadow-xl shadow-stone-200/20 dark:shadow-none transition-colors">
+        <Table className="min-w-full md:min-w-[900px] table-auto block md:table">
+          <TableHeader className="bg-stone-50/50 dark:bg-slate-900/50 hidden md:table-header-group">
             <TableRow className="border-b border-stone-200 dark:border-white/10">
               <TableHead className="min-w-[250px] font-bold text-stone-900 dark:text-slate-400 border-r border-stone-200 dark:border-white/10 h-12 text-[10px] uppercase tracking-widest">{t('PROP_NAME')}</TableHead>
               <TableHead className="w-[120px] font-bold text-stone-900 dark:text-slate-400 border-r border-stone-200 dark:border-white/10 text-center whitespace-nowrap text-[10px] uppercase tracking-widest">Qty</TableHead>
@@ -153,11 +153,12 @@ export function PropsTable({ label, value = [], onChange }: PropsTableProps) {
               <TableHead className="w-[80px] text-center no-print font-bold text-stone-900 dark:text-slate-400 text-[10px] uppercase">{t('DELETE')}</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody className="block md:table-row-group">
             {value && value.length > 0 ? (
               value.map((row) => (
-                <TableRow key={row.id} className="border-b border-stone-200 dark:border-white/5 last:border-0 hover:bg-stone-50/50 dark:hover:bg-white/5 transition-colors">
-                  <TableCell className="border-r border-stone-200 dark:border-white/10 align-top p-0">
+                <TableRow key={row.id} className="border-b border-stone-200 dark:border-white/5 last:border-0 hover:bg-stone-50/50 dark:hover:bg-white/5 transition-colors block md:table-row p-4 md:p-0 space-y-3 md:space-y-0 relative">
+                  <TableCell className="border-none md:border-solid md:border-r border-stone-200 dark:border-white/10 align-top p-0 block md:table-cell">
+                    <div className="md:hidden text-[10px] font-bold text-stone-400 dark:text-slate-500 uppercase px-4 pt-2">{t('PROP_NAME')}</div>
                     <AutoExpandingTextarea 
                       value={row.name} 
                       onChange={(val) => handleUpdateRow(row.id, 'name', val)} 
@@ -165,7 +166,8 @@ export function PropsTable({ label, value = [], onChange }: PropsTableProps) {
                       className="px-4"
                     />
                   </TableCell>
-                  <TableCell className="border-r border-stone-200 dark:border-white/10 text-center align-top p-0 whitespace-nowrap">
+                  <TableCell className="border-none md:border-solid md:border-r border-stone-200 dark:border-white/10 text-center align-top p-0 md:whitespace-nowrap flex items-center md:table-cell">
+                    <div className="md:hidden text-[10px] font-bold text-stone-400 dark:text-slate-500 uppercase px-4 w-1/3 text-left">Qty</div>
                     <LocalInput 
                       value={row.quantity} 
                       onChange={(val) => handleUpdateRow(row.id, 'quantity', val)} 
@@ -179,7 +181,8 @@ export function PropsTable({ label, value = [], onChange }: PropsTableProps) {
                       placeholder="Unit" 
                     />
                   </TableCell>
-                  <TableCell className="border-r border-stone-200 dark:border-white/10 align-top p-0">
+                  <TableCell className="border-none md:border-solid md:border-r border-stone-200 dark:border-white/10 align-top p-0 block md:table-cell">
+                    <div className="md:hidden text-[10px] font-bold text-stone-400 dark:text-slate-500 uppercase px-4 pt-2">{t('OP_REMARKS')}</div>
                     <AutoExpandingTextarea 
                       value={row.remarks || ""} 
                       onChange={(val) => handleUpdateRow(row.id, 'remarks', val)} 
@@ -187,7 +190,7 @@ export function PropsTable({ label, value = [], onChange }: PropsTableProps) {
                       className="px-4"
                     />
                   </TableCell>
-                  <TableCell className="text-center no-print align-top pt-2">
+                  <TableCell className="text-center no-print align-top pt-2 block md:table-cell absolute md:static top-2 right-2 md:top-auto md:right-auto">
                     <Button variant="ghost" size="icon" className="h-9 w-9 text-stone-400 dark:text-slate-600 hover:text-rose-600 dark:hover:text-rose-400" onClick={() => handleRemoveRow(row.id)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -202,9 +205,9 @@ export function PropsTable({ label, value = [], onChange }: PropsTableProps) {
               </TableRow>
             )}
           </TableBody>
-          <TableFooter className="bg-transparent no-print">
-            <TableRow className="border-t border-stone-200 dark:border-white/10">
-              <TableCell colSpan={5} className="p-0">
+          <TableFooter className="bg-transparent no-print block md:table-footer-group">
+            <TableRow className="border-t border-stone-200 dark:border-white/10 block md:table-row">
+              <TableCell colSpan={5} className="p-0 block md:table-cell">
                 <div className="flex justify-center p-5">
                   <Button 
                     variant="outline" 

@@ -24,18 +24,18 @@ interface AdminDialogProps {
 }
 
 export function AdminDialog({ open, onOpenChange, onConfirm, title }: AdminDialogProps) {
-  const [password, setPassword] = useState("");
+  const [deleteText, setDeleteText] = useState("");
   const { toast } = useToast();
 
   const handleConfirm = () => {
-    if (password === "admin") {
+    if (deleteText === "delete") {
       onConfirm();
       onOpenChange(false);
-      setPassword("");
+      setDeleteText("");
     } else {
       toast({
-        title: "密碼錯誤 / Incorrect Password",
-        description: "請輸入正確的管理員密碼 / Please try again.",
+        title: "輸入錯誤 / Invalid Input",
+        description: "請正確輸入 delete 以確認操作 / Please type exactly 'delete'.",
         variant: "destructive",
       });
     }
@@ -56,10 +56,10 @@ export function AdminDialog({ open, onOpenChange, onConfirm, title }: AdminDialo
               {isDeleteCamp ? (
                 <div className="space-y-2">
                   <div className="text-rose-500/80">為了資料安全，刪除前系統將自動下載此專案的所有教案備份 (.docx)。</div>
-                  <div>System will automatically download backups before deletion. Admin verification required.</div>
+                  <div>System will automatically download backups before deletion. Type 'delete' to confirm.</div>
                 </div>
               ) : (
-                <div>為了確保資料安全，此操作需要管理員驗證。<br />Admin verification required for security.</div>
+                <div>為了確保資料安全，此操作需要確認。<br />Type 'delete' to confirm security action.</div>
               )}
             </div>
           </DialogDescription>
@@ -74,10 +74,10 @@ export function AdminDialog({ open, onOpenChange, onConfirm, title }: AdminDialo
             </div>
           )}
           <Input
-            type="password"
-            placeholder="管理員密碼 / Admin Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            type="text"
+            placeholder="請輸入 delete 以確認 / Type 'delete' to confirm"
+            value={deleteText}
+            onChange={(e) => setDeleteText(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleConfirm()}
             className="h-11 rounded-xl font-bold"
             autoFocus

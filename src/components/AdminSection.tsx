@@ -5,7 +5,7 @@ import { RotationTableData, LessonPlan, PropItem, Camp, CampItem } from "@/types
 import { AdminTimer } from "@/components/AdminTimer";
 import { AdminRotationTable } from "@/components/AdminRotationTable";
 import { Button } from "@/components/ui/button";
-import { Clock, Table as TableIcon, Plus, ShieldCheck, Lock, Unlock, Calendar, Undo2, Redo2, Package2, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { Clock, Table as TableIcon, Plus, ShieldCheck, Lock, Unlock, Calendar, Undo2, Redo2, Package2, ZoomIn, ZoomOut, RotateCcw, Maximize } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminDialog } from "@/components/AdminDialog";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -50,27 +50,27 @@ export function AdminSection({
   onUpdateCamp
 }: AdminSectionProps) {
   const { t } = useTranslation();
-  const [isLocked, setIsLocked] = useState(true);
-  const [isAdminDialogOpen, setIsAdminDialogOpen] = useState(false);
+  const isLocked = false; // Hardcoded to false per open-access request
   const [selectedDay, setSelectedDay] = useState<string>("Day 1");
+  const [activeMainTab, setActiveMainTab] = useState('timer');
   const [activePropsTab, setActivePropsTab] = useState<'activity' | 'teaching' | 'all-props'>('activity');
 
-  // Zoom state for props list
-  const [propsZoom, setPropsZoom] = useState(1);
-  const propsContainerRef = useRef<HTMLDivElement>(null);
+  // Zoom state for tables and props list
+  const [zoom, setZoom] = useState(1);
+  const containerRef = useRef<HTMLDivElement>(null);
   const pinchStartDistRef = useRef<number | null>(null);
   const pinchStartZoomRef = useRef<number>(1);
 
   const handleZoomIn = useCallback(() => {
-    setPropsZoom(z => Math.min(z + 0.1, 2));
+    setZoom(z => Math.min(z + 0.1, 2));
   }, []);
 
   const handleZoomOut = useCallback(() => {
-    setPropsZoom(z => Math.max(z - 0.1, 0.3));
+    setZoom(z => Math.max(z - 0.1, 0.3));
   }, []);
 
-  const handleZoomReset = useCallback(() => {
-    setPropsZoom(1);
+  const handleFitAll = useCallback(() => {
+    setZoom(1);
   }, []);
 
   // Pinch-to-zoom gesture handlers
@@ -79,9 +79,9 @@ export function AdminSection({
       const dx = e.touches[0].clientX - e.touches[1].clientX;
       const dy = e.touches[0].clientY - e.touches[1].clientY;
       pinchStartDistRef.current = Math.hypot(dx, dy);
-      pinchStartZoomRef.current = propsZoom;
+      pinchStartZoomRef.current = zoom;
     }
-  }, [propsZoom]);
+  }, [zoom]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (e.touches.length === 2 && pinchStartDistRef.current !== null) {
@@ -90,7 +90,7 @@ export function AdminSection({
       const currentDist = Math.hypot(dx, dy);
       const scale = currentDist / pinchStartDistRef.current;
       const newZoom = Math.min(2, Math.max(0.3, pinchStartZoomRef.current * scale));
-      setPropsZoom(newZoom);
+      setZoom(newZoom);
     }
   }, []);
 
@@ -100,26 +100,20 @@ export function AdminSection({
 
   // Ctrl+Wheel zoom
   useEffect(() => {
-    const container = propsContainerRef.current;
+    const container = containerRef.current;
     if (!container) return;
     const handleWheel = (e: WheelEvent) => {
       if (e.ctrlKey || e.metaKey) {
         e.preventDefault();
         const delta = e.deltaY > 0 ? -0.05 : 0.05;
-        setPropsZoom(z => Math.min(2, Math.max(0.3, z + delta)));
+        setZoom(z => Math.min(2, Math.max(0.3, z + delta)));
       }
     };
     container.addEventListener('wheel', handleWheel, { passive: false });
     return () => container.removeEventListener('wheel', handleWheel);
   }, []);
 
-  const handleUnlockClick = () => {
-    if (isLocked) {
-      setIsAdminDialogOpen(true);
-    } else {
-      setIsLocked(true);
-    }
-  };
+  // Unlock feature removed as everything is open by default
 
   const filteredTables = useMemo(() => {
     return tables.filter(t => (t.day || "Day 1") === selectedDay);
@@ -234,7 +228,7 @@ export function AdminSection({
           }
         }}
         disabled={disabled}
-        className={cn("h-8 md:h-10 px-2 text-xs sm:text-sm bg-transparent hover:bg-white focus:bg-white transition-all shadow-none focus:shadow-sm font-medium", disabled ? "border-transparent text-slate-800 opacity-100 placeholder:text-transparent" : "border-transparent hover:border-slate-200 focus:border-orange-400", className)}
+        className={cn("h-8 md:h-10 px-2 text-xs sm:text-sm bg-transparent hover:bg-white dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 transition-all shadow-none focus:shadow-sm font-fira-sans font-medium", disabled ? "border-transparent text-slate-800 dark:text-slate-200 opacity-100 placeholder:text-transparent" : "border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:border-orange-400 dark:focus:border-orange-500", className)}
       />
     );
   };
@@ -249,29 +243,29 @@ export function AdminSection({
     }, {} as Record<string, { plan: LessonPlan; prop: PropItem }[]>);
 
     return (
-      <div className="bg-white dark:bg-slate-800/50 rounded-2xl shadow-sm border border-stone-200 dark:border-white/5 overflow-hidden mb-8 transition-colors">
-        <div className="bg-stone-50 dark:bg-white/5 py-3 px-4 flex justify-between items-center border-b border-stone-200 dark:border-white/5">
-          <h2 className="font-bold text-stone-900 dark:text-white tracking-wider uppercase text-sm">{title}</h2>
+      <div className="bg-white dark:bg-slate-900 border rounded-2xl border-stone-200 dark:border-slate-800/60 overflow-hidden mb-8 transition-colors mx-4 sm:mx-0">
+        <div className="py-3 px-4 flex justify-between items-center border-b border-stone-200 dark:border-slate-800/60 bg-stone-50 dark:bg-slate-900/50">
+          <h2 className="font-fira-code font-black text-stone-900 dark:text-slate-100 tracking-[0.1em] uppercase text-sm">{title}</h2>
         </div>
       
         <div className="w-full overflow-x-auto touch-pan-x touch-pan-y scrollbar-hide overscroll-x-contain">
           <table className="w-full text-sm text-left border-collapse min-w-[800px]">
-            <thead className="bg-stone-50/50 dark:bg-slate-900/50 text-stone-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest">
+             <thead className="text-stone-500 dark:text-slate-400 text-[10px] font-fira-code font-black uppercase tracking-[0.2em] sticky top-0 bg-white/90 dark:bg-slate-950/90 backdrop-blur-md z-10 border-b border-stone-200 dark:border-slate-800">
               <tr>
-                <th className="px-3 py-3 border-r border-stone-200 dark:border-white/10 min-w-[100px] border-b border-stone-200 dark:border-white/10">{t('CATEGORY')}</th>
-                <th className="px-3 py-3 border-r border-stone-200 dark:border-white/10 border-b border-stone-200 dark:border-white/10 min-w-[120px]">{t('SUBJECT')}</th>
-                <th className="px-3 py-3 border-r border-stone-200 dark:border-white/10 border-b border-stone-200 dark:border-white/10 min-w-[100px]">{t('ASSIGNED_PERSONNEL')}</th>
-                <th className="px-3 py-3 border-r border-stone-200 dark:border-white/10 border-b border-stone-200 dark:border-white/10 min-w-[200px]">{t('PROP_NAME')}</th>
-                <th className="px-3 py-3 border-r border-stone-200 dark:border-white/10 border-b border-stone-200 dark:border-white/10 min-w-[80px]">Qty</th>
-                <th className="px-3 py-3 border-r border-stone-200 dark:border-white/10 border-b border-stone-200 dark:border-white/10 min-w-[80px]">Unit</th>
-                <th className="px-3 py-3 border-r border-stone-200 dark:border-white/10 border-b border-stone-200 dark:border-white/10 min-w-[200px]">{t('OP_REMARKS')}</th>
-                <th className="px-3 py-3 border-r border-stone-200 dark:border-white/10 bg-orange-50/20 dark:bg-amber-400/5 min-w-[100px] text-center border-b border-stone-200 dark:border-white/10">{t('PACKED')}</th>
-                <th className="px-3 py-3 border-r border-stone-200 dark:border-white/10 bg-emerald-50/20 dark:bg-emerald-400/5 min-w-[80px] text-center border-b border-stone-200 dark:border-white/10">{t('CHECKED')}</th>
+                <th className="px-4 py-3 min-w-[100px] border-b border-stone-200 dark:border-slate-800/60">{t('CATEGORY')}</th>
+                <th className="px-4 py-3 min-w-[120px] border-b border-stone-200 dark:border-slate-800/60">{t('SUBJECT')}</th>
+                <th className="px-4 py-3 min-w-[100px] border-b border-stone-200 dark:border-slate-800/60">{t('ASSIGNED_PERSONNEL')}</th>
+                <th className="px-4 py-3 min-w-[200px] border-b border-stone-200 dark:border-slate-800/60">{t('PROP_NAME')}</th>
+                <th className="px-4 py-3 min-w-[80px] border-b border-stone-200 dark:border-slate-800/60">Qty</th>
+                <th className="px-4 py-3 min-w-[80px] border-b border-stone-200 dark:border-slate-800/60">Unit</th>
+                <th className="px-4 py-3 min-w-[200px] border-b border-stone-200 dark:border-slate-800/60">{t('OP_REMARKS')}</th>
+                <th className="px-4 py-3 min-w-[100px] text-center border-b border-stone-200 dark:border-slate-800/60">{t('PACKED')}</th>
+                <th className="px-4 py-3 min-w-[80px] text-center border-b border-stone-200 dark:border-slate-800/60">{t('CHECKED')}</th>
               </tr>
             </thead>
             <tbody>
               {Object.keys(propGroups).length === 0 ? (
-                <tr><td colSpan={9} className="text-center py-12 text-slate-500 font-bold">目前沒有任何道具資料</td></tr>
+                <tr><td colSpan={9} className="text-center py-12 text-slate-500 dark:text-slate-600 font-bold">目前沒有任何道具資料</td></tr>
               ) : null}
             
               {Object.entries(propGroups).map(([categoryName, items], gIndex) => {
@@ -288,61 +282,64 @@ export function AdminSection({
                     const isFirstInPlan = iIndex === 0;
 
                     return (
-                      <tr key={`${item.plan.id}-${item.prop.id}`} className="border-b border-slate-100 hover:bg-orange-50/30 transition-colors">
+                      <tr key={`${item.plan.id}-${item.prop.id}`} className={cn(
+                        "group border-b border-stone-100 dark:border-slate-800/50 hover:bg-stone-50 dark:hover:bg-slate-800/50 transition-colors duration-200",
+                        item.prop.isFromClub && item.prop.isToPurchase ? "bg-emerald-50/30 dark:bg-emerald-900/10" : "bg-white dark:bg-slate-900/20"
+                      )}>
                         {isFirstInGroup && (
-                          <td className="px-2 md:px-4 py-2 md:py-3 font-black text-xs sm:text-sm text-slate-800 border-r border-orange-100 align-top bg-orange-50/40" rowSpan={items.length}>
+                          <td className="px-4 py-3 font-fira-code font-black text-xs sm:text-sm text-slate-800 dark:text-slate-400 align-top border-r border-stone-100 dark:border-slate-800/50" rowSpan={items.length}>
                             {categoryName}
                           </td>
                         )}
                         {isFirstInPlan && (
-                          <td className="px-2 md:px-4 py-2 md:py-3 font-bold text-xs sm:text-sm text-slate-700 border-r border-slate-200 align-top" rowSpan={planItems.length}>
+                          <td className="px-4 py-3 font-bold text-xs sm:text-sm text-slate-700 dark:text-slate-300 align-top" rowSpan={planItems.length}>
                             {item.plan.activityName || '-'}
                           </td>
                         )}
                         {isFirstInPlan && (
-                          <td className="px-2 md:px-4 py-2 md:py-3 text-xs sm:text-sm text-slate-600 border-r border-slate-200 align-top" rowSpan={planItems.length}>
+                          <td className="px-4 py-3 text-xs sm:text-sm text-slate-600 dark:text-slate-400 align-top" rowSpan={planItems.length}>
                             {item.plan.members || '-'}
                           </td>
                         )}
-                        <td className="px-1 md:px-2 py-1 md:py-2 border-r border-slate-200 align-middle">
+                        <td className="px-2 py-2 align-middle">
                           <PropInput 
                             value={item.prop.name}
                             onChange={(v) => handleUpdatePropItem(item.plan.id, item.prop.id, { name: v })}
                             disabled={isLocked}
-                            className="font-medium text-slate-700"
+                            className="font-medium text-slate-700 dark:text-slate-200"
                           />
                         </td>
-                        <td className="px-2 py-2 border-r border-slate-200 align-middle">
+                        <td className="px-2 py-2 align-middle">
                            <PropInput 
                             value={item.prop.quantity}
                             onChange={(v) => handleUpdatePropItem(item.plan.id, item.prop.id, { quantity: v })}
                             disabled={isLocked}
-                            className="text-center text-slate-600"
+                            className="text-center font-fira-code font-bold text-orange-600 dark:text-amber-500"
                           />
                         </td>
-                        <td className="px-2 py-2 border-r border-slate-200 align-middle">
+                        <td className="px-2 py-2 align-middle">
                            <PropInput 
                             value={item.prop.unit === 'custom' ? '' : item.prop.unit}
                             onChange={(v) => handleUpdatePropItem(item.plan.id, item.prop.id, { unit: v })}
                             disabled={isLocked}
-                            className="text-center text-slate-600"
+                            className="text-center text-slate-600 dark:text-slate-400"
                           />
                         </td>
-                        <td className="px-2 py-2 border-r border-slate-200 align-middle">
+                        <td className="px-2 py-2 align-middle">
                            <PropInput 
                             value={item.prop.remarks || ''}
                             onChange={(v) => handleUpdatePropItem(item.plan.id, item.prop.id, { remarks: v })}
                             disabled={isLocked}
-                            className="text-slate-500"
+                            className="text-slate-500 dark:text-slate-400"
                           />
                         </td>
-                        <td className="px-4 py-3 border-r border-slate-200 text-center align-middle">
+                        <td className="px-4 py-3 text-center align-middle">
                           <div className="flex justify-center items-center h-full">
                             <Checkbox 
                               checked={item.prop.isFromClub || false} 
                               disabled={isLocked}
                               onCheckedChange={(c) => handleUpdatePropItem(item.plan.id, item.prop.id, { isFromClub: c === true })}
-                              className="h-5 w-5 border-2 border-slate-400"
+                              className="h-5 w-5 border-2 dark:border-slate-600 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
                             />
                           </div>
                         </td>
@@ -352,7 +349,7 @@ export function AdminSection({
                               checked={item.prop.isToPurchase || false} 
                               disabled={isLocked}
                               onCheckedChange={(c) => handleUpdatePropItem(item.plan.id, item.prop.id, { isToPurchase: c === true })}
-                              className="h-5 w-5 border-2 border-slate-400"
+                              className="h-5 w-5 border-2 dark:border-slate-600 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
                             />
                           </div>
                         </td>
@@ -378,9 +375,9 @@ export function AdminSection({
     }, {} as Record<string, CampItem[]>);
 
     return (
-      <div className="bg-white dark:bg-slate-800/50 rounded-2xl shadow-sm border border-stone-200 dark:border-white/5 overflow-hidden mb-8 transition-colors">
-        <div className="bg-stone-50 dark:bg-white/5 py-3 px-4 flex justify-between items-center border-b border-stone-200 dark:border-white/5">
-          <h2 className="text-center font-bold text-stone-900 dark:text-white tracking-wider uppercase text-sm">{t('PROPS_LIST')}</h2>
+      <div className="bg-white dark:bg-slate-900 border rounded-2xl border-stone-200 dark:border-slate-800/60 overflow-hidden mb-8 transition-colors mx-4 sm:mx-0">
+        <div className="py-3 px-4 flex justify-between items-center border-b border-stone-200 dark:border-slate-800/60 bg-stone-50 dark:bg-slate-900/50">
+          <h2 className="text-center font-fira-code font-black text-stone-900 dark:text-slate-100 tracking-[0.1em] uppercase text-sm">{t('PROPS_LIST')}</h2>
           {!isLocked && (
             <Button 
                onClick={handleAddCampItem}
@@ -393,63 +390,68 @@ export function AdminSection({
         </div>
         
         <div className="w-full overflow-x-auto touch-pan-x touch-pan-y scrollbar-hide overscroll-x-contain">
-          <table className="w-full text-sm text-left min-w-[1000px]">
-            <thead className="bg-stone-50/50 dark:bg-slate-900/50 text-stone-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest">
+          <table className="w-full text-sm text-left min-w-[1000px] border-collapse">
+            <thead className="text-stone-500 dark:text-slate-400 text-[10px] font-fira-code font-black uppercase tracking-[0.2em] sticky top-0 z-10 bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-b border-stone-200 dark:border-slate-800">
               <tr>
-                <th className="px-3 py-3 border-r border-stone-200 dark:border-white/10 min-w-[120px] border-b border-stone-200 dark:border-white/10">{t('PROP_USAGE')}</th>
-                <th className="px-3 py-3 border-r border-stone-200 dark:border-white/10 border-b border-stone-200 dark:border-white/10 min-w-[150px]">{t('PROP_NAME')}</th>
-                <th className="px-3 py-3 border-r border-stone-200 dark:border-white/10 border-b border-stone-200 dark:border-white/10 min-w-[120px]">{t('ASSIGNED_PERSONNEL')}</th>
-                <th className="px-3 py-3 border-r border-stone-200 dark:border-white/10 border-b border-stone-200 dark:border-white/10 min-w-[200px]">{t('MATERIALS')}</th>
-                <th className="px-3 py-3 border-r border-stone-200 dark:border-white/10 bg-orange-50/20 dark:bg-amber-400/5 min-w-[120px] text-center border-b border-stone-200 dark:border-white/10">{t('PACKED')}</th>
-                <th className="px-3 py-3 border-r border-stone-200 dark:border-white/10 bg-emerald-50/20 dark:bg-emerald-400/5 min-w-[120px] text-center border-b border-stone-200 dark:border-white/10">{t('CHECKED')}</th>
-                {!isLocked && <th className="px-3 py-3 w-16 border-b border-stone-200 dark:border-white/10 text-center">操作</th>}
+                <th className="px-4 py-3 min-w-[120px] border-b border-stone-200 dark:border-slate-800/60">{t('PROP_USAGE')}</th>
+                <th className="px-4 py-3 min-w-[150px] border-b border-stone-200 dark:border-slate-800/60">{t('PROP_NAME')}</th>
+                <th className="px-4 py-3 min-w-[120px] border-b border-stone-200 dark:border-slate-800/60">{t('ASSIGNED_PERSONNEL')}</th>
+                <th className="px-4 py-3 min-w-[200px] border-b border-stone-200 dark:border-slate-800/60">{t('MATERIALS')}</th>
+                <th className="px-4 py-3 min-w-[120px] text-center border-b border-stone-200 dark:border-slate-800/60">{t('PACKED')}</th>
+                <th className="px-4 py-3 min-w-[120px] text-center border-b border-stone-200 dark:border-slate-800/60">{t('CHECKED')}</th>
+                {!isLocked && <th className="px-4 py-3 w-16 text-center border-b border-stone-200 dark:border-slate-800/60">操作</th>}
               </tr>
             </thead>
             
             {/* 1. 活動組 */}
             <tbody>
-              <tr className="bg-orange-100/50"><td colSpan={isLocked ? 6 : 7} className="px-4 py-2 font-black text-orange-800 text-sm">1. 活動組 - 教案道具確認</td></tr>
+              <tr><td colSpan={isLocked ? 6 : 7} className="px-4 py-4 font-fira-code font-black text-orange-600 dark:text-amber-500 text-xs sm:text-sm uppercase tracking-widest bg-transparent border-b border-stone-100 dark:border-slate-800/60">01 / 活動組 - 教案道具確認</td></tr>
               {Object.keys(activityGroups).length === 0 ? (
-                <tr><td colSpan={isLocked ? 6 : 7} className="text-center py-4 text-slate-400 font-bold">目前沒有活動教案</td></tr>
+                <tr><td colSpan={isLocked ? 6 : 7} className="text-center py-6 text-slate-400 dark:text-slate-500 font-bold border-b border-stone-100 dark:border-slate-800/60">目前沒有活動教案</td></tr>
               ) : Object.entries(activityGroups).map(([categoryName, catePlans]) => (
                 catePlans.map((plan, pIndex) => (
-                  <tr key={`act-${plan.id}`} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                  <tr key={`act-${plan.id}`} className={cn(
+                    "group border-b border-stone-100 dark:border-slate-800/60 hover:bg-stone-50 dark:hover:bg-slate-800/40 transition-colors duration-200",
+                    plan.isPreDepartureChecked && plan.isPropsPacked ? "bg-emerald-50/30 dark:bg-emerald-900/10" : "bg-white dark:bg-slate-900/20"
+                  )}>
                     {pIndex === 0 && (
-                      <td className="px-2 md:px-4 py-2 md:py-3 font-black text-xs sm:text-sm text-slate-800 border-r border-slate-200 align-top" rowSpan={catePlans.length}>
+                      <td className="px-4 py-3 font-fira-code font-black text-xs sm:text-sm text-slate-800 dark:text-slate-400 align-top border-r border-stone-100 dark:border-slate-800/50" rowSpan={catePlans.length}>
                         {categoryName}
                       </td>
                     )}
-                    <td className="px-2 md:px-4 py-2 md:py-3 font-bold text-xs sm:text-sm text-slate-700 border-r border-slate-200 align-top">
+                    <td className="px-4 py-3 font-bold text-xs sm:text-sm text-slate-700 dark:text-slate-300 align-top">
                       {plan.activityName || '-'}
                     </td>
-                    <td className="px-2 md:px-4 py-2 md:py-3 text-xs sm:text-sm text-slate-600 border-r border-slate-200 align-top">
+                    <td className="px-4 py-3 text-xs sm:text-sm text-slate-600 dark:text-slate-400 align-top">
                       {plan.members || '-'}
                     </td>
-                    <td className="px-2 md:px-4 py-2 md:py-3 text-slate-600 border-r border-slate-200 text-xs sm:text-sm">
+                    <td className="px-4 py-3 text-slate-600 dark:text-slate-300 text-xs sm:text-sm">
                       {plan.props.length > 0 ? (
-                        <ul className="list-disc list-inside space-y-1">
+                        <ul className="space-y-1.5 list-none">
                           {plan.props.map(prop => (
-                            <li key={prop.id}>
-                              <span className="font-bold text-slate-800">{prop.name}</span> * {prop.quantity} {prop.unit === 'custom' ? '' : prop.unit}
-                              {prop.remarks && <span className="text-slate-400 ml-1">({prop.remarks})</span>}
+                            <li key={prop.id} className="flex items-center gap-1.5 flex-wrap">
+                              <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600 shrink-0" />
+                              <span className="font-bold text-slate-800 dark:text-slate-200">{prop.name}</span> 
+                              <span className="text-orange-500 dark:text-amber-400 font-fira-code px-1.5 py-0.5 bg-orange-50 dark:bg-amber-400/10 rounded-md text-[10px] font-bold">× {prop.quantity} {prop.unit === 'custom' ? '' : prop.unit}</span>
+                              {prop.remarks && <span className="text-slate-400 dark:text-slate-500 ml-1 text-[11px]">({prop.remarks})</span>}
                             </li>
                           ))}
                         </ul>
                       ) : (
-                        <span className="text-slate-400 italic font-medium">無所需物品</span>
+                        <span className="text-slate-400 dark:text-slate-500 italic font-medium">無所需物品</span>
                       )}
                     </td>
-                    <td className="px-2 md:px-4 py-2 md:py-3 border-r border-slate-200 text-center align-middle">
+                    <td className="px-4 py-3 text-center align-middle">
                       <div className="flex justify-center items-center h-full">
-                        <Checkbox checked={plan.isPropsPacked || false} disabled={isLocked} onCheckedChange={(c) => onUpdatePlan(plan.id, { isPropsPacked: c === true })} className="h-5 w-5 border-2" />
+                        <Checkbox checked={plan.isPropsPacked || false} disabled={isLocked} onCheckedChange={(c) => onUpdatePlan(plan.id, { isPropsPacked: c === true })} className="h-5 w-5 border-2 dark:border-slate-600 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500" />
                       </div>
                     </td>
-                    <td className="px-2 md:px-4 py-2 md:py-3 border-r border-slate-200 text-center align-middle">
+                    <td className="px-4 py-3 text-center align-middle">
                       <div className="flex justify-center flex-col items-center h-full">
-                        <Checkbox checked={plan.isPreDepartureChecked || false} disabled={isLocked} onCheckedChange={(c) => onUpdatePlan(plan.id, { isPreDepartureChecked: c === true })} className="h-5 w-5 border-2" />
+                        <Checkbox checked={plan.isPreDepartureChecked || false} disabled={isLocked} onCheckedChange={(c) => onUpdatePlan(plan.id, { isPreDepartureChecked: c === true })} className="h-5 w-5 border-2 dark:border-slate-600 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500" />
                       </div>
                     </td>
-                    {!isLocked && <td className="px-4 py-3 text-center align-middle border-l border-slate-200"></td>}
+                    {!isLocked && <td className="px-4 py-3 text-center align-middle"></td>}
                   </tr>
                 ))
               ))}
@@ -457,48 +459,53 @@ export function AdminSection({
 
             {/* 2. 教學組 */}
             <tbody>
-              <tr className="bg-blue-100/50"><td colSpan={isLocked ? 6 : 7} className="px-4 py-2 font-black text-blue-800 text-sm">2. 教學組 - 教案道具確認</td></tr>
+              <tr><td colSpan={isLocked ? 6 : 7} className="px-4 py-4 font-fira-code font-black text-blue-600 dark:text-blue-400 text-xs sm:text-sm uppercase tracking-widest bg-transparent border-b border-stone-100 dark:border-slate-800/60">02 / 教學組 - 教案道具確認</td></tr>
               {Object.keys(teachingGroups).length === 0 ? (
-                <tr><td colSpan={isLocked ? 6 : 7} className="text-center py-4 text-slate-400 font-bold">目前沒有教學教案</td></tr>
+                <tr><td colSpan={isLocked ? 6 : 7} className="text-center py-6 text-slate-400 dark:text-slate-500 font-bold border-b border-stone-100 dark:border-slate-800/60">目前沒有教學教案</td></tr>
               ) : Object.entries(teachingGroups).map(([categoryName, catePlans]) => (
                 catePlans.map((plan, pIndex) => (
-                  <tr key={`tch-${plan.id}`} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                  <tr key={`tch-${plan.id}`} className={cn(
+                    "group border-b border-stone-100 dark:border-slate-800/60 hover:bg-stone-50 dark:hover:bg-slate-800/40 transition-colors duration-200",
+                    plan.isPreDepartureChecked && plan.isPropsPacked ? "bg-emerald-50/30 dark:bg-emerald-900/10" : "bg-white dark:bg-slate-900/20"
+                  )}>
                     {pIndex === 0 && (
-                      <td className="px-2 md:px-4 py-2 md:py-3 font-black text-xs sm:text-sm text-slate-800 border-r border-slate-200 align-top" rowSpan={catePlans.length}>
+                      <td className="px-4 py-3 font-fira-code font-black text-xs sm:text-sm text-slate-800 dark:text-slate-400 align-top border-r border-stone-100 dark:border-slate-800/50" rowSpan={catePlans.length}>
                         {categoryName}
                       </td>
                     )}
-                    <td className="px-2 md:px-4 py-2 md:py-3 font-bold text-xs sm:text-sm text-slate-700 border-r border-slate-200 align-top">
+                    <td className="px-4 py-3 font-bold text-xs sm:text-sm text-slate-700 dark:text-slate-300 align-top">
                       {plan.activityName || '-'}
                     </td>
-                    <td className="px-2 md:px-4 py-2 md:py-3 text-xs sm:text-sm text-slate-600 border-r border-slate-200 align-top">
+                    <td className="px-4 py-3 text-xs sm:text-sm text-slate-600 dark:text-slate-400 align-top">
                       {plan.members || '-'}
                     </td>
-                    <td className="px-2 md:px-4 py-2 md:py-3 text-slate-600 border-r border-slate-200 text-xs sm:text-sm">
+                    <td className="px-4 py-3 text-slate-600 dark:text-slate-300 text-xs sm:text-sm">
                       {plan.props.length > 0 ? (
-                        <ul className="list-disc list-inside space-y-1">
+                        <ul className="space-y-1.5 list-none">
                           {plan.props.map(prop => (
-                            <li key={prop.id}>
-                              <span className="font-bold text-slate-800">{prop.name}</span> * {prop.quantity} {prop.unit === 'custom' ? '' : prop.unit}
-                              {prop.remarks && <span className="text-slate-400 ml-1">({prop.remarks})</span>}
+                            <li key={prop.id} className="flex items-center gap-1.5 flex-wrap">
+                              <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600 shrink-0" />
+                              <span className="font-bold text-slate-800 dark:text-slate-200">{prop.name}</span> 
+                              <span className="text-blue-500 dark:text-blue-400 font-fira-code px-1.5 py-0.5 bg-blue-50 dark:bg-blue-400/10 rounded-md text-[10px] font-bold">× {prop.quantity} {prop.unit === 'custom' ? '' : prop.unit}</span>
+                              {prop.remarks && <span className="text-slate-400 dark:text-slate-500 ml-1 text-[11px]">({prop.remarks})</span>}
                             </li>
                           ))}
                         </ul>
                       ) : (
-                        <span className="text-slate-400 italic font-medium">無所需物品</span>
+                        <span className="text-slate-400 dark:text-slate-500 italic font-medium">無所需物品</span>
                       )}
                     </td>
-                    <td className="px-2 md:px-4 py-2 md:py-3 border-r border-slate-200 text-center align-middle">
+                    <td className="px-4 py-3 text-center align-middle">
                       <div className="flex justify-center items-center h-full">
-                        <Checkbox checked={plan.isPropsPacked || false} disabled={isLocked} onCheckedChange={(c) => onUpdatePlan(plan.id, { isPropsPacked: c === true })} className="h-5 w-5 border-2" />
+                        <Checkbox checked={plan.isPropsPacked || false} disabled={isLocked} onCheckedChange={(c) => onUpdatePlan(plan.id, { isPropsPacked: c === true })} className="h-5 w-5 border-2 dark:border-slate-600 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500" />
                       </div>
                     </td>
-                    <td className="px-2 md:px-4 py-2 md:py-3 border-r border-slate-200 text-center align-middle">
-                      <div className="flex justify-center items-center h-full">
-                        <Checkbox checked={plan.isPreDepartureChecked || false} disabled={isLocked} onCheckedChange={(c) => onUpdatePlan(plan.id, { isPreDepartureChecked: c === true })} className="h-5 w-5 border-2" />
+                    <td className="px-4 py-3 text-center align-middle">
+                      <div className="flex justify-center flex-col items-center h-full">
+                        <Checkbox checked={plan.isPreDepartureChecked || false} disabled={isLocked} onCheckedChange={(c) => onUpdatePlan(plan.id, { isPreDepartureChecked: c === true })} className="h-5 w-5 border-2 dark:border-slate-600 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500" />
                       </div>
                     </td>
-                    {!isLocked && <td className="px-4 py-3 text-center align-middle border-l border-slate-200"></td>}
+                    {!isLocked && <td className="px-4 py-3 text-center align-middle"></td>}
                   </tr>
                 ))
               ))}
@@ -506,14 +513,17 @@ export function AdminSection({
 
             {/* 3. 營期物品 */}
             <tbody>
-              <tr className="bg-emerald-100/50"><td colSpan={isLocked ? 6 : 7} className="px-4 py-2 font-black text-emerald-800 text-sm">3. 營期其他物品確認</td></tr>
+              <tr><td colSpan={isLocked ? 6 : 7} className="px-4 py-4 font-fira-code font-black text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm uppercase tracking-widest bg-transparent">03 / 營期其他物品確認</td></tr>
               {Object.keys(usageGroups).length === 0 ? (
-                <tr><td colSpan={isLocked ? 6 : 7} className="text-center py-4 text-slate-400 font-bold">目前沒有營期物品資料</td></tr>
+                <tr><td colSpan={isLocked ? 6 : 7} className="text-center py-4 text-slate-400 dark:text-slate-600 font-bold">目前沒有營期物品資料</td></tr>
               ) : Object.entries(usageGroups).map(([usageName, items]) => (
                 items.map((item, pIndex) => (
-                  <tr key={`cmp-${item.id}`} className="border-b border-slate-100 hover:bg-slate-50 transition-colors group">
+                  <tr key={`cmp-${item.id}`} className={cn(
+                    "group border-b border-stone-100 dark:border-slate-800/60 hover:bg-stone-50 dark:hover:bg-slate-800/40 transition-colors duration-200",
+                    item.isChecked && item.isPacked ? "bg-emerald-50/30 dark:bg-emerald-900/10" : "bg-white dark:bg-slate-900/20"
+                  )}>
                     {pIndex === 0 && (
-                      <td className="px-2 md:px-4 py-2 md:py-3 font-black text-xs sm:text-sm text-slate-800 border-r border-slate-200 align-top" rowSpan={items.length}>
+                      <td className="px-4 py-3 font-fira-code font-black text-xs sm:text-sm text-slate-800 dark:text-slate-400 align-top border-r border-stone-100 dark:border-slate-800/50" rowSpan={items.length}>
                         {isLocked ? (
                            usageName
                         ) : (
@@ -524,54 +534,54 @@ export function AdminSection({
                                   items.forEach(i => handleUpdateCampItem(i.id, { usage: v }));
                                 }}
                                 disabled={isLocked}
-                                className="font-black text-slate-800 bg-white/50"
+                                className="font-black text-slate-800 dark:text-slate-200 bg-white/50 dark:bg-slate-800"
                               />
-                              <span className="text-[10px] text-slate-400 font-normal">修改將套用至同類組</span>
+                              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-normal">修改將套用至同類組</span>
                           </div>
                         )}
                       </td>
                     )}
-                    <td className="px-2 md:px-4 py-2 md:py-3 border-r border-slate-200 align-middle">
+                    <td className="px-4 py-3 align-middle">
                        <PropInput 
                           value={item.name}
                           onChange={(v) => handleUpdateCampItem(item.id, { name: v })}
                           disabled={isLocked}
-                          className="font-bold text-slate-700"
+                          className="font-bold text-slate-700 dark:text-slate-300"
                         />
                     </td>
-                    <td className="px-2 md:px-4 py-2 md:py-3 text-xs sm:text-sm text-slate-400 border-r border-slate-200 align-middle text-center">
+                    <td className="px-4 py-3 text-xs sm:text-sm text-slate-400 dark:text-slate-600 align-middle">
                       -
                     </td>
-                    <td className="px-2 md:px-4 py-2 md:py-3 text-xs sm:text-sm text-slate-400 border-r border-slate-200 align-middle text-center">
+                    <td className="px-4 py-3 text-xs sm:text-sm text-slate-400 dark:text-slate-600 align-middle">
                       -
                     </td>
-                    <td className="px-2 md:px-4 py-2 md:py-3 border-r border-slate-200 text-center align-middle">
+                    <td className="px-4 py-3 text-center align-middle">
                       <div className="flex justify-center items-center h-full">
                         <Checkbox 
                           checked={item.isPacked || false} 
                           disabled={isLocked}
                           onCheckedChange={(c) => handleUpdateCampItem(item.id, { isPacked: c === true })}
-                          className="h-5 w-5 border-2"
+                          className="h-5 w-5 border-2 dark:border-slate-600 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
                         />
                       </div>
                     </td>
-                    <td className="px-2 md:px-4 py-2 md:py-3 border-r border-slate-200 text-center align-middle">
+                    <td className="px-4 py-3 text-center align-middle">
                       <div className="flex justify-center items-center h-full">
                         <Checkbox 
                           checked={item.isChecked || false} 
                           disabled={isLocked}
                           onCheckedChange={(c) => handleUpdateCampItem(item.id, { isChecked: c === true })}
-                          className="h-5 w-5 border-2"
+                          className="h-5 w-5 border-2 dark:border-slate-600 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
                         />
                       </div>
                     </td>
                     {!isLocked && (
-                      <td className="px-4 py-3 text-center align-middle border-l border-slate-200">
+                      <td className="px-4 py-3 text-center align-middle">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDeleteCampItem(item.id)}
-                          className="h-7 px-2 text-red-500 hover:text-red-700 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="h-7 px-2 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                           刪除
                         </Button>
@@ -588,92 +598,56 @@ export function AdminSection({
   };
 
   return (
-    <div className="h-full flex flex-col bg-stone-50 dark:bg-slate-900 overflow-hidden animate-in fade-in duration-500 relative transition-colors">
-      <header className="px-4 md:px-8 py-4 border-b border-stone-200 dark:border-white/5 flex items-center justify-between no-print bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl sticky top-0 z-40 shrink-0">
-        <div className="flex items-center gap-3">
-          <SidebarTrigger className="md:hidden -ml-2 h-8 w-8 text-stone-400 dark:text-slate-500 hover:text-orange-500 dark:hover:text-amber-400" />
-          <div className="w-9 h-9 rounded-xl bg-orange-600 dark:bg-amber-400 flex items-center justify-center text-white dark:text-slate-900 shadow-lg shrink-0 transition-colors">
-            <ShieldCheck className="h-4.5 w-4.5" />
-          </div>
-          <div className="flex flex-col">
-            <h2 className="text-[12px] font-black text-stone-900 dark:text-white tracking-tight leading-none uppercase">
-              {t('ADMIN_TITLE')}
-            </h2>
-            <span className="text-[10px] font-bold text-orange-500 dark:text-amber-400 mt-1 uppercase tracking-widest leading-none">
-              Command Suite
-            </span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleUnlockClick}
-            className={cn(
-              "rounded-xl font-bold text-[10px] gap-2 h-9 px-4 md:px-6 transition-all tracking-widest uppercase",
-              isLocked 
-                ? "text-stone-500 dark:text-slate-400 hover:text-orange-600 dark:hover:text-amber-400 hover:bg-stone-100 dark:hover:bg-white/5" 
-                : "bg-orange-50 dark:bg-amber-400/10 text-orange-600 dark:text-amber-400 border border-orange-200/50 dark:border-amber-400/30 shadow-sm"
-            )}
-          >
-            {isLocked ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
-            <span className="hidden sm:inline">{isLocked ? t('LOCK_EDIT') : t('UNLOCK_EDIT')}</span>
-          </Button>
-        </div>
-      </header>
-
-      {/* Floating Undo/Redo Buttons */}
-      <div className="fixed right-6 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-50 no-print">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                variant="secondary"
-                size="icon" 
-                onClick={onUndoTable} 
-                disabled={!canUndoTable || isLocked}
-                className="h-9 w-9 rounded-full bg-white/80 backdrop-blur-md shadow-lg border border-slate-200 text-slate-500 hover:text-orange-600 disabled:opacity-30"
-              >
-                <Undo2 className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="left" className="text-[10px] font-black uppercase">上一步 / Undo</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                variant="secondary"
-                size="icon" 
-                onClick={onRedoTable} 
-                disabled={!canRedoTable || isLocked}
-                className="h-9 w-9 rounded-full bg-white/80 backdrop-blur-md shadow-lg border border-slate-200 text-slate-500 hover:text-orange-600 disabled:opacity-30"
-              >
-                <Redo2 className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="left" className="text-[10px] font-black uppercase">下一步 / Redo</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
-
+    <div className="h-full flex flex-col bg-stone-50 dark:bg-slate-950 overflow-hidden animate-in fade-in duration-500 relative transition-colors font-fira-sans">
       <main className="flex-1 overflow-hidden flex flex-col min-h-0">
-        <Tabs defaultValue="timer" className="flex-1 flex flex-col h-full overflow-hidden">
-          <div className="px-4 md:px-8 py-2.5 border-b border-stone-200 dark:border-white/5 no-print bg-white dark:bg-slate-900 shrink-0 transition-colors">
-            <TabsList className="bg-stone-100 dark:bg-white/5 p-1 rounded-xl w-full md:w-auto">
-              <TabsTrigger value="timer" className="flex-1 md:flex-none rounded-lg font-bold text-[10px] gap-2 px-8 tracking-widest uppercase data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm data-[state=active]:text-orange-600 dark:data-[state=active]:text-amber-400 transition-all">
-                <Clock className="h-3 w-3" /> {t('TIMER_CONTROL')}
+        <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="flex-1 flex flex-col h-full overflow-hidden min-h-0">
+          <header className="px-4 md:px-6 py-2 md:py-3 border-b border-stone-200 dark:border-slate-800/60 flex flex-col xl:flex-row items-center justify-between gap-3 no-print bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl sticky top-0 z-40 shrink-0 shadow-sm dark:shadow-slate-900/50">
+          
+          {/* Left: Branding & Print */}
+          <div className="flex items-center gap-4 w-full xl:w-auto justify-between xl:justify-start">
+            <div className="flex items-center gap-3">
+              <SidebarTrigger className="md:hidden -ml-2 h-8 w-8 text-stone-400 dark:text-slate-500 hover:text-orange-500 dark:hover:text-amber-400" />
+              <div className="w-8 h-8 rounded-xl bg-orange-600 dark:bg-amber-400 flex items-center justify-center text-white dark:text-slate-900 shadow-md shadow-orange-600/20 shrink-0">
+                <ShieldCheck className="h-4 w-4" />
+              </div>
+              <div className="flex flex-col">
+                <h2 className="text-[12px] font-fira-code font-black text-stone-900 dark:text-slate-100 tracking-tight leading-none uppercase">{t('ADMIN_TITLE')}</h2>
+              </div>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => window.print()} className="rounded-xl font-bold text-[10px] h-8 px-4 bg-orange-50 dark:bg-amber-400/10 text-orange-600 dark:text-amber-400 transition-all uppercase">
+              <span className="hidden sm:inline">匯出 / PRINT</span>
+            </Button>
+          </div>
+
+          {/* Right: Operations & Tabs */}
+          <div className="flex flex-wrap md:flex-nowrap items-center gap-2 md:gap-4 w-full xl:w-auto justify-center xl:justify-end">
+            <TabsList className="bg-stone-100 dark:bg-slate-800/50 p-1 rounded-xl h-9">
+              <TabsTrigger value="timer" className="rounded-lg font-bold text-[10px] gap-1.5 px-4 tracking-widest uppercase h-7 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm data-[state=active]:text-orange-600 dark:data-[state=active]:text-amber-400">
+                <Clock className="h-3 w-3" /> <span className="hidden sm:inline">{t('TIMER_CONTROL')}</span>
               </TabsTrigger>
-              <TabsTrigger value="tables" className="flex-1 md:flex-none rounded-lg font-bold text-[10px] gap-2 px-8 tracking-widest uppercase data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm data-[state=active]:text-orange-600 dark:data-[state=active]:text-amber-400 transition-all">
-                <TableIcon className="h-3 w-3" /> {t('ROTATION_TABLE')}
+              <TabsTrigger value="tables" className="rounded-lg font-bold text-[10px] gap-1.5 px-4 tracking-widest uppercase h-7 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm data-[state=active]:text-orange-600 dark:data-[state=active]:text-amber-400">
+                <TableIcon className="h-3 w-3" /> <span className="hidden sm:inline">{t('ROTATION_TABLE')}</span>
               </TabsTrigger>
-              <TabsTrigger value="props" className="flex-1 md:flex-none rounded-lg font-bold text-[10px] gap-2 px-8 tracking-widest uppercase data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm data-[state=active]:text-orange-600 dark:data-[state=active]:text-amber-400 transition-all">
-                <Package2 className="h-3 w-3" /> {t('PROPS_LIST')}
+              <TabsTrigger value="props" className="rounded-lg font-bold text-[10px] gap-1.5 px-4 tracking-widest uppercase h-7 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm data-[state=active]:text-orange-600 dark:data-[state=active]:text-amber-400">
+                <Package2 className="h-3 w-3" /> <span className="hidden sm:inline">{t('PROPS_LIST')}</span>
               </TabsTrigger>
             </TabsList>
-          </div>
 
-          <div className="flex-1 overflow-y-auto min-h-0 scrollbar-hide">
+            {activeMainTab === 'props' && (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 p-1 bg-stone-100 dark:bg-slate-800/50 rounded-xl h-9 border border-transparent dark:border-slate-700/50">
+                  {['activity', 'teaching', 'all-props'].map((tab) => (
+                    <button key={tab} onClick={() => setActivePropsTab(tab as typeof activePropsTab)} className={cn("px-3 h-7 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all", activePropsTab === tab ? 'bg-orange-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300')}>
+                      {tab === 'activity' ? '活動' : tab === 'teaching' ? '教學' : '營期'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </header>
+
+        <div className="flex-1 overflow-y-auto min-h-0 scrollbar-hide relative">
             <TabsContent value="timer" className="m-0 h-full">
               <AdminTimer 
                 timer={timer} 
@@ -682,19 +656,19 @@ export function AdminSection({
             </TabsContent>
 
             <TabsContent value="tables" className="m-0 data-[state=active]:flex flex-col h-full overflow-hidden">
-              <div className="px-4 md:px-8 py-3 bg-orange-50/10 border-b border-orange-100/20 flex items-center justify-between no-print">
+              <div className="px-4 md:px-8 py-3 bg-orange-50/10 dark:bg-slate-900/30 border-b border-orange-100/20 dark:border-slate-800/60 flex items-center justify-between no-print">
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
-                    <Calendar className="h-3.5 w-3.5 text-orange-400 shrink-0" />
-                    <span className="text-[9px] font-black text-slate-500 tracking-widest hidden sm:inline">天數</span>
+                    <Calendar className="h-3.5 w-3.5 text-orange-400 dark:text-slate-500 shrink-0" />
+                    <span className="text-[9px] font-fira-code font-black text-slate-500 dark:text-slate-400 tracking-widest hidden sm:inline">天數</span>
                   </div>
                   <Select value={selectedDay} onValueChange={setSelectedDay}>
-                    <SelectTrigger className="w-32 h-8 rounded-lg font-black text-[10px] border-orange-200 bg-white shadow-none">
+                    <SelectTrigger className="w-32 h-8 rounded-lg font-fira-code font-black text-[10px] border-orange-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-slate-200 shadow-none dark:hover:bg-slate-700 transition-colors">
                       <SelectValue placeholder="選擇" />
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl border-orange-100 shadow-2xl">
+                    <SelectContent className="rounded-xl border-orange-100 dark:border-slate-700 shadow-2xl dark:bg-slate-800 dark:text-slate-200 font-fira-code">
                       {dayOptions.map(day => (
-                        <SelectItem key={day} value={day} className="rounded-lg font-bold text-xs">{day}</SelectItem>
+                        <SelectItem key={day} value={day} className="rounded-lg font-bold text-xs dark:focus:bg-slate-700">{day}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -707,8 +681,16 @@ export function AdminSection({
                 )}
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-12">
-                <div className="max-w-6xl mx-auto space-y-12 pb-24">
+              <div 
+                className="flex-1 overflow-y-auto p-4 md:p-8 space-y-12"
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+              >
+                <div 
+                  className="max-w-6xl mx-auto space-y-12 pb-24"
+                  style={{ zoom }}
+                >
                   {filteredTables.length > 0 ? (
                     filteredTables.map((table) => (
                       <AdminRotationTable 
@@ -721,11 +703,11 @@ export function AdminSection({
                     ))
                   ) : (
                     <div className="flex flex-col items-center justify-center py-24 text-center space-y-6">
-                      <div className="w-16 h-16 rounded-3xl bg-white flex items-center justify-center text-orange-100 shadow-sm border border-orange-50">
+                      <div className="w-16 h-16 rounded-3xl bg-white dark:bg-slate-800/50 flex items-center justify-center text-orange-100 dark:text-slate-600 shadow-sm border border-orange-50 dark:border-slate-700/50 shadow-inner">
                         <TableIcon className="h-6 w-6" />
                       </div>
                       <div className="space-y-1">
-                        <p className="text-[10px] font-black text-slate-900 tracking-widest">目前無資料</p>
+                        <p className="text-[10px] font-fira-code font-black text-slate-900 dark:text-slate-500 tracking-widest">目前無資料</p>
                       </div>
                     </div>
                   )}
@@ -734,54 +716,7 @@ export function AdminSection({
             </TabsContent>
 
             <TabsContent value="props" className="m-0 data-[state=active]:flex flex-col h-full overflow-hidden bg-slate-50/50">
-              <div className="shrink-0 px-4 md:px-8 py-3 border-b border-orange-100/20 bg-orange-50/10 backdrop-blur-md flex items-center justify-between no-print">
-                <div className="flex items-center gap-2 p-1 bg-white/50 w-fit rounded-xl border border-orange-100/30">
-                   {['activity', 'teaching', 'all-props'].map((tab) => (
-                     <button
-                       key={tab}
-                       onClick={() => setActivePropsTab(tab as typeof activePropsTab)}
-                       className={cn("px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-200",
-                         activePropsTab === tab
-                           ? 'bg-orange-600 text-white shadow-md shadow-orange-600/20'
-                           : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
-                       )}
-                     >
-                       {tab === 'activity' ? '活動組' : tab === 'teaching' ? '教學組' : '各闖關道具與營期物品確認'}
-                     </button>
-                   ))}
-                </div>
-
-                {/* Zoom controls */}
-                <div className="flex items-center gap-1.5 bg-white/80 backdrop-blur-md rounded-xl border border-slate-200 px-2 py-1 shadow-sm">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleZoomOut}
-                    disabled={propsZoom <= 0.3}
-                    className="h-7 w-7 rounded-lg text-slate-500 hover:text-orange-600 hover:bg-orange-50 disabled:opacity-30"
-                  >
-                    <ZoomOut className="h-3.5 w-3.5" />
-                  </Button>
-                  <button
-                    onClick={handleZoomReset}
-                    className="min-w-[3rem] text-center text-[10px] font-black text-slate-600 hover:text-orange-600 transition-colors tracking-wider"
-                  >
-                    {Math.round(propsZoom * 100)}%
-                  </button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleZoomIn}
-                    disabled={propsZoom >= 2}
-                    className="h-7 w-7 rounded-lg text-slate-500 hover:text-orange-600 hover:bg-orange-50 disabled:opacity-30"
-                  >
-                    <ZoomIn className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
-
               <div
-                ref={propsContainerRef}
                 className="flex-1 overflow-auto p-4 md:p-8"
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
@@ -789,23 +724,10 @@ export function AdminSection({
               >
                 <div
                   className="mx-auto space-y-8 pb-32"
-                  style={{
-                    transform: `scale(${propsZoom})`,
-                    transformOrigin: 'top left',
-                    width: `${100 / propsZoom}%`,
-                  }}
+                  style={{ zoom }}
                 >
                   <div className={cn("transition-opacity duration-300", isLocked ? "opacity-80" : "opacity-100")}>
-                    {!isLocked && (
-                      <div className="mb-4 flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg border border-green-200 font-bold">
-                        <Unlock className="h-4 w-4" /> 解鎖成功，現在可以打勾編輯道具狀態。
-                      </div>
-                    )}
-                    {isLocked && (
-                      <div className="mb-4 flex items-center gap-2 text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-lg border border-amber-200 font-bold">
-                        <Lock className="h-4 w-4" /> 管理員權限已鎖定。請點擊右上角解鎖以編輯道具狀態。
-                      </div>
-                    )}
+
                      {activePropsTab === 'activity' && renderPropTable('活動組', activityPropsFlattened)}
                      {activePropsTab === 'teaching' && renderPropTable('教學組', teachingPropsFlattened)}
                      {activePropsTab === 'all-props' && renderCombinedTable()}
@@ -817,12 +739,55 @@ export function AdminSection({
         </Tabs>
       </main>
 
-      <AdminDialog 
-        open={isAdminDialogOpen}
-        onOpenChange={setIsAdminDialogOpen}
-        onConfirm={() => setIsLocked(false)}
-        title="管理權限解鎖 / Unlock Admin Permissions"
-      />
+      {activeMainTab !== 'timer' && (
+        <div className="fixed bottom-6 right-6 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-1.5 flex items-center gap-1.5 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700/50 z-50 transition-all duration-300">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" onClick={onUndoTable} disabled={!canUndoTable || isLocked} className="h-12 w-12 rounded-xl text-slate-500 hover:text-orange-500 hover:bg-white dark:hover:bg-slate-700 transition-all">
+                  <Undo2 className="h-6 w-6" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top">上一步 / Undo</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" onClick={onRedoTable} disabled={!canRedoTable || isLocked} className="h-12 w-12 rounded-xl text-slate-500 hover:text-orange-500 hover:bg-white dark:hover:bg-slate-700 transition-all">
+                  <Redo2 className="h-6 w-6" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top">下一步 / Redo</TooltipContent>
+            </Tooltip>
+            
+            <div className="w-[1px] h-8 bg-slate-200 dark:bg-slate-700 mx-1" />
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" onClick={handleZoomOut} disabled={zoom <= 0.3} className="h-12 w-12 rounded-xl text-slate-500 hover:text-orange-500 hover:bg-white dark:hover:bg-slate-700 transition-all">
+                  <ZoomOut className="h-6 w-6" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top">縮小 / Zoom Out</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" onClick={handleFitAll} className="h-12 w-12 rounded-xl text-slate-500 hover:text-orange-500 hover:bg-white dark:hover:bg-slate-700 transition-all">
+                  <Maximize className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top">適合視窗 / Fit All</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" onClick={handleZoomIn} disabled={zoom >= 2} className="h-12 w-12 rounded-xl text-slate-500 hover:text-orange-500 hover:bg-white dark:hover:bg-slate-700 transition-all">
+                  <ZoomIn className="h-6 w-6" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top">放大 / Zoom In</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      )}
     </div>
   );
 }

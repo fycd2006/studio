@@ -9,46 +9,37 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
   Loader2, 
-  Download, 
   FileDown, 
-  Printer,
-  CheckCircle2,
-  Plus,
-  Trash2,
-  FileText,
-  Users,
-  Package,
-  StickyNote,
-  MapPin,
-  Clock,
-  Target,
-  Layout,
-  Undo2,
-  Redo2,
-  History,
-  Save,
-  Eye,
-  Filter,
-  ArrowLeft,
-  RotateCcw
+  Plus, 
+  Trash2, 
+  FileText, 
+  Users, 
+  Package, 
+  StickyNote, 
+  MapPin, 
+  Clock, 
+  Target, 
+  Layout, 
+  Undo2, 
+  Redo2, 
+  History, 
+  Save, 
+  RotateCcw,
+  ZoomIn,
+  ZoomOut,
+  Maximize
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { exportToDocx } from "@/lib/export-utils";
-import { 
-  Sheet, 
-  SheetContent, 
-  SheetHeader, 
-  SheetTitle, 
-  SheetTrigger 
-} from "@/components/ui/sheet";
 import { format } from "date-fns";
 import dynamic from "next/dynamic";
-import { useState, useRef, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { computeDiff, getChangedFields } from "@/lib/text-diff";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n-context";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { VersionHistorySidebar } from "./VersionHistorySidebar";
+import { DiffHighlighter } from "./DiffHighlighter";
+import { getChangedFields } from "@/lib/text-diff";
 
 const FabricCanvas = dynamic(
   () => import("@/components/FabricCanvas").then((mod) => mod.FabricCanvas),
@@ -85,32 +76,145 @@ interface PlanEditorProps {
   canUndo?: boolean;
   canRedo?: boolean;
   versions?: PlanVersion[];
-  onSaveVersion?: (name: string) => void;
+  onSaveVersion?: (name: string, isAuto?: boolean) => void;
   onRestoreVersion?: (versionId: string) => void;
   onDeleteVersion?: (versionId: string) => void;
+  onAutoSave?: () => void;
+  getFullVersionState?: (version: PlanVersion) => Promise<LessonPlan>;
+  onUpdateVersionName?: (versionId: string, versionName: string) => void;
+  activityTypes?: string[];
 }
 
-export function PlanEditor({ plan, onUpdate, isSaving, onUndo, onRedo, canUndo, canRedo, versions = [], onSaveVersion, onRestoreVersion, onDeleteVersion }: PlanEditorProps) {
+export function PlanEditor({ 
+  plan, onUpdate, isSaving, onUndo, onRedo, canUndo, canRedo, 
+  versions = [], onSaveVersion, onRestoreVersion, onDeleteVersion, onAutoSave, getFullVersionState, onUpdateVersionName, activityTypes = []
+}: PlanEditorProps) {
   const { t } = useTranslation();
   const { toast } = useToast();
-  const [isVersionSheetOpen, setIsVersionSheetOpen] = useState(false);
+  
+  // History Mode State
+  const [isHistoryMode, setIsHistoryMode] = useState(false);
+  const [selectedVersion, setSelectedVersion] = useState<PlanVersion | null>(null);
+  const [previewPlan, setPreviewPlan] = useState<LessonPlan | null>(null);
+  const [previousPlan, setPreviousPlan] = useState<LessonPlan | null>(null);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  
+  // Versions UI state
   const [newVersionName, setNewVersionName] = useState("");
-  const [previewVersion, setPreviewVersion] = useState<PlanVersion | null>(null);
   const [showNamedOnly, setShowNamedOnly] = useState(false);
 
-  const filteredVersions = useMemo(() => {
-    if (!showNamedOnly) return versions;
-    return versions.filter(v => !v.name.startsWith(t('SAVED')));
-  }, [versions, showNamedOnly]);
+  // Global Editor Zoom
+  const [pageZoom, setPageZoom] = useState(1);
+  const handleZoomIn = () => setPageZoom(prev => Math.min(2, prev + 0.1));
+  const handleZoomOut = () => setPageZoom(prev => Math.max(0.3, prev - 0.1));
+  const handleFitAll = () => setPageZoom(1);
 
-  const previewChangedFields = useMemo(() => {
-    if (!previewVersion) return [];
-    return getChangedFields(previewVersion.snapshot as any, plan as any);
-  }, [previewVersion, plan]);
+  // Local state for smooth typing without spamming Firestore
+  const [localPlan, setLocalPlan] = useState<LessonPlan>(plan);
+  const pendingUpdatesRef = useRef<Partial<LessonPlan>>({});
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    // Only sync from remote if we don't have pending local updates
+    if (Object.keys(pendingUpdatesRef.current).length === 0) {
+      setLocalPlan(plan);
+    }
+  }, [plan]);
+
+  // Clean up timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
 
   const handlePlanUpdate = (updates: Partial<LessonPlan>) => {
-    onUpdate(plan.id, updates);
+    // Update local UI immediately
+    setLocalPlan(prev => ({ ...prev, ...updates }));
+    
+    // Merge into pending
+    pendingUpdatesRef.current = { ...pendingUpdatesRef.current, ...updates };
+
+    // Debounce the actual Firestore write
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
+      onUpdate(plan.id, pendingUpdatesRef.current);
+      pendingUpdatesRef.current = {}; // Clear pending after dispatch
+    }, 1000);
   };
+
+  const currentPlan = isHistoryMode ? (previewPlan || plan) : localPlan;
+
+  // Auto-Save Trigger
+  const autoSaveRef = useRef(onAutoSave);
+  // Keep the ref updated with the latest function without triggering effect re-runs
+  useEffect(() => {
+    autoSaveRef.current = onAutoSave;
+  }, [onAutoSave]);
+
+  const onUpdateRef = useRef(onUpdate);
+  const planIdRef = useRef(plan.id);
+
+  useEffect(() => {
+    onUpdateRef.current = onUpdate;
+    planIdRef.current = plan.id;
+  }, [onUpdate, plan.id]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Flush pending updates before unload
+      if (Object.keys(pendingUpdatesRef.current).length > 0) {
+        onUpdateRef.current(planIdRef.current, pendingUpdatesRef.current);
+        pendingUpdatesRef.current = {};
+      }
+      autoSaveRef.current?.();
+      delete e['returnValue']; 
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      // Flush pending on unmount
+      if (Object.keys(pendingUpdatesRef.current).length > 0) {
+        onUpdateRef.current(planIdRef.current, pendingUpdatesRef.current);
+        pendingUpdatesRef.current = {};
+      }
+      // Only execute auto-save on true component unmount (e.g. navigation)
+      autoSaveRef.current?.();
+    };
+  }, []);
+
+  // Load preview data when version selected
+  useEffect(() => {
+    if (!selectedVersion || !getFullVersionState) {
+      setPreviewPlan(null);
+      setPreviousPlan(null);
+      return;
+    }
+
+    const load = async () => {
+      setIsLoadingPreview(true);
+      try {
+        const targetState = await getFullVersionState(selectedVersion);
+        setPreviewPlan(targetState);
+
+        const currentIdx = versions.findIndex(v => v.id === selectedVersion.id);
+        if (currentIdx < versions.length - 1) {
+          const prevState = await getFullVersionState(versions[currentIdx + 1]);
+          setPreviousPlan(prevState);
+        } else {
+          setPreviousPlan(null);
+        }
+      } catch (err) {
+        console.error("Failed to load version preview:", err);
+      } finally {
+        setIsLoadingPreview(false);
+      }
+    };
+    load();
+  }, [selectedVersion, getFullVersionState, versions]);
+
+  // Note: handlePlanUpdate was moved higher up, so we'll just leave this spot empty to prevent duplication.
 
   const handleSaveVersion = () => {
     if (!newVersionName.trim()) {
@@ -122,20 +226,18 @@ export function PlanEditor({ plan, onUpdate, isSaving, onUndo, onRedo, canUndo, 
     toast({ title: "版本已儲存" });
   };
 
-  const handleRestoreVersion = (version: PlanVersion) => {
-    const autoName = `自動儲存 (還原前) - ${format(new Date(), "MM/dd HH:mm")}`;
-    onSaveVersion?.(autoName);
-    onRestoreVersion?.(version.id);
-    setPreviewVersion(null);
-    setIsVersionSheetOpen(false);
-    toast({ title: "已還原版本", description: `從「${version.name}」還原，還原前的狀態已自動儲存。` });
+  const handleRestoreVersion = (versionId: string) => {
+    onRestoreVersion?.(versionId);
+    setIsHistoryMode(false);
+    setSelectedVersion(null);
+    toast({ title: "已還原版本" });
   };
 
-  const handleDeleteVersion = (version: PlanVersion) => {
-    if (confirm(`確定要刪除版本「${version.name}」嗎？此操作無法復原。`)) {
-      onDeleteVersion?.(version.id);
-      if (previewVersion?.id === version.id) setPreviewVersion(null);
-      toast({ title: "已刪除版本", description: version.name });
+  const handleDeleteVersion = (versionId: string) => {
+    if (confirm("確定要刪除此版本嗎？")) {
+      onDeleteVersion?.(versionId);
+      if (selectedVersion?.id === versionId) setSelectedVersion(null);
+      toast({ title: "已刪除版本" });
     }
   };
 
@@ -143,321 +245,292 @@ export function PlanEditor({ plan, onUpdate, isSaving, onUndo, onRedo, canUndo, 
     handlePlanUpdate({ canvasData: data, canvasHeight: height });
   };
 
-  const isScript = plan.category === 'teaching';
   const hasCanvas = plan.canvasData !== null && plan.canvasData !== undefined;
 
   return (
-    <div className="h-full flex flex-col bg-stone-50 dark:bg-slate-900 font-body selection:bg-orange-100 dark:selection:bg-amber-400/30 antialiased transition-colors">
-      {/* ── HEADER ───────────────────────── */}
-      <header className="flex-none bg-white dark:bg-slate-900 border-b border-stone-200 dark:border-white/5 px-6 py-4 flex items-center justify-between sticky top-0 z-40 transition-colors">
-        <div className="flex items-center gap-6">
-          <div className="md:hidden -ml-2">
+    <div className="h-full flex flex-col bg-stone-50 dark:bg-slate-900 font-body transition-colors">
+      <header className="flex-none bg-white dark:bg-slate-900 border-b border-stone-200 dark:border-white/5 px-4 md:px-6 py-3 flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-0 sticky top-0 z-40 transition-colors">
+        <div className="flex items-start md:items-center gap-4 md:gap-6 w-full md:w-auto">
+          <div className="md:hidden mt-1 md:mt-0 -ml-2 shrink-0">
             <SidebarTrigger />
           </div>
           <div className="flex flex-col">
             <div className="flex items-center gap-2 mb-0.5">
               <span className={cn(
-                "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all",
-                plan.category === "activity" 
-                  ? "bg-blue-50 dark:bg-blue-400/10 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-400/20" 
-                  : "bg-emerald-50 dark:bg-emerald-400/10 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-400/20"
+                "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border",
+                currentPlan.category === "activity" 
+                  ? "bg-blue-50 dark:bg-blue-400/10 text-blue-600 dark:text-blue-400 border-blue-100 placeholder:opacity-50" 
+                  : "bg-emerald-50 dark:bg-emerald-400/10 text-emerald-600 dark:text-emerald-400 border-emerald-100"
               )}>
-                {plan.category === "activity" ? t('ACTIVITY_PLAN') : t('TEACHING_PLAN')}
-              </span>
-              <span className="text-[10px] text-stone-400 dark:text-slate-500 font-bold uppercase tracking-widest">
-                Last Save: {plan.updatedAt ? new Date(plan.updatedAt).toLocaleTimeString() : "—"}
+                {currentPlan.category === "activity" ? t('ACTIVITY_PLAN') : t('TEACHING_PLAN')}
               </span>
             </div>
             <input
-              value={plan.activityName}
+              value={currentPlan.activityName}
               onChange={(e) => handlePlanUpdate({ activityName: e.target.value })}
-              className="text-2xl font-black tracking-tight bg-transparent border-none focus:ring-0 focus:outline-none placeholder:text-stone-300 dark:placeholder:text-slate-700 w-full md:w-[400px] text-stone-900 dark:text-white transition-colors"
+              className="text-xl md:text-2xl font-black tracking-tight bg-transparent border-none focus:ring-0 focus:outline-none text-stone-900 dark:text-white"
               placeholder={t('ENTER_TITLE')}
+              readOnly={isHistoryMode}
             />
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex bg-stone-100 dark:bg-white/5 p-1 rounded-xl mr-4 border border-stone-200 dark:border-white/5">
-            <Button variant="ghost" size="sm" onClick={onUndo} disabled={!canUndo} className="h-8 w-8 p-0 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-all text-stone-600 dark:text-slate-400">
-              <Undo2 className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="sm" onClick={onRedo} disabled={!canRedo} className="h-8 w-8 p-0 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-all text-stone-600 dark:text-slate-400">
-              <Redo2 className="w-4 h-4" />
+        <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 scrollbar-hide">
+          {!isHistoryMode && (
+             <div className="flex flex-shrink-0 items-center bg-stone-100 dark:bg-white/5 p-1 rounded-xl border border-stone-200 dark:border-white/5">
+               <Input 
+                 placeholder="命名此版本..." 
+                 value={newVersionName}
+                 onChange={(e) => setNewVersionName(e.target.value)}
+                 className="h-8 w-[150px] bg-transparent border-none text-[10px] font-bold focus-visible:ring-0"
+                 onKeyDown={(e) => {
+                   if (e.key === 'Enter') handleSaveVersion();
+                 }}
+               />
+               <Button size="sm" onClick={handleSaveVersion} className="h-8 w-8 p-0 bg-transparent hover:bg-white/10 text-stone-400 hover:text-orange-600 rounded-lg">
+                 <Save className="h-3.5 w-3.5" />
+               </Button>
+             </div>
+          )}
+
+          <div className="flex flex-shrink-0 items-center bg-stone-100 dark:bg-white/5 p-1 rounded-xl border border-stone-200 dark:border-white/5">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setIsHistoryMode(!isHistoryMode)} 
+              className={cn(
+                "h-8 px-4 rounded-lg font-black uppercase tracking-widest text-[10px] transition-all",
+                isHistoryMode ? "bg-orange-600 text-white shadow-lg shadow-orange-500/20" : "text-stone-500 hover:text-stone-900"
+              )}
+            >
+              <History className="w-3.5 h-3.5 mr-2" /> 
+              {isHistoryMode ? "離開紀錄" : t('LOG_BOOK')}
             </Button>
           </div>
-          
-          <Sheet open={isVersionSheetOpen} onOpenChange={setIsVersionSheetOpen}>
-            <SheetTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="rounded-xl border-stone-200 dark:border-white/10 font-bold uppercase tracking-widest text-[10px] h-9 hover:bg-stone-50 dark:hover:bg-white/5 bg-white dark:bg-slate-900 text-stone-600 dark:text-slate-400 transition-all"
-              >
-                <History className="w-4 h-4 mr-2" /> {t('LOG_BOOK')}
-              </Button>
-            </SheetTrigger>
-            <SheetContent className="w-full sm:max-w-md p-0 flex flex-col bg-stone-50 dark:bg-slate-900 border-l border-stone-200 dark:border-white/5 transition-colors">
-              <SheetHeader className="p-6 bg-white dark:bg-slate-900 border-b border-stone-200 dark:border-white/5 transition-colors">
-                <SheetTitle className="text-xl font-black tracking-tight text-stone-900 dark:text-white uppercase">
-                  {t('VERSION_LOGS')}
-                </SheetTitle>
-              </SheetHeader>
-              
-              <div className="p-6 bg-white dark:bg-slate-900 border-b border-stone-100 dark:border-white/5 space-y-4 transition-colors">
-                <div className="flex gap-2">
-                  <Input 
-                    placeholder={t('LIST_MEMBERS')} 
-                    value={newVersionName}
-                    onChange={(e) => setNewVersionName(e.target.value)}
-                    className="h-11 rounded-xl bg-stone-50 dark:bg-white/5 border-stone-200 dark:border-white/10 font-bold text-stone-900 dark:text-white placeholder:text-stone-400 dark:placeholder:text-slate-600 transition-all"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleSaveVersion();
-                    }}
-                  />
-                  <Button 
-                    onClick={handleSaveVersion}
-                    className="h-11 bg-orange-600 dark:bg-amber-400 hover:opacity-90 text-white dark:text-slate-900 shadow-md px-4 font-black rounded-xl transition-all"
-                  >
-                    <Save className="h-4 w-4" />
-                  </Button>
-                </div>
-                <button
-                  onClick={() => setShowNamedOnly(!showNamedOnly)}
-                  className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-lg border transition-all ${
-                    showNamedOnly 
-                      ? 'bg-orange-50 dark:bg-amber-400/10 border-orange-200 dark:border-amber-400/30 text-orange-600 dark:text-amber-400' 
-                      : 'bg-white dark:bg-white/5 border-stone-200 dark:border-white/10 text-stone-400 dark:text-slate-500 hover:text-stone-600 dark:hover:text-white'
-                  }`}
-                >
-                  <Filter className="h-3 w-3" />
-                  {showNamedOnly ? 'Named Only' : 'Show All'}
-                </button>
-              </div>
 
-              <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                {filteredVersions.length === 0 ? (
-                  <div className="text-center py-10 flex flex-col items-center gap-3">
-                    <History className="h-8 w-8 text-stone-200 dark:text-slate-800" />
-                    <p className="text-stone-400 dark:text-slate-600 font-bold text-sm uppercase tracking-widest">No Records</p>
-                  </div>
-                ) : (
-                  filteredVersions.map((version) => (
-                    <div 
-                      key={version.id} 
-                      className={cn(
-                        "p-4 rounded-2xl border transition-all cursor-pointer group",
-                        previewVersion?.id === version.id 
-                          ? "bg-orange-50 dark:bg-amber-400/5 border-orange-200 dark:border-amber-400/30 shadow-md" 
-                          : "bg-white dark:bg-white/5 border-stone-100 dark:border-white/5 hover:border-orange-100 dark:hover:border-amber-400/30 shadow-sm"
-                      )}
-                      onClick={() => setPreviewVersion(version)}
-                    >
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <h4 className="font-bold text-sm text-stone-900 dark:text-white leading-tight mb-1">{version.name}</h4>
-                          <time className="text-[10px] font-bold text-stone-400 dark:text-slate-500 uppercase tracking-widest">
-                            {format(new Date(version.createdAt), "MM/dd HH:mm")}
-                          </time>
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={(e) => { e.stopPropagation(); handleDeleteVersion(version); }}
-                          className="h-8 w-8 p-0 text-stone-300 hover:text-orange-500 hover:bg-orange-50 rounded-lg"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="flex-1 h-8 rounded-lg text-[10px] font-extrabold uppercase tracking-widest bg-stone-50 border-stone-100 hover:bg-orange-50 hover:text-orange-600 hover:border-orange-100"
-                          onClick={(e) => { e.stopPropagation(); handleRestoreVersion(version); }}
-                        >
-                          <RotateCcw className="h-3 w-3 mr-1.5" /> 還原
-                        </Button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </SheetContent>
-          </Sheet>
-
-          <Button
-            size="sm"
-            onClick={() => window.print()}
-            className="bg-orange-600 dark:bg-amber-400 hover:opacity-90 text-white dark:text-slate-900 rounded-xl font-bold uppercase tracking-widest text-[10px] h-9 shadow-sm transition-all"
-          >
-            <FileDown className="w-4 h-4 mr-2" /> {t('EXPORT_FILE')}
+          <Button size="sm" onClick={() => window.print()} className="bg-orange-600 dark:bg-amber-400 text-white dark:text-slate-900 rounded-xl font-bold uppercase tracking-widest text-[10px] h-9 shrink-0 whitespace-nowrap">
+            <FileDown className="w-4 h-4 mr-2 hidden sm:inline" /> <span className="sm:hidden">匯出</span><span className="hidden sm:inline">{t('EXPORT_FILE')}</span>
           </Button>
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-8 md:p-12 lg:p-16 max-w-5xl mx-auto w-full">
-        <Card className="border-stone-200 dark:border-white/5 shadow-xl shadow-stone-200/20 dark:shadow-none rounded-[2.5rem] overflow-hidden bg-white dark:bg-slate-900/50 transition-colors">
-          <CardContent className="p-8 md:p-12 space-y-12">
-            <section className="grid grid-cols-1 md:grid-cols-12 gap-8 pb-12 border-b border-stone-100 dark:border-white/5">
-              <div className="md:col-span-4 space-y-3">
-                <label className="text-[10px] font-bold text-stone-400 dark:text-slate-500 uppercase tracking-[0.2em] px-1">{t('CATEGORY')}</label>
-                <Select value={plan.scheduledName} onValueChange={(val) => handlePlanUpdate({ scheduledName: val })}>
-                  <SelectTrigger className="h-12 bg-stone-50 dark:bg-white/5 border-stone-100 dark:border-white/10 rounded-xl text-xs font-bold shadow-none text-stone-900 dark:text-white uppercase tracking-widest focus:ring-4 focus:ring-orange-500/10 dark:focus:ring-amber-400/10 transition-all">
-                    <SelectValue placeholder={t('SELECT_TYPE')} />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl border-stone-100 dark:border-white/10 shadow-2xl bg-white dark:bg-slate-900">
-                    {SCHEDULE_OPTIONS.map(opt => (
-                      <SelectItem key={opt} value={opt} className="rounded-lg font-bold text-[11px] uppercase tracking-wider py-2.5">
-                        {opt}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="md:col-span-8 space-y-3">
-                <label className="text-[10px] font-bold text-stone-400 dark:text-slate-500 uppercase tracking-[0.2em] px-1">{t('SUBJECT')}</label>
-                <Input 
-                  value={plan.activityName} 
-                  onChange={(e) => handlePlanUpdate({ activityName: e.target.value })} 
-                  className="h-12 bg-stone-50 dark:bg-white/5 border-stone-100 dark:border-white/10 rounded-xl font-bold text-lg px-5 shadow-none text-stone-900 dark:text-white focus-visible:ring-4 focus-visible:ring-orange-500/10 dark:focus-visible:ring-amber-400/10 transition-all" 
-                />
-              </div>
-            </section>
-
-            <div className="space-y-12">
-              <section>
-                <SectionHeader title={t('CASE_PERSONNEL')} icon={Users} />
-                <Input 
-                  value={plan.members} 
-                  onChange={(e) => handlePlanUpdate({ members: e.target.value })} 
-                  placeholder={t('LIST_MEMBERS')} 
-                  className="h-12 bg-white dark:bg-white/5 border-stone-100 dark:border-white/10 rounded-xl px-5 text-sm font-bold shadow-none text-stone-900 dark:text-white focus-visible:ring-4 focus-visible:ring-orange-500/10 dark:focus-visible:ring-amber-400/10 transition-all" 
-                />
-              </section>
-
-              <section>
-                <SectionHeader title={t('MISSION_OBJ')} icon={Target} />
-                <textarea
-                  value={plan.purpose || ""}
-                  onChange={(e) => handlePlanUpdate({ purpose: e.target.value })}
-                  className="w-full min-h-[120px] bg-white dark:bg-white/5 border border-stone-100 dark:border-white/10 rounded-[1.5rem] p-6 text-stone-700 dark:text-slate-300 leading-relaxed focus:ring-4 focus:ring-orange-500/5 dark:focus:ring-amber-400/5 focus:border-orange-500 dark:focus:border-amber-400 outline-none transition-all resize-none font-medium"
-                  placeholder={t('GUIDELINES')}
-                />
-              </section>
-
-              <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-2">
-                  <SectionHeader title={t('TIME_WINDOW')} icon={Clock} />
-                  <Input 
-                    value={plan.time} 
-                    onChange={(e) => handlePlanUpdate({ time: e.target.value })} 
-                    placeholder="14:00 - 15:30 (90 min)" 
-                    className="h-12 bg-white dark:bg-white/5 border-stone-100 dark:border-white/10 rounded-xl px-5 text-sm font-bold shadow-none text-stone-900 dark:text-white focus-visible:ring-4 focus-visible:ring-orange-500/10 dark:focus-visible:ring-amber-400/10 transition-all" 
-                  />
-                </div>
-                <div className="space-y-2">
-                  <SectionHeader title={t('VENUE')} icon={MapPin} />
-                  <Input 
-                    value={plan.location} 
-                    onChange={(e) => handlePlanUpdate({ location: e.target.value })} 
-                    placeholder="3F Main Hall..." 
-                    className="h-12 bg-white dark:bg-white/5 border-stone-100 dark:border-white/10 rounded-xl px-5 text-sm font-bold shadow-none text-stone-900 dark:text-white focus-visible:ring-4 focus-visible:ring-orange-500/10 dark:focus-visible:ring-amber-400/10 transition-all" 
-                  />
-                </div>
-              </section>
-
-              <section>
-                <SectionHeader title={t('PROCEDURES')} icon={Layout} />
-                <MarkdownArea value={plan.process} onChange={(val) => handlePlanUpdate({ process: val })} />
-              </section>
-
-              <section>
-                <SectionHeader title={t('VISUAL_BLUEPRINT')} icon={FileText} />
-                {hasCanvas ? (
-                  <div className="mb-6 space-y-4">
-                    <div className="flex justify-end">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => handlePlanUpdate({ canvasData: null, canvasHeight: null })}
-                        className="text-[10px] font-bold text-orange-600 dark:text-amber-400 uppercase tracking-widest hover:bg-orange-50 dark:hover:bg-white/5 rounded-lg transition-all"
-                      >
-                        <Trash2 className="h-3.5 w-3.5 mr-2" /> {t('REMOVE_CANVAS')}
-                      </Button>
+      <main className="flex-1 flex overflow-x-auto overflow-y-hidden relative">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-0 sm:p-4 md:p-8 lg:p-12 max-w-5xl mx-auto w-full min-w-[320px] md:min-w-[500px] lg:min-w-[600px] shrink-0">
+          <div style={{ zoom: pageZoom }}>
+          {isLoadingPreview ? (
+            <div className="h-full flex flex-col items-center justify-center space-y-4">
+              <Loader2 className="h-10 w-10 animate-spin text-orange-400" />
+              <p className="text-[10px] font-black uppercase tracking-widest text-stone-400">Reconstructing History...</p>
+            </div>
+          ) : (
+            <Card className="border-x-0 border-y sm:border-stone-200 dark:border-white/5 shadow-none sm:shadow-xl rounded-none sm:rounded-[2rem] md:rounded-[2.5rem] overflow-hidden bg-white dark:bg-slate-900/50">
+              <CardContent className="p-4 sm:p-8 md:p-12 space-y-8 md:space-y-12">
+                {isHistoryMode && (
+                  <div className="flex items-center justify-between p-6 bg-orange-50/50 dark:bg-amber-400/5 rounded-2xl border border-orange-100 dark:border-amber-400/20 mb-8">
+                    <div className="flex items-center gap-3">
+                      <div className="w-1.5 h-6 bg-orange-500 rounded-full" />
+                      <div>
+                        <span className="text-sm font-black text-stone-900 dark:text-white uppercase tracking-tight block">紀錄預覽 / History View</span>
+                        {selectedVersion && (
+                          <span className="text-[9px] font-bold text-stone-500 uppercase tracking-widest">
+                            Showing: {selectedVersion.name} ({format(new Date(selectedVersion.createdAt), "MM/dd HH:mm")})
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="border border-stone-100 dark:border-white/5 rounded-[1.5rem] overflow-hidden bg-stone-50 dark:bg-white/5 shadow-inner transition-colors">
-                      <FabricCanvas 
-                        initialData={plan.canvasData || '{}'} 
-                        initialHeight={plan.canvasHeight || 500} 
-                        onSave={handleCanvasSave} 
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="mb-6 flex justify-end">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => handlePlanUpdate({ canvasData: '{}', canvasHeight: 500 })}
-                      className="h-10 px-5 text-[10px] font-bold text-orange-600 dark:text-amber-400 border-orange-200 dark:border-amber-400/30 hover:bg-orange-50 dark:hover:bg-amber-400/10 rounded-xl uppercase tracking-[0.2em] flex items-center gap-2 transition-all shadow-sm"
-                    >
-                      <Plus className="h-4 w-4" /> {t('ADD_CANVAS')}
-                    </Button>
                   </div>
                 )}
-                <MarkdownArea value={plan.content} onChange={(val) => handlePlanUpdate({ content: val })} />
-              </section>
 
-              <section>
-                <SectionHeader title={t('CASE_PERSONNEL')} icon={Users} />
-                <MarkdownArea value={plan.divisionOfLabor} onChange={(val) => handlePlanUpdate({ divisionOfLabor: val })} />
-              </section>
+                <div className="space-y-12">
+                  <section>
+                    <SectionHeader title="活動類型" icon={Layout} />
+                    {isHistoryMode ? (
+                       <DiffHighlighter type="text" oldValue={previousPlan?.scheduledName} newValue={previewPlan?.scheduledName} />
+                    ) : (
+                      <Select value={currentPlan.scheduledName || ""} onValueChange={(val) => handlePlanUpdate({ scheduledName: val })}>
+                        <SelectTrigger className="h-12 rounded-xl px-5 font-bold shadow-none text-base border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+                          <SelectValue placeholder="-- 請選擇活動類型 --" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl font-bold bg-white dark:bg-slate-800 border overflow-hidden">
+                          {activityTypes.map(type => (
+                            <SelectItem key={type} value={type} className="rounded-lg cursor-pointer hover:bg-stone-50 dark:hover:bg-slate-700">{type}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </section>
 
-              <section>
-                <SectionHeader title={t('MATERIALS')} icon={Package} />
-                <PropsTable value={plan.props} onChange={(val) => handlePlanUpdate({ props: val })} />
-              </section>
+                  <section>
+                    <SectionHeader title={t('SUBJECT')} icon={Target} />
+                    {isHistoryMode ? (
+                       <DiffHighlighter type="text" oldValue={previousPlan?.activityName} newValue={previewPlan?.activityName} />
+                    ) : (
+                      <Input value={currentPlan.activityName} onChange={(e) => handlePlanUpdate({ activityName: e.target.value })} className="h-12 rounded-xl font-bold text-lg px-5 shadow-none" />
+                    )}
+                  </section>
 
-              <section>
-                <SectionHeader title={t('STIPULATIONS')} icon={StickyNote} />
-                <MarkdownArea value={plan.remarks} onChange={(val) => handlePlanUpdate({ remarks: val })} />
-              </section>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+                  <section>
+                    <SectionHeader title={t('CASE_PERSONNEL')} icon={Users} />
+                    {isHistoryMode ? (
+                       <DiffHighlighter type="text" oldValue={previousPlan?.members} newValue={previewPlan?.members} />
+                    ) : (
+                      <Input value={currentPlan.members} onChange={(e) => handlePlanUpdate({ members: e.target.value })} placeholder={t('LIST_MEMBERS')} className="h-12 rounded-xl px-5 shadow-none font-bold" />
+                    )}
+                  </section>
 
-      {/* Floating Undo/Redo - Fixed Bottom Right */}
-      <div className="fixed bottom-8 right-8 flex items-center gap-3 z-50 no-print">
+                  <section>
+                    <SectionHeader title={t('MISSION_OBJ')} icon={Target} />
+                    {isHistoryMode ? (
+                       <DiffHighlighter type="markdown" oldValue={previousPlan?.purpose} newValue={previewPlan?.purpose} />
+                    ) : (
+                      <textarea
+                        value={currentPlan.purpose || ""}
+                        onChange={(e) => handlePlanUpdate({ purpose: e.target.value })}
+                        className="w-full min-h-[120px] bg-white dark:bg-white/5 border border-stone-100 dark:border-white/10 rounded-[1.5rem] p-4 md:p-6 text-stone-700 dark:text-slate-300 outline-none transition-all resize-none font-medium text-sm md:text-base"
+                      />
+                    )}
+                  </section>
+
+                  <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-2">
+                       <SectionHeader title={t('TIME_WINDOW')} icon={Clock} />
+                       {isHistoryMode ? (
+                          <DiffHighlighter type="text" oldValue={previousPlan?.time} newValue={previewPlan?.time} />
+                       ) : (
+                         <Input value={currentPlan.time} onChange={(e) => handlePlanUpdate({ time: e.target.value })} placeholder="14:00 - 15:30" className="h-12 rounded-xl px-5 shadow-none font-bold" />
+                       )}
+                    </div>
+                    <div className="space-y-2">
+                       <SectionHeader title={t('VENUE')} icon={MapPin} />
+                       {isHistoryMode ? (
+                          <DiffHighlighter type="text" oldValue={previousPlan?.location} newValue={previewPlan?.location} />
+                       ) : (
+                         <Input value={currentPlan.location} onChange={(e) => handlePlanUpdate({ location: e.target.value })} placeholder="3F Main Hall" className="h-12 rounded-xl px-5 shadow-none font-bold" />
+                       )}
+                    </div>
+                  </section>
+
+                  <section>
+                    <SectionHeader title={t('PROCEDURES')} icon={Layout} />
+                    {isHistoryMode ? (
+                       <DiffHighlighter type="markdown" oldValue={previousPlan?.process} newValue={previewPlan?.process} />
+                    ) : (
+                      <MarkdownArea value={currentPlan.process} onChange={(val) => handlePlanUpdate({ process: val })} />
+                    )}
+                  </section>
+
+                  <section>
+                    <SectionHeader title={t('VISUAL_BLUEPRINT')} icon={FileText} />
+                    {isHistoryMode ? (
+                       <DiffHighlighter type="canvas" oldValue={previousPlan?.canvasData} newValue={previewPlan?.canvasData} />
+                    ) : (
+                      <>
+                        {hasCanvas ? (
+                          <div className="mb-6 border border-stone-100 dark:border-white/5 rounded-[1.5rem] overflow-hidden bg-stone-50 dark:bg-white/5">
+                            <FabricCanvas 
+                              initialData={currentPlan.canvasData || '{}'} 
+                              initialHeight={currentPlan.canvasHeight || 500} 
+                              onSave={handleCanvasSave} 
+                            />
+                          </div>
+                        ) : (
+                          <Button variant="outline" size="sm" onClick={() => handlePlanUpdate({ canvasData: '{}', canvasHeight: 500 })} className="h-10 px-5 text-[10px] font-bold text-orange-600 border-orange-200 rounded-xl uppercase tracking-widest mb-4">
+                            <Plus className="h-4 w-4 mr-2" /> {t('ADD_CANVAS')}
+                          </Button>
+                        )}
+                        <MarkdownArea value={currentPlan.content} onChange={(val) => handlePlanUpdate({ content: val })} />
+                      </>
+                    )}
+                  </section>
+
+                  <section>
+                    <SectionHeader title={t('MATERIALS')} icon={Package} />
+                    {isHistoryMode ? (
+                       <DiffHighlighter type="table" oldValue={previousPlan?.props} newValue={previewPlan?.props} />
+                    ) : (
+                      <PropsTable value={currentPlan.props} onChange={(val) => handlePlanUpdate({ props: val })} />
+                    )}
+                  </section>
+
+                  <section>
+                    <SectionHeader title={t('OPENING_CLOSING') || "開場與結語"} icon={StickyNote} />
+                    {isHistoryMode ? (
+                       <DiffHighlighter type="markdown" oldValue={previousPlan?.openingClosingRemarks} newValue={previewPlan?.openingClosingRemarks} />
+                    ) : (
+                      <MarkdownArea value={currentPlan.openingClosingRemarks || ""} onChange={(val) => handlePlanUpdate({ openingClosingRemarks: val })} />
+                    )}
+                  </section>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          </div>
+        </div>
+
+        {isHistoryMode && (
+          <VersionHistorySidebar
+            versions={versions}
+            selectedVersionId={selectedVersion?.id || null}
+            onSelectVersion={setSelectedVersion}
+            onRestore={handleRestoreVersion}
+            onDelete={handleDeleteVersion}
+            showNamedOnly={showNamedOnly}
+            onToggleFilter={() => setShowNamedOnly(!showNamedOnly)}
+            onBackToCurrent={() => {
+              setSelectedVersion(null);
+              setIsHistoryMode(false);
+            }}
+            onUpdateVersionName={(id, name) => onUpdateVersionName?.(id, name)}
+            className="w-[300px] md:w-[350px] flex-none animate-in slide-in-from-right duration-300 border-l border-stone-200 dark:border-white/5 bg-white sm:bg-stone-50/50 dark:bg-slate-950 shadow-2xl relative z-10"
+          />
+        )}
+      </main>
+
+      {/* Floating Action Panel (Global Editor) */}
+      <div className="fixed bottom-6 right-6 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-1.5 flex items-center gap-1.5 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700/50 z-50">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button 
-                variant="secondary"
-                size="icon" 
-                onClick={onUndo} 
-                disabled={!canUndo}
-                className="h-12 w-12 rounded-2xl bg-white dark:bg-slate-800 shadow-2xl border border-stone-200 dark:border-white/10 text-stone-500 dark:text-slate-400 hover:text-orange-500 dark:hover:text-amber-400 hover:scale-110 transition-all disabled:opacity-20"
-              >
-                <Undo2 className="h-5 w-5" />
+              <Button variant="ghost" size="icon" onClick={onUndo} disabled={!canUndo || isHistoryMode} className="h-12 w-12 rounded-xl text-slate-500 hover:text-orange-500 hover:bg-white dark:hover:bg-slate-700 transition-all">
+                <Undo2 className="h-6 w-6" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="top" className="text-[10px] font-bold uppercase tracking-widest bg-stone-900 text-white border-none px-3 py-2 rounded-lg">Undo</TooltipContent>
+            <TooltipContent side="top">上一步 / Undo</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button 
-                variant="secondary"
-                size="icon" 
-                onClick={onRedo} 
-                disabled={!canRedo}
-                className="h-12 w-12 rounded-2xl bg-white dark:bg-slate-800 shadow-2xl border border-stone-200 dark:border-white/10 text-stone-500 dark:text-slate-400 hover:text-orange-500 dark:hover:text-amber-400 hover:scale-110 transition-all disabled:opacity-20"
-              >
-                <Redo2 className="h-5 w-5" />
+              <Button variant="ghost" size="icon" onClick={onRedo} disabled={!canRedo || isHistoryMode} className="h-12 w-12 rounded-xl text-slate-500 hover:text-orange-500 hover:bg-white dark:hover:bg-slate-700 transition-all">
+                <Redo2 className="h-6 w-6" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="top" className="text-[10px] font-bold uppercase tracking-widest bg-stone-900 text-white border-none px-3 py-2 rounded-lg">Redo</TooltipContent>
+            <TooltipContent side="top">下一步 / Redo</TooltipContent>
+          </Tooltip>
+          
+          <div className="w-[1px] h-8 bg-slate-200 dark:bg-slate-700 mx-1" />
+          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" onClick={handleZoomOut} disabled={pageZoom <= 0.3} className="h-12 w-12 rounded-xl text-slate-500 hover:text-orange-500 hover:bg-white dark:hover:bg-slate-700 transition-all">
+                <ZoomOut className="h-6 w-6" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top">縮小 / Zoom Out</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" onClick={handleFitAll} className="h-12 w-12 rounded-xl text-slate-500 hover:text-orange-500 hover:bg-white dark:hover:bg-slate-700 transition-all">
+                <Maximize className="h-5 w-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top">適合視窗 / Fit All</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" onClick={handleZoomIn} disabled={pageZoom >= 2} className="h-12 w-12 rounded-xl text-slate-500 hover:text-orange-500 hover:bg-white dark:hover:bg-slate-700 transition-all">
+                <ZoomIn className="h-6 w-6" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top">放大 / Zoom In</TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>

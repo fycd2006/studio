@@ -22,7 +22,11 @@ export default function PlanEditorPage() {
     activePlanVersions,
     savePlanVersion,
     restorePlanVersion,
-    deletePlanVersion
+    updatePlanVersionName,
+    deletePlanVersion,
+    autoSaveCurrentState,
+    getFullVersionState,
+    activityTypes
   } = usePlans();
 
   const plan = plans.find(p => p.id === id);
@@ -52,7 +56,7 @@ export default function PlanEditorPage() {
 
   return (
     <div className="h-full relative flex flex-col bg-stone-50 dark:bg-slate-900 text-stone-900 dark:text-slate-50 transition-colors">
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 min-h-0 flex flex-col">
         <PlanEditor 
           plan={plan} 
           onUpdate={handleUpdate} 
@@ -65,6 +69,10 @@ export default function PlanEditorPage() {
           onSaveVersion={savePlanVersion}
           onRestoreVersion={restorePlanVersion}
           onDeleteVersion={deletePlanVersion}
+          onUpdateVersionName={updatePlanVersionName}
+          onAutoSave={autoSaveCurrentState}
+          getFullVersionState={getFullVersionState}
+          activityTypes={activityTypes}
         />
       </div>
     </div>
