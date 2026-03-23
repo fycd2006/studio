@@ -67,7 +67,7 @@ interface PlanSidebarProps {
   plans: LessonPlan[];
   activePlanId: string | null;
   onSelect: (id: string) => void;
-  onAdd: (category: PlanCategory) => void;
+  onAdd: (category: PlanCategory) => string | undefined;
   onDelete: (id: string) => void;
   onReorder: (category: PlanCategory, startIndex: number, endIndex: number) => void;
   viewMode: 'editor' | 'admin';
@@ -96,7 +96,7 @@ export function PlanSidebar({
   const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
   const isCollapsed = state === "collapsed";
-  const isAdmin = true; // Hardcoded true per user request to open access
+  const isAdmin = role === 'admin';
 
   const { theme, setTheme } = useTheme();
   const { language, setLanguage } = useTranslation();
@@ -170,8 +170,8 @@ export function PlanSidebar({
       <Sidebar collapsible="icon" className="border-r border-stone-200 dark:border-white/5 bg-white dark:bg-slate-900 transition-colors">
         {/* ═══ HEADER ═══ */}
         <SidebarHeader className="bg-white dark:bg-slate-900 border-b border-stone-100 dark:border-white/5 px-4 py-5 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:py-4 transition-colors">
-          <div className="flex items-center justify-between group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-3">
-            <Link href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
+          <div className="flex items-center justify-between group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-3 overflow-hidden">
+            <Link href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-all duration-300 min-w-max">
               <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden bg-stone-50 dark:bg-white/5 border border-stone-100 dark:border-white/10 p-0.5 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8">
                 <img src="/logo.png" alt="Logo" className="w-full h-full object-contain"
                   onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
@@ -275,7 +275,8 @@ export function PlanSidebar({
                       <Button variant="ghost" size="icon"
                         className="h-6 w-6 text-stone-400 dark:text-slate-500 hover:text-orange-500 dark:hover:text-amber-400 hover:bg-stone-50 dark:hover:bg-white/5 cursor-pointer transition-colors"
                         onClick={() => {
-                          onAdd(cat.key as PlanCategory);
+                          const newId = onAdd(cat.key as PlanCategory);
+                          if (newId) router.push(`/plans/${newId}`);
                         }}>
                         <Plus className="h-3.5 w-3.5" />
                       </Button>
@@ -290,7 +291,7 @@ export function PlanSidebar({
                                 const planTitle = plan.scheduledName
                                   ? `${plan.scheduledName} - ${plan.activityName || "..."}`
                                   : (plan.activityName || "...");
-                                const isActive = activePlanId === plan.id || pathname === `/plans/${plan.id}`;
+                                const isActive = pathname === `/plans/${plan.id}`;
 
                                 return (
                                   <Draggable key={plan.id} draggableId={plan.id} index={index} isDragDisabled={!isAdmin}>
@@ -318,17 +319,19 @@ export function PlanSidebar({
                                         <div className={cn("flex-1 min-w-0 truncate text-[11px] font-medium", isActive ? "text-orange-600 dark:text-amber-400 max-w-full" : "max-w-full")}>
                                           {planTitle}
                                         </div>
-                                        {isAdmin && (
                                           <Button variant="ghost" size="icon"
                                             className="h-6 w-6 opacity-0 group-hover/item:opacity-100 rounded-md text-stone-400 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 cursor-pointer transition-colors"
                                             onClick={(e) => {
                                               e.stopPropagation();
+                                              if (role !== 'admin') {
+                                                toast({ title: "權限不足", description: "僅管理員能刪除教案", variant: "destructive" });
+                                                return;
+                                              }
                                               setDeletePlanTarget({ id: plan.id, name: plan.activityName || "未命名教案" });
                                               setDeleteInput("");
                                             }}>
                                             <Trash2 className="h-3.5 w-3.5" />
                                           </Button>
-                                        )}
                                       </div>
                                     )}
                                   </Draggable>

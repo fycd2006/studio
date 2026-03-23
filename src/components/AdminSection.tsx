@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n-context";
+import { useAuth } from "@/lib/auth-context";
+import { useToast } from "@/hooks/use-toast";
 
 interface AdminSectionProps {
   tables: RotationTableData[];
@@ -50,7 +52,9 @@ export function AdminSection({
   onUpdateCamp
 }: AdminSectionProps) {
   const { t } = useTranslation();
-  const isLocked = false; // Hardcoded to false per open-access request
+  const { role } = useAuth();
+  const { toast } = useToast();
+  const [isLocked, setIsLocked] = useState(true);
   const [selectedDay, setSelectedDay] = useState<string>("Day 1");
   const [activeMainTab, setActiveMainTab] = useState('timer');
   const [activePropsTab, setActivePropsTab] = useState<'activity' | 'teaching' | 'all-props'>('activity');
@@ -610,9 +614,25 @@ export function AdminSection({
               <div className="w-8 h-8 rounded-xl bg-orange-600 dark:bg-amber-400 flex items-center justify-center text-white dark:text-slate-900 shadow-md shadow-orange-600/20 shrink-0">
                 <ShieldCheck className="h-4 w-4" />
               </div>
-              <div className="flex flex-col">
+              <div className="flex flex-col mr-2">
                 <h2 className="text-[12px] font-fira-code font-black text-stone-900 dark:text-slate-100 tracking-tight leading-none uppercase">{t('ADMIN_TITLE')}</h2>
               </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => {
+                  if (isLocked) {
+                    if (role === 'admin') setIsLocked(false);
+                    else toast({ title: "權限不足", description: "僅管理員能解鎖行政中樞", variant: "destructive" });
+                  } else {
+                    setIsLocked(true);
+                  }
+                }}
+                className={cn("rounded-lg h-7 px-3 font-bold text-[10px] tracking-widest uppercase transition-all", isLocked ? "bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-500/20" : "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20")}
+              >
+                {isLocked ? <Lock className="h-3 w-3 mr-1" /> : <Unlock className="h-3 w-3 mr-1" />}
+                {isLocked ? "已鎖定" : "已解鎖"}
+              </Button>
             </div>
             <Button variant="ghost" size="sm" onClick={() => window.print()} className="rounded-xl font-bold text-[10px] h-8 px-4 bg-orange-50 dark:bg-amber-400/10 text-orange-600 dark:text-amber-400 transition-all uppercase">
               <span className="hidden sm:inline">匯出 / PRINT</span>

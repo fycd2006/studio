@@ -2,25 +2,13 @@
 
 import { usePlans } from "@/hooks/use-plans";
 import { useRouter } from "next/navigation";
-import { useState, useEffect, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  ShieldCheck,
-  FileText,
-  ChevronRight,
-  Calendar,
-  Clock,
-  Tent,
-  MapPin,
-  Sparkles,
-  ArrowRight,
-  PlusCircle,
-  History,
-} from "lucide-react";
+import { useMemo } from "react";
+import { ShieldCheck, Tent, Clock, MapPin, ChevronRight, Settings, Layers, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { format, isValid, parseISO } from "date-fns";
-import { Variants } from "framer-motion";
+import { format } from "date-fns";
+import { HeroCarousel } from "@/components/HeroCarousel";
+import { RotatingText } from "@/components/RotatingText";
 
 /* ── helpers ────────────────────────────────────── */
 function isPast(dateStr?: string) {
@@ -33,37 +21,38 @@ function isPast(dateStr?: string) {
   }
 }
 
-const HERO_PHRASES = [
-  { main: "讓教案", accent: "像藝術品一樣" },
-  { main: "點燃每個", accent: "崇德人的熱情" },
-  { main: "創造回憶", accent: "點燃靈感" },
-];
-
-const containerFade: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1, delayChildren: 0.1 },
-  },
-};
-
-const itemUp: Variants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 100 } },
-};
-
 export default function Home() {
   const router = useRouter();
-  const { camps, activeCampId, plans, setActivePlanId } = usePlans();
+  const { camps, activeCampId, plans } = usePlans();
   const activeCamp = camps?.find((c) => c.id === activeCampId);
-  const [phraseIdx, setPhraseIdx] = useState(0);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setPhraseIdx((i) => (i + 1) % HERO_PHRASES.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
+  const heroQuotes = useMemo(() => [
+    "崇德人，崇德魂!",
+    "用生命影響生命，點燃每個孩子心中的無限可能。",
+    "歡迎回來！你今天的每一份用心，都在為孩子們的夢想打底。",
+    "「熱情不是名詞，是我們現在進行式的行動……」",
+    "「正在載入孩子們的笑容與期待……」",
+    "「一點一滴的付出，正是在凝聚改變的力量。」",
+    "「探索未知，從心出發。」",
+    "「保持善良，保持好奇。」",
+    "「我們不只傳遞知識，更要在孩子心中種下一顆善良與探索的種子。」",
+    "「一個人可以走得快，但一群志同道合的夥伴，能帶著孩子們走得更深、更遠。」",
+    "「每一次的籌備與修正，都是為了讓世界更接近我們理想的模樣。」",
+    "「用無私的奉獻帶領團隊，用不斷的自我超越成就每一次營隊。」",
+    "「科技看見未來，品格決定高度；在這裡，我們陪伴孩子遇見更好的自己。」",
+    "不要問世界需要什麼，問問自己做什麼能讓你充滿生機地活著。因為世界需要的，正是充滿生機的人。",
+    "人生的意義在於發掘你的天賦；人生的目的在於將它分享出去。",
+    "一個人可以走得很快，但一群人可以走得很遠。"
+  ], []);
+
+  const planQuotes = useMemo(() => [
+    "「你的用心，孩子會懂」",
+    "「台上的閃亮，來自這裡每一個教案的用心。」",
+    "「我們寫下的不只是活動流程，更是孩子們未來回憶裡的啟發與感動。」",
+    "「每一次的推演與優化，都是為了接住每一雙充滿好奇的眼睛。」",
+    "「教育沒有捷徑，但你們在這裡投入的每一分鐘，都在縮短孩子與夢想的距離。」",
+    "「從科學實作到品格養成，我們正在為孩子裝備迎向未來的超能力。」"
+  ], []);
 
   const timeline = useMemo(() => [
     { label: "一籌", date: activeCamp?.meeting1StartDate, icon: Clock },
@@ -75,10 +64,15 @@ export default function Home() {
   ], [activeCamp]);
 
   const currentIdx = useMemo(() => {
-    for (let i = timeline.length - 1; i >= 0; i--) {
-      if (isPast(timeline[i].date)) return i;
+    let lastValidIdx = -1;
+    for (let i = 0; i < timeline.length; i++) {
+        if (isPast(timeline[i].date)) {
+            lastValidIdx = i;
+        } else {
+            break;
+        }
     }
-    return -1;
+    return lastValidIdx;
   }, [timeline]);
 
   const recentPlans = useMemo(() => {
@@ -89,193 +83,204 @@ export default function Home() {
   }, [plans]);
 
   return (
-    <div className="min-h-full bg-stone-50 dark:bg-slate-900 text-stone-900 dark:text-slate-50 transition-colors selection:bg-orange-200 dark:selection:bg-amber-500/30 antialiased overflow-x-hidden">
-      <motion.div
-        variants={containerFade}
-        initial="hidden"
-        animate="visible"
-        className="max-w-7xl mx-auto px-6 md:px-12 py-12 md:py-20 space-y-24"
-      >
-        {/* ── HERO SECTION (Brutalist Typography) ──────────────── */}
-        <section className="relative">
-          <motion.div variants={itemUp} className="space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="px-3 py-1 bg-orange-100 dark:bg-amber-400/10 text-orange-600 dark:text-amber-400 text-[10px] font-black uppercase tracking-[0.2em] border-2 border-orange-200 dark:border-amber-400/20">
-                Studio Workspace
+    <div className="relative bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 selection:bg-[#f48c25]/30 selection:text-[#f48c25] min-h-screen font-sans flex flex-col transition-colors duration-500 overflow-x-hidden">
+      {/* Liquid Glass Ambient Background Orbs */}
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] rounded-full bg-[#f48c25]/5 dark:bg-[#f48c25]/10 blur-[120px] mix-blend-multiply dark:mix-blend-screen animate-pulse" style={{ animationDuration: '10s' }}></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-blue-400/5 dark:bg-blue-600/10 blur-[120px] mix-blend-multiply dark:mix-blend-screen animate-pulse" style={{ animationDuration: '15s' }}></div>
+      </div>
+      <main className="flex-1 w-full relative z-10">
+        
+        {/* Full-width Hero Banner with Carousel Background */}
+        <section className="relative w-full h-[100svh] md:h-[800px] flex items-center overflow-hidden bg-white dark:bg-slate-950">
+          
+          {/* Background Layer: HeroCarousel */}
+          <div className="absolute inset-0 z-0">
+            <HeroCarousel />
+            {/* Soft gradient mask for text readability */}
+            <div className="absolute inset-0 bg-gradient-to-r from-white via-white/80 dark:from-slate-950 dark:via-slate-950/80 to-transparent w-full md:w-[80%] z-10 transition-colors duration-500"></div>
+            {/* Subtle dimming layer for optimal contrast without crushing the photo */}
+            <div className="absolute inset-0 bg-slate-900/5 dark:bg-slate-950/20 z-10 transition-colors duration-500"></div>
+            {/* Bottom mask to blend smoothly into the Bento grid background */}
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-50 via-slate-50/50 dark:from-slate-950 dark:via-slate-950/40 to-transparent z-10 transition-colors duration-500 h-[30%] top-auto"></div>
+          </div>
+          
+          {/* EST. 2006 Badge - Elegant semi-transparent typography */}
+          <div className="absolute bottom-12 right-6 md:bottom-16 md:right-16 z-20 pointer-events-none text-right hidden sm:block">
+             <span className="text-4xl md:text-6xl font-black text-slate-900/10 dark:text-white/20 tracking-tighter drop-shadow-sm leading-[0.8]">EST.<br/>2006</span>
+          </div>
+
+          {/* Content Layer */}
+          <div className="relative z-20 w-full px-6 md:px-12 xl:px-24 max-w-[1920px] mx-auto mt-16 md:mt-0">
+            <div className="max-w-4xl">
+              <div className="mb-6 md:mb-8">
+                <span className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-md border border-slate-200/50 dark:border-slate-700/50 text-[#f48c25] px-4 py-2 rounded-full text-[10px] md:text-sm font-bold tracking-widest uppercase shadow-sm">
+                  {activeCamp ? `正在為 ${activeCamp.name} 創造內容` : '熱情、活力的核心'}
+                </span>
               </div>
-              <Sparkles className="w-6 h-6 text-yellow-500 dark:text-amber-400 fill-yellow-500 dark:fill-amber-400" />
-            </div>
-            
-            <div className="h-40 md:h-52 overflow-hidden relative">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={phraseIdx}
-                  initial={{ opacity: 0, y: 40 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -40 }}
-                  transition={{ type: "spring", damping: 15 }}
-                  className="space-y-2"
+              <h1 className="text-[clamp(4.5rem,10vw,12rem)] font-black leading-[0.85] tracking-tight mb-6 md:mb-8 text-slate-900 dark:text-white drop-shadow-xl">
+                NTUT<br/>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#f48c25] to-orange-400 block -mt-1 md:-mt-4 relative z-10 pb-2">CHONG DE</span>
+              </h1>
+              <div className="max-w-2xl text-base md:text-xl text-slate-700 dark:text-slate-300 leading-relaxed mb-10 md:mb-12 border-l-4 border-[#f48c25] pl-6 font-medium bg-white/30 dark:bg-slate-900/30 backdrop-blur-sm py-4 rounded-r-3xl shadow-sm min-h-[5em] flex items-center pr-6 overflow-hidden">
+                <RotatingText items={heroQuotes} intervalMs={6000} className="w-full" />
+              </div>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button 
+                  onClick={() => router.push("/admin")}
+                  className="bg-gradient-to-br from-[#f48c25] to-orange-500 text-white px-8 md:px-10 py-4 md:py-5 rounded-2xl md:rounded-[2rem] text-lg md:text-xl font-bold uppercase tracking-widest hover:shadow-[0_8px_40px_rgba(244,140,37,0.4)] hover:-translate-y-1 transition-all duration-300 w-full sm:w-auto text-center ring-1 ring-white/20"
                 >
-                  <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight leading-[1.05] uppercase">
-                    {HERO_PHRASES[phraseIdx].main}
-                  </h1>
-                  <h2 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight text-orange-500 dark:text-amber-400 leading-[1.05] uppercase">
-                    {HERO_PHRASES[phraseIdx].accent}
-                  </h2>
-                </motion.div>
-              </AnimatePresence>
-            </div>
-
-            <p className="text-stone-500 dark:text-slate-400 text-lg md:text-xl font-bold max-w-2xl leading-relaxed uppercase tracking-wider">
-              {activeCamp ? (
-                <>正在為 <span className="text-stone-900 dark:text-white underline decoration-orange-500 dark:decoration-amber-400 decoration-4 underline-offset-4">{activeCamp.name}</span> 創造內容</>
-              ) : (
-                "準備好開始了嗎？選擇一個營隊專案，釋放你的創意。"
-              )}
-            </p>
-          </motion.div>
-        </section>
-
-        {/* ── MENU PREVIEW (CARDS) ───────── */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <motion.div 
-            variants={itemUp}
-            whileHover={{ y: -6, x: -6, boxShadow: "12px 12px 0px 0px rgba(249, 115, 22, 0.4)" }}
-            className="group relative bg-orange-500 dark:bg-amber-500 border-4 border-stone-900 dark:border-slate-800 p-10 text-white dark:text-slate-900 overflow-hidden cursor-pointer transition-all duration-300" 
-            onClick={() => router.push("/plans")}
-          >
-            <div className="relative z-10 flex flex-col h-full justify-between gap-8">
-              <div>
-                <div className="w-16 h-16 bg-white/20 dark:bg-slate-900/10 backdrop-blur-md flex items-center justify-center mb-8 border-4 border-white/30 dark:border-slate-900/20">
-                  <PlusCircle className="w-8 h-8 text-white dark:text-slate-900" />
-                </div>
-                <h3 className="text-4xl font-black tracking-tight mb-4 uppercase">教案總覽</h3>
-                <p className="text-orange-50 dark:text-amber-900 font-bold text-lg leading-relaxed max-w-xs">開始撰寫新的教學內容，讓每一份文件都充滿溫度。</p>
-              </div>
-              <div className="flex items-center gap-2 font-black uppercase tracking-widest text-sm group-hover:gap-4 transition-all">
-                立即開始 <ArrowRight className="w-5 h-5 border-2 border-current rounded-full p-0.5" />
+                  行政中心
+                </button>
+                <button 
+                  onClick={() => router.push("/plans")}
+                  className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-2xl border border-white/60 dark:border-slate-700/60 text-slate-800 dark:text-slate-200 px-8 md:px-10 py-4 md:py-5 rounded-2xl md:rounded-[2rem] text-lg md:text-xl font-bold uppercase tracking-widest hover:bg-white/80 dark:hover:bg-slate-800/80 hover:shadow-[0_8px_30px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.3)] hover:-translate-y-1 transition-all duration-300 w-full sm:w-auto text-center"
+                >
+                  教案總覽
+                </button>
               </div>
             </div>
-          </motion.div>
-
-          <motion.div 
-            variants={itemUp}
-            whileHover={{ y: -6, x: -6, boxShadow: "12px 12px 0px 0px rgba(28, 25, 23, 0.2)" }}
-            className="group relative bg-white dark:bg-slate-800 border-4 border-stone-900 dark:border-slate-700 p-10 overflow-hidden cursor-pointer transition-all duration-300" 
-            onClick={() => router.push("/admin")}
-          >
-            <div className="relative z-10 flex flex-col h-full justify-between gap-8">
-              <div>
-                <div className="w-16 h-16 bg-stone-100 dark:bg-slate-700 flex items-center justify-center mb-8 border-4 border-stone-900 dark:border-slate-600">
-                  <ShieldCheck className="w-8 h-8 text-stone-900 dark:text-amber-400" />
-                </div>
-                <h3 className="text-4xl font-black tracking-tight mb-4 uppercase text-stone-900 dark:text-white">行政中心</h3>
-                <p className="text-stone-500 dark:text-slate-400 font-bold text-lg leading-relaxed max-w-xs">統籌闖關表、道具清單與計時器，精準掌握每一秒。</p>
-              </div>
-              <div className="flex items-center gap-2 font-black uppercase tracking-widest text-sm text-stone-900 dark:text-amber-400 group-hover:gap-4 transition-all">
-                管理中心 <ArrowRight className="w-5 h-5 border-2 border-current rounded-full p-0.5" />
-              </div>
-            </div>
-          </motion.div>
-        </section>
-
-        {/* ── TIMELINE (Brutal Milestones) ──────────────────── */}
-        <section className="space-y-12">
-          <motion.div variants={itemUp} className="flex items-center justify-between">
-            <h2 className="text-2xl font-black uppercase tracking-tight flex items-center gap-3">
-              <Calendar className="w-8 h-8 text-orange-500 dark:text-amber-400" />
-              營隊動態里程碑
-            </h2>
-          </motion.div>
-
-          <motion.div variants={itemUp} className="relative bg-white dark:bg-slate-800 border-4 border-stone-900 dark:border-slate-700 p-8 md:p-12">
-            <div className="relative grid grid-cols-2 md:grid-cols-5 gap-8">
-              <div className="hidden md:block absolute top-[26px] left-10 right-10 h-2 bg-stone-100 dark:bg-slate-700" />
-              <div 
-                className="hidden md:block absolute top-[26px] left-10 h-2 bg-orange-500 dark:bg-amber-400 transition-all duration-1000 ease-out"
-                style={{ width: currentIdx >= 0 ? `${(currentIdx / (timeline.length - 1)) * 85}%` : '0%' }}
-              />
-
-              {timeline.map((node, i) => {
-                const isActive = i === currentIdx;
-                const isDone = i <= currentIdx;
-                const Icon = node.icon;
-                return (
-                  <div key={node.label} className="relative flex flex-col items-center text-center z-10 group">
-                    <motion.div 
-                      whileHover={{ scale: 1.1, rotate: isDone ? 5 : 0 }}
-                      className={cn(
-                        "w-16 h-16 flex items-center justify-center border-4 transition-all duration-500 bg-white dark:bg-slate-800",
-                        isActive ? "border-orange-500 dark:border-amber-400 text-orange-500 dark:text-amber-400 shadow-[4px_4px_0px_0px_rgba(249,115,22,1)] dark:shadow-[4px_4px_0px_0px_rgba(251,191,36,1)] scale-110"
-                          : isDone ? "border-stone-900 dark:border-slate-500 text-stone-900 dark:text-slate-200"
-                          : "border-stone-200 dark:border-slate-700 text-stone-300 dark:text-slate-600"
-                      )}
-                    >
-                      <Icon className="w-7 h-7" />
-                    </motion.div>
-                    <div className="mt-6">
-                      <span className={cn(
-                        "block text-lg font-black uppercase tracking-wider",
-                        isActive ? "text-orange-600 dark:text-amber-400" : isDone ? "text-stone-900 dark:text-white" : "text-stone-400 dark:text-slate-500"
-                      )}>
-                        {node.label}
-                      </span>
-                      {node.date && <span className="block text-xs text-stone-500 dark:text-slate-400 mt-1 font-bold">{node.date}</span>}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </motion.div>
-        </section>
-
-        {/* ── LATEST ACTIVITY ────────────── */}
-        <section className="space-y-8">
-          <motion.div variants={itemUp} className="flex items-center justify-between border-b-4 border-stone-900 dark:border-slate-700 pb-4">
-            <div className="flex items-center gap-3">
-              <History className="w-8 h-8 text-stone-900 dark:text-white" />
-              <h2 className="text-2xl font-black uppercase tracking-tight text-stone-900 dark:text-white">最近活動</h2>
-            </div>
-            <Link href="/plans" className="text-sm font-black text-orange-500 dark:text-amber-400 hover:opacity-70 transition-colors uppercase tracking-widest flex items-center gap-2 group">
-              VIEW ALL <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {recentPlans.length > 0 ? (
-              recentPlans.map((plan) => (
-                <motion.div key={plan.id} variants={itemUp} whileHover={{ x: 6, y: -4, boxShadow: "6px 6px 0px 0px rgba(28,25,23,1)" }} className="transition-all">
-                  <Link
-                    href={`/plans/${plan.id}`}
-                    onClick={() => setActivePlanId && setActivePlanId(plan.id)}
-                    className="flex items-center justify-between p-6 bg-white dark:bg-slate-800 border-4 border-stone-900 dark:border-slate-700 transition-all group"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className={cn(
-                        "w-12 h-12 flex items-center justify-center border-2 border-stone-900 dark:border-slate-600",
-                        plan.category === "activity" ? "bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300" : "bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300"
-                      )}>
-                        <FileText className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <h4 className="font-black text-lg text-stone-900 dark:text-white uppercase truncate max-w-[200px] md:max-w-xs">{plan.activityName || "未命名教案"}</h4>
-                        <p className="text-[10px] text-stone-500 dark:text-slate-400 font-bold uppercase tracking-widest mt-1">
-                          EDITED {plan.updatedAt ? format(new Date(plan.updatedAt), "MM/dd HH:mm") : "UNKNOWN"}
-                        </p>
-                      </div>
-                    </div>
-                    <ArrowRight className="w-6 h-6 text-stone-300 dark:text-slate-500 group-hover:text-orange-500 dark:group-hover:text-amber-400 transition-colors" />
-                  </Link>
-                </motion.div>
-              ))
-            ) : (
-              <div className="col-span-1 md:col-span-2 p-8 border-4 border-dashed border-stone-300 dark:border-slate-700 text-center">
-                <p className="text-stone-400 dark:text-slate-500 font-black uppercase tracking-widest text-lg">目前尚無最近教案動態。</p>
-              </div>
-            )}
           </div>
         </section>
-      </motion.div>
+
+        {/* Bento & Timelines - Soft Glassmorphism Grid */}
+        <section className="px-4 sm:px-6 md:px-12 lg:px-24 py-12 md:py-24 relative z-20 -mt-10 md:-mt-20">
+          <div className="max-w-[1920px] mx-auto grid grid-cols-1 gap-6 md:gap-10">
+            
+            {/* Horizontal Timeline (Milestones) */}
+            <div className="bg-white/60 dark:bg-slate-900/50 backdrop-blur-2xl border border-white/80 dark:border-slate-700/40 rounded-[2.5rem] p-6 md:p-12 shadow-2xl shadow-slate-200/50 dark:shadow-black/40 transition-all duration-500 relative overflow-hidden group hover:border-white dark:hover:border-slate-600/60">
+               {/* Shine effect */}
+               <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
+               <h3 className="relative z-10 text-2xl md:text-3xl font-black tracking-tight mb-8 md:mb-16 text-slate-900 dark:text-white flex items-center gap-3">
+                  營隊里程碑 <span className="text-slate-400 dark:text-slate-500 text-lg md:text-xl font-medium tracking-wide">MILESTONES</span>
+               </h3>
+               
+               {/* Mobile Scrollable Container */}
+               <div className="w-full overflow-x-auto overflow-y-hidden pb-8 -mx-4 px-4 sm:mx-0 sm:px-0 custom-scrollbar">
+                 <div className="relative min-w-[700px] h-[120px] mt-4">
+                    {/* Base Track */}
+                    <div className="absolute top-6 left-10 right-10 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full z-0" />
+                    {/* Progress Track */}
+                    <div className="absolute top-6 left-10 h-1.5 bg-[#f48c25] rounded-full transition-all duration-1000 z-0 origin-left" style={{ width: currentIdx >= 0 ? `min(100%, ${(currentIdx / (timeline.length - 1)) * 100}%)` : '0%' }} />
+                    
+                    <div className="relative flex justify-between z-10 px-4">
+                      {timeline.map((node, i) => {
+                        const isActive = i === currentIdx;
+                        const isDone = i <= currentIdx;
+                        const Icon = node.icon;
+                        return (
+                          <div key={node.label} className="flex flex-col items-center group w-20">
+                            <div className={cn(
+                              "w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center border-4 transition-all duration-500 bg-white dark:bg-slate-900 shadow-md",
+                              isActive ? "border-[#f48c25] text-[#f48c25] scale-110 shadow-[0_0_20px_rgba(244,140,37,0.3)]"
+                                : isDone ? "border-[#f48c25] text-[#f48c25]"
+                                : "border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500"
+                            )}>
+                              <Icon className="w-5 h-5 md:w-6 md:h-6" />
+                            </div>
+                            <div className="mt-4 md:mt-6 text-center w-24">
+                              <span className={cn(
+                                "block text-sm md:text-base font-bold tracking-wide",
+                                isActive ? "text-[#f48c25]" : isDone ? "text-slate-800 dark:text-slate-200" : "text-slate-400 dark:text-slate-600"
+                              )}>
+                                {node.label}
+                              </span>
+                              <span className="block text-[10px] font-semibold tracking-wider text-slate-400 dark:text-slate-500 mt-1 uppercase">
+                                {node.date ? format(new Date(node.date), 'MM/dd') : 'TBD'}
+                              </span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                 </div>
+               </div>
+            </div>
+
+            {/* Recent Plans & Activity (Replacing The Core) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-10">
+               <div className="bg-white/60 dark:bg-slate-900/50 backdrop-blur-2xl border border-white/80 dark:border-slate-700/40 rounded-[2.5rem] p-6 md:p-12 flex flex-col justify-between min-h-[400px] shadow-2xl shadow-slate-200/50 dark:shadow-black/40 transition-all duration-500 hover:border-white dark:hover:border-slate-600/60 relative overflow-hidden group">
+                 
+                 {/* Premium glowing orb inside the card */}
+                 <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-gradient-to-br from-[#f48c25]/20 to-orange-600/5 dark:from-[#f48c25]/10 dark:to-orange-600/5 rounded-full blur-[80px] pointer-events-none group-hover:scale-110 group-hover:bg-[#f48c25]/30 transition-all duration-1000"></div>
+                 {/* Shine effect */}
+                 <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
+
+                 <div className="relative z-10">
+                   <h3 className="text-2xl md:text-3xl font-black tracking-tight mb-8 text-slate-900 dark:text-white flex items-center gap-3">
+                     即時動態 <span className="text-slate-400 dark:text-slate-500 text-lg md:text-xl font-semibold tracking-widest">DYNAMIC UPDATES</span>
+                   </h3>
+                   <ul className="space-y-4">
+                     {recentPlans.map((plan, idx) => (
+                       <li key={plan.id} className="group cursor-pointer bg-white/40 dark:bg-slate-800/40 hover:bg-white dark:hover:bg-slate-800 rounded-2xl p-4 md:p-5 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all duration-300" onClick={() => router.push(`/plans/${plan.id}`)}>
+                         <div className="text-[10px] md:text-xs text-[#f48c25] font-semibold tracking-wider mb-2 flex items-center justify-between uppercase">
+                           <span>{idx === 0 ? "JUST UPDATED" : "RECENT"}</span>
+                           <span className="text-slate-400 dark:text-slate-500">{plan.updatedAt ? format(new Date(plan.updatedAt), "MM/dd HH:mm") : ""}</span>
+                         </div>
+                         <div className="text-slate-800 dark:text-slate-200 font-bold text-lg md:text-xl group-hover:text-[#f48c25] dark:group-hover:text-[#f48c25] transition-colors line-clamp-1 flex items-center gap-2">
+                           {plan.category ? (
+                              <span className="bg-slate-200/50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-xs px-2 py-1 rounded-md shrink-0 border border-slate-300/50 dark:border-slate-700/50">
+                                {plan.category}
+                              </span>
+                           ) : null}
+                           <span className="truncate">{plan.activityName || "未命名教案"}</span>
+                         </div>
+                       </li>
+                     ))}
+                     {recentPlans.length === 0 && (
+                       <li className="text-slate-500 dark:text-slate-400 p-4 font-medium text-center bg-slate-100/50 dark:bg-slate-800/50 rounded-2xl">尚無教案，點擊下方按鈕以建立您的第一份教案。</li>
+                     )}
+                   </ul>
+                 </div>
+                 
+                 <div className="pt-8 mt-auto relative z-10">
+                    <button onClick={() => router.push("/history")} className="text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider flex items-center gap-2 group hover:text-[#f48c25] dark:hover:text-[#f48c25] transition-colors text-sm md:text-base">
+                      VIEW ALL HISTORY
+                      <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
+                    </button>
+                 </div>
+               </div>
+
+               <div className="relative min-h-[400px] rounded-[2.5rem] overflow-hidden group border border-white/80 dark:border-slate-700/40 cursor-pointer bg-white dark:bg-[#020617] p-8 md:p-12 flex flex-col justify-center shadow-2xl shadow-slate-200/50 dark:shadow-black/40 transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_20px_40px_rgba(0,0,0,0.5)]" onClick={() => router.push('/plans')}>
+                 <div className="absolute inset-0 z-0 blur-[2px] group-hover:blur-none group-hover:scale-105 transition-all duration-1000 ease-in-out">
+                   <HeroCarousel />
+                 </div>
+                 {/* Optimized gradient mask for maximum photo clarity while keeping text readable */}
+                 <div className="absolute inset-0 bg-gradient-to-tr from-white/95 via-white/70 dark:from-slate-900/60 dark:via-slate-900/20 to-transparent z-0 transition-colors duration-700 group-hover:from-white/80 dark:group-hover:from-slate-950/70"></div>
+
+                 <div className="relative z-10">
+                   <h3 className="text-3xl md:text-4xl font-black tracking-tight mb-6 text-slate-900 dark:text-white flex flex-col gap-2">
+                     教案總覽
+                     <span className="text-slate-400 dark:text-slate-400 text-lg md:text-xl font-semibold tracking-widest">LATEST PLANS</span>
+                   </h3>
+                   <div className="max-w-md text-slate-600 dark:text-slate-300 font-medium leading-relaxed md:text-lg border-l-4 border-[#f48c25] pl-4 group-hover:text-slate-900 dark:group-hover:text-white transition-colors py-4 bg-white/30 dark:bg-slate-900/30 backdrop-blur-sm rounded-r-3xl min-h-[6em] flex items-center pr-4">
+                     <RotatingText items={planQuotes} intervalMs={6000} className="w-full" />
+                   </div>
+                 </div>
+               </div>
+            </div>
+
+          </div>
+        </section>
+
+      </main>
+
+      {/* Footer - Minimalist style matching the PlanEditor UI */}
+      <footer className="bg-slate-50 dark:bg-slate-950 w-full mt-auto border-t border-slate-200 dark:border-slate-800 transition-colors duration-500">
+        <div className="flex flex-col md:flex-row justify-between items-center w-full px-6 md:px-12 py-8 md:py-12 gap-8 max-w-[1920px] mx-auto">
+          <div className="flex flex-col gap-1 text-center md:text-left">
+            <span className="text-slate-900 dark:text-white font-bold uppercase tracking-widest text-lg md:text-xl">NTUT CHONG DE</span>
+            <span className="text-[10px] md:text-xs tracking-[0.1em] uppercase font-medium text-slate-500 dark:text-slate-500">
+                ©2026 ARCHITECTURAL CAMP SYSTEMS. PRECISION OPERATIONS.
+            </span>
+          </div>
+          <div className="flex flex-wrap justify-center gap-6 sm:gap-8">
+            <a href="#" className="text-[10px] md:text-xs tracking-wider uppercase font-semibold text-slate-500 hover:text-[#f48c25] dark:hover:text-[#f48c25] transition-colors">PRIVACY POLICY</a>
+            <a href="#" className="text-[10px] md:text-xs tracking-wider uppercase font-semibold text-slate-500 hover:text-[#f48c25] dark:hover:text-[#f48c25] transition-colors">TERMS OF SERVICE</a>
+            <a href="#" className="text-[10px] md:text-xs tracking-wider uppercase font-semibold text-slate-500 hover:text-[#f48c25] dark:hover:text-[#f48c25] transition-colors">SUPPORT</a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

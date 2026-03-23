@@ -405,6 +405,7 @@ export function usePlans() {
     };
     setDocumentNonBlocking(doc(db, 'lessonPlans', planId), newPlan, { merge: true });
     setActivePlanId(planId);
+    return planId;
   }, [db, user, activeCampId, pushPlanHistory]);
 
   const updatePlan = useCallback((id: string, updates: Partial<LessonPlan>) => {

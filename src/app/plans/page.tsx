@@ -43,11 +43,9 @@ export default function PlansOverview() {
 
   const handleCreatePlan = (category: PlanCategory) => {
     if (!isAdmin) { crewToast(); return; }
-    // In a real app we might await addPlan and get the ID back to navigate
-    // For now, if addPlan is synchronous or we don't have the ID, we'll navigate to /plans
-    addPlan(category);
-    // Ideally we'd router.push to the new plan ID here.
-    toast({ title: "已建立", description: "教案已建立，請在列表中點選編輯" });
+    const newId = addPlan(category);
+    if (newId) router.push(`/plans/${newId}`);
+    toast({ title: "已建立", description: "全新教案建立成功" });
   };
 
   const handleOpenPlan = (id: string) => {

@@ -38,13 +38,6 @@ export default function AdminPage() {
         activeCampId={activeCampId}
         onUpdateCamp={isAdmin ? updateCamp : () => toast({ title: "🔒 唯讀模式", description: "您目前的權限為組員，如需修改請聯繫管理員。" })}
       />
-      {/* Crew lock overlay indicator */}
-      {!isAdmin && (
-        <div className="absolute top-4 right-4 flex items-center gap-2 px-3 py-1.5 bg-orange-100 dark:bg-amber-400/10 border border-orange-200 dark:border-amber-400/20 rounded-full z-50">
-          <Lock className="w-3.5 h-3.5 text-orange-600 dark:text-amber-400" />
-          <span className="text-[10px] font-bold uppercase tracking-widest text-orange-600 dark:text-amber-400">Read Only</span>
-        </div>
-      )}
     </div>
   );
 }
