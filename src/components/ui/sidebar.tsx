@@ -43,7 +43,7 @@ export function useSidebar() {
 export const SidebarProvider = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div"> & { defaultOpen?: boolean }
->(({ defaultOpen = true, className, style, children, ...props }, ref) => {
+>(({ defaultOpen = false, className, style, children, ...props }, ref) => {
   const isMobile = useIsMobile()
   const [openMobile, setOpenMobile] = React.useState(false)
   const [open, setOpen] = React.useState(defaultOpen)
@@ -112,7 +112,7 @@ export const Sidebar = React.forwardRef<
         state === "expanded" && isPinned ? "w-[--sidebar-width]" : "w-0"
       )} />
       <div className={cn(
-        "duration-300 fixed inset-y-0 z-10 hidden h-svh transition-[left,right,width,background-color] ease-in-out md:flex flex-col left-0",
+        "duration-300 fixed inset-y-0 z-50 hidden h-svh transition-[left,right,width,background-color] ease-in-out md:flex flex-col left-0",
         state === "expanded" ? "w-[--sidebar-width]" : "w-[--sidebar-width-icon]",
         state === "expanded" && !isPinned ? "bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl shadow-2xl border-r border-stone-200/50 dark:border-white/10" : "",
         state === "expanded" && isPinned ? "bg-white dark:bg-slate-900 border-r border-stone-200 dark:border-white/10" : "",

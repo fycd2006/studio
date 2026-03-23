@@ -114,7 +114,7 @@ export default function Home() {
           <div className="relative z-20 w-full px-6 md:px-12 xl:px-24 max-w-[1920px] mx-auto mt-16 md:mt-0">
             <div className="max-w-4xl">
               <div className="mb-6 md:mb-8">
-                <span className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-md border border-slate-200/50 dark:border-slate-700/50 text-[#f48c25] px-4 py-2 rounded-full text-[10px] md:text-sm font-bold tracking-widest uppercase shadow-sm">
+                <span className="text-[#f48c25] text-xs md:text-sm font-black tracking-[0.2em] uppercase drop-shadow-md">
                   {activeCamp ? `正在為 ${activeCamp.name} 創造內容` : '熱情、活力的核心'}
                 </span>
               </div>
@@ -128,13 +128,13 @@ export default function Home() {
               <div className="flex flex-col sm:flex-row gap-4">
                 <button 
                   onClick={() => router.push("/admin")}
-                  className="relative overflow-hidden bg-[#f48c25]/70 dark:bg-[#f48c25]/60 backdrop-blur-xl border border-white/40 dark:border-white/10 text-white px-8 md:px-10 py-4 md:py-5 rounded-2xl md:rounded-[2rem] text-lg md:text-xl font-bold uppercase tracking-widest shadow-[0_8px_32px_rgba(244,140,37,0.3)] hover:shadow-[0_8px_40px_rgba(244,140,37,0.6)] hover:-translate-y-1.5 hover:bg-[#f48c25]/90 dark:hover:bg-[#f48c25]/80 transition-all duration-300 w-full sm:w-auto text-center"
+                  className="relative overflow-hidden bg-[#f48c25]/70 dark:bg-[#f48c25]/60 backdrop-blur-xl text-white px-8 md:px-10 py-4 md:py-5 rounded-2xl md:rounded-[2rem] text-lg md:text-xl font-bold uppercase tracking-widest shadow-[0_8px_32px_rgba(244,140,37,0.3)] hover:shadow-[0_8px_40px_rgba(244,140,37,0.6)] hover:-translate-y-1.5 hover:bg-[#f48c25]/90 dark:hover:bg-[#f48c25]/80 transition-all duration-300 w-full sm:w-auto text-center"
                 >
                   行政中心
                 </button>
                 <button 
                   onClick={() => router.push("/plans")}
-                  className="relative overflow-hidden bg-white/20 dark:bg-slate-900/40 backdrop-blur-xl border border-white/40 dark:border-slate-700/60 text-slate-800 dark:text-slate-200 px-8 md:px-10 py-4 md:py-5 rounded-2xl md:rounded-[2rem] text-lg md:text-xl font-bold uppercase tracking-widest shadow-[0_8px_32px_rgba(0,0,0,0.05)] hover:bg-white/40 dark:hover:bg-slate-800/60 hover:shadow-[0_8px_40px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_8px_40px_rgba(0,0,0,0.3)] hover:-translate-y-1.5 transition-all duration-300 w-full sm:w-auto text-center"
+                  className="relative overflow-hidden bg-white/20 dark:bg-slate-900/40 backdrop-blur-xl text-slate-800 dark:text-slate-200 px-8 md:px-10 py-4 md:py-5 rounded-2xl md:rounded-[2rem] text-lg md:text-xl font-bold uppercase tracking-widest shadow-[0_8px_32px_rgba(0,0,0,0.05)] hover:bg-white/40 dark:hover:bg-slate-800/60 hover:shadow-[0_8px_40px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_8px_40px_rgba(0,0,0,0.3)] hover:-translate-y-1.5 transition-all duration-300 w-full sm:w-auto text-center"
                 >
                   教案總覽
                 </button>

@@ -184,7 +184,7 @@ export function PlanSidebar({
               </div>
             </Link>
             {!isMobile && (
-              <div className="flex items-center gap-1 group-data-[collapsible=icon]:hidden">
+              <div className="flex items-center gap-1">
                 {!isCollapsed && (
                   <Button variant="ghost" size="icon" onClick={togglePin}
                     className={cn("h-7 w-7 rounded-lg transition-all shrink-0 cursor-pointer", isPinned ? "text-orange-500 dark:text-amber-400 bg-orange-50 dark:bg-amber-400/10" : "text-stone-400 dark:text-slate-500 hover:bg-stone-50 dark:hover:bg-white/5 hover:text-stone-700 dark:hover:text-slate-300")}
