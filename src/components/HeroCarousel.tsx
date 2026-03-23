@@ -57,9 +57,10 @@ export function HeroCarousel() {
   return (
     <div className="w-full h-full relative group">
       <Swiper
+        key={images.length}
         modules={[Autoplay, EffectFade]}
         effect="fade"
-        loop={true}
+        loop={images.length > 1}
         autoplay={{ delay: 5000, disableOnInteraction: false }}
         allowTouchMove={true}
         speed={1000}
@@ -71,6 +72,7 @@ export function HeroCarousel() {
               src={url} 
               alt={`Camp Highlights ${idx + 1}`} 
               loading={idx === 0 ? "eager" : "lazy"}
+              referrerPolicy="no-referrer"
               className="w-full h-full object-cover select-none transition-transform duration-[10000ms] ease-linear hover:scale-110"
             />
           </SwiperSlide>
