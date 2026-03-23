@@ -366,7 +366,7 @@ export function PlanSidebar({
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
             <span className="text-[9px] font-bold text-stone-400 dark:text-slate-500 uppercase tracking-widest group-data-[collapsible=icon]:hidden">System Online</span>
           </div>
-          {isMounted && !isCollapsed && (
+          {isMounted && (!isCollapsed || isMobile) && (
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"

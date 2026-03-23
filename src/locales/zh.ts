@@ -144,6 +144,8 @@ const zh = {
   DRIVE_BACKUP: "備份至雲端硬碟",
 
   // Admin Section
+  AUDIO_UNLOCKED: "音效已解鎖",
+  AUDIO_LOCKED: "音效未解鎖",
   ADMIN_TITLE: "行政中樞",
   ROTATION_TABLE: "輪替表",
   PROPS_LIST: "道具清單",

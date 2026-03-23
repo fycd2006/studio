@@ -143,6 +143,8 @@ const en = {
   DRIVE_BACKUP: "Drive Sync",
 
   // Admin Section
+  AUDIO_UNLOCKED: "Audio Unlocked",
+  AUDIO_LOCKED: "Audio Locked",
   ADMIN_TITLE: "Command Center",
   ROTATION_TABLE: "Rotation Table",
   PROPS_LIST: "Props Inventory",

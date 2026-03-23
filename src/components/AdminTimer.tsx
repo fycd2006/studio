@@ -411,7 +411,7 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
             </div>
             <div>
               <h4 className="font-headline font-bold text-stone-900 dark:text-white text-base uppercase tracking-tight">
-                {audioUnlocked ? t('SUCCESS') : t('FAILED')}
+                {audioUnlocked ? t('AUDIO_UNLOCKED') : t('AUDIO_LOCKED')}
               </h4>
               <p className="text-stone-400 dark:text-slate-500 text-[10px] font-bold mt-1 uppercase tracking-widest">
                 {audioUnlocked ? "Alerts Active" : "Audio Locked"}
