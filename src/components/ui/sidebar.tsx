@@ -28,6 +28,8 @@ type SidebarContext = {
   setOpenMobile: (open: boolean) => void
   isMobile: boolean
   toggleSidebar: () => void
+  isPinned: boolean
+  togglePin: () => void
 }
 
 const SidebarContext = React.createContext<SidebarContext | null>(null)
@@ -45,16 +47,21 @@ export const SidebarProvider = React.forwardRef<
   const isMobile = useIsMobile()
   const [openMobile, setOpenMobile] = React.useState(false)
   const [open, setOpen] = React.useState(defaultOpen)
+  const [isPinned, setIsPinned] = React.useState(false)
 
   const toggleSidebar = React.useCallback(() => {
     return isMobile ? setOpenMobile(o => !o) : setOpen(o => !o)
   }, [isMobile])
 
+  const togglePin = React.useCallback(() => {
+    setIsPinned(p => !p)
+  }, [])
+
   const state = open ? ("expanded" as const) : ("collapsed" as const)
 
   const contextValue = React.useMemo(() => ({
-    state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar,
-  }), [state, open, isMobile, openMobile, toggleSidebar])
+    state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar, isPinned, togglePin
+  }), [state, open, isMobile, openMobile, toggleSidebar, isPinned, togglePin])
 
   return (
     <SidebarContext.Provider value={contextValue}>
@@ -77,7 +84,7 @@ export const Sidebar = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div"> & { collapsible?: "offcanvas" | "icon" | "none" }
 >(({ collapsible = "offcanvas", className, children, ...props }, ref) => {
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+  const { isMobile, state, openMobile, setOpenMobile, isPinned } = useSidebar()
 
   if (isMobile) {
     return (
@@ -95,13 +102,24 @@ export const Sidebar = React.forwardRef<
   return (
     <div
       ref={ref}
-      className="group peer hidden md:block text-sidebar-foreground"
+      className="group peer hidden md:block text-sidebar-foreground z-40"
       data-state={state}
       data-collapsible={state === "collapsed" ? collapsible : ""}
+      data-pinned={isPinned.toString()}
     >
-      <div className={cn("duration-200 relative h-svh w-[--sidebar-width] bg-transparent transition-[width] ease-linear", "group-data-[collapsible=icon]:w-[--sidebar-width-icon]")} />
-      <div className={cn("duration-200 fixed inset-y-0 z-10 hidden h-svh w-[--sidebar-width] transition-[left,right,width] ease-linear md:flex", "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]", "group-data-[collapsible=icon]:w-[--sidebar-width-icon] border-r border-sidebar-border", className)} {...props}>
-        <div data-sidebar="sidebar" className="flex h-full w-full flex-col bg-sidebar">{children}</div>
+      <div className={cn(
+        "duration-300 relative h-svh bg-transparent transition-[width] ease-in-out",
+        state === "expanded" && isPinned ? "w-[--sidebar-width]" : "w-0"
+      )} />
+      <div className={cn(
+        "duration-300 fixed inset-y-0 z-10 hidden h-svh transition-[left,right,width,background-color] ease-in-out md:flex flex-col left-0",
+        state === "expanded" ? "w-[--sidebar-width]" : "w-[--sidebar-width-icon]",
+        state === "expanded" && !isPinned ? "bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl shadow-2xl border-r border-stone-200/50 dark:border-white/10" : "",
+        state === "expanded" && isPinned ? "bg-white dark:bg-slate-900 border-r border-stone-200 dark:border-white/10" : "",
+        state === "collapsed" ? "bg-transparent border-none pointer-events-none" : "",
+        className
+      )} {...props}>
+        <div data-sidebar="sidebar" className={cn("flex h-full w-full flex-col", state === "collapsed" && "pointer-events-auto")}>{children}</div>
       </div>
     </div>
   )
@@ -120,17 +138,17 @@ export const SidebarTrigger = React.forwardRef<HTMLButtonElement, React.Componen
 SidebarTrigger.displayName = "SidebarTrigger"
 
 export const SidebarHeader = React.forwardRef<HTMLDivElement, React.ComponentProps<"div">>(({ className, ...props }, ref) => (
-  <div ref={ref} data-sidebar="header" className={cn("flex flex-col gap-2 p-3", className)} {...props} />
+  <div ref={ref} data-sidebar="header" className={cn("flex flex-col gap-2 p-3 shrink-0", className)} {...props} />
 ))
 SidebarHeader.displayName = "SidebarHeader"
 
 export const SidebarContent = React.forwardRef<HTMLDivElement, React.ComponentProps<"div">>(({ className, ...props }, ref) => (
-  <div ref={ref} data-sidebar="content" className={cn("flex min-h-0 flex-1 flex-col gap-1 overflow-auto group-data-[collapsible=icon]:overflow-hidden pb-52", className)} {...props} />
+  <div ref={ref} data-sidebar="content" className={cn("flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden scrollbar-hide pb-20", className)} {...props} />
 ))
 SidebarContent.displayName = "SidebarContent"
 
 export const SidebarFooter = React.forwardRef<HTMLDivElement, React.ComponentProps<"div">>(({ className, ...props }, ref) => (
-  <div ref={ref} data-sidebar="footer" className={cn("flex flex-col gap-2 p-3", className)} {...props} />
+  <div ref={ref} data-sidebar="footer" className={cn("flex flex-col gap-2 p-3 shrink-0", className)} {...props} />
 ))
 SidebarFooter.displayName = "SidebarFooter"
 

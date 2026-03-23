@@ -19,6 +19,7 @@ import {
   Lock,
   Sun,
   Moon,
+  Pin,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useTranslation } from "@/lib/i18n-context";
@@ -89,7 +90,7 @@ export function PlanSidebar({
   onCampToggleLock,
   viewMode, setViewMode,
 }: PlanSidebarProps) {
-  const { state, toggleSidebar, isMobile } = useSidebar();
+  const { state, toggleSidebar, isMobile, isPinned, togglePin } = useSidebar();
   const { toast } = useToast();
   const { role } = useAuth();
   const pathname = usePathname();
@@ -167,9 +168,9 @@ export function PlanSidebar({
 
   return (
     <>
-      <Sidebar collapsible="icon" className="border-r border-stone-200 dark:border-white/5 bg-white dark:bg-slate-900 transition-colors">
+      <Sidebar collapsible="icon">
         {/* ═══ HEADER ═══ */}
-        <SidebarHeader className="bg-white dark:bg-slate-900 border-b border-stone-100 dark:border-white/5 px-4 py-5 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:py-4 transition-colors">
+        <SidebarHeader className="border-b border-stone-200/50 dark:border-white/5 px-4 py-5 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:py-4 transition-colors z-20 relative">
           <div className="flex items-center justify-between group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-3 overflow-hidden">
             <Link href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-all duration-300 min-w-max">
               <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden bg-stone-50 dark:bg-white/5 border border-stone-100 dark:border-white/10 p-0.5 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8">
@@ -183,15 +184,24 @@ export function PlanSidebar({
               </div>
             </Link>
             {!isMobile && (
-              <Button variant="ghost" size="icon" onClick={toggleSidebar}
-                className="h-8 w-8 rounded-lg text-stone-400 dark:text-slate-500 hover:bg-stone-50 dark:hover:bg-white/5 hover:text-orange-500 dark:hover:text-amber-400 transition-all shrink-0 cursor-pointer">
-                {isCollapsed ? <ChevronsRight className="h-5 w-5" /> : <ChevronsLeft className="h-5 w-5" />}
-              </Button>
+              <div className="flex items-center gap-1 group-data-[collapsible=icon]:hidden">
+                {!isCollapsed && (
+                  <Button variant="ghost" size="icon" onClick={togglePin}
+                    className={cn("h-7 w-7 rounded-lg transition-all shrink-0 cursor-pointer", isPinned ? "text-orange-500 dark:text-amber-400 bg-orange-50 dark:bg-amber-400/10" : "text-stone-400 dark:text-slate-500 hover:bg-stone-50 dark:hover:bg-white/5 hover:text-stone-700 dark:hover:text-slate-300")}
+                    title={isPinned ? "取消釘選 (Unpin)" : "釘選側邊欄 (Pin sidebar)"}>
+                    <Pin className={cn("h-3.5 w-3.5", isPinned && "fill-current")} />
+                  </Button>
+                )}
+                <Button variant="ghost" size="icon" onClick={toggleSidebar}
+                  className="h-7 w-7 rounded-lg text-stone-400 dark:text-slate-500 hover:bg-stone-50 dark:hover:bg-white/5 hover:text-orange-500 dark:hover:text-amber-400 transition-all shrink-0 cursor-pointer">
+                  {isCollapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
+                </Button>
+              </div>
             )}
           </div>
         </SidebarHeader>
 
-        <SidebarContent className="bg-white dark:bg-slate-900 px-2 transition-colors">
+        <SidebarContent className="px-2 transition-colors z-10 relative">
           {/* ═══ 4 CORE NAV ITEMS ═══ */}
           <SidebarGroup className="p-1 mt-4">
             <nav className="space-y-1">
@@ -351,7 +361,7 @@ export function PlanSidebar({
         </SidebarContent>
 
         {/* ═══ FOOTER ═══ */}
-        <SidebarFooter className="bg-white dark:bg-slate-900 border-t border-stone-100 dark:border-white/5 px-3 py-3 group-data-[collapsible=icon]:px-1.5 transition-colors flex flex-row items-center justify-between">
+        <SidebarFooter className="border-t border-stone-200/50 dark:border-white/5 px-3 py-3 group-data-[collapsible=icon]:px-1.5 transition-colors flex flex-row items-center justify-between z-20 relative">
           <div className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
             <span className="text-[9px] font-bold text-stone-400 dark:text-slate-500 uppercase tracking-widest group-data-[collapsible=icon]:hidden">System Online</span>

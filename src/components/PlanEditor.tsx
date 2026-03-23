@@ -40,6 +40,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { VersionHistorySidebar } from "./VersionHistorySidebar";
 import { DiffHighlighter } from "./DiffHighlighter";
 import { getChangedFields } from "@/lib/text-diff";
+import { exportToDocx } from "@/lib/export-utils";
 
 const FabricCanvas = dynamic(
   () => import("@/components/FabricCanvas").then((mod) => mod.FabricCanvas),
@@ -308,9 +309,22 @@ export function PlanEditor({
             </Button>
           </div>
 
-          <Button size="sm" onClick={() => window.print()} className="bg-orange-600 dark:bg-amber-400 text-white dark:text-slate-900 rounded-xl font-bold uppercase tracking-widest text-[10px] h-9 shrink-0 whitespace-nowrap">
-            <FileDown className="w-4 h-4 mr-2 hidden sm:inline" /> <span className="sm:hidden">匯出</span><span className="hidden sm:inline">{t('EXPORT_FILE')}</span>
-          </Button>
+          <div className="flex gap-2 shrink-0">
+            <Button size="sm" onClick={() => window.print()} className="bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 text-stone-700 dark:text-slate-200 hover:bg-stone-50 dark:hover:bg-slate-700 transition-colors rounded-xl font-bold uppercase tracking-widest text-[10px] h-9 whitespace-nowrap shadow-sm">
+              <FileDown className="w-4 h-4 mr-2 hidden sm:inline" /> <span className="sm:hidden">PDF</span><span className="hidden sm:inline">列印 / PDF</span>
+            </Button>
+            <Button size="sm" onClick={async () => {
+                try {
+                  toast({ title: "匯出中", description: "正在產生 Word 檔案..." });
+                  await exportToDocx(currentPlan);
+                  toast({ title: "匯出成功", description: "已經成功下載 Word 檔案" });
+                } catch (err) {
+                  toast({ title: "匯出失敗", description: "發生錯誤", variant: "destructive" });
+                }
+              }} className="bg-orange-600 hover:bg-orange-700 dark:bg-amber-500 dark:hover:bg-amber-600 text-white dark:text-slate-900 rounded-xl font-bold uppercase tracking-widest text-[10px] h-9 whitespace-nowrap shadow-sm">
+              <FileDown className="w-4 h-4 mr-2 hidden sm:inline" /> <span className="sm:hidden">Word</span><span className="hidden sm:inline">匯出 Word</span>
+            </Button>
+          </div>
         </div>
       </header>
 

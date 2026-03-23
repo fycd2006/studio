@@ -128,13 +128,13 @@ export default function Home() {
               <div className="flex flex-col sm:flex-row gap-4">
                 <button 
                   onClick={() => router.push("/admin")}
-                  className="bg-gradient-to-br from-[#f48c25] to-orange-500 text-white px-8 md:px-10 py-4 md:py-5 rounded-2xl md:rounded-[2rem] text-lg md:text-xl font-bold uppercase tracking-widest hover:shadow-[0_8px_40px_rgba(244,140,37,0.4)] hover:-translate-y-1 transition-all duration-300 w-full sm:w-auto text-center ring-1 ring-white/20"
+                  className="relative overflow-hidden bg-[#f48c25]/70 dark:bg-[#f48c25]/60 backdrop-blur-xl border border-white/40 dark:border-white/10 text-white px-8 md:px-10 py-4 md:py-5 rounded-2xl md:rounded-[2rem] text-lg md:text-xl font-bold uppercase tracking-widest shadow-[0_8px_32px_rgba(244,140,37,0.3)] hover:shadow-[0_8px_40px_rgba(244,140,37,0.6)] hover:-translate-y-1.5 hover:bg-[#f48c25]/90 dark:hover:bg-[#f48c25]/80 transition-all duration-300 w-full sm:w-auto text-center"
                 >
                   行政中心
                 </button>
                 <button 
                   onClick={() => router.push("/plans")}
-                  className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-2xl border border-white/60 dark:border-slate-700/60 text-slate-800 dark:text-slate-200 px-8 md:px-10 py-4 md:py-5 rounded-2xl md:rounded-[2rem] text-lg md:text-xl font-bold uppercase tracking-widest hover:bg-white/80 dark:hover:bg-slate-800/80 hover:shadow-[0_8px_30px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.3)] hover:-translate-y-1 transition-all duration-300 w-full sm:w-auto text-center"
+                  className="relative overflow-hidden bg-white/20 dark:bg-slate-900/40 backdrop-blur-xl border border-white/40 dark:border-slate-700/60 text-slate-800 dark:text-slate-200 px-8 md:px-10 py-4 md:py-5 rounded-2xl md:rounded-[2rem] text-lg md:text-xl font-bold uppercase tracking-widest shadow-[0_8px_32px_rgba(0,0,0,0.05)] hover:bg-white/40 dark:hover:bg-slate-800/60 hover:shadow-[0_8px_40px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_8px_40px_rgba(0,0,0,0.3)] hover:-translate-y-1.5 transition-all duration-300 w-full sm:w-auto text-center"
                 >
                   教案總覽
                 </button>
