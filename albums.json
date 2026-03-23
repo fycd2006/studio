@@ -1,0 +1,18 @@
+{
+  "albumsStatus": 403,
+  "albums": {
+    "error": {
+      "code": 403,
+      "message": "Request had insufficient authentication scopes.",
+      "status": "PERMISSION_DENIED"
+    }
+  },
+  "sharedStatus": 403,
+  "shared": {
+    "error": {
+      "code": 403,
+      "message": "Request had insufficient authentication scopes.",
+      "status": "PERMISSION_DENIED"
+    }
+  }
+}
