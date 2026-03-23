@@ -89,9 +89,9 @@ export const Sidebar = React.forwardRef<
   if (isMobile) {
     return (
       <Sheet open={openMobile} onOpenChange={setOpenMobile}>
-        <SheetContent side="left" className="w-[--sidebar-width] bg-brand-navy p-0 text-sidebar-foreground border-none flex flex-col h-full overflow-hidden shadow-2xl">
+        <SheetContent side="left" className="w-[--sidebar-width] bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl p-0 text-sidebar-foreground border-r border-stone-200/50 dark:border-white/10 flex flex-col h-full overflow-hidden shadow-2xl transition-colors">
           <SheetTitle className="sr-only">側邊欄選單</SheetTitle>
-          <div className="flex-1 w-full overflow-y-auto overflow-x-hidden scrollbar-hide bg-brand-navy">
+          <div className="flex-1 w-full overflow-y-auto overflow-x-hidden scrollbar-hide">
             {children}
           </div>
         </SheetContent>
