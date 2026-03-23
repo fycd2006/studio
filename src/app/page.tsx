@@ -30,28 +30,28 @@ export default function Home() {
     "崇德人，崇德魂!",
     "用生命影響生命，點燃每個孩子心中的無限可能。",
     "歡迎回來！你今天的每一份用心，都在為孩子們的夢想打底。",
-    "「熱情不是名詞，是我們現在進行式的行動……」",
-    "「正在載入孩子們的笑容與期待……」",
-    "「一點一滴的付出，正是在凝聚改變的力量。」",
-    "「探索未知，從心出發。」",
-    "「保持善良，保持好奇。」",
-    "「我們不只傳遞知識，更要在孩子心中種下一顆善良與探索的種子。」",
-    "「一個人可以走得快，但一群志同道合的夥伴，能帶著孩子們走得更深、更遠。」",
-    "「每一次的籌備與修正，都是為了讓世界更接近我們理想的模樣。」",
-    "「用無私的奉獻帶領團隊，用不斷的自我超越成就每一次營隊。」",
-    "「科技看見未來，品格決定高度；在這裡，我們陪伴孩子遇見更好的自己。」",
+    "熱情不是名詞，是我們現在進行式的行動……",
+    "正在載入孩子們的笑容與期待……",
+    "一點一滴的付出，正是在凝聚改變的力量。",
+    "探索未知，從心出發。",
+    "保持善良，保持好奇。",
+    "我們不只傳遞知識，更要在孩子心中種下一顆善良與探索的種子。",
+    "一個人可以走得快，但一群志同道合的夥伴，能帶著孩子們走得更深、更遠。",
+    "每一次的籌備與修正，都是為了讓世界更接近我們理想的模樣。",
+    "用無私的奉獻帶領團隊，用不斷的自我超越成就每一次營隊。",
+    "科技看見未來，品格決定高度；在這裡，我們陪伴孩子遇見更好的自己。",
     "不要問世界需要什麼，問問自己做什麼能讓你充滿生機地活著。因為世界需要的，正是充滿生機的人。",
     "人生的意義在於發掘你的天賦；人生的目的在於將它分享出去。",
     "一個人可以走得很快，但一群人可以走得很遠。"
   ], []);
 
   const planQuotes = useMemo(() => [
-    "「你的用心，孩子會懂」",
-    "「台上的閃亮，來自這裡每一個教案的用心。」",
-    "「我們寫下的不只是活動流程，更是孩子們未來回憶裡的啟發與感動。」",
-    "「每一次的推演與優化，都是為了接住每一雙充滿好奇的眼睛。」",
-    "「教育沒有捷徑，但你們在這裡投入的每一分鐘，都在縮短孩子與夢想的距離。」",
-    "「從科學實作到品格養成，我們正在為孩子裝備迎向未來的超能力。」"
+    "你的用心，孩子會懂",
+    "台上的閃亮，來自這裡每一個教案的用心。",
+    "我們寫下的不只是活動流程，更是孩子們未來回憶裡的啟發與感動。",
+    "每一次的推演與優化，都是為了接住每一雙充滿好奇的眼睛。",
+    "教育沒有捷徑，但你們在這裡投入的每一分鐘，都在縮短孩子與夢想的距離。",
+    "從科學實作到品格養成，我們正在為孩子裝備迎向未來的超能力。"
   ], []);
 
   const timeline = useMemo(() => [
@@ -122,7 +122,7 @@ export default function Home() {
                 NTUT<br/>
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#f48c25] to-orange-400 block -mt-1 md:-mt-4 relative z-10 pb-2">CHONG DE</span>
               </h1>
-              <div className="max-w-2xl text-base md:text-xl text-slate-700 dark:text-slate-300 leading-relaxed mb-10 md:mb-12 border-l-4 border-[#f48c25] pl-6 font-medium bg-white/30 dark:bg-slate-900/30 backdrop-blur-sm py-4 rounded-r-3xl shadow-sm min-h-[5em] flex items-center pr-6 overflow-hidden">
+              <div className="max-w-2xl text-lg md:text-2xl text-slate-800 dark:text-slate-200 leading-relaxed md:leading-loose mb-10 md:mb-12 font-semibold italic tracking-wide py-2 drop-shadow-md min-h-[5em] flex items-center overflow-hidden">
                 <RotatingText items={heroQuotes} intervalMs={6000} className="w-full" />
               </div>
               <div className="flex flex-col sm:flex-row gap-4">
@@ -253,7 +253,7 @@ export default function Home() {
                      教案總覽
                      <span className="text-slate-400 dark:text-slate-400 text-lg md:text-xl font-semibold tracking-widest">LATEST PLANS</span>
                    </h3>
-                   <div className="max-w-md text-slate-600 dark:text-slate-300 font-medium leading-relaxed md:text-lg border-l-4 border-[#f48c25] pl-4 group-hover:text-slate-900 dark:group-hover:text-white transition-colors py-4 bg-white/30 dark:bg-slate-900/30 backdrop-blur-sm rounded-r-3xl min-h-[6em] flex items-center pr-4">
+                   <div className="max-w-md text-slate-700 dark:text-slate-200 font-semibold italic tracking-wide leading-relaxed md:leading-loose md:text-xl group-hover:text-slate-900 dark:group-hover:text-white transition-colors py-2 drop-shadow-md min-h-[6em] flex items-center">
                      <RotatingText items={planQuotes} intervalMs={6000} className="w-full" />
                    </div>
                  </div>
