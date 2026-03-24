@@ -74,9 +74,9 @@ export default function SettingsPage() {
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-stone-900 dark:text-white mb-1.5 sm:mb-2">
               {t('SETTINGS_TITLE')}
             </h1>
-            <p className="text-stone-500 dark:text-slate-400 font-medium uppercase tracking-[0.2em] text-[10px] sm:text-xs\">Configuration // Governance // Security</p>
+            <p className="text-stone-500 dark:text-slate-400 font-medium uppercase tracking-[0.2em] text-[10px] sm:text-xs">Configuration // Governance // Security</p>
           </div>
-          <Button variant="ghost" size="icon" onClick={logout} className="h-9 w-9 text-stone-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors cursor-pointer\">
+          <Button variant="ghost" size="icon" onClick={logout} className="h-9 w-9 text-stone-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors cursor-pointer">
             <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
           </Button>
         </div>

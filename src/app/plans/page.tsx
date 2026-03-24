@@ -208,32 +208,32 @@ export default function PlansOverview() {
             <p className="text-stone-500 dark:text-slate-400 max-w-xs mx-auto text-xs sm:text-sm">找不到符合條件的教案，或尚無文件可供顯示。</p>
           </div>
         ) : viewType === "grid" ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4\">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {filteredPlans.map((plan, i) => (
               <motion.div key={plan.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03, duration: 0.2 }} className="h-full">
-                <div className="bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 rounded-lg sm:rounded-xl p-4 sm:p-6 text-left w-full group transition-all duration-300 hover:border-orange-500/50 dark:hover:border-amber-400/50 hover:shadow-md flex flex-col h-full cursor-pointer\" onClick={() => handleOpenPlan(plan.id)}>
-                   <div className=\"flex justify-between items-start mb-3 sm:mb-4\">
-                     <Badge className={cn(\"px-2 py-0.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider border\", plan.category === \"activity\" ? \"bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800\" : \"bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800\")}>
+                <div className="bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 rounded-lg sm:rounded-xl p-4 sm:p-6 text-left w-full group transition-all duration-300 hover:border-orange-500/50 dark:hover:border-amber-400/50 hover:shadow-md flex flex-col h-full cursor-pointer" onClick={() => handleOpenPlan(plan.id)}>
+                   <div className="flex justify-between items-start mb-3 sm:mb-4">
+                     <Badge className={cn("px-2 py-0.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider border", plan.category === "activity" ? "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800" : "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800")}>
                        {(() => {
                          const group = getPlanGroup(plan);
                          return group ? (language === 'zh' ? group.nameZh : group.nameEn) : (language === 'zh' ? '未分類' : 'Unknown');
                        })()}
                      </Badge>
-                     <ChevronRight className=\"w-3.5 h-3.5 sm:w-4 sm:h-4 text-stone-300 dark:text-slate-600 group-hover:text-orange-500 dark:group-hover:text-amber-400 transition-colors\" />
+                     <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-stone-300 dark:text-slate-600 group-hover:text-orange-500 dark:group-hover:text-amber-400 transition-colors" />
                    </div>
                    
-                   <h3 className=\"font-semibold text-sm sm:text-base text-stone-900 dark:text-slate-100 mb-1 line-clamp-2 leading-snug group-hover:text-orange-600 dark:group-hover:text-amber-400 transition-colors\">{plan.activityName || \"未命名文件\"}</h3>
-                   <p className=\"text-xs text-stone-500 dark:text-slate-400 font-medium mb-3 sm:mb-4 flex-1\">{plan.scheduledName || \"無分類\"}</p>
+                   <h3 className="font-semibold text-sm sm:text-base text-stone-900 dark:text-slate-100 mb-1 line-clamp-2 leading-snug group-hover:text-orange-600 dark:group-hover:text-amber-400 transition-colors">{plan.activityName || "未命名文件"}</h3>
+                   <p className="text-xs text-stone-500 dark:text-slate-400 font-medium mb-3 sm:mb-4 flex-1">{plan.scheduledName || "無分類"}</p>
                    
-                   <div className=\"flex items-center gap-4 pt-3 sm:pt-4 border-t border-stone-100 dark:border-slate-700/50 mt-auto\">
-                     <div className=\"flex items-center gap-1.5 text-[9px] sm:text-[10px] text-stone-400 dark:text-slate-500 font-medium\">
-                       <Clock className=\"w-3 h-3 sm:w-3.5 sm:h-3.5\" />
-                       {plan.updatedAt ? format(new Date(plan.updatedAt), \"MM/dd HH:mm\") : \"—\"}
+                   <div className="flex items-center gap-4 pt-3 sm:pt-4 border-t border-stone-100 dark:border-slate-700/50 mt-auto">
+                     <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px] text-stone-400 dark:text-slate-500 font-medium">
+                       <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                       {plan.updatedAt ? format(new Date(plan.updatedAt), "MM/dd HH:mm") : "—"}
                      </div>
                      {plan.members && (
-                       <div className=\"flex items-center gap-1.5 text-[9px] sm:text-[10px] text-stone-400 dark:text-slate-500 font-medium\">
-                         <Users className=\"w-3 h-3 sm:w-3.5 sm:h-3.5\" />
-                         <span className=\"line-clamp-1 max-w-[80px]\">{plan.members}</span>
+                       <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px] text-stone-400 dark:text-slate-500 font-medium">
+                         <Users className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                         <span className="line-clamp-1 max-w-[80px]">{plan.members}</span>
                        </div>
                      )}
                    </div>
