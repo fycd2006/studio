@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Clock, Table as TableIcon, Plus, ShieldCheck, Lock, Unlock, Calendar, Undo2, Redo2, Package2, ZoomIn, ZoomOut, RotateCcw, Maximize } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminDialog } from "@/components/AdminDialog";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -611,7 +610,7 @@ export function AdminSection({
               {/* Left: Branding & Print */}
               <div className="flex flex-col gap-4 w-full xl:w-auto">
             <div className="flex items-center gap-3">
-              <SidebarTrigger className="md:hidden -ml-2 h-8 w-8 text-stone-400 dark:text-slate-500 hover:text-orange-500 dark:hover:text-amber-400" />
+
               <div className="w-8 h-8 rounded-xl bg-orange-600 dark:bg-amber-400 flex items-center justify-center text-white dark:text-slate-900 shadow-md shadow-orange-600/20 shrink-0">
                 <ShieldCheck className="h-4 w-4" />
               </div>

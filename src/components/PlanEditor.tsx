@@ -36,7 +36,6 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n-context";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { VersionHistorySidebar } from "./VersionHistorySidebar";
 import { DiffHighlighter } from "./DiffHighlighter";
 import { getChangedFields } from "@/lib/text-diff";
@@ -269,9 +268,7 @@ export function PlanEditor({
           <div className="w-full xl:w-[60%] mx-auto flex flex-col min-h-full">
           <header className="sticky top-0 z-50 flex-none flex flex-col items-center justify-center gap-4 w-full pb-6 pt-3 mb-8 shrink-0 bg-stone-50/80 dark:bg-slate-900/80 backdrop-blur-md border-none transition-all">
             <div className="flex flex-col items-center text-center gap-1 w-full relative">
-              <div className="md:hidden absolute left-0 top-1/2 -translate-y-1/2 shrink-0">
-                <SidebarTrigger />
-              </div>
+
           <div className="flex flex-col">
             <div className="flex items-center gap-2 mb-0.5">
               <span className={cn(
@@ -346,7 +343,7 @@ export function PlanEditor({
             </div>
         </header>
 
-        <main className="flex-1 flex flex-col relative shrink-0">
+        <main className="flex-1 flex flex-col relative shrink-0 pb-32 sm:pb-40">
           <div style={{ zoom: pageZoom }}>
           {isLoadingPreview ? (
             <div className="h-full min-h-[260px] flex flex-col items-center justify-center gap-2 text-stone-500 dark:text-slate-400">
@@ -538,47 +535,47 @@ export function PlanEditor({
       )}
 
       {/* Floating Action Panel (Global Editor) */}
-      <div className="fixed bottom-6 right-4 xl:right-[21%] bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-1.5 flex items-center gap-1.5 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700/50 z-50">
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:right-6 xl:right-[21%] bg-white/90 dark:bg-slate-800/90 backdrop-blur-md p-1.5 flex items-center gap-1.5 rounded-full shadow-2xl border border-slate-200/50 dark:border-slate-700/50 z-50">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" onClick={onUndo} disabled={!canUndo || isHistoryMode} className="h-12 w-12 rounded-xl text-slate-500 hover:text-orange-500 hover:bg-white dark:hover:bg-slate-700 transition-all">
-                <Undo2 className="h-6 w-6" />
+              <Button variant="ghost" size="icon" onClick={onUndo} disabled={!canUndo || isHistoryMode} className="h-10 w-10 sm:h-12 sm:w-12 rounded-full text-slate-500 hover:text-orange-500 hover:bg-white dark:hover:bg-slate-700 transition-all">
+                <Undo2 className="h-5 w-5 sm:h-6 sm:w-6" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="top">上一步 / Undo</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" onClick={onRedo} disabled={!canRedo || isHistoryMode} className="h-12 w-12 rounded-xl text-slate-500 hover:text-orange-500 hover:bg-white dark:hover:bg-slate-700 transition-all">
-                <Redo2 className="h-6 w-6" />
+              <Button variant="ghost" size="icon" onClick={onRedo} disabled={!canRedo || isHistoryMode} className="h-10 w-10 sm:h-12 sm:w-12 rounded-full text-slate-500 hover:text-orange-500 hover:bg-white dark:hover:bg-slate-700 transition-all">
+                <Redo2 className="h-5 w-5 sm:h-6 sm:w-6" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="top">下一步 / Redo</TooltipContent>
           </Tooltip>
           
-          <div className="w-[1px] h-8 bg-slate-200 dark:bg-slate-700 mx-1" />
+          <div className="w-[1px] h-6 sm:h-8 bg-slate-200 dark:bg-slate-700 mx-0.5 sm:mx-1" />
           
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" onClick={handleZoomOut} disabled={pageZoom <= 0.3} className="h-12 w-12 rounded-xl text-slate-500 hover:text-orange-500 hover:bg-white dark:hover:bg-slate-700 transition-all">
-                <ZoomOut className="h-6 w-6" />
+              <Button variant="ghost" size="icon" onClick={handleZoomOut} disabled={pageZoom <= 0.3} className="h-10 w-10 sm:h-12 sm:w-12 rounded-full text-slate-500 hover:text-orange-500 hover:bg-white dark:hover:bg-slate-700 transition-all">
+                <ZoomOut className="h-5 w-5 sm:h-6 sm:w-6" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="top">縮小 / Zoom Out</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" onClick={handleFitAll} className="h-12 w-12 rounded-xl text-slate-500 hover:text-orange-500 hover:bg-white dark:hover:bg-slate-700 transition-all">
-                <Maximize className="h-5 w-5" />
+              <Button variant="ghost" size="icon" onClick={handleFitAll} className="h-10 w-10 sm:h-12 sm:w-12 rounded-full text-slate-500 hover:text-orange-500 hover:bg-white dark:hover:bg-slate-700 transition-all">
+                <Maximize className="h-4 w-4 sm:h-5 sm:w-5" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="top">適合視窗 / Fit All</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" onClick={handleZoomIn} disabled={pageZoom >= 2} className="h-12 w-12 rounded-xl text-slate-500 hover:text-orange-500 hover:bg-white dark:hover:bg-slate-700 transition-all">
-                <ZoomIn className="h-6 w-6" />
+              <Button variant="ghost" size="icon" onClick={handleZoomIn} disabled={pageZoom >= 2} className="h-10 w-10 sm:h-12 sm:w-12 rounded-full text-slate-500 hover:text-orange-500 hover:bg-white dark:hover:bg-slate-700 transition-all">
+                <ZoomIn className="h-5 w-5 sm:h-6 sm:w-6" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="top">放大 / Zoom In</TooltipContent>
