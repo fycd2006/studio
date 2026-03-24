@@ -92,13 +92,13 @@ export default function Home() {
       <main className="flex-1 w-full relative z-10">
         
         {/* Full-width Hero Banner with Carousel Background */}
-        <section className="relative w-full h-[100svh] md:h-[800px] flex items-center overflow-hidden bg-white dark:bg-slate-950">
+        <section className="relative w-full h-[100svh] sm:h-[90svh] md:h-[800px] flex items-center overflow-hidden bg-white dark:bg-slate-950">
           
           {/* Background Layer: HeroCarousel */}
           <div className="absolute inset-0 z-0">
             <HeroCarousel />
             {/* Soft gradient mask for text readability */}
-            <div className="absolute inset-0 bg-gradient-to-r from-white via-white/80 dark:from-slate-950 dark:via-slate-950/80 to-transparent w-full md:w-[80%] z-10 transition-colors duration-500"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-white via-white/80 dark:from-slate-950 dark:via-slate-950/80 to-transparent w-full sm:w-[90%] md:w-[80%] z-10 transition-colors duration-500"></div>
             {/* Subtle dimming layer for optimal contrast without crushing the photo */}
             <div className="absolute inset-0 bg-slate-900/5 dark:bg-slate-950/20 z-10 transition-colors duration-500"></div>
             {/* Bottom mask to blend smoothly into the Bento grid background */}
@@ -106,35 +106,35 @@ export default function Home() {
           </div>
           
           {/* EST. 2006 Badge - Elegant semi-transparent typography */}
-          <div className="absolute bottom-12 right-6 md:bottom-16 md:right-16 z-20 pointer-events-none text-right hidden sm:block">
-             <span className="text-4xl md:text-6xl font-black text-slate-900/10 dark:text-white/20 tracking-tighter drop-shadow-sm leading-[0.8]">EST.<br/>2006</span>
+          <div className="absolute bottom-8 right-3 sm:bottom-12 sm:right-6 md:bottom-16 md:right-16 z-20 pointer-events-none text-right hidden sm:block">
+             <span className="text-2xl sm:text-4xl md:text-6xl font-black text-slate-900/10 dark:text-white/20 tracking-tighter drop-shadow-sm leading-[0.8]">EST.<br/>2006</span>
           </div>
 
           {/* Content Layer */}
-          <div className="relative z-20 w-full px-6 md:px-12 xl:px-24 max-w-[1920px] mx-auto mt-16 md:mt-0">
+          <div className="relative z-20 w-full px-4 sm:px-6 md:px-12 xl:px-24 max-w-[1920px] mx-auto mt-12 sm:mt-16 md:mt-0">
             <div className="max-w-4xl">
-              <div className="mb-6 md:mb-8">
-                <span className="text-[#f48c25] text-xs md:text-sm font-black tracking-[0.2em] uppercase drop-shadow-md">
+              <div className="mb-4 sm:mb-6 md:mb-8">
+                <span className="text-[#f48c25] text-[11px] sm:text-xs md:text-sm font-black tracking-[0.2em] uppercase drop-shadow-md">
                   {activeCamp ? `正在為 ${activeCamp.name} 創造內容` : '熱情、活力的核心'}
                 </span>
               </div>
-              <h1 className="text-[clamp(4.5rem,10vw,12rem)] font-black leading-[0.85] tracking-tight mb-6 md:mb-8 text-slate-900 dark:text-white drop-shadow-xl">
+              <h1 className="text-[clamp(2.5rem,8vw,12rem)] sm:text-[clamp(3.5rem,9vw,12rem)] font-black leading-[0.85] tracking-tight mb-4 sm:mb-6 md:mb-8 text-slate-900 dark:text-white drop-shadow-xl">
                 NTUT<br/>
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#f48c25] to-orange-400 block -mt-1 md:-mt-4 relative z-10 pb-2">CHONG DE</span>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#f48c25] to-orange-400 block -mt-1 sm:-mt-2 md:-mt-4 relative z-10 pb-2">CHONG DE</span>
               </h1>
-              <div className="max-w-2xl text-lg md:text-2xl text-slate-800 dark:text-slate-200 leading-relaxed md:leading-loose mb-10 md:mb-12 font-semibold italic tracking-wide py-2 drop-shadow-md min-h-[5em] flex items-center overflow-hidden">
+              <div className="max-w-2xl text-sm sm:text-base md:text-lg lg:text-2xl text-slate-800 dark:text-slate-200 leading-relaxed md:leading-loose mb-6 sm:mb-8 md:mb-10 lg:mb-12 font-semibold italic tracking-wide py-2 drop-shadow-md min-h-[4em] sm:min-h-[5em] flex items-center overflow-hidden">
                 <RotatingText items={heroQuotes} intervalMs={6000} className="w-full" />
               </div>
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <button 
                   onClick={() => router.push("/admin")}
-                  className="relative overflow-hidden bg-[#f48c25]/70 dark:bg-[#f48c25]/60 backdrop-blur-xl text-white px-8 md:px-10 py-4 md:py-5 rounded-2xl md:rounded-[2rem] text-lg md:text-xl font-bold uppercase tracking-widest shadow-[0_8px_32px_rgba(244,140,37,0.3)] hover:shadow-[0_8px_40px_rgba(244,140,37,0.6)] hover:-translate-y-1.5 hover:bg-[#f48c25]/90 dark:hover:bg-[#f48c25]/80 transition-all duration-300 w-full sm:w-auto text-center"
+                  className="relative overflow-hidden bg-[#f48c25]/70 dark:bg-[#f48c25]/60 backdrop-blur-xl text-white px-6 sm:px-8 md:px-10 py-3 sm:py-4 md:py-5 rounded-xl sm:rounded-2xl md:rounded-[2rem] text-base sm:text-lg md:text-xl font-bold uppercase tracking-widest shadow-[0_8px_32px_rgba(244,140,37,0.3)] hover:shadow-[0_8px_40px_rgba(244,140,37,0.6)] hover:-translate-y-1.5 hover:bg-[#f48c25]/90 dark:hover:bg-[#f48c25]/80 transition-all duration-300 w-full sm:w-auto text-center"
                 >
                   行政中心
                 </button>
                 <button 
                   onClick={() => router.push("/plans")}
-                  className="relative overflow-hidden bg-white/20 dark:bg-slate-900/40 backdrop-blur-xl text-slate-800 dark:text-slate-200 px-8 md:px-10 py-4 md:py-5 rounded-2xl md:rounded-[2rem] text-lg md:text-xl font-bold uppercase tracking-widest shadow-[0_8px_32px_rgba(0,0,0,0.05)] hover:bg-white/40 dark:hover:bg-slate-800/60 hover:shadow-[0_8px_40px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_8px_40px_rgba(0,0,0,0.3)] hover:-translate-y-1.5 transition-all duration-300 w-full sm:w-auto text-center"
+                  className="relative overflow-hidden bg-white/20 dark:bg-slate-900/40 backdrop-blur-xl text-slate-800 dark:text-slate-200 px-6 sm:px-8 md:px-10 py-3 sm:py-4 md:py-5 rounded-xl sm:rounded-2xl md:rounded-[2rem] text-base sm:text-lg md:text-xl font-bold uppercase tracking-widest shadow-[0_8px_32px_rgba(0,0,0,0.05)] hover:bg-white/40 dark:hover:bg-slate-800/60 hover:shadow-[0_8px_40px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_8px_40px_rgba(0,0,0,0.3)] hover:-translate-y-1.5 transition-all duration-300 w-full sm:w-auto text-center"
                 >
                   教案總覽
                 </button>
@@ -144,48 +144,48 @@ export default function Home() {
         </section>
 
         {/* Bento & Timelines - Soft Glassmorphism Grid */}
-        <section className="px-4 sm:px-6 md:px-12 lg:px-24 py-12 md:py-24 relative z-20 -mt-10 md:-mt-20">
+        <section className="px-3 sm:px-4 md:px-6 lg:px-12 xl:px-24 py-8 sm:py-12 md:py-24 relative z-20 -mt-6 sm:-mt-10 md:-mt-20">
           <div className="max-w-[1920px] mx-auto grid grid-cols-1 gap-6 md:gap-10">
             
             {/* Horizontal Timeline (Milestones) */}
-            <div className="bg-white/60 dark:bg-slate-900/50 backdrop-blur-2xl border border-white/80 dark:border-slate-700/40 rounded-[2.5rem] p-6 md:p-12 shadow-2xl shadow-slate-200/50 dark:shadow-black/40 transition-all duration-500 relative overflow-hidden group hover:border-white dark:hover:border-slate-600/60">
+            <div className="bg-white/60 dark:bg-slate-900/50 backdrop-blur-2xl border border-white/80 dark:border-slate-700/40 rounded-2xl sm:rounded-[2.5rem] p-4 sm:p-8 md:p-12 shadow-2xl shadow-slate-200/50 dark:shadow-black/40 transition-all duration-500 relative overflow-hidden group hover:border-white dark:hover:border-slate-600/60">
                {/* Shine effect */}
                <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
-               <h3 className="relative z-10 text-2xl md:text-3xl font-black tracking-tight mb-8 md:mb-16 text-slate-900 dark:text-white flex items-center gap-3">
-                  營隊里程碑 <span className="text-slate-400 dark:text-slate-500 text-lg md:text-xl font-medium tracking-wide">MILESTONES</span>
+               <h3 className="relative z-10 text-xl sm:text-2xl md:text-3xl font-black tracking-tight mb-6 sm:mb-8 md:mb-16 text-slate-900 dark:text-white flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+                  營隊里程碑 <span className="text-slate-400 dark:text-slate-500 text-sm sm:text-lg md:text-xl font-medium tracking-wide">MILESTONES</span>
                </h3>
                
                {/* Mobile Scrollable Container */}
-               <div className="w-full overflow-x-auto overflow-y-hidden pb-8 -mx-4 px-4 sm:mx-0 sm:px-0 custom-scrollbar">
-                 <div className="relative min-w-[700px] h-[120px] mt-4">
+               <div className="w-full overflow-x-auto overflow-y-hidden pb-4 sm:pb-8 -mx-4 px-4 sm:mx-0 sm:px-0 custom-scrollbar">
+                 <div className="relative min-w-[500px] sm:min-w-[700px] h-[100px] sm:h-[120px] mt-2 sm:mt-4">
                     {/* Base Track */}
-                    <div className="absolute top-6 left-10 right-10 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full z-0" />
+                    <div className="absolute top-5 sm:top-6 left-6 sm:left-10 right-6 sm:right-10 h-1 sm:h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full z-0" />
                     {/* Progress Track */}
-                    <div className="absolute top-6 left-10 h-1.5 bg-[#f48c25] rounded-full transition-all duration-1000 z-0 origin-left" style={{ width: currentIdx >= 0 ? `min(100%, ${(currentIdx / (timeline.length - 1)) * 100}%)` : '0%' }} />
+                    <div className="absolute top-5 sm:top-6 left-6 sm:left-10 h-1 sm:h-1.5 bg-[#f48c25] rounded-full transition-all duration-1000 z-0 origin-left" style={{ width: currentIdx >= 0 ? `min(100%, ${(currentIdx / (timeline.length - 1)) * 100}%)` : '0%' }} />
                     
-                    <div className="relative flex justify-between z-10 px-4">
+                    <div className="relative flex justify-between z-10 px-3 sm:px-4">
                       {timeline.map((node, i) => {
                         const isActive = i === currentIdx;
                         const isDone = i <= currentIdx;
                         const Icon = node.icon;
                         return (
-                          <div key={node.label} className="flex flex-col items-center group w-20">
+                          <div key={node.label} className="flex flex-col items-center group w-16 sm:w-20">
                             <div className={cn(
-                              "w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center border-4 transition-all duration-500 bg-white dark:bg-slate-900 shadow-md",
+                              "w-9 h-9 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center border-3 sm:border-4 transition-all duration-500 bg-white dark:bg-slate-900 shadow-md",
                               isActive ? "border-[#f48c25] text-[#f48c25] scale-110 shadow-[0_0_20px_rgba(244,140,37,0.3)]"
                                 : isDone ? "border-[#f48c25] text-[#f48c25]"
                                 : "border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500"
                             )}>
-                              <Icon className="w-5 h-5 md:w-6 md:h-6" />
+                              <Icon className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
                             </div>
-                            <div className="mt-4 md:mt-6 text-center w-24">
+                            <div className="mt-2 sm:mt-4 md:mt-6 text-center w-20 sm:w-24">
                               <span className={cn(
-                                "block text-sm md:text-base font-bold tracking-wide",
+                                "block text-xs sm:text-sm md:text-base font-bold tracking-wide",
                                 isActive ? "text-[#f48c25]" : isDone ? "text-slate-800 dark:text-slate-200" : "text-slate-400 dark:text-slate-600"
                               )}>
                                 {node.label}
                               </span>
-                              <span className="block text-[10px] font-semibold tracking-wider text-slate-400 dark:text-slate-500 mt-1 uppercase">
+                              <span className="block text-[9px] sm:text-[10px] font-semibold tracking-wider text-slate-400 dark:text-slate-500 mt-0.5 sm:mt-1 uppercase">
                                 {node.date ? format(new Date(node.date), 'MM/dd') : 'TBD'}
                               </span>
                             </div>

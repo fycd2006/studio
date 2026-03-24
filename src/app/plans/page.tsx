@@ -117,41 +117,41 @@ export default function PlansOverview() {
 
   return (
     <div className="h-full overflow-y-auto bg-stone-50 dark:bg-slate-900 text-stone-900 dark:text-slate-50 transition-colors selection:bg-orange-200 dark:selection:bg-amber-500/30 font-sans">
-      <div className="max-w-6xl mx-auto py-12 md:py-16 px-6 md:px-8">
+      <div className="max-w-6xl mx-auto py-6 sm:py-12 md:py-16 px-4 sm:px-6 md:px-8">
         {/* ── HEADER ─────────────── */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 border-b border-stone-200 dark:border-slate-800 pb-8">
+        <div className="flex flex-col gap-4 sm:gap-6 mb-8 sm:mb-12 border-b border-stone-200 dark:border-slate-800 pb-6 sm:pb-8">
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500 dark:text-slate-400 bg-stone-200/50 dark:bg-slate-800 px-2 py-1 rounded-sm">
+              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500 dark:text-slate-400 bg-stone-200/50 dark:bg-slate-800 px-2 py-1 rounded-sm">
                 {activeCamp?.name || "All Projects"}
               </span>
             </div>
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-stone-900 dark:text-white">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-stone-900 dark:text-white">
               教案總覽
             </h1>
-            <p className="text-stone-500 dark:text-slate-400 text-sm mt-2 font-medium">文件與專案管理中心 / Document Repository</p>
+            <p className="text-stone-500 dark:text-slate-400 text-xs sm:text-sm mt-1.5 sm:mt-2 font-medium">文件與專案管理中心 / Document Repository</p>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
             <div className="flex bg-stone-100 dark:bg-slate-800 p-1 rounded-md border border-stone-200 dark:border-slate-700">
-              <button onClick={() => setViewType("grid")} className={cn("p-1.5 rounded-sm transition-all cursor-pointer", viewType === "grid" ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 dark:text-slate-500 hover:text-stone-600 dark:hover:text-slate-300")} title="畫廊視圖 (Grid)">
-                <LayoutGrid className="w-4 h-4" />
+              <button onClick={() => setViewType("grid")} className={cn("p-1 sm:p-1.5 rounded-sm transition-all cursor-pointer", viewType === "grid" ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 dark:text-slate-500 hover:text-stone-600 dark:hover:text-slate-300")} title="畫廊視圖 (Grid)">
+                <LayoutGrid className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
-              <button onClick={() => setViewType("board")} className={cn("p-1.5 rounded-sm transition-all cursor-pointer", viewType === "board" ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 dark:text-slate-500 hover:text-stone-600 dark:hover:text-slate-300")} title="看板視圖 (Board)">
-                <Kanban className="w-4 h-4" />
+              <button onClick={() => setViewType("board")} className={cn("p-1 sm:p-1.5 rounded-sm transition-all cursor-pointer", viewType === "board" ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 dark:text-slate-500 hover:text-stone-600 dark:hover:text-slate-300")} title="看板視圖 (Board)">
+                <Kanban className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
-              <button onClick={() => setViewType("list")} className={cn("p-1.5 rounded-sm transition-all cursor-pointer", viewType === "list" ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 dark:text-slate-500 hover:text-stone-600 dark:hover:text-slate-300")} title="清單視圖 (List)">
-                <List className="w-4 h-4" />
+              <button onClick={() => setViewType("list")} className={cn("p-1 sm:p-1.5 rounded-sm transition-all cursor-pointer", viewType === "list" ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 dark:text-slate-500 hover:text-stone-600 dark:hover:text-slate-300")} title="清單視圖 (List)">
+                <List className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
             </div>
 
-            <div className="relative">
+            <div className="relative w-full sm:w-auto">
               <Button
                 onClick={() => isAdmin ? setIsAdding(!isAdding) : crewToast()}
-                className={cn("bg-stone-900 hover:bg-stone-800 text-white dark:bg-amber-500 dark:hover:bg-amber-600 dark:text-slate-900 h-10 px-5 font-semibold text-sm transition-colors cursor-pointer rounded-md shadow-sm", !isAdmin && "opacity-60")}
+                className={cn("w-full sm:w-auto bg-stone-900 hover:bg-stone-800 text-white dark:bg-amber-500 dark:hover:bg-amber-600 dark:text-slate-900 h-9 sm:h-10 px-3.5 sm:px-5 font-semibold text-xs sm:text-sm transition-colors cursor-pointer rounded-md shadow-sm", !isAdmin && "opacity-60")}
               >
-                {!isAdmin && <Lock className="w-3.5 h-3.5 mr-1.5" />}
-                <Plus className="w-4 h-4 mr-2" /> 新增檔案
+                {!isAdmin && <Lock className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1.5" />}
+                <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" /> 新增檔案
               </Button>
 
               <AnimatePresence>
@@ -173,67 +173,67 @@ export default function PlansOverview() {
         </div>
 
         {/* ── TOOLBAR (Filter & Search) ─────────── */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
-           <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 scrollbar-hide shrink-0">
-              <div className="flex items-center bg-stone-100 dark:bg-slate-800 p-1 rounded-lg border border-stone-200 dark:border-slate-700 shadow-sm">
-                <button onClick={() => setFilterGroup('all')} className={cn("px-3 py-1.5 rounded-md text-xs font-black uppercase tracking-widest transition-colors", filterGroup === 'all' ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 hover:text-stone-600 dark:hover:text-slate-300")}>{language === 'zh' ? '全部' : 'All'}</button>
+        <div className="flex flex-col gap-4 mb-8">
+           <div className="flex items-center gap-2 w-full overflow-x-auto pb-2 scrollbar-hide shrink-0">
+              <div className="flex items-center bg-stone-100 dark:bg-slate-800 p-1 rounded-lg border border-stone-200 dark:border-slate-700 shadow-sm shrink-0">
+                <button onClick={() => setFilterGroup('all')} className={cn("px-2.5 sm:px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap", filterGroup === 'all' ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 hover:text-stone-600 dark:hover:text-slate-300")}>{language === 'zh' ? '全部' : 'All'}</button>
                 {groups.map((group) => (
-                  <button key={group.id} onClick={() => setFilterGroup(group.slug)} className={cn("px-3 py-1.5 rounded-md text-xs font-black uppercase tracking-widest transition-colors", filterGroup === group.slug ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 hover:text-stone-600 dark:hover:text-slate-300")}>{language === 'zh' ? group.nameZh : group.nameEn}</button>
+                  <button key={group.id} onClick={() => setFilterGroup(group.slug)} className={cn("px-2.5 sm:px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap", filterGroup === group.slug ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 hover:text-stone-600 dark:hover:text-slate-300")}>{language === 'zh' ? group.nameZh : group.nameEn}</button>
                 ))}
               </div>
               <div className="flex items-center bg-stone-100 dark:bg-slate-800 p-1 rounded-lg border border-stone-200 dark:border-slate-700 shrink-0 shadow-sm">
-                 <button onClick={() => setSortBy('updatedAt')} className={cn("px-3 py-1.5 rounded-md text-xs font-black uppercase tracking-widest transition-colors", sortBy === 'updatedAt' ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 hover:text-stone-600 dark:hover:text-slate-300")}>時間排序</button>
-                 <button onClick={() => setSortBy('name')} className={cn("px-3 py-1.5 rounded-md text-xs font-black uppercase tracking-widest transition-colors", sortBy === 'name' ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 hover:text-stone-600 dark:hover:text-slate-300")}>名稱排序</button>
+                 <button onClick={() => setSortBy('updatedAt')} className={cn("px-2.5 sm:px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap", sortBy === 'updatedAt' ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 hover:text-stone-600 dark:hover:text-slate-300")}>時間排序</button>
+                 <button onClick={() => setSortBy('name')} className={cn("px-2.5 sm:px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap", sortBy === 'name' ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 hover:text-stone-600 dark:hover:text-slate-300")}>名稱排序</button>
               </div>
            </div>
            
-           <div className="relative w-full md:w-64 shrink-0">
-             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 dark:text-slate-500" />
+           <div className="relative w-full">
+             <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 dark:text-slate-500" />
              <Input 
                value={searchQuery} 
                onChange={(e) => setSearchQuery(e.target.value)} 
                placeholder="搜尋教案、負責人..." 
-               className="pl-9 h-10 w-full bg-white dark:bg-slate-800 border-stone-200 dark:border-slate-700 focus:ring-orange-500 transition-shadow rounded-lg font-medium shadow-sm" 
+               className="pl-9 h-9 sm:h-10 w-full bg-white dark:bg-slate-800 border-stone-200 dark:border-slate-700 focus:ring-orange-500 transition-shadow rounded-lg font-medium shadow-sm text-sm" 
              />
            </div>
         </div>
 
         {/* ── CONTENT ─────────────────────── */}
         {filteredPlans.length === 0 ? (
-          <div className="bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 rounded-xl p-20 flex flex-col items-center justify-center text-center shadow-sm">
-            <div className="w-16 h-16 rounded-full bg-stone-50 dark:bg-slate-900 flex items-center justify-center mb-4 border border-stone-100 dark:border-slate-800">
-              <FileText className="w-6 h-6 text-stone-300 dark:text-slate-600" />
+          <div className="bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 rounded-lg sm:rounded-xl p-12 sm:p-20 flex flex-col items-center justify-center text-center shadow-sm">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-stone-50 dark:bg-slate-900 flex items-center justify-center mb-3 sm:mb-4 border border-stone-100 dark:border-slate-800">
+              <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-stone-300 dark:text-slate-600" />
             </div>
-            <h3 className="text-lg font-semibold text-stone-900 dark:text-slate-200 mb-1">查無文件</h3>
-            <p className="text-stone-500 dark:text-slate-400 max-w-xs mx-auto text-sm">找不到符合條件的教案，或尚無文件可供顯示。</p>
+            <h3 className="text-base sm:text-lg font-semibold text-stone-900 dark:text-slate-200 mb-1">查無文件</h3>
+            <p className="text-stone-500 dark:text-slate-400 max-w-xs mx-auto text-xs sm:text-sm">找不到符合條件的教案，或尚無文件可供顯示。</p>
           </div>
         ) : viewType === "grid" ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4\">
             {filteredPlans.map((plan, i) => (
               <motion.div key={plan.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03, duration: 0.2 }} className="h-full">
-                <div className="bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 rounded-xl p-6 text-left w-full group transition-all duration-300 hover:border-orange-500/50 dark:hover:border-amber-400/50 hover:shadow-md flex flex-col h-full cursor-pointer" onClick={() => handleOpenPlan(plan.id)}>
-                   <div className="flex justify-between items-start mb-4">
-                     <Badge className={cn("px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider border", plan.category === "activity" ? "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800" : "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800")}>
+                <div className="bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 rounded-lg sm:rounded-xl p-4 sm:p-6 text-left w-full group transition-all duration-300 hover:border-orange-500/50 dark:hover:border-amber-400/50 hover:shadow-md flex flex-col h-full cursor-pointer\" onClick={() => handleOpenPlan(plan.id)}>
+                   <div className=\"flex justify-between items-start mb-3 sm:mb-4\">
+                     <Badge className={cn(\"px-2 py-0.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider border\", plan.category === \"activity\" ? \"bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800\" : \"bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800\")}>
                        {(() => {
                          const group = getPlanGroup(plan);
                          return group ? (language === 'zh' ? group.nameZh : group.nameEn) : (language === 'zh' ? '未分類' : 'Unknown');
                        })()}
                      </Badge>
-                     <ChevronRight className="w-4 h-4 text-stone-300 dark:text-slate-600 group-hover:text-orange-500 dark:group-hover:text-amber-400 transition-colors" />
+                     <ChevronRight className=\"w-3.5 h-3.5 sm:w-4 sm:h-4 text-stone-300 dark:text-slate-600 group-hover:text-orange-500 dark:group-hover:text-amber-400 transition-colors\" />
                    </div>
                    
-                   <h3 className="font-semibold text-base text-stone-900 dark:text-slate-100 mb-1 line-clamp-2 leading-snug group-hover:text-orange-600 dark:group-hover:text-amber-400 transition-colors">{plan.activityName || "未命名文件"}</h3>
-                   <p className="text-xs text-stone-500 dark:text-slate-400 font-medium mb-4 flex-1">{plan.scheduledName || "無分類"}</p>
+                   <h3 className=\"font-semibold text-sm sm:text-base text-stone-900 dark:text-slate-100 mb-1 line-clamp-2 leading-snug group-hover:text-orange-600 dark:group-hover:text-amber-400 transition-colors\">{plan.activityName || \"未命名文件\"}</h3>
+                   <p className=\"text-xs text-stone-500 dark:text-slate-400 font-medium mb-3 sm:mb-4 flex-1\">{plan.scheduledName || \"無分類\"}</p>
                    
-                   <div className="flex items-center gap-4 pt-4 border-t border-stone-100 dark:border-slate-700/50 mt-auto">
-                     <div className="flex items-center gap-1.5 text-[10px] text-stone-400 dark:text-slate-500 font-medium">
-                       <Clock className="w-3.5 h-3.5" />
-                       {plan.updatedAt ? format(new Date(plan.updatedAt), "MM/dd HH:mm") : "—"}
+                   <div className=\"flex items-center gap-4 pt-3 sm:pt-4 border-t border-stone-100 dark:border-slate-700/50 mt-auto\">
+                     <div className=\"flex items-center gap-1.5 text-[9px] sm:text-[10px] text-stone-400 dark:text-slate-500 font-medium\">
+                       <Clock className=\"w-3 h-3 sm:w-3.5 sm:h-3.5\" />
+                       {plan.updatedAt ? format(new Date(plan.updatedAt), \"MM/dd HH:mm\") : \"—\"}
                      </div>
                      {plan.members && (
-                       <div className="flex items-center gap-1.5 text-[10px] text-stone-400 dark:text-slate-500 font-medium">
-                         <Users className="w-3.5 h-3.5" />
-                         <span className="line-clamp-1 max-w-[80px]">{plan.members}</span>
+                       <div className=\"flex items-center gap-1.5 text-[9px] sm:text-[10px] text-stone-400 dark:text-slate-500 font-medium\">
+                         <Users className=\"w-3 h-3 sm:w-3.5 sm:h-3.5\" />
+                         <span className=\"line-clamp-1 max-w-[80px]\">{plan.members}</span>
                        </div>
                      )}
                    </div>

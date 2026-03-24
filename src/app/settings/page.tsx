@@ -67,17 +67,17 @@ export default function SettingsPage() {
 
   return (
     <div className="h-full overflow-y-auto bg-stone-50 dark:bg-slate-900 text-stone-900 dark:text-slate-50 transition-colors font-sans selection:bg-orange-200 dark:selection:bg-amber-500/30">
-      <div className="max-w-5xl mx-auto py-12 md:py-16 px-6 md:px-8">
+      <div className="max-w-5xl mx-auto py-6 sm:py-12 md:py-16 px-4 sm:px-6 md:px-8">
         {/* ── PAGE TITLE ──────────────────── */}
-        <div className="flex items-center justify-between mb-16 border-b border-stone-200 dark:border-slate-800 pb-8">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-stone-900 dark:text-white mb-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6 mb-8 sm:mb-16 border-b border-stone-200 dark:border-slate-800 pb-6 sm:pb-8">
+          <div className="flex-1">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-stone-900 dark:text-white mb-1.5 sm:mb-2">
               {t('SETTINGS_TITLE')}
             </h1>
-            <p className="text-stone-500 dark:text-slate-400 font-medium uppercase tracking-[0.2em] text-xs">Configuration // Governance // Security</p>
+            <p className="text-stone-500 dark:text-slate-400 font-medium uppercase tracking-[0.2em] text-[10px] sm:text-xs\">Configuration // Governance // Security</p>
           </div>
-          <Button variant="ghost" size="icon" onClick={logout} className="text-stone-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors cursor-pointer">
-            <LogOut className="w-5 h-5" />
+          <Button variant="ghost" size="icon" onClick={logout} className="h-9 w-9 text-stone-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors cursor-pointer\">
+            <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
           </Button>
         </div>
 

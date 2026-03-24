@@ -155,7 +155,7 @@ export default function LoginPage() {
     <div className="relative min-h-screen w-full overflow-hidden bg-slate-900 font-sans">
       <GhibliFilter />
 
-      <div className="absolute inset-0 grid grid-cols-3 grid-rows-4 md:grid-cols-4 md:grid-rows-3">
+      <div className="absolute inset-0 grid grid-cols-2 grid-rows-6 sm:grid-cols-3 sm:grid-rows-4 md:grid-cols-4 md:grid-rows-3">
         {tiles.map((src, index) => (
           <button
             key={index}
@@ -197,23 +197,23 @@ export default function LoginPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }}
-        className="relative z-10 mx-auto flex min-h-screen w-full max-w-[340px] flex-col items-center justify-center px-4 py-8"
+        className="relative z-10 mx-auto flex min-h-screen w-full max-w-sm sm:max-w-md md:max-w-[340px] flex-col items-center justify-center px-3 sm:px-4 py-6 sm:py-8"
       >
-        <div className="mb-8 flex flex-col items-center">
-          <Tent className="h-24 w-24 text-white drop-shadow-lg" strokeWidth={1} />
-          <h1 className="mt-4 text-center text-2xl font-black tracking-[0.14em] text-white">
+        <div className="mb-6 sm:mb-8 flex flex-col items-center">
+          <Tent className="h-20 sm:h-24 w-20 sm:w-24 text-white drop-shadow-lg" strokeWidth={1} />
+          <h1 className="mt-3 sm:mt-4 text-center text-2xl font-black tracking-[0.14em] text-white">
             NTUT CHONG DE
           </h1>
-          <p className="mt-2 text-center text-xs tracking-[0.2em] text-white/70">
+          <p className="mt-1.5 sm:mt-2 text-center text-xs tracking-[0.2em] text-white/70">
             CAMP SYSTEM LOGIN
           </p>
         </div>
 
         <div className="w-full rounded-[4px] bg-white shadow-2xl overflow-hidden">
           <form onSubmit={handleSubmit} className="space-y-3 pb-3">
-            <div className="px-4 pt-3.5">
+            <div className="px-3 sm:px-4 pt-3 sm:pt-3.5">
               <div className="relative flex items-center">
-                <Mail className="mr-4 h-5 w-5 text-gray-400" strokeWidth={1.5} />
+                <Mail className="mr-3 sm:mr-4 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" strokeWidth={1.5} />
                 <input 
                   type="text"
                   value={username}
@@ -227,9 +227,9 @@ export default function LoginPage() {
 
             <div className="h-px bg-gray-200" />
 
-            <div className="px-4 pb-3.5">
+            <div className="px-3 sm:px-4 pb-3 sm:pb-3.5">
               <div className="relative flex items-center">
-                <Lock className="mr-4 h-5 w-5 text-gray-400" strokeWidth={1.5} />
+                <Lock className="mr-3 sm:mr-4 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" strokeWidth={1.5} />
                 <input 
                   type={showPassword ? "text" : "password"}
                   value={password}
@@ -247,7 +247,7 @@ export default function LoginPage() {
                   onTouchStart={() => setShowPassword(true)}
                   onTouchEnd={() => setShowPassword(false)}
                 >
-                  {showPassword ? <EyeOff className="h-5 w-5" strokeWidth={1.5} /> : <Eye className="h-5 w-5" strokeWidth={1.5} />}
+                  {showPassword ? <EyeOff className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={1.5} /> : <Eye className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={1.5} />}
                 </button>
               </div>
             </div>
@@ -258,7 +258,7 @@ export default function LoginPage() {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="mx-4 rounded-sm border border-rose-300 bg-rose-50 p-3 text-center text-xs font-semibold text-rose-600"
+                  className="mx-3 sm:mx-4 rounded-sm border border-rose-300 bg-rose-50 p-2.5 sm:p-3 text-center text-xs font-semibold text-rose-600"
                 >
                   帳號或密碼錯誤，請重新輸入。
                 </motion.div>
@@ -268,31 +268,31 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="mx-4 flex h-11 w-[calc(100%-2rem)] items-center justify-center rounded-[4px] bg-[#ff6b00] text-sm font-semibold tracking-[0.06em] text-white transition-colors hover:bg-[#e66000] disabled:cursor-not-allowed disabled:bg-[#ff6b00]/70"
+              className="mx-3 sm:mx-4 flex h-10 sm:h-11 w-[calc(100%-1.5rem)] sm:w-[calc(100%-2rem)] items-center justify-center rounded-[4px] bg-[#ff6b00] text-xs sm:text-sm font-semibold tracking-[0.06em] text-white transition-colors hover:bg-[#e66000] disabled:cursor-not-allowed disabled:bg-[#ff6b00]/70"
             >
               {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : "Sign in"}
             </button>
           </form>
         </div>
 
-        <div className="mt-8 w-full space-y-3">
+        <div className="mt-6 sm:mt-8 w-full space-y-2.5 sm:space-y-3">
           <a
             href="https://lihi2.cc/3yxOC"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex w-full items-center justify-center gap-3 rounded-[4px] bg-[#3b5998] py-3.5 text-sm font-medium tracking-[0.06em] text-white transition-colors hover:bg-[#2d4373]"
+            className="flex w-full items-center justify-center gap-2.5 sm:gap-3 rounded-[4px] bg-[#3b5998] py-3 sm:py-3.5 text-xs sm:text-sm font-medium tracking-[0.06em] text-white transition-colors hover:bg-[#2d4373]"
           >
-            <Facebook className="h-5 w-5" strokeWidth={1.5} />
-            NTUT Chong De Facebook
+            <Facebook className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={1.5} />
+            <span className="line-clamp-1">NTUT Chong De Facebook</span>
           </a>
           <a
             href="https://www.instagram.com/taipeitech_cd?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
             target="_blank"
             rel="noopener noreferrer"
-            className="flex w-full items-center justify-center gap-3 rounded-[4px] bg-gradient-to-r from-[#833ab4] via-[#fd1d1d] to-[#fcb045] py-3.5 text-sm font-medium tracking-[0.06em] text-white transition-opacity hover:opacity-90"
+            className="flex w-full items-center justify-center gap-2.5 sm:gap-3 rounded-[4px] bg-gradient-to-r from-[#833ab4] via-[#fd1d1d] to-[#fcb045] py-3 sm:py-3.5 text-xs sm:text-sm font-medium tracking-[0.06em] text-white transition-opacity hover:opacity-90"
           >
-            <Instagram className="h-5 w-5" strokeWidth={1.5} />
-            NTUT Chong De Instagram
+            <Instagram className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={1.5} />
+            <span className="line-clamp-1">NTUT Chong De Instagram</span>
           </a>
         </div>
       </motion.div>
