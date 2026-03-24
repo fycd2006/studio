@@ -247,24 +247,24 @@ export function AdminSection({
     }, {} as Record<string, { plan: LessonPlan; prop: PropItem }[]>);
 
     return (
-      <div className="bg-white dark:bg-slate-900 border rounded-2xl border-stone-200 dark:border-slate-800/60 overflow-hidden mb-8 transition-colors mx-4 sm:mx-0">
+      <div className="w-full bg-white dark:bg-slate-900 border rounded-2xl border-stone-200 dark:border-slate-800/60 overflow-hidden mb-8 transition-colors">
         <div className="py-3 px-4 flex justify-between items-center border-b border-stone-200 dark:border-slate-800/60 bg-stone-50 dark:bg-slate-900/50">
           <h2 className="font-fira-code font-black text-stone-900 dark:text-slate-100 tracking-[0.1em] uppercase text-sm">{title}</h2>
         </div>
       
         <div className="w-full overflow-x-auto touch-pan-x touch-pan-y scrollbar-hide overscroll-x-contain">
-          <table className="w-full text-sm text-left border-collapse min-w-[800px]">
+          <table className="w-full text-sm text-left border-collapse table-fixed">
              <thead className="text-stone-500 dark:text-slate-400 text-[10px] font-fira-code font-black uppercase tracking-[0.2em] sticky top-0 bg-white/90 dark:bg-slate-950/90 backdrop-blur-md z-10 border-b border-stone-200 dark:border-slate-800">
               <tr>
-                <th className="px-4 py-3 min-w-[100px] border-b border-stone-200 dark:border-slate-800/60">{t('CATEGORY')}</th>
-                <th className="px-4 py-3 min-w-[120px] border-b border-stone-200 dark:border-slate-800/60">{t('SUBJECT')}</th>
-                <th className="px-4 py-3 min-w-[100px] border-b border-stone-200 dark:border-slate-800/60">{t('ASSIGNED_PERSONNEL')}</th>
-                <th className="px-4 py-3 min-w-[200px] border-b border-stone-200 dark:border-slate-800/60">{t('PROP_NAME')}</th>
-                <th className="px-4 py-3 min-w-[80px] border-b border-stone-200 dark:border-slate-800/60">Qty</th>
-                <th className="px-4 py-3 min-w-[80px] border-b border-stone-200 dark:border-slate-800/60">Unit</th>
-                <th className="px-4 py-3 min-w-[200px] border-b border-stone-200 dark:border-slate-800/60">{t('OP_REMARKS')}</th>
-                <th className="px-4 py-3 min-w-[100px] text-center border-b border-stone-200 dark:border-slate-800/60">{t('PACKED')}</th>
-                <th className="px-4 py-3 min-w-[80px] text-center border-b border-stone-200 dark:border-slate-800/60">{t('CHECKED')}</th>
+                <th className="w-[12%] px-4 py-3 border-b border-stone-200 dark:border-slate-800/60">{t('CATEGORY')}</th>
+                <th className="w-[14%] px-4 py-3 border-b border-stone-200 dark:border-slate-800/60">{t('SUBJECT')}</th>
+                <th className="w-[12%] px-4 py-3 border-b border-stone-200 dark:border-slate-800/60">{t('ASSIGNED_PERSONNEL')}</th>
+                <th className="w-[18%] px-4 py-3 border-b border-stone-200 dark:border-slate-800/60">{t('PROP_NAME')}</th>
+                <th className="w-[8%] px-4 py-3 border-b border-stone-200 dark:border-slate-800/60">Qty</th>
+                <th className="w-[8%] px-4 py-3 border-b border-stone-200 dark:border-slate-800/60">Unit</th>
+                <th className="w-[18%] px-4 py-3 border-b border-stone-200 dark:border-slate-800/60">{t('OP_REMARKS')}</th>
+                <th className="w-[5%] px-4 py-3 text-center border-b border-stone-200 dark:border-slate-800/60">{t('PACKED')}</th>
+                <th className="w-[5%] px-4 py-3 text-center border-b border-stone-200 dark:border-slate-800/60">{t('CHECKED')}</th>
               </tr>
             </thead>
             <tbody>
@@ -379,7 +379,7 @@ export function AdminSection({
     }, {} as Record<string, CampItem[]>);
 
     return (
-      <div className="bg-white dark:bg-slate-900 border rounded-2xl border-stone-200 dark:border-slate-800/60 overflow-hidden mb-8 transition-colors mx-4 sm:mx-0">
+      <div className="w-full bg-white dark:bg-slate-900 border rounded-2xl border-stone-200 dark:border-slate-800/60 overflow-hidden mb-8 transition-colors">
         <div className="py-3 px-4 flex justify-between items-center border-b border-stone-200 dark:border-slate-800/60 bg-stone-50 dark:bg-slate-900/50">
           <h2 className="text-center font-fira-code font-black text-stone-900 dark:text-slate-100 tracking-[0.1em] uppercase text-sm">{t('PROPS_LIST')}</h2>
           {!isLocked && (
@@ -394,16 +394,16 @@ export function AdminSection({
         </div>
         
         <div className="w-full overflow-x-auto touch-pan-x touch-pan-y scrollbar-hide overscroll-x-contain">
-          <table className="w-full text-sm text-left min-w-[1000px] border-collapse">
+          <table className="w-full text-sm text-left border-collapse table-fixed">
             <thead className="text-stone-500 dark:text-slate-400 text-[10px] font-fira-code font-black uppercase tracking-[0.2em] sticky top-0 z-10 bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-b border-stone-200 dark:border-slate-800">
               <tr>
-                <th className="px-4 py-3 min-w-[120px] border-b border-stone-200 dark:border-slate-800/60">{t('PROP_USAGE')}</th>
-                <th className="px-4 py-3 min-w-[150px] border-b border-stone-200 dark:border-slate-800/60">{t('PROP_NAME')}</th>
-                <th className="px-4 py-3 min-w-[120px] border-b border-stone-200 dark:border-slate-800/60">{t('ASSIGNED_PERSONNEL')}</th>
-                <th className="px-4 py-3 min-w-[200px] border-b border-stone-200 dark:border-slate-800/60">{t('MATERIALS')}</th>
-                <th className="px-4 py-3 min-w-[120px] text-center border-b border-stone-200 dark:border-slate-800/60">{t('PACKED')}</th>
-                <th className="px-4 py-3 min-w-[120px] text-center border-b border-stone-200 dark:border-slate-800/60">{t('CHECKED')}</th>
-                {!isLocked && <th className="px-4 py-3 w-16 text-center border-b border-stone-200 dark:border-slate-800/60">操作</th>}
+                <th className="w-[16%] px-4 py-3 border-b border-stone-200 dark:border-slate-800/60">{t('PROP_USAGE')}</th>
+                <th className="w-[18%] px-4 py-3 border-b border-stone-200 dark:border-slate-800/60">{t('PROP_NAME')}</th>
+                <th className="w-[16%] px-4 py-3 border-b border-stone-200 dark:border-slate-800/60">{t('ASSIGNED_PERSONNEL')}</th>
+                <th className="w-[28%] px-4 py-3 border-b border-stone-200 dark:border-slate-800/60">{t('MATERIALS')}</th>
+                <th className="w-[11%] px-4 py-3 text-center border-b border-stone-200 dark:border-slate-800/60">{t('PACKED')}</th>
+                <th className="w-[11%] px-4 py-3 text-center border-b border-stone-200 dark:border-slate-800/60">{t('CHECKED')}</th>
+                {!isLocked && <th className="w-[10%] px-4 py-3 text-center border-b border-stone-200 dark:border-slate-800/60">操作</th>}
               </tr>
             </thead>
             
@@ -411,7 +411,7 @@ export function AdminSection({
             <tbody>
               <tr><td colSpan={isLocked ? 6 : 7} className="px-4 py-4 font-fira-code font-black text-orange-600 dark:text-amber-500 text-xs sm:text-sm uppercase tracking-widest bg-transparent border-b border-stone-100 dark:border-slate-800/60">01 / 活動組 - 教案道具確認</td></tr>
               {Object.keys(activityGroups).length === 0 ? (
-                <tr><td colSpan={isLocked ? 6 : 7} className="text-center py-6 text-slate-400 dark:text-slate-500 font-bold border-b border-stone-100 dark:border-slate-800/60">目前沒有活動教案</td></tr>
+                <tr><td colSpan={isLocked ? 6 : 7} className="text-center py-6 text-slate-400 dark:text-slate-500 font-bold border-b border-stone-100 dark:border-slate-800/60">目前沒有活動組資料</td></tr>
               ) : Object.entries(activityGroups).map(([categoryName, catePlans]) => (
                 catePlans.map((plan, pIndex) => (
                   <tr key={`act-${plan.id}`} className={cn(
@@ -465,7 +465,7 @@ export function AdminSection({
             <tbody>
               <tr><td colSpan={isLocked ? 6 : 7} className="px-4 py-4 font-fira-code font-black text-blue-600 dark:text-blue-400 text-xs sm:text-sm uppercase tracking-widest bg-transparent border-b border-stone-100 dark:border-slate-800/60">02 / 教學組 - 教案道具確認</td></tr>
               {Object.keys(teachingGroups).length === 0 ? (
-                <tr><td colSpan={isLocked ? 6 : 7} className="text-center py-6 text-slate-400 dark:text-slate-500 font-bold border-b border-stone-100 dark:border-slate-800/60">目前沒有教學教案</td></tr>
+                <tr><td colSpan={isLocked ? 6 : 7} className="text-center py-6 text-slate-400 dark:text-slate-500 font-bold border-b border-stone-100 dark:border-slate-800/60">目前沒有教學組資料</td></tr>
               ) : Object.entries(teachingGroups).map(([categoryName, catePlans]) => (
                 catePlans.map((plan, pIndex) => (
                   <tr key={`tch-${plan.id}`} className={cn(
@@ -602,20 +602,22 @@ export function AdminSection({
   };
 
   return (
-    <div className="h-full flex flex-col bg-stone-50 dark:bg-slate-950 overflow-hidden animate-in fade-in duration-500 relative transition-colors font-fira-sans">
-      <main className="flex-1 overflow-hidden flex flex-col min-h-0">
-        <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="flex-1 flex flex-col h-full overflow-hidden min-h-0">
-          <header className="px-4 md:px-6 py-2 md:py-3 border-b border-stone-200 dark:border-slate-800/60 flex flex-col xl:flex-row items-center justify-between gap-3 no-print bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl sticky top-0 z-40 shrink-0 shadow-sm dark:shadow-slate-900/50">
-          
-          {/* Left: Branding & Print */}
-          <div className="flex items-center gap-4 w-full xl:w-auto justify-between xl:justify-start">
+    <div className="h-full flex flex-col bg-stone-50 dark:bg-slate-950 animate-in fade-in duration-500 relative transition-colors font-fira-sans overflow-hidden">
+      <main className="flex-1 w-full h-full overflow-y-auto min-h-0 relative">
+        <div className="min-h-full w-full px-6 md:px-8 lg:px-10 pb-8 md:pb-12">
+          <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="w-full h-full flex flex-col items-stretch space-y-6">
+            <header className="sticky top-0 z-50 pt-6 md:pt-8 pb-6 no-print w-full">
+              <div className="w-[60%] mx-auto rounded-2xl border border-white/35 dark:border-white/10 bg-white/65 dark:bg-slate-900/55 backdrop-blur-xl shadow-lg shadow-stone-300/30 dark:shadow-slate-950/60 px-5 md:px-6 py-4 transition-colors flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+              {/* Left: Branding & Print */}
+              <div className="flex flex-col gap-4 w-full xl:w-auto">
             <div className="flex items-center gap-3">
               <SidebarTrigger className="md:hidden -ml-2 h-8 w-8 text-stone-400 dark:text-slate-500 hover:text-orange-500 dark:hover:text-amber-400" />
               <div className="w-8 h-8 rounded-xl bg-orange-600 dark:bg-amber-400 flex items-center justify-center text-white dark:text-slate-900 shadow-md shadow-orange-600/20 shrink-0">
                 <ShieldCheck className="h-4 w-4" />
               </div>
               <div className="flex flex-col mr-2">
-                <h2 className="text-[12px] font-fira-code font-black text-stone-900 dark:text-slate-100 tracking-tight leading-none uppercase">{t('ADMIN_TITLE')}</h2>
+                <h1 className="text-3xl md:text-4xl font-black tracking-tight text-stone-900 dark:text-white leading-none">{t('ADMIN_TITLE')}</h1>
+                <p className="text-xs tracking-[0.2em] text-stone-500 dark:text-slate-400 uppercase font-medium mt-2">Control Center // Operations</p>
               </div>
               <Button 
                 variant="ghost" 
@@ -634,14 +636,14 @@ export function AdminSection({
                 {isLocked ? "已鎖定" : "已解鎖"}
               </Button>
             </div>
-            <Button variant="ghost" size="sm" onClick={() => window.print()} className="rounded-xl font-bold text-[10px] h-8 px-4 bg-orange-50 dark:bg-amber-400/10 text-orange-600 dark:text-amber-400 transition-all uppercase">
+            <Button variant="ghost" size="sm" onClick={() => window.print()} className="rounded-xl font-bold text-[10px] h-8 px-4 bg-orange-50 dark:bg-amber-400/10 text-orange-600 dark:text-amber-400 transition-all uppercase w-fit">
               <span className="hidden sm:inline">匯出 / PRINT</span>
             </Button>
           </div>
 
           {/* Right: Operations & Tabs */}
-          <div className="flex flex-wrap md:flex-nowrap items-center gap-2 md:gap-4 w-full xl:w-auto justify-center xl:justify-end">
-            <TabsList className="bg-stone-100 dark:bg-slate-800/50 p-1 rounded-xl h-9">
+          <div className="flex flex-col items-start xl:items-end justify-end gap-4 w-full xl:w-auto">
+            <TabsList className="bg-stone-100 dark:bg-slate-800/50 p-1 rounded-xl h-10 w-full xl:w-auto overflow-x-auto justify-start border border-stone-200 dark:border-white/5">
               <TabsTrigger value="timer" className="rounded-lg font-bold text-[10px] gap-1.5 px-4 tracking-widest uppercase h-7 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm data-[state=active]:text-orange-600 dark:data-[state=active]:text-amber-400">
                 <Clock className="h-3 w-3" /> <span className="hidden sm:inline">{t('TIMER_CONTROL')}</span>
               </TabsTrigger>
@@ -665,25 +667,26 @@ export function AdminSection({
               </div>
             )}
           </div>
-        </header>
+              </div>
+            </header>
 
-        <div className="flex-1 overflow-y-auto min-h-0 scrollbar-hide relative">
-            <TabsContent value="timer" className="m-0 h-full">
+        <div className="w-full flex-1 relative">
+            <TabsContent value="timer" className="m-0 h-full w-full">
               <AdminTimer 
                 timer={timer} 
                 isLocked={isLocked} 
               />
             </TabsContent>
 
-            <TabsContent value="tables" className="m-0 data-[state=active]:flex flex-col h-full overflow-hidden">
-              <div className="px-4 md:px-8 py-3 bg-orange-50/10 dark:bg-slate-900/30 border-b border-orange-100/20 dark:border-slate-800/60 flex items-center justify-between no-print">
+            <TabsContent value="tables" className="m-0 data-[state=active]:flex flex-col space-y-6 md:space-y-8 pb-32">
+              <div className="bg-orange-50/20 dark:bg-slate-900/50 rounded-2xl border border-orange-100 dark:border-slate-800 p-4 shrink-0 flex flex-wrap md:flex-nowrap items-center justify-between gap-4 mt-2">
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     <Calendar className="h-3.5 w-3.5 text-orange-400 dark:text-slate-500 shrink-0" />
                     <span className="text-[9px] font-fira-code font-black text-slate-500 dark:text-slate-400 tracking-widest hidden sm:inline">天數</span>
                   </div>
                   <Select value={selectedDay} onValueChange={setSelectedDay}>
-                    <SelectTrigger className="w-32 h-8 rounded-lg font-fira-code font-black text-[10px] border-orange-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-slate-200 shadow-none dark:hover:bg-slate-700 transition-colors">
+                    <SelectTrigger className="w-32 h-8 rounded-lg font-fira-code font-black text-[10px] border-orange-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-slate-200 shadow-sm focus:ring-0 transition-colors">
                       <SelectValue placeholder="選擇" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl border-orange-100 dark:border-slate-700 shadow-2xl dark:bg-slate-800 dark:text-slate-200 font-fira-code">
@@ -695,20 +698,20 @@ export function AdminSection({
                 </div>
                 
                 {!isLocked && (
-                  <Button onClick={() => onAddTable(selectedDay)} variant="outline" size="sm" className="rounded-xl font-black gap-2 h-8 px-4 border-orange-200 text-orange-600 hover:bg-orange-600 hover:text-white transition-all text-[9px] tracking-widest shadow-sm">
+                  <Button onClick={() => onAddTable(selectedDay)} className="rounded-xl font-black gap-2 h-8 px-5 bg-orange-600 dark:bg-amber-400 text-white dark:text-slate-900 hover:opacity-90 transition-all text-[10px] tracking-widest shadow-lg shadow-orange-600/20 dark:shadow-none">
                     <Plus className="h-3 w-3" /> 新增
                   </Button>
                 )}
               </div>
 
               <div 
-                className="flex-1 overflow-y-auto p-4 md:p-8 space-y-12"
+                className="w-full flex flex-col space-y-12"
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
               >
                 <div 
-                  className="max-w-6xl mx-auto space-y-12 pb-24"
+                  className="w-full space-y-12"
                   style={{ zoom }}
                 >
                   {filteredTables.length > 0 ? (
@@ -723,31 +726,28 @@ export function AdminSection({
                     ))
                   ) : (
                     <div className="flex flex-col items-center justify-center py-24 text-center space-y-6">
-                      <div className="w-16 h-16 rounded-3xl bg-white dark:bg-slate-800/50 flex items-center justify-center text-orange-100 dark:text-slate-600 shadow-sm border border-orange-50 dark:border-slate-700/50 shadow-inner">
+                      <div className="w-16 h-16 rounded-3xl bg-white dark:bg-slate-800/50 flex items-center justify-center text-orange-200 dark:text-slate-600 shadow-sm border border-orange-50 dark:border-slate-700/50">
                         <TableIcon className="h-6 w-6" />
                       </div>
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-fira-code font-black text-slate-900 dark:text-slate-500 tracking-widest">目前無資料</p>
-                      </div>
+                      <p className="text-[10px] font-fira-code font-black text-slate-400 dark:text-slate-500 tracking-widest uppercase">目前無資料</p>
                     </div>
                   )}
                 </div>
               </div>
             </TabsContent>
 
-            <TabsContent value="props" className="m-0 data-[state=active]:flex flex-col h-full overflow-hidden bg-slate-50/50">
+            <TabsContent value="props" className="m-0 data-[state=active]:flex flex-col pb-32">
               <div
-                className="flex-1 overflow-auto p-4 md:p-8"
+                className="w-full"
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
               >
                 <div
-                  className="mx-auto space-y-8 pb-32"
+                  className="w-full space-y-8"
                   style={{ zoom }}
                 >
-                  <div className={cn("transition-opacity duration-300", isLocked ? "opacity-80" : "opacity-100")}>
-
+                  <div className={cn("transition-opacity duration-300", isLocked ? "opacity-90" : "opacity-100")}>
                      {activePropsTab === 'activity' && renderPropTable('活動組', activityPropsFlattened)}
                      {activePropsTab === 'teaching' && renderPropTable('教學組', teachingPropsFlattened)}
                      {activePropsTab === 'all-props' && renderCombinedTable()}
@@ -756,11 +756,12 @@ export function AdminSection({
               </div>
             </TabsContent>
           </div>
-        </Tabs>
+          </Tabs>
+        </div>
       </main>
 
       {activeMainTab !== 'timer' && (
-        <div className="fixed bottom-6 right-6 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-1.5 flex items-center gap-1.5 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700/50 z-50 transition-all duration-300">
+        <div className="fixed bottom-6 right-4 xl:right-[21%] bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-1.5 flex items-center gap-1.5 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700/50 z-50 transition-all duration-300">
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>

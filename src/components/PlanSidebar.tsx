@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useTranslation } from "@/lib/i18n-context";
-import { LessonPlan, PlanCategory, Camp } from "@/types/plan";
+import { LessonPlan, PlanCategory, Camp, Group } from "@/types/plan";
 import { Button } from "@/components/ui/button";
 import { AdminDialog } from "@/components/AdminDialog";
 import { cn } from "@/lib/utils";
@@ -65,10 +65,11 @@ interface PlanSidebarProps {
   onCampUpdate: (id: string, updates: Partial<Camp>) => void;
   onCampDelete: (id: string) => void;
   onCampToggleLock: (id: string) => void;
+  groups: Group[];
   plans: LessonPlan[];
   activePlanId: string | null;
   onSelect: (id: string) => void;
-  onAdd: (category: PlanCategory) => string | undefined;
+  onAdd: (groupSlug: string) => string | undefined;
   onDelete: (id: string) => void;
   onReorder: (category: PlanCategory, startIndex: number, endIndex: number) => void;
   viewMode: 'editor' | 'admin';
@@ -86,7 +87,7 @@ const NAV_ITEMS = [
 export function PlanSidebar({
   camps, activeCampId, onCampSelect,
   onCampAdd, onCampUpdate, onCampDelete,
-  plans, activePlanId, onSelect, onAdd, onDelete, onReorder,
+  groups, plans, activePlanId, onSelect, onAdd, onDelete, onReorder,
   onCampToggleLock,
   viewMode, setViewMode,
 }: PlanSidebarProps) {
@@ -101,6 +102,14 @@ export function PlanSidebar({
 
   const { theme, setTheme } = useTheme();
   const { language, setLanguage } = useTranslation();
+
+  const resolvePlanGroup = (plan: LessonPlan) => {
+    const fallbackSlug = plan.category === 'teaching' ? 'teaching' : 'activity';
+    return groups.find(group => group.id === plan.groupId)
+      || groups.find(group => group.slug === fallbackSlug)
+      || groups[0]
+      || null;
+  };
 
   useEffect(() => { setIsMounted(true); }, []);
 
@@ -131,7 +140,11 @@ export function PlanSidebar({
 
   const handleDragEnd = (result: any) => {
     if (!result.destination) return;
-    onReorder(result.source.droppableId as PlanCategory, result.source.index, result.destination.index);
+    const sourceSlug = String(result.source.droppableId);
+    const targetSlug = String(result.destination.droppableId);
+    if (sourceSlug !== targetSlug) return;
+    if (sourceSlug !== 'activity' && sourceSlug !== 'teaching') return;
+    onReorder(sourceSlug as PlanCategory, result.source.index, result.destination.index);
   };
 
   const handleCreateCamp = () => {
@@ -265,19 +278,19 @@ export function PlanSidebar({
           {/* ═══ EXPANDABLE PLAN LISTS (expanded sidebar only) ═══ */}
           <div className="group-data-[collapsible=icon]:hidden">
             <DragDropContext onDragEnd={handleDragEnd}>
-              {[
-                { key: 'activity', label: 'Activity' },
-                { key: 'teaching', label: 'Teaching' },
-              ].map((cat) => {
+              {groups.map((group) => {
                 const catPlans = plans
-                  .filter(p => p.campId === activeCampId && p.category === cat.key)
+                  .filter(p => p.campId === activeCampId && resolvePlanGroup(p)?.slug === group.slug)
                   .sort((a, b) => a.order - b.order);
 
+                const groupLabel = language === 'zh' ? group.nameZh : group.nameEn;
+                const isReorderable = group.slug === 'activity' || group.slug === 'teaching';
+
                 return (
-                  <SidebarGroup key={cat.key} className="p-1 mt-2">
+                  <SidebarGroup key={group.id} className="p-1 mt-2">
                     <div className="flex items-center justify-between mb-1.5 px-2">
                       <SidebarGroupLabel className="h-auto p-0 flex items-center gap-2">
-                        <span className="font-bold text-[10px] text-stone-400 dark:text-slate-500 uppercase tracking-[0.15em]">{cat.label}</span>
+                        <Link href={`/lesson-plans/${group.slug}`} className="font-bold text-[10px] text-stone-400 dark:text-slate-500 uppercase tracking-[0.15em] hover:text-orange-500 dark:hover:text-amber-400 transition-colors">{groupLabel}</Link>
                         <Badge className="h-4 px-1.5 text-[9px] font-bold rounded-md bg-orange-50 text-orange-600 dark:bg-amber-400/10 dark:text-amber-400 border-none transition-colors">
                           {catPlans.length}
                         </Badge>
@@ -285,7 +298,7 @@ export function PlanSidebar({
                       <Button variant="ghost" size="icon"
                         className="h-6 w-6 text-stone-400 dark:text-slate-500 hover:text-orange-500 dark:hover:text-amber-400 hover:bg-stone-50 dark:hover:bg-white/5 cursor-pointer transition-colors"
                         onClick={() => {
-                          const newId = onAdd(cat.key as PlanCategory);
+                          const newId = onAdd(group.slug);
                           if (newId) router.push(`/plans/${newId}`);
                         }}>
                         <Plus className="h-3.5 w-3.5" />
@@ -294,7 +307,7 @@ export function PlanSidebar({
 
                     <SidebarGroupContent>
                       {isMounted && (
-                        <Droppable droppableId={cat.key}>
+                        <Droppable droppableId={group.slug}>
                           {(provided) => (
                             <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-0.5">
                               {catPlans.map((plan, index) => {
@@ -304,7 +317,7 @@ export function PlanSidebar({
                                 const isActive = pathname === `/plans/${plan.id}`;
 
                                 return (
-                                  <Draggable key={plan.id} draggableId={plan.id} index={index} isDragDisabled={!isAdmin}>
+                                  <Draggable key={plan.id} draggableId={plan.id} index={index} isDragDisabled={!isAdmin || !isReorderable}>
                                     {(provided, snapshot) => (
                                       <div
                                         ref={provided.innerRef}

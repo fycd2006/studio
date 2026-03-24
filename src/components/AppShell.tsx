@@ -79,6 +79,7 @@ function AppShellInternal({ children }: { children: React.ReactNode }) {
           onCampUpdate={planData.updateCamp}
           onCampDelete={planData.deleteCamp}
           onCampToggleLock={planData.toggleCampLock}
+          groups={planData.groups}
           plans={planData.plans}
           activePlanId={planData.activePlanId}
           onSelect={planData.setActivePlanId}

@@ -1,6 +1,14 @@
 
 export type PlanCategory = 'activity' | 'teaching';
 
+export interface Group {
+  id: string;
+  slug: string;
+  nameZh: string;
+  nameEn: string;
+  createdAt?: number;
+}
+
 export interface PropItem {
   id: string;
   name: string;
@@ -80,6 +88,8 @@ export interface UserSettings {
   isAlarmSet: boolean;
   updatedAt: number;
   activityTypes?: string[];
+  groupTypes?: string[];
+  groups?: Group[];
 }
 
 export interface LessonPlan {
@@ -87,6 +97,7 @@ export interface LessonPlan {
   campId: string;
   ownerId: string;
   category: PlanCategory;
+  groupId?: string;
   scheduledName: string;
   activityName: string;
   members: string;

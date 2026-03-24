@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { usePlans } from "@/hooks/use-plans";
 import { useRouter } from "next/navigation";
@@ -271,7 +271,7 @@ export default function Home() {
           <div className="flex flex-col gap-1 text-center md:text-left">
             <span className="text-slate-900 dark:text-white font-bold uppercase tracking-widest text-lg md:text-xl">NTUT CHONG DE</span>
             <span className="text-[10px] md:text-xs tracking-[0.1em] uppercase font-medium text-slate-500 dark:text-slate-500">
-                ©2026 ARCHITECTURAL CAMP SYSTEMS. PRECISION OPERATIONS.
+                  ©2026 ARCHITECTURAL CAMP SYSTEMS. PRECISION OPERATIONS.
             </span>
           </div>
           <div className="flex flex-wrap justify-center gap-6 sm:gap-8">

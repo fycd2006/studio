@@ -33,7 +33,7 @@ import { Input } from "@/components/ui/input";
 
 export default function SettingsPage() {
   const { role, logout } = useAuth();
-  const { camps, activeCampId, setActiveCampId, deleteCamp, updateCamp, addCamp, activityTypes, addActivityType, removeActivityType } = usePlans();
+  const { camps, activeCampId, setActiveCampId, deleteCamp, updateCamp, addCamp, activityTypes, addActivityType, removeActivityType, groups, addGroup, updateGroup, deleteGroup } = usePlans();
   const { theme, setTheme } = useTheme();
   const { language, setLanguage, t } = useTranslation();
 
@@ -44,6 +44,8 @@ export default function SettingsPage() {
   const [deleteInput, setDeleteInput] = useState("");
 
   const [newActivityType, setNewActivityType] = useState("");
+  const [newGroupNameZh, setNewGroupNameZh] = useState("");
+  const [newGroupNameEn, setNewGroupNameEn] = useState("");
 
   const activeCamp = camps.find(c => c.id === activeCampId);
   const isAdmin = role === 'admin';
@@ -294,6 +296,99 @@ export default function SettingsPage() {
           )}
 
           {/* ── ACTIVITY TYPES (ADMIN ONLY) ── */}
+          {isAdmin && (
+            <section className="space-y-6">
+              <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-500 dark:text-slate-400 flex items-center gap-3">
+                <List className="w-4 h-4 text-orange-500 dark:text-amber-400" /> 組別管理
+              </h2>
+              <div className="bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 rounded-xl p-8 shadow-sm transition-colors">
+                <div className="flex flex-col gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {groups.map((group) => {
+                      const isDefault = group.slug === 'activity' || group.slug === 'teaching';
+                      return (
+                        <div key={group.id} className="rounded-xl border border-stone-200 dark:border-slate-700 p-4 bg-stone-50/60 dark:bg-slate-900/60 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <Badge className="bg-stone-100 dark:bg-slate-800 text-stone-700 dark:text-slate-300 border border-stone-200 dark:border-slate-700 font-bold">/{group.slug}</Badge>
+                            {!isDefault && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-stone-400 hover:text-rose-500"
+                                onClick={() => deleteGroup(group.id)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-stone-500">中文名稱</label>
+                            <Input
+                              value={group.nameZh}
+                              onChange={(e) => updateGroup(group.id, { nameZh: e.target.value })}
+                              className="font-bold bg-white dark:bg-slate-900 border-stone-200 dark:border-slate-700"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-stone-500">English Name</label>
+                            <Input
+                              value={group.nameEn}
+                              onChange={(e) => updateGroup(group.id, { nameEn: e.target.value })}
+                              className="font-bold bg-white dark:bg-slate-900 border-stone-200 dark:border-slate-700"
+                            />
+                          </div>
+                          {!isDefault && (
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-black uppercase tracking-widest text-stone-500">Slug / Route Key</label>
+                              <Input
+                                value={group.slug}
+                                onChange={(e) => updateGroup(group.id, { slug: e.target.value })}
+                                className="font-mono bg-white dark:bg-slate-900 border-stone-200 dark:border-slate-700"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="flex flex-col md:flex-row items-center gap-4">
+                    <Input
+                      placeholder="新增組別中文名 (例如: 美宣組)"
+                      value={newGroupNameZh}
+                      onChange={(e) => setNewGroupNameZh(e.target.value)}
+                      className="max-w-xs font-bold bg-stone-50 dark:bg-slate-900 border-stone-200 dark:border-slate-700 text-stone-900 dark:text-white"
+                    />
+                    <Input
+                      placeholder="English Name (e.g. Design Team)"
+                      value={newGroupNameEn}
+                      onChange={(e) => setNewGroupNameEn(e.target.value)}
+                      className="max-w-xs font-bold bg-stone-50 dark:bg-slate-900 border-stone-200 dark:border-slate-700 text-stone-900 dark:text-white"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && newGroupNameZh.trim() && newGroupNameEn.trim()) {
+                          addGroup({ nameZh: newGroupNameZh.trim(), nameEn: newGroupNameEn.trim() });
+                          setNewGroupNameZh("");
+                          setNewGroupNameEn("");
+                        }
+                      }}
+                    />
+                    <Button
+                      onClick={() => {
+                        if (newGroupNameZh.trim() && newGroupNameEn.trim()) {
+                          addGroup({ nameZh: newGroupNameZh.trim(), nameEn: newGroupNameEn.trim() });
+                          setNewGroupNameZh("");
+                          setNewGroupNameEn("");
+                        }
+                      }}
+                      className="bg-stone-900 dark:bg-white text-white dark:text-slate-900 font-bold hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors cursor-pointer"
+                    >
+                      新增 / Add
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
           {isAdmin && (
             <section className="space-y-6">
               <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-500 dark:text-slate-400 flex items-center gap-3">

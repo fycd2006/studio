@@ -1,8 +1,8 @@
 
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { LessonPlan, PlanCategory, Camp, RotationTableData, UserSettings, PlanVersion } from '@/types/plan';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { LessonPlan, PlanCategory, Camp, RotationTableData, UserSettings, PlanVersion, Group } from '@/types/plan';
 import { 
   useUser, 
   useFirestore, 
@@ -47,6 +47,22 @@ const SNAPSHOT_INTERVAL = 10; // Save full snapshot every 10 versions
 const USER_COLORS = [
   '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef', '#f43f5e'
 ];
+
+const DEFAULT_GROUPS: Group[] = [
+  { id: 'group-activity', slug: 'activity', nameZh: '活動組', nameEn: 'Activity', createdAt: 0 },
+  { id: 'group-teaching', slug: 'teaching', nameZh: '教學組', nameEn: 'Teaching', createdAt: 0 },
+];
+
+const normalizeSlug = (raw: string) =>
+  raw
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '') || 'group';
+
+const DEFAULT_GROUP_TYPES = ['活動組', '教學組'];
 
 function getAuthorColor(uid: string) {
   let hash = 0;
@@ -93,6 +109,23 @@ export function usePlans() {
     return doc(db, 'userSettings', 'global');
   }, [db, user]);
   const { data: settings } = useDoc<UserSettings>(settingsRef);
+
+  const groups = useMemo(() => {
+    const savedGroups = settings?.groups || [];
+    const bySlug = new Map<string, Group>();
+
+    DEFAULT_GROUPS.forEach(group => bySlug.set(group.slug, group));
+    savedGroups.forEach(group => {
+      if (!group?.id || !group?.slug) return;
+      bySlug.set(group.slug, {
+        ...group,
+        nameZh: group.nameZh || group.slug,
+        nameEn: group.nameEn || group.slug,
+      });
+    });
+
+    return Array.from(bySlug.values());
+  }, [settings?.groups]);
 
   const [activeCampId, setActiveCampId] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
@@ -394,19 +427,29 @@ export function usePlans() {
     deleteDocumentNonBlocking(doc(db, 'camps', id));
   }, [db]);
 
-  const addPlan = useCallback((category: PlanCategory) => {
+  const addPlan = useCallback((categoryOrSlug: PlanCategory | string) => {
     if (!db || !user || !activeCampId) return;
     pushPlanHistory();
+
+    const normalizedInput = String(categoryOrSlug);
+    const targetGroup = groups.find(g => g.slug === normalizedInput)
+      || (normalizedInput === 'activity' ? groups.find(g => g.slug === 'activity') : undefined)
+      || (normalizedInput === 'teaching' ? groups.find(g => g.slug === 'teaching') : undefined)
+      || groups[0]
+      || DEFAULT_GROUPS[0];
+
+    const category: PlanCategory = targetGroup.slug === 'teaching' ? 'teaching' : 'activity';
     const planId = Math.random().toString(36).substr(2, 9);
     const newPlan: LessonPlan = {
       id: planId, campId: activeCampId, ownerId: user.uid, category, scheduledName: '', activityName: '新教案',
+      groupId: targetGroup.id,
       members: '', time: '', location: '', purpose: '', process: '', content: '', divisionOfLabor: '', props: [],
       openingClosingRemarks: '', remarks: '', googleDocUrl: '', order: 0, updatedAt: Date.now(),
     };
     setDocumentNonBlocking(doc(db, 'lessonPlans', planId), newPlan, { merge: true });
     setActivePlanId(planId);
     return planId;
-  }, [db, user, activeCampId, pushPlanHistory]);
+  }, [db, user, activeCampId, pushPlanHistory, groups]);
 
   const updatePlan = useCallback((id: string, updates: Partial<LessonPlan>) => {
     if (!db) return;
@@ -622,6 +665,103 @@ export function usePlans() {
       const current = settings?.activityTypes || [];
       setDocumentNonBlocking(doc(db, 'userSettings', 'global'), {
         activityTypes: current.filter(t => t !== typeToRemove),
+        updatedAt: Date.now()
+      }, { merge: true });
+    },
+    groups,
+    addGroup: (input: { nameZh: string; nameEn: string; slug?: string }) => {
+      if (!db) return;
+      const nameZh = input.nameZh.trim();
+      const nameEn = input.nameEn.trim();
+      if (!nameZh || !nameEn) return;
+
+      const baseSlug = input.slug?.trim() ? normalizeSlug(input.slug) : normalizeSlug(nameEn);
+      const current = settings?.groups || [];
+      const existingSlugs = new Set([...DEFAULT_GROUPS, ...current].map(g => g.slug));
+
+      let finalSlug = baseSlug;
+      let i = 2;
+      while (existingSlugs.has(finalSlug)) {
+        finalSlug = `${baseSlug}-${i}`;
+        i += 1;
+      }
+
+      const newGroup: Group = {
+        id: Math.random().toString(36).substr(2, 9),
+        slug: finalSlug,
+        nameZh,
+        nameEn,
+        createdAt: Date.now(),
+      };
+
+      setDocumentNonBlocking(doc(db, 'userSettings', 'global'), {
+        groups: [...current, newGroup],
+        updatedAt: Date.now(),
+      }, { merge: true });
+    },
+    updateGroup: (id: string, updates: Partial<Group>) => {
+      if (!db) return;
+      const current = settings?.groups || [];
+      const isDefault = DEFAULT_GROUPS.some(g => g.id === id);
+      const mergedCurrent = [...current, ...DEFAULT_GROUPS.filter(g => !current.find(c => c.id === g.id))];
+
+      let candidateSlug = updates.slug ? normalizeSlug(updates.slug) : undefined;
+      if (!isDefault && candidateSlug) {
+        const occupied = new Set(mergedCurrent.filter(g => g.id !== id).map(g => g.slug));
+        const base = candidateSlug;
+        let i = 2;
+        while (occupied.has(candidateSlug)) {
+          candidateSlug = `${base}-${i}`;
+          i += 1;
+        }
+      }
+
+      const next = mergedCurrent.map(group => {
+        if (group.id !== id) return group;
+        const nextSlug = candidateSlug || group.slug;
+        return {
+          ...group,
+          ...updates,
+          slug: isDefault ? group.slug : nextSlug,
+          nameZh: updates.nameZh?.trim() || group.nameZh,
+          nameEn: updates.nameEn?.trim() || group.nameEn,
+        };
+      });
+
+      const persisted = next.filter(g => !DEFAULT_GROUPS.some(d => d.id === g.id));
+      setDocumentNonBlocking(doc(db, 'userSettings', 'global'), {
+        groups: persisted,
+        updatedAt: Date.now(),
+      }, { merge: true });
+    },
+    deleteGroup: (id: string) => {
+      if (!db) return;
+      if (DEFAULT_GROUPS.some(g => g.id === id)) return;
+      const current = settings?.groups || [];
+      setDocumentNonBlocking(doc(db, 'userSettings', 'global'), {
+        groups: current.filter(g => g.id !== id),
+        updatedAt: Date.now(),
+      }, { merge: true });
+    },
+    groupTypes: Array.from(new Set([...(settings?.groupTypes || []), ...DEFAULT_GROUP_TYPES])),
+    addGroupType: (newGroup: string) => {
+      if (!db) return;
+      const normalized = newGroup.trim();
+      if (!normalized) return;
+      const current = Array.from(new Set([...(settings?.groupTypes || []), ...DEFAULT_GROUP_TYPES]));
+      if (!current.includes(normalized)) {
+        setDocumentNonBlocking(doc(db, 'userSettings', 'global'), {
+          groupTypes: [...current, normalized],
+          updatedAt: Date.now()
+        }, { merge: true });
+      }
+    },
+    removeGroupType: (groupToRemove: string) => {
+      if (!db) return;
+      if (DEFAULT_GROUP_TYPES.includes(groupToRemove)) return;
+      const current = settings?.groupTypes || [];
+      setDocumentNonBlocking(doc(db, 'userSettings', 'global'), {
+        groupTypes: current.filter(g => g !== groupToRemove),
         updatedAt: Date.now()
       }, { merge: true });
     }

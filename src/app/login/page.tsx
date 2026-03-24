@@ -3,21 +3,138 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth-context";
-import { ArrowRight, ShieldCheck, Lock, User, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Tent, Mail, Lock, Facebook, Instagram, Eye, EyeOff, Loader2 } from "lucide-react";
+
+const FALLBACK_IMAGES = [
+  "https://images.unsplash.com/photo-1504280395970-822064719f78?auto=format&fit=crop&w=1200&q=80",
+  "https://images.unsplash.com/photo-1523987355523-c7b5b0dd90a7?auto=format&fit=crop&w=1200&q=80",
+  "https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?auto=format&fit=crop&w=1200&q=80",
+  "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1200&q=80",
+  "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80",
+  "https://images.unsplash.com/photo-1496081045225-5315fd8e6332?auto=format&fit=crop&w=1200&q=80",
+  "https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?auto=format&fit=crop&w=1200&q=80",
+  "https://images.unsplash.com/photo-1533240332313-0db49b459ad6?auto=format&fit=crop&w=1200&q=80",
+  "https://images.unsplash.com/photo-1517824806704-9040b037703b?auto=format&fit=crop&w=1200&q=80",
+  "https://images.unsplash.com/photo-1508873696983-2dfd5898f08b?auto=format&fit=crop&w=1200&q=80",
+  "https://images.unsplash.com/photo-1455448972184-de647495d428?auto=format&fit=crop&w=1200&q=80",
+  "https://images.unsplash.com/photo-1510312305653-8ed496efae75?auto=format&fit=crop&w=1200&q=80",
+];
+
+const TILE_COUNT = 12;
+
+function pickRandom(pool: string[], current?: string) {
+  if (pool.length === 0) return "";
+  let next = pool[Math.floor(Math.random() * pool.length)];
+  let retry = 0;
+  while (pool.length > 1 && next === current && retry < 8) {
+    next = pool[Math.floor(Math.random() * pool.length)];
+    retry += 1;
+  }
+  return next;
+}
+
+const GhibliFilter = () => (
+  <svg className="hidden" aria-hidden="true">
+    <defs>
+      <filter id="ghibli" colorInterpolationFilters="sRGB">
+        <feColorMatrix
+          type="matrix"
+          values="
+            1.35 0.08 0.00 0 0.05
+            0.03 1.35 0.12 0 0.05
+            0.00 0.06 1.45 0 0.12
+            0.00 0.00 0.00 1 0.00"
+          result="graded"
+        />
+        <feGaussianBlur in="graded" stdDeviation="1.8" result="soft" />
+        <feBlend mode="screen" in="soft" in2="graded" result="bloom" />
+        <feComponentTransfer in="bloom" result="tone">
+          <feFuncR type="linear" slope="0.88" intercept="0.02" />
+          <feFuncG type="linear" slope="0.90" intercept="0.02" />
+          <feFuncB type="linear" slope="0.86" intercept="0.03" />
+        </feComponentTransfer>
+        <feColorMatrix in="tone" type="saturate" values="1.22" />
+      </filter>
+    </defs>
+  </svg>
+);
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(false);
+  const [imagePool, setImagePool] = useState<string[]>(FALLBACK_IMAGES);
+  const [tiles, setTiles] = useState<string[]>(() => Array.from({ length: TILE_COUNT }, (_, i) => FALLBACK_IMAGES[i % FALLBACK_IMAGES.length]));
   const { login } = useAuth();
-  
-  // 🛡️ Fix Hydration Mismatch: Ensure initial render matches server
-  const [mounted, setMounted] = useState(false);
+
   useEffect(() => {
-    setMounted(true);
+    let mounted = true;
+
+    const fetchWallImages = async () => {
+      try {
+        // 1. 獲取原始圖片 URL
+        const res = await fetch("/api/hero-images");
+        if (!res.ok) throw new Error("Failed to load hero images");
+
+        const data = await res.json();
+        const apiImages = Array.isArray(data?.images)
+          ? data.images.filter((v: unknown) => typeof v === "string" && v.length > 0)
+          : [];
+        const sourcePool = apiImages.length > 0 ? apiImages : FALLBACK_IMAGES;
+
+        // 2. 處理每張圖片 (進階藝術風格轉換)
+        const processedImages = await Promise.all(
+          sourcePool.map(async (originalUrl: string) => {
+            try {
+              const res = await fetch("/api/process-hero-image", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ imageUrl: originalUrl }),
+              });
+              
+              if (res.ok) {
+                const blob = await res.blob();
+                return URL.createObjectURL(blob);
+              } else {
+                return originalUrl;
+              }
+            } catch {
+              return originalUrl;
+            }
+          })
+        );
+
+        if (!mounted) return;
+        setImagePool(processedImages);
+        setTiles(Array.from({ length: TILE_COUNT }, (_, i) => processedImages[i % processedImages.length]));
+      } catch {
+        if (!mounted) return;
+        setImagePool(FALLBACK_IMAGES);
+        setTiles(Array.from({ length: TILE_COUNT }, (_, i) => FALLBACK_IMAGES[i % FALLBACK_IMAGES.length]));
+      }
+    };
+
+    fetchWallImages();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTiles((prev) => {
+        const next = [...prev];
+        const slot = Math.floor(Math.random() * TILE_COUNT);
+        next[slot] = pickRandom(imagePool, prev[slot]);
+        return next;
+      });
+    }, 2400);
+
+    return () => clearInterval(timer);
+  }, [imagePool]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,70 +151,104 @@ export default function LoginPage() {
     }
   };
 
-  // Prevent rendering on server to avoid hydration mismatch with dynamic styles
-  if (!mounted) {
-    return <div className="min-h-screen bg-brand-navy" />;
-  }
-
   return (
-    <div className="min-h-screen bg-brand-navy flex flex-col items-center justify-center p-6 relative overflow-hidden font-body">
-      {/* Ambience Background */}
-      <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none">
-        <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-brand-gold rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-brand-gold rounded-full blur-[120px]" />
+    <div className="relative min-h-screen w-full overflow-hidden bg-slate-900 font-sans">
+      <GhibliFilter />
+
+      <div className="absolute inset-0 grid grid-cols-3 grid-rows-4 md:grid-cols-4 md:grid-rows-3">
+        {tiles.map((src, index) => (
+          <button
+            key={index}
+            type="button"
+            onClick={() => {
+              setTiles((prev) => {
+                const next = [...prev];
+                next[index] = pickRandom(imagePool, prev[index]);
+                return next;
+              });
+            }}
+            className="group relative h-full w-full overflow-hidden bg-[#87CEEB]"
+            aria-label="change background image"
+          >
+            <AnimatePresence mode="sync" initial={false}>
+              <motion.div
+                key={src}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 1.1, ease: "easeInOut" }}
+                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+                style={{
+                  backgroundImage: `url(${src})`,
+                  filter: "url(#ghibli) contrast(1.14) saturate(1.30) brightness(1.05) hue-rotate(-4deg)",
+                }}
+              />
+            </AnimatePresence>
+            <div className="absolute inset-0 bg-slate-900/20" />
+          </button>
+        ))}
       </div>
+
+      <div className="absolute inset-0 bg-gradient-to-tr from-[#f7d87a]/20 via-transparent to-[#86d0ff]/18 mix-blend-soft-light pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#fff5d4]/14 to-transparent mix-blend-overlay pointer-events-none" />
+      <div className="absolute inset-0 bg-slate-900/45 backdrop-blur-[2px] pointer-events-none" />
 
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }}
-        className="w-full max-w-md z-10"
+        className="relative z-10 mx-auto flex min-h-screen w-full max-w-[340px] flex-col items-center justify-center px-4 py-8"
       >
-        <div className="text-center mb-12">
-          <div className="inline-flex w-20 h-20 bg-brand-gold items-center justify-center rounded-2xl shadow-gold-glow mb-8">
-            <ShieldCheck className="w-10 h-10 text-brand-navy stroke-[2.5px]" />
-          </div>
-          <h1 className="text-3xl font-headline font-bold text-white tracking-tight uppercase mb-2">
-            Secure Terminal <span className="text-brand-gold">Access</span>
+        <div className="mb-8 flex flex-col items-center">
+          <Tent className="h-24 w-24 text-white drop-shadow-lg" strokeWidth={1} />
+          <h1 className="mt-4 text-center text-2xl font-black tracking-[0.14em] text-white">
+            NTUT CHONG DE
           </h1>
-          <p className="text-slate-400 text-sm font-medium tracking-widest uppercase opacity-60">
-            NTUT CD CAMP // ELITE GOVERNANCE
+          <p className="mt-2 text-center text-xs tracking-[0.2em] text-white/70">
+            CAMP SYSTEM LOGIN
           </p>
         </div>
 
-        <div className="bg-white dark:bg-slate-900/50 backdrop-blur-xl border border-white/10 p-10 rounded-2xl shadow-saas-lg">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Identity Identifier</label>
-              <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-                    <User className="w-4 h-4" />
-                </div>
+        <div className="w-full rounded-[4px] bg-white shadow-2xl overflow-hidden">
+          <form onSubmit={handleSubmit} className="space-y-3 pb-3">
+            <div className="px-4 pt-3.5">
+              <div className="relative flex items-center">
+                <Mail className="mr-4 h-5 w-5 text-gray-400" strokeWidth={1.5} />
                 <input 
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="USERNAME"
-                  className="w-full h-12 bg-slate-50 dark:bg-brand-navy border border-slate-200 dark:border-white/5 rounded-lg pl-12 pr-4 text-sm font-semibold focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold outline-none transition-all text-slate-900 dark:text-white placeholder:text-slate-300"
+                  placeholder="Username"
+                  className="w-full bg-transparent text-sm text-gray-700 outline-none placeholder:text-gray-500"
                   required
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Encrypted Key</label>
-              <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-                    <Lock className="w-4 h-4" />
-                </div>
+            <div className="h-px bg-gray-200" />
+
+            <div className="px-4 pb-3.5">
+              <div className="relative flex items-center">
+                <Lock className="mr-4 h-5 w-5 text-gray-400" strokeWidth={1.5} />
                 <input 
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full h-12 bg-slate-50 dark:bg-brand-navy border border-slate-200 dark:border-white/5 rounded-lg pl-12 pr-4 text-sm font-semibold focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold outline-none transition-all text-slate-900 dark:text-white placeholder:text-slate-300"
+                  className="w-full bg-transparent pr-8 text-sm text-gray-700 outline-none placeholder:text-gray-500"
                   required
                 />
+                <button
+                  type="button"
+                  className="absolute right-0 text-gray-400 transition-colors hover:text-gray-600"
+                  onMouseDown={() => setShowPassword(true)}
+                  onMouseUp={() => setShowPassword(false)}
+                  onMouseLeave={() => setShowPassword(false)}
+                  onTouchStart={() => setShowPassword(true)}
+                  onTouchEnd={() => setShowPassword(false)}
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" strokeWidth={1.5} /> : <Eye className="h-5 w-5" strokeWidth={1.5} />}
+                </button>
               </div>
             </div>
 
@@ -107,30 +258,43 @@ export default function LoginPage() {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="bg-rose-500/10 border border-rose-500/20 text-rose-500 p-3 rounded-lg text-xs font-bold text-center"
+                  className="mx-4 rounded-sm border border-rose-300 bg-rose-50 p-3 text-center text-xs font-semibold text-rose-600"
                 >
-                  CRITICAL_ERROR: UNAUTHORIZED_ACCESS_DETECTED
+                  帳號或密碼錯誤，請重新輸入。
                 </motion.div>
               )}
             </AnimatePresence>
 
-            <Button 
+            <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-12 gold-btn text-sm uppercase tracking-widest font-bold shadow-saas-md flex items-center justify-center gap-3"
+              className="mx-4 flex h-11 w-[calc(100%-2rem)] items-center justify-center rounded-[4px] bg-[#ff6b00] text-sm font-semibold tracking-[0.06em] text-white transition-colors hover:bg-[#e66000] disabled:cursor-not-allowed disabled:bg-[#ff6b00]/70"
             >
-              {isSubmitting ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <>Establish Handshake <ArrowRight className="w-4 h-4 stroke-[3px]" /></>
-              )}
-            </Button>
+              {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : "Sign in"}
+            </button>
           </form>
         </div>
 
-        <p className="mt-10 text-center text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em] opacity-40">
-          All connection attempts are logged and monitored.
-        </p>
+        <div className="mt-8 w-full space-y-3">
+          <a
+            href="https://lihi2.cc/3yxOC"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex w-full items-center justify-center gap-3 rounded-[4px] bg-[#3b5998] py-3.5 text-sm font-medium tracking-[0.06em] text-white transition-colors hover:bg-[#2d4373]"
+          >
+            <Facebook className="h-5 w-5" strokeWidth={1.5} />
+            NTUT Chong De Facebook
+          </a>
+          <a
+            href="https://www.instagram.com/taipeitech_cd?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex w-full items-center justify-center gap-3 rounded-[4px] bg-gradient-to-r from-[#833ab4] via-[#fd1d1d] to-[#fcb045] py-3.5 text-sm font-medium tracking-[0.06em] text-white transition-opacity hover:opacity-90"
+          >
+            <Instagram className="h-5 w-5" strokeWidth={1.5} />
+            NTUT Chong De Instagram
+          </a>
+        </div>
       </motion.div>
     </div>
   );

@@ -13,6 +13,7 @@ export default function PlanEditorPage() {
   
   const { 
     plans, 
+    groups,
     updatePlan, 
     setActivePlanId, 
     undoPlan, 
@@ -59,6 +60,7 @@ export default function PlanEditorPage() {
       <div className="flex-1 min-h-0 flex flex-col">
         <PlanEditor 
           plan={plan} 
+          groups={groups}
           onUpdate={handleUpdate} 
           isSaving={false} 
           onUndo={undoPlan}

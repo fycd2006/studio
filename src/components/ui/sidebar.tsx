@@ -84,7 +84,7 @@ export const Sidebar = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div"> & { collapsible?: "offcanvas" | "icon" | "none" }
 >(({ collapsible = "offcanvas", className, children, ...props }, ref) => {
-  const { isMobile, state, openMobile, setOpenMobile, isPinned } = useSidebar()
+  const { isMobile, state, openMobile, setOpenMobile, isPinned, setOpen } = useSidebar()
 
   if (isMobile) {
     return (
@@ -102,7 +102,7 @@ export const Sidebar = React.forwardRef<
   return (
     <div
       ref={ref}
-      className="group peer hidden md:block text-sidebar-foreground z-40"
+      className="group peer hidden md:block text-sidebar-foreground"
       data-state={state}
       data-collapsible={state === "collapsed" ? collapsible : ""}
       data-pinned={isPinned.toString()}
@@ -111,6 +111,16 @@ export const Sidebar = React.forwardRef<
         "duration-300 relative h-svh bg-transparent transition-[width] ease-in-out",
         state === "expanded" && isPinned ? "w-[--sidebar-width]" : "w-0"
       )} />
+      
+      {/* Desktop click-outside overlay that appears when unpinned and expanded */}
+      <div 
+        className={cn(
+          "duration-300 fixed inset-0 z-40 hidden md:block transition-all",
+          state === "expanded" && !isPinned ? "pointer-events-auto bg-transparent" : "opacity-0 pointer-events-none bg-transparent"
+        )}
+        onClick={() => setOpen(false)}
+      />
+
       <div className={cn(
         "duration-300 fixed inset-y-0 z-50 hidden h-svh transition-[left,right,width,background-color] ease-in-out md:flex flex-col left-0",
         state === "expanded" ? "w-[--sidebar-width]" : "w-[--sidebar-width-icon]",

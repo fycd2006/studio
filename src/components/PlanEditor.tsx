@@ -1,6 +1,6 @@
 "use client"
 
-import { LessonPlan, SCHEDULE_OPTIONS, PlanVersion } from "@/types/plan";
+import { LessonPlan, SCHEDULE_OPTIONS, PlanVersion, Group } from "@/types/plan";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MarkdownArea } from "@/components/MarkdownArea";
@@ -70,6 +70,7 @@ const SectionHeader = ({ title, icon: Icon }: { title: string; icon?: any }) => 
 
 interface PlanEditorProps {
   plan: LessonPlan;
+  groups: Group[];
   onUpdate: (id: string, updates: Partial<LessonPlan>) => void;
   isSaving: boolean;
   onUndo?: () => void;
@@ -87,10 +88,10 @@ interface PlanEditorProps {
 }
 
 export function PlanEditor({ 
-  plan, onUpdate, isSaving, onUndo, onRedo, canUndo, canRedo, 
+  plan, groups, onUpdate, isSaving, onUndo, onRedo, canUndo, canRedo, 
   versions = [], onSaveVersion, onRestoreVersion, onDeleteVersion, onAutoSave, getFullVersionState, onUpdateVersionName, activityTypes = []
 }: PlanEditorProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { toast } = useToast();
   
   // History Mode State
@@ -246,15 +247,31 @@ export function PlanEditor({
     handlePlanUpdate({ canvasData: data, canvasHeight: height });
   };
 
+  const handleDeleteCanvas = () => {
+    if (confirm("確定要刪除此畫布嗎？此操作無法復原。")) {
+      handlePlanUpdate({ canvasData: null, canvasHeight: null });
+      toast({ title: "畫布已刪除" });
+    }
+  };
+
   const hasCanvas = plan.canvasData !== null && plan.canvasData !== undefined;
+  const currentGroup = groups.find(group => group.id === currentPlan.groupId)
+    || groups.find(group => currentPlan.category === 'teaching' ? group.slug === 'teaching' : group.slug === 'activity')
+    || null;
+  const currentGroupLabel = currentGroup
+    ? (language === 'zh' ? currentGroup.nameZh : currentGroup.nameEn)
+    : (currentPlan.category === 'teaching' ? t('TEACHING_PLAN') : t('ACTIVITY_PLAN'));
 
   return (
-    <div className="h-full flex flex-col bg-stone-50 dark:bg-slate-900 font-body transition-colors">
-      <header className="flex-none bg-white dark:bg-slate-900 border-b border-stone-200 dark:border-white/5 px-4 md:px-6 py-3 flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-0 sticky top-0 z-40 transition-colors">
-        <div className="flex items-start md:items-center gap-4 md:gap-6 w-full md:w-auto">
-          <div className="md:hidden mt-1 md:mt-0 -ml-2 shrink-0">
-            <SidebarTrigger />
-          </div>
+    <div className="h-full flex flex-row bg-stone-50 dark:bg-slate-900 font-body transition-colors overflow-hidden relative w-full">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden relative scrollbar-hide">
+        <div className="w-full py-6 md:py-10 px-4 md:px-6 xl:px-8 flex flex-col min-h-full">
+          <div className="w-full xl:w-[60%] mx-auto flex flex-col min-h-full">
+          <header className="sticky top-0 z-50 flex-none flex flex-col items-center justify-center gap-4 w-full pb-6 pt-3 mb-8 shrink-0 bg-stone-50/80 dark:bg-slate-900/80 backdrop-blur-md border-none transition-all">
+            <div className="flex flex-col items-center text-center gap-1 w-full relative">
+              <div className="md:hidden absolute left-0 top-1/2 -translate-y-1/2 shrink-0">
+                <SidebarTrigger />
+              </div>
           <div className="flex flex-col">
             <div className="flex items-center gap-2 mb-0.5">
               <span className={cn(
@@ -263,20 +280,20 @@ export function PlanEditor({
                   ? "bg-blue-50 dark:bg-blue-400/10 text-blue-600 dark:text-blue-400 border-blue-100 placeholder:opacity-50" 
                   : "bg-emerald-50 dark:bg-emerald-400/10 text-emerald-600 dark:text-emerald-400 border-emerald-100"
               )}>
-                {currentPlan.category === "activity" ? t('ACTIVITY_PLAN') : t('TEACHING_PLAN')}
+                {currentGroupLabel}
               </span>
             </div>
-            <input
-              value={currentPlan.activityName}
-              onChange={(e) => handlePlanUpdate({ activityName: e.target.value })}
-              className="text-xl md:text-2xl font-black tracking-tight bg-transparent border-none focus:ring-0 focus:outline-none text-stone-900 dark:text-white"
-              placeholder={t('ENTER_TITLE')}
-              readOnly={isHistoryMode}
-            />
-          </div>
-        </div>
+            <p className="text-xs tracking-[0.2em] text-stone-500 dark:text-slate-400 uppercase font-medium mb-1.5">Lesson Plan Editor // New Draft</p>
+              <input
+                value={currentPlan.activityName}
+                onChange={(e) => handlePlanUpdate({ activityName: e.target.value })}
+                className="text-2xl md:text-3xl font-black tracking-tight bg-transparent border-none focus:ring-0 focus:outline-none text-stone-900 dark:text-white text-center w-full"
+                placeholder={t('ENTER_TITLE')}
+                readOnly={isHistoryMode}
+              />
+            </div>
 
-        <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 scrollbar-hide">
+            <div className="flex flex-wrap items-center justify-center gap-3 w-full overflow-x-auto pb-1 scrollbar-hide">
           {!isHistoryMode && (
              <div className="flex flex-shrink-0 items-center bg-stone-100 dark:bg-white/5 p-1 rounded-xl border border-stone-200 dark:border-white/5">
                <Input 
@@ -326,19 +343,19 @@ export function PlanEditor({
             </Button>
           </div>
         </div>
-      </header>
+            </div>
+        </header>
 
-      <main className="flex-1 flex overflow-x-auto overflow-y-hidden relative">
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-0 sm:p-4 md:p-8 lg:p-12 max-w-5xl mx-auto w-full min-w-[320px] md:min-w-[500px] lg:min-w-[600px] shrink-0">
+        <main className="flex-1 flex flex-col relative shrink-0">
           <div style={{ zoom: pageZoom }}>
           {isLoadingPreview ? (
-            <div className="h-full flex flex-col items-center justify-center space-y-4">
-              <Loader2 className="h-10 w-10 animate-spin text-orange-400" />
-              <p className="text-[10px] font-black uppercase tracking-widest text-stone-400">Reconstructing History...</p>
+            <div className="h-full min-h-[260px] flex flex-col items-center justify-center gap-2 text-stone-500 dark:text-slate-400">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <p className="text-xs font-bold uppercase tracking-widest">Reconstructing History...</p>
             </div>
           ) : (
             <Card className="border-x-0 border-y sm:border-stone-200 dark:border-white/5 shadow-none sm:shadow-xl rounded-none sm:rounded-[2rem] md:rounded-[2.5rem] overflow-hidden bg-white dark:bg-slate-900/50">
-              <CardContent className="p-4 sm:p-8 md:p-12 space-y-8 md:space-y-12">
+              <CardContent className="p-4 sm:p-8 md:p-12 space-y-8 md:space-y-12 leading-[1.6]">
                 {isHistoryMode && (
                   <div className="flex items-center justify-between p-6 bg-orange-50/50 dark:bg-amber-400/5 rounded-2xl border border-orange-100 dark:border-amber-400/20 mb-8">
                     <div className="flex items-center gap-3">
@@ -397,11 +414,13 @@ export function PlanEditor({
                     {isHistoryMode ? (
                        <DiffHighlighter type="markdown" oldValue={previousPlan?.purpose} newValue={previewPlan?.purpose} />
                     ) : (
-                      <textarea
-                        value={currentPlan.purpose || ""}
-                        onChange={(e) => handlePlanUpdate({ purpose: e.target.value })}
-                        className="w-full min-h-[120px] bg-white dark:bg-white/5 border border-stone-100 dark:border-white/10 rounded-[1.5rem] p-4 md:p-6 text-stone-700 dark:text-slate-300 outline-none transition-all resize-none font-medium text-sm md:text-base"
-                      />
+                      <div className="rounded-xl border border-stone-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-2 md:p-3 focus-within:ring-2 focus-within:ring-orange-500/40 focus-within:border-orange-500 transition-all">
+                        <textarea
+                          value={currentPlan.purpose || ""}
+                          onChange={(e) => handlePlanUpdate({ purpose: e.target.value })}
+                          className="w-full min-h-[120px] bg-transparent border-none rounded-lg p-3 md:p-4 text-stone-800 dark:text-slate-200 outline-none resize-none font-medium text-sm md:text-base"
+                        />
+                      </div>
                     )}
                   </section>
 
@@ -440,7 +459,18 @@ export function PlanEditor({
                     ) : (
                       <>
                         {hasCanvas ? (
-                          <div className="mb-6 border border-stone-100 dark:border-white/5 rounded-[1.5rem] overflow-hidden bg-stone-50 dark:bg-white/5">
+                          <div className="mb-6 border border-stone-200 dark:border-white/10 rounded-[1.5rem] overflow-hidden bg-stone-50 dark:bg-white/5">
+                            <div className="flex justify-end px-3 pt-3 pb-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleDeleteCanvas}
+                                className="h-8 px-3 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg"
+                              >
+                                <Trash2 className="h-4 w-4 mr-1.5" />
+                                刪除畫布
+                              </Button>
+                            </div>
                             <FabricCanvas 
                               initialData={currentPlan.canvasData || '{}'} 
                               initialHeight={currentPlan.canvasHeight || 500} 
@@ -457,12 +487,16 @@ export function PlanEditor({
                     )}
                   </section>
 
-                  <section>
+                  <section className="w-full flex flex-col">
                     <SectionHeader title={t('MATERIALS')} icon={Package} />
                     {isHistoryMode ? (
                        <DiffHighlighter type="table" oldValue={previousPlan?.props} newValue={previewPlan?.props} />
                     ) : (
-                      <PropsTable value={currentPlan.props} onChange={(val) => handlePlanUpdate({ props: val })} />
+                      <div className="w-full lg:w-[85vw] lg:relative lg:left-1/2 lg:-translate-x-1/2">
+                        <div className="w-full overflow-x-auto">
+                          <PropsTable value={currentPlan.props} onChange={(val) => handlePlanUpdate({ props: val })} />
+                        </div>
+                      </div>
                     )}
                   </section>
 
@@ -479,29 +513,32 @@ export function PlanEditor({
             </Card>
           )}
           </div>
+        </main>
+          </div>
         </div>
+      </div>
 
-        {isHistoryMode && (
-          <VersionHistorySidebar
-            versions={versions}
-            selectedVersionId={selectedVersion?.id || null}
-            onSelectVersion={setSelectedVersion}
-            onRestore={handleRestoreVersion}
-            onDelete={handleDeleteVersion}
-            showNamedOnly={showNamedOnly}
-            onToggleFilter={() => setShowNamedOnly(!showNamedOnly)}
-            onBackToCurrent={() => {
-              setSelectedVersion(null);
-              setIsHistoryMode(false);
-            }}
-            onUpdateVersionName={(id, name) => onUpdateVersionName?.(id, name)}
-            className="w-[300px] md:w-[350px] flex-none animate-in slide-in-from-right duration-300 border-l border-stone-200 dark:border-white/5 bg-white sm:bg-stone-50/50 dark:bg-slate-950 shadow-2xl relative z-10"
-          />
-        )}
-      </main>
+      {/* Sidebar - Placed outside the scrollable container so it stays fixed */}
+      {isHistoryMode && (
+        <VersionHistorySidebar
+          versions={versions}
+          selectedVersionId={selectedVersion?.id || null}
+          onSelectVersion={setSelectedVersion}
+          onRestore={handleRestoreVersion}
+          onDelete={handleDeleteVersion}
+          showNamedOnly={showNamedOnly}
+          onToggleFilter={() => setShowNamedOnly(!showNamedOnly)}
+          onBackToCurrent={() => {
+            setSelectedVersion(null);
+            setIsHistoryMode(false);
+          }}
+          onUpdateVersionName={(id, name) => onUpdateVersionName?.(id, name)}
+          className="w-[300px] md:w-[350px] flex-none animate-in slide-in-from-right duration-300 border-l border-stone-200 dark:border-white/5 bg-white sm:bg-stone-50/50 dark:bg-slate-950 shadow-2xl relative z-10 h-full overflow-y-auto"
+        />
+      )}
 
       {/* Floating Action Panel (Global Editor) */}
-      <div className="fixed bottom-6 right-6 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-1.5 flex items-center gap-1.5 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700/50 z-50">
+      <div className="fixed bottom-6 right-4 xl:right-[21%] bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-1.5 flex items-center gap-1.5 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700/50 z-50">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -551,3 +588,4 @@ export function PlanEditor({
     </div>
   );
 }
+

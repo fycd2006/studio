@@ -1,10 +1,9 @@
 "use client"
 
 import { usePlans } from "@/hooks/use-plans";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { useState, useMemo } from "react";
-import { PlanCategory } from "@/types/plan";
+import { useState, useMemo, useEffect } from "react";
 import { format } from "date-fns";
 import {
   Plus,
@@ -25,11 +24,14 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/lib/i18n-context";
 
 export default function PlansOverview() {
   const { role } = useAuth();
-  const { plans, addPlan, setActivePlanId, activeCampId, camps, deletePlan } = usePlans();
+  const { plans, addPlan, groups, setActivePlanId, activeCampId, camps, deletePlan } = usePlans();
+  const { language } = useTranslation();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const activeCamp = camps.find(c => c.id === activeCampId);
   const isAdmin = role === 'admin';
@@ -39,13 +41,30 @@ export default function PlansOverview() {
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [deleteInput, setDeleteInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterCategory, setFilterCategory] = useState<"all" | "activity" | "teaching">("all");
+  const [filterGroup, setFilterGroup] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"updatedAt" | "name">("updatedAt");
+
+  const getPlanGroup = (plan: typeof plans[number]) => {
+    const fallbackSlug = plan.category === 'teaching' ? 'teaching' : 'activity';
+    return groups.find(g => g.id === plan.groupId)
+      || groups.find(g => g.slug === fallbackSlug)
+      || groups[0]
+      || null;
+  };
+
+  useEffect(() => {
+    const selected = searchParams.get('group');
+    if (selected && groups.some(g => g.slug === selected)) {
+      setFilterGroup(selected);
+      return;
+    }
+    setFilterGroup('all');
+  }, [searchParams, groups]);
 
   const filteredPlans = useMemo(() => {
     let result = plans;
-    if (filterCategory !== "all") {
-      result = result.filter(p => p.category === filterCategory);
+    if (filterGroup !== "all") {
+      result = result.filter(p => getPlanGroup(p)?.slug === filterGroup);
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -63,16 +82,16 @@ export default function PlansOverview() {
       }
     });
     return result;
-  }, [plans, filterCategory, searchQuery, sortBy]);
+  }, [plans, filterGroup, searchQuery, sortBy, groups]);
 
   const crewToast = () => toast({
     title: "🔒 唯讀模式",
     description: "您目前的權限為組員，如需修改請聯繫管理員。",
   });
 
-  const handleCreatePlan = (category: PlanCategory) => {
+  const handleCreatePlan = (groupSlug: string) => {
     if (!isAdmin) { crewToast(); return; }
-    const newId = addPlan(category);
+    const newId = addPlan(groupSlug);
     if (newId) router.push(`/plans/${newId}`);
     toast({ title: "已建立", description: "全新教案建立成功" });
   };
@@ -138,16 +157,14 @@ export default function PlansOverview() {
               <AnimatePresence>
                 {isAdding && isAdmin && (
                   <motion.div initial={{ opacity: 0, y: 4, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 4, scale: 0.98 }} transition={{ duration: 0.15 }}
-                    className="absolute right-0 top-12 bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 rounded-lg shadow-xl p-1.5 w-48 z-50"
+                    className="absolute right-0 top-12 bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 rounded-lg shadow-xl p-1.5 w-56 z-50"
                   >
-                    <button onClick={() => { handleCreatePlan("teaching"); setIsAdding(false); }} className="w-full px-3 py-2 text-left rounded-md hover:bg-stone-50 dark:hover:bg-slate-700 transition-colors cursor-pointer group">
-                      <p className="font-semibold text-sm text-stone-900 dark:text-slate-200 group-hover:text-orange-600 dark:group-hover:text-amber-400">教學模組</p>
-                      <p className="text-[10px] text-stone-400 dark:text-slate-500">Teaching Plan</p>
-                    </button>
-                    <button onClick={() => { handleCreatePlan("activity"); setIsAdding(false); }} className="w-full px-3 py-2 text-left rounded-md hover:bg-stone-50 dark:hover:bg-slate-700 transition-colors cursor-pointer group">
-                      <p className="font-semibold text-sm text-stone-900 dark:text-slate-200 group-hover:text-orange-600 dark:group-hover:text-amber-400">活動模組</p>
-                      <p className="text-[10px] text-stone-400 dark:text-slate-500">Activity Plan</p>
-                    </button>
+                    {groups.map((group) => (
+                      <button key={group.id} onClick={() => { handleCreatePlan(group.slug); setIsAdding(false); }} className="w-full px-3 py-2 text-left rounded-md hover:bg-stone-50 dark:hover:bg-slate-700 transition-colors cursor-pointer group">
+                        <p className="font-semibold text-sm text-stone-900 dark:text-slate-200 group-hover:text-orange-600 dark:group-hover:text-amber-400">{language === 'zh' ? group.nameZh : group.nameEn}</p>
+                        <p className="text-[10px] text-stone-400 dark:text-slate-500">Create New Plan</p>
+                      </button>
+                    ))}
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -159,9 +176,10 @@ export default function PlansOverview() {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
            <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 scrollbar-hide shrink-0">
               <div className="flex items-center bg-stone-100 dark:bg-slate-800 p-1 rounded-lg border border-stone-200 dark:border-slate-700 shadow-sm">
-                <button onClick={() => setFilterCategory('all')} className={cn("px-3 py-1.5 rounded-md text-xs font-black uppercase tracking-widest transition-colors", filterCategory === 'all' ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 hover:text-stone-600 dark:hover:text-slate-300")}>全部</button>
-                <button onClick={() => setFilterCategory('activity')} className={cn("px-3 py-1.5 rounded-md text-xs font-black uppercase tracking-widest transition-colors", filterCategory === 'activity' ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 hover:text-stone-600 dark:hover:text-slate-300")}>活動</button>
-                <button onClick={() => setFilterCategory('teaching')} className={cn("px-3 py-1.5 rounded-md text-xs font-black uppercase tracking-widest transition-colors", filterCategory === 'teaching' ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 hover:text-stone-600 dark:hover:text-slate-300")}>教學</button>
+                <button onClick={() => setFilterGroup('all')} className={cn("px-3 py-1.5 rounded-md text-xs font-black uppercase tracking-widest transition-colors", filterGroup === 'all' ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 hover:text-stone-600 dark:hover:text-slate-300")}>{language === 'zh' ? '全部' : 'All'}</button>
+                {groups.map((group) => (
+                  <button key={group.id} onClick={() => setFilterGroup(group.slug)} className={cn("px-3 py-1.5 rounded-md text-xs font-black uppercase tracking-widest transition-colors", filterGroup === group.slug ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 hover:text-stone-600 dark:hover:text-slate-300")}>{language === 'zh' ? group.nameZh : group.nameEn}</button>
+                ))}
               </div>
               <div className="flex items-center bg-stone-100 dark:bg-slate-800 p-1 rounded-lg border border-stone-200 dark:border-slate-700 shrink-0 shadow-sm">
                  <button onClick={() => setSortBy('updatedAt')} className={cn("px-3 py-1.5 rounded-md text-xs font-black uppercase tracking-widest transition-colors", sortBy === 'updatedAt' ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 hover:text-stone-600 dark:hover:text-slate-300")}>時間排序</button>
@@ -196,7 +214,10 @@ export default function PlansOverview() {
                 <div className="bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 rounded-xl p-6 text-left w-full group transition-all duration-300 hover:border-orange-500/50 dark:hover:border-amber-400/50 hover:shadow-md flex flex-col h-full cursor-pointer" onClick={() => handleOpenPlan(plan.id)}>
                    <div className="flex justify-between items-start mb-4">
                      <Badge className={cn("px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider border", plan.category === "activity" ? "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800" : "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800")}>
-                       {plan.category === "activity" ? "活動" : "教學"}
+                       {(() => {
+                         const group = getPlanGroup(plan);
+                         return group ? (language === 'zh' ? group.nameZh : group.nameEn) : (language === 'zh' ? '未分類' : 'Unknown');
+                       })()}
                      </Badge>
                      <ChevronRight className="w-4 h-4 text-stone-300 dark:text-slate-600 group-hover:text-orange-500 dark:group-hover:text-amber-400 transition-colors" />
                    </div>
@@ -222,17 +243,16 @@ export default function PlansOverview() {
           </div>
         ) : viewType === "board" ? (
           <div className="flex gap-6 overflow-x-auto pb-6 custom-scrollbar h-full min-h-[500px] snap-x">
-             {[
-               { key: 'activity', label: '活動模組', color: 'bg-blue-500' },
-               { key: 'teaching', label: '教學模組', color: 'bg-emerald-500' }
-             ].map(col => {
-               const items = filteredPlans.filter(p => p.category === col.key);
+             {groups.map((group, index) => {
+               const items = filteredPlans.filter(p => getPlanGroup(p)?.slug === group.slug);
+               const colorPool = ['bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-violet-500', 'bg-cyan-500'];
+               const color = colorPool[index % colorPool.length];
                return (
-                 <div key={col.key} className="flex-1 min-w-[320px] max-w-sm flex flex-col bg-stone-100/50 dark:bg-slate-800/30 rounded-2xl p-4 border border-stone-200/50 dark:border-slate-700/50 shadow-sm snap-center">
+                 <div key={group.id} className="flex-1 min-w-[320px] max-w-sm flex flex-col bg-stone-100/50 dark:bg-slate-800/30 rounded-2xl p-4 border border-stone-200/50 dark:border-slate-700/50 shadow-sm snap-center">
                     <div className="flex items-center justify-between mb-4 px-1 shrink-0">
                        <h3 className="font-bold text-sm text-stone-900 dark:text-slate-100 flex items-center gap-2">
-                         <div className={cn("w-2 h-2 rounded-full", col.color)}></div>
-                         {col.label}
+                         <div className={cn("w-2 h-2 rounded-full", color)}></div>
+                         {language === 'zh' ? group.nameZh : group.nameEn}
                        </h3>
                        <span className="text-xs font-bold text-stone-400 dark:text-slate-500">{items.length}</span>
                     </div>
@@ -271,7 +291,10 @@ export default function PlansOverview() {
                     <td className="px-6 py-4 font-semibold text-stone-900 dark:text-slate-200 group-hover:text-orange-600 dark:group-hover:text-amber-400 transition-colors">{plan.activityName || "未命名文件"}</td>
                     <td className="px-6 py-4">
                       <Badge className={cn("px-2 py-0 text-[9px] font-bold uppercase border", plan.category === "activity" ? "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800" : "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800")}>
-                        {plan.category === "activity" ? "活動" : "教學"}
+                        {(() => {
+                          const group = getPlanGroup(plan);
+                          return group ? (language === 'zh' ? group.nameZh : group.nameEn) : (language === 'zh' ? '未分類' : 'Unknown');
+                        })()}
                       </Badge>
                     </td>
                     <td className="px-6 py-4 text-stone-500 dark:text-slate-400 font-medium">{plan.scheduledName || "—"}</td>

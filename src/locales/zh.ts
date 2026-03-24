@@ -5,8 +5,8 @@ const zh = {
   SETTINGS: "系統設定",
   OVERVIEW: "總覽",
   ADMIN_SYNC: "行政中樞",
-  ACTIVITY_PLAN: "活動教案",
-  TEACHING_PLAN: "教學教案",
+  ACTIVITY_PLAN: "活動組",
+  TEACHING_PLAN: "教學組",
   DAYS_REMAINING: "天",
   ALL_RECORDS: "教案總覽",
   SYSTEM_CONFIG: "系統設定",
@@ -89,7 +89,7 @@ const zh = {
   STIPULATIONS: "備註",
   CONCLUSION: "收結語",
   ACTIVITY_MODULE: "活動紀錄",
-  TEACHING_MODULE: "教學教案",
+  TEACHING_MODULE: "教學組",
 
   // Settings
   BACK_TO_HOME: "返回首頁",

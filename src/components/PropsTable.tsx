@@ -137,28 +137,29 @@ export function PropsTable({ label, value = [], onChange }: PropsTableProps) {
   return (
     <div className="space-y-4">
       {label && (
-        <label className="text-[10px] font-bold text-stone-400 dark:text-slate-500 uppercase tracking-[0.2em] px-1">
+        <label className="text-[12px] font-bold text-stone-400 dark:text-slate-500 uppercase tracking-[0.2em] px-1">
           {label}
         </label>
       )}
 
-      <div className="border border-stone-200 dark:border-white/5 rounded-[1.5rem] overflow-hidden bg-white dark:bg-slate-900/50 shadow-xl shadow-stone-200/20 dark:shadow-none transition-colors">
-        <Table className="min-w-full md:min-w-[900px] table-auto block md:table">
+      <div className="w-full border border-stone-200 dark:border-white/15 rounded-[1.5rem] overflow-hidden bg-white dark:bg-slate-900/50 shadow-xl shadow-stone-200/20 dark:shadow-none transition-colors">
+        <div className="w-full overflow-x-auto">
+        <Table className="w-full min-w-[760px] md:min-w-0 table-fixed block md:table">
           <TableHeader className="bg-stone-50/50 dark:bg-slate-900/50 hidden md:table-header-group">
             <TableRow className="border-b border-stone-200 dark:border-white/10">
-              <TableHead className="min-w-[250px] font-bold text-stone-900 dark:text-slate-400 border-r border-stone-200 dark:border-white/10 h-12 text-[10px] uppercase tracking-widest">{t('PROP_NAME')}</TableHead>
-              <TableHead className="w-[120px] font-bold text-stone-900 dark:text-slate-400 border-r border-stone-200 dark:border-white/10 text-center whitespace-nowrap text-[10px] uppercase tracking-widest">Qty</TableHead>
-              <TableHead className="w-[120px] font-bold text-stone-900 dark:text-slate-400 border-r border-stone-200 dark:border-white/10 text-center whitespace-nowrap text-[10px] uppercase tracking-widest">Unit</TableHead>
-              <TableHead className="min-w-[350px] font-bold text-stone-900 dark:text-slate-400 border-r border-stone-200 dark:border-white/10 text-[10px] uppercase tracking-widest">{t('OP_REMARKS')}</TableHead>
-              <TableHead className="w-[80px] text-center no-print font-bold text-stone-900 dark:text-slate-400 text-[10px] uppercase">{t('DELETE')}</TableHead>
+              <TableHead className="w-[34%] font-bold text-stone-900 dark:text-slate-400 border-r border-stone-200 dark:border-white/10 h-12 text-[12px] uppercase tracking-widest">{t('PROP_NAME')}</TableHead>
+              <TableHead className="w-[12%] font-bold text-stone-900 dark:text-slate-400 border-r border-stone-200 dark:border-white/10 text-center text-[12px] uppercase tracking-widest">Qty</TableHead>
+              <TableHead className="w-[12%] font-bold text-stone-900 dark:text-slate-400 border-r border-stone-200 dark:border-white/10 text-center text-[12px] uppercase tracking-widest">Unit</TableHead>
+              <TableHead className="w-[34%] font-bold text-stone-900 dark:text-slate-400 border-r border-stone-200 dark:border-white/10 text-[12px] uppercase tracking-widest">{t('OP_REMARKS')}</TableHead>
+              <TableHead className="w-[8%] text-center no-print font-bold text-stone-900 dark:text-slate-400 text-[12px] uppercase">{t('DELETE')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody className="block md:table-row-group">
             {value && value.length > 0 ? (
               value.map((row) => (
-                <TableRow key={row.id} className="border-b border-stone-200 dark:border-white/5 last:border-0 hover:bg-stone-50/50 dark:hover:bg-white/5 transition-colors block md:table-row p-4 md:p-0 space-y-3 md:space-y-0 relative">
+                <TableRow key={row.id} className="border border-stone-200 dark:border-white/15 rounded-xl md:rounded-none md:border-x-0 md:border-t-0 md:border-b md:border-stone-200 md:dark:border-white/10 last:md:border-b-0 hover:bg-stone-50/50 dark:hover:bg-white/5 transition-colors block md:table-row p-4 md:p-0 space-y-3 md:space-y-0 relative">
                   <TableCell className="border-none md:border-solid md:border-r border-stone-200 dark:border-white/10 align-top p-0 block md:table-cell">
-                    <div className="md:hidden text-[10px] font-bold text-stone-400 dark:text-slate-500 uppercase px-4 pt-2">{t('PROP_NAME')}</div>
+                    <div className="md:hidden text-[12px] font-bold text-stone-400 dark:text-slate-500 uppercase px-4 pt-2">{t('PROP_NAME')}</div>
                     <AutoExpandingTextarea 
                       value={row.name} 
                       onChange={(val) => handleUpdateRow(row.id, 'name', val)} 
@@ -167,14 +168,14 @@ export function PropsTable({ label, value = [], onChange }: PropsTableProps) {
                     />
                   </TableCell>
                   <TableCell className="border-none md:border-solid md:border-r border-stone-200 dark:border-white/10 text-center align-top p-0 md:whitespace-nowrap flex items-center md:table-cell">
-                    <div className="md:hidden text-[10px] font-bold text-stone-400 dark:text-slate-500 uppercase px-4 w-1/3 text-left">Qty</div>
+                    <div className="md:hidden text-[12px] font-bold text-stone-400 dark:text-slate-500 uppercase px-4 w-1/3 text-left">Qty</div>
                     <LocalInput 
                       value={row.quantity} 
                       onChange={(val) => handleUpdateRow(row.id, 'quantity', val)} 
                       placeholder="1" 
                     />
                   </TableCell>
-                  <TableCell className="border-r border-stone-200 dark:border-white/10 text-center align-top p-0 whitespace-nowrap">
+                  <TableCell className="border-none md:border-solid md:border-r border-stone-200 dark:border-white/10 text-center align-top p-0 block md:table-cell">
                     <LocalInput 
                       value={row.unit} 
                       onChange={(val) => handleUpdateRow(row.id, 'unit', val)} 
@@ -182,7 +183,7 @@ export function PropsTable({ label, value = [], onChange }: PropsTableProps) {
                     />
                   </TableCell>
                   <TableCell className="border-none md:border-solid md:border-r border-stone-200 dark:border-white/10 align-top p-0 block md:table-cell">
-                    <div className="md:hidden text-[10px] font-bold text-stone-400 dark:text-slate-500 uppercase px-4 pt-2">{t('OP_REMARKS')}</div>
+                    <div className="md:hidden text-[12px] font-bold text-stone-400 dark:text-slate-500 uppercase px-4 pt-2">{t('OP_REMARKS')}</div>
                     <AutoExpandingTextarea 
                       value={row.remarks || ""} 
                       onChange={(val) => handleUpdateRow(row.id, 'remarks', val)} 
@@ -199,7 +200,7 @@ export function PropsTable({ label, value = [], onChange }: PropsTableProps) {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-20 text-stone-400 dark:text-slate-700 font-bold uppercase tracking-widest text-[10px]">
+                <TableCell colSpan={5} className="text-center py-20 text-stone-400 dark:text-slate-700 font-bold uppercase tracking-widest text-[12px]">
                   {t('EMPTY_SLOT')}
                 </TableCell>
               </TableRow>
@@ -211,17 +212,21 @@ export function PropsTable({ label, value = [], onChange }: PropsTableProps) {
                 <div className="flex justify-center p-5">
                   <Button 
                     variant="outline" 
-                    className="h-10 px-8 rounded-xl text-orange-600 dark:text-amber-400 border-stone-200 dark:border-white/10 hover:bg-orange-50 dark:hover:bg-amber-400/5 gap-3 font-bold uppercase tracking-widest text-[10px] transition-all shadow-sm" 
                     onClick={handleAddRow}
+                    className="h-10 px-8 rounded-xl text-orange-600 dark:text-amber-400 border-stone-200 dark:border-white/10 hover:bg-orange-50 dark:hover:bg-amber-400/5 gap-3 font-bold uppercase tracking-widest text-[12px] transition-all shadow-sm"
                   >
-                    <Plus className="h-4 w-4" /> {t('ADD_ITEM')}
+                    <Plus className="h-4 w-4" />
+                    {t('ADD_ROW')}
                   </Button>
                 </div>
               </TableCell>
             </TableRow>
           </TableFooter>
         </Table>
+        </div>
       </div>
     </div>
   );
 }
+
+

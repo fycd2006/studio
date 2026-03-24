@@ -395,7 +395,7 @@ export function AdminTimer({ timer, isLocked }: AdminTimerProps) {
   const isFinished = timer.timeLeft === 0;
 
   return (
-    <div className="w-full flex flex-col items-center p-6 md:p-12 space-y-10 bg-stone-50 dark:bg-slate-900 overflow-y-auto min-h-full scrollbar-hide transition-colors duration-300">
+    <div className="w-full flex flex-col items-center py-6 space-y-10 transition-colors duration-300">
       <div className="w-full max-w-5xl flex flex-col space-y-10">
         
         <div className={cn(

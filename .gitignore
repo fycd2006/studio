@@ -43,3 +43,15 @@ next-env.d.ts
 # firebase
 firebase-debug.log
 firestore-debug.log
+
+# Image processing cache
+.cache/
+/tmp/
+
+# Test files and outputs (may contain sensitive data)
+test-*.js
+result*.json
+html.txt
+error_output.html
+test-output*.txt
+ts_errors.txt

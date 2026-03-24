@@ -329,3 +329,5 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
     </Card>
   );
 }
+
+
