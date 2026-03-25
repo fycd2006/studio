@@ -12,8 +12,8 @@ export function ActionBar({ children, title, className }: ActionBarProps) {
   return (
     <div
       className={cn(
-        "sticky z-40 top-16 md:top-20 transition-colors duration-300",
-        "bg-transparent border-transparent py-3",
+        "sticky z-40 top-[98px] md:top-16 transition-colors duration-300",
+        "bg-transparent border-transparent py-1 md:py-2",
         "-mx-4 md:-mx-8 lg:-mx-10 px-4 md:px-8 lg:px-10 mb-4 md:mb-6"
       )}
     >
