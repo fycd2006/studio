@@ -3,7 +3,7 @@
 import { usePlans } from "@/hooks/use-plans";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import {
   Plus,
@@ -43,6 +43,10 @@ export default function PlansOverview() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterGroup, setFilterGroup] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"updatedAt" | "name">("updatedAt");
+  const [swipeDirection, setSwipeDirection] = useState<1 | -1>(1);
+  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
+
+  const groupOrder = useMemo(() => ["all", ...groups.map((g) => g.slug)], [groups]);
 
   const getPlanGroup = (plan: typeof plans[number]) => {
     const fallbackSlug = plan.category === 'teaching' ? 'teaching' : 'activity';
@@ -60,6 +64,36 @@ export default function PlansOverview() {
     }
     setFilterGroup('all');
   }, [searchParams, groups]);
+
+  const switchGroupByDirection = (direction: 1 | -1) => {
+    if (groupOrder.length <= 1) return;
+    const currentIndex = groupOrder.indexOf(filterGroup);
+    const safeIndex = currentIndex >= 0 ? currentIndex : 0;
+    const nextIndex = (safeIndex + direction + groupOrder.length) % groupOrder.length;
+    setSwipeDirection(direction);
+    setFilterGroup(groupOrder[nextIndex]);
+  };
+
+  const handleSwipeStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    const t = e.touches[0];
+    swipeStartRef.current = { x: t.clientX, y: t.clientY };
+  };
+
+  const handleSwipeEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (viewType === "board") return;
+    const start = swipeStartRef.current;
+    if (!start) return;
+
+    const t = e.changedTouches[0];
+    const deltaX = t.clientX - start.x;
+    const deltaY = t.clientY - start.y;
+
+    if (Math.abs(deltaX) > 45 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
+      switchGroupByDirection(deltaX < 0 ? 1 : -1);
+    }
+
+    swipeStartRef.current = null;
+  };
 
   const filteredPlans = useMemo(() => {
     let result = plans;
@@ -116,8 +150,12 @@ export default function PlansOverview() {
   };
 
   return (
-    <div className="h-full overflow-y-auto bg-stone-50 dark:bg-slate-900 text-stone-900 dark:text-slate-50 transition-colors selection:bg-orange-200 dark:selection:bg-amber-500/30 font-sans">
-      <div className="max-w-6xl mx-auto py-6 sm:py-12 md:py-16 px-4 sm:px-6 md:px-8">
+    <div 
+      className="h-full overflow-y-auto overflow-x-hidden bg-stone-50 dark:bg-slate-900 text-stone-900 dark:text-slate-50 transition-colors selection:bg-orange-200 dark:selection:bg-amber-500/30 font-sans touch-pan-y overscroll-x-none"
+      onTouchStart={handleSwipeStart}
+      onTouchEnd={handleSwipeEnd}
+    >
+      <div className="max-w-6xl mx-auto pt-24 pb-6 sm:pb-12 md:pb-16 px-4 sm:px-6 md:px-8 overflow-hidden touch-pan-y">
         {/* ── HEADER ─────────────── */}
         <div className="flex flex-col gap-4 sm:gap-6 mb-8 sm:mb-12 border-b border-stone-200 dark:border-slate-800 pb-6 sm:pb-8">
           <div>
@@ -176,9 +214,9 @@ export default function PlansOverview() {
         <div className="flex flex-col gap-4 mb-8">
            <div className="flex items-center gap-2 w-full overflow-x-auto pb-2 scrollbar-hide shrink-0">
               <div className="flex items-center bg-stone-100 dark:bg-slate-800 p-1 rounded-lg border border-stone-200 dark:border-slate-700 shadow-sm shrink-0">
-                <button onClick={() => setFilterGroup('all')} className={cn("px-2.5 sm:px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap", filterGroup === 'all' ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 hover:text-stone-600 dark:hover:text-slate-300")}>{language === 'zh' ? '全部' : 'All'}</button>
+                <button onClick={() => { setSwipeDirection(-1); setFilterGroup('all'); }} className={cn("px-2.5 sm:px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap", filterGroup === 'all' ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 hover:text-stone-600 dark:hover:text-slate-300")}>{language === 'zh' ? '全部' : 'All'}</button>
                 {groups.map((group) => (
-                  <button key={group.id} onClick={() => setFilterGroup(group.slug)} className={cn("px-2.5 sm:px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap", filterGroup === group.slug ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 hover:text-stone-600 dark:hover:text-slate-300")}>{language === 'zh' ? group.nameZh : group.nameEn}</button>
+                  <button key={group.id} onClick={() => { setSwipeDirection(1); setFilterGroup(group.slug); }} className={cn("px-2.5 sm:px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap", filterGroup === group.slug ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 hover:text-stone-600 dark:hover:text-slate-300")}>{language === 'zh' ? group.nameZh : group.nameEn}</button>
                 ))}
               </div>
               <div className="flex items-center bg-stone-100 dark:bg-slate-800 p-1 rounded-lg border border-stone-200 dark:border-slate-700 shrink-0 shadow-sm">
@@ -199,6 +237,16 @@ export default function PlansOverview() {
         </div>
 
         {/* ── CONTENT ─────────────────────── */}
+        <div className="relative overflow-hidden w-full touch-pan-y min-h-[50vh]">
+          <AnimatePresence mode="popLayout" initial={false}>
+            <motion.div
+              key={`${filterGroup}-${viewType}`}
+              initial={{ x: swipeDirection > 0 ? "100%" : "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: swipeDirection > 0 ? "-100%" : "100%" }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="w-full"
+            >
         {filteredPlans.length === 0 ? (
           <div className="bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 rounded-lg sm:rounded-xl p-12 sm:p-20 flex flex-col items-center justify-center text-center shadow-sm">
             <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-stone-50 dark:bg-slate-900 flex items-center justify-center mb-3 sm:mb-4 border border-stone-100 dark:border-slate-800">
@@ -306,6 +354,9 @@ export default function PlansOverview() {
             </table>
           </div>
         )}
+          </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
 
       {/* ── DELETE CONFIRMATION ── */}

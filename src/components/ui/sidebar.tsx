@@ -115,7 +115,7 @@ export const Sidebar = React.forwardRef<
       {/* Desktop click-outside overlay that appears when unpinned and expanded */}
       <div 
         className={cn(
-          "duration-300 fixed inset-0 z-40 hidden md:block transition-all",
+          "duration-300 fixed inset-0 z-50 hidden md:block transition-all",
           state === "expanded" && !isPinned ? "pointer-events-auto bg-transparent" : "opacity-0 pointer-events-none bg-transparent"
         )}
         onClick={() => setOpen(false)}
@@ -139,7 +139,7 @@ Sidebar.displayName = "Sidebar"
 export const SidebarTrigger = React.forwardRef<HTMLButtonElement, React.ComponentProps<typeof Button>>(({ className, onClick, ...props }, ref) => {
   const { toggleSidebar } = useSidebar()
   return (
-    <Button ref={ref} data-sidebar="trigger" variant="ghost" size="icon" className={cn("h-8 w-8", className)} onClick={(e) => { onClick?.(e); toggleSidebar(); }} {...props}>
+    <Button ref={ref} data-sidebar="trigger" variant="ghost" size="icon" className={cn("h-8 w-8 relative pointer-events-auto cursor-pointer", className)} onClick={(e) => { onClick?.(e); toggleSidebar(); }} {...props}>
       <PanelLeft className="h-5 w-5" />
       <span className="sr-only">切換側邊欄</span>
     </Button>

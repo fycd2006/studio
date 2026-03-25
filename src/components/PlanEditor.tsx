@@ -24,22 +24,28 @@ import {
   Redo2, 
   History, 
   Save, 
-  RotateCcw,
   ZoomIn,
   ZoomOut,
-  Maximize
+  Maximize,
+  MoreHorizontal
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import dynamic from "next/dynamic";
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n-context";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { VersionHistorySidebar } from "./VersionHistorySidebar";
 import { DiffHighlighter } from "./DiffHighlighter";
 import { getChangedFields } from "@/lib/text-diff";
 import { exportToDocx } from "@/lib/export-utils";
+import { ActionBar } from "@/components/ActionBar";
 
 const FabricCanvas = dynamic(
   () => import("@/components/FabricCanvas").then((mod) => mod.FabricCanvas),
@@ -109,6 +115,17 @@ export function PlanEditor({
   const handleZoomIn = () => setPageZoom(prev => Math.min(2, prev + 0.1));
   const handleZoomOut = () => setPageZoom(prev => Math.max(0.3, prev - 0.1));
   const handleFitAll = () => setPageZoom(1);
+
+  const handlePrint = () => window.print();
+  const handleExportWord = async () => {
+    try {
+      toast({ title: "匯出中", description: "正在產生 Word 檔案..." });
+      await exportToDocx(currentPlan);
+      toast({ title: "匯出成功", description: "已經成功下載 Word 檔案" });
+    } catch (err) {
+      toast({ title: "匯出失敗", description: "發生錯誤", variant: "destructive" });
+    }
+  };
 
   // Local state for smooth typing without spamming Firestore
   const [localPlan, setLocalPlan] = useState<LessonPlan>(plan);
@@ -264,86 +281,97 @@ export function PlanEditor({
   return (
     <div className="h-full flex flex-row bg-stone-50 dark:bg-slate-900 font-body transition-colors overflow-hidden relative w-full">
       <div className="flex-1 overflow-y-auto overflow-x-hidden relative scrollbar-hide">
-        <div className="w-full py-6 md:py-10 px-4 md:px-6 xl:px-8 flex flex-col min-h-full">
-          <div className="w-full xl:w-[60%] mx-auto flex flex-col min-h-full">
-          <header className="sticky top-0 z-50 flex-none flex flex-col items-center justify-center gap-4 w-full pb-6 pt-3 mb-8 shrink-0 bg-stone-50/80 dark:bg-slate-900/80 backdrop-blur-md border-none transition-all">
-            <div className="flex flex-col items-center text-center gap-1 w-full relative">
-
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2 mb-0.5">
-              <span className={cn(
-                "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border",
-                currentPlan.category === "activity" 
-                  ? "bg-blue-50 dark:bg-blue-400/10 text-blue-600 dark:text-blue-400 border-blue-100 placeholder:opacity-50" 
-                  : "bg-emerald-50 dark:bg-emerald-400/10 text-emerald-600 dark:text-emerald-400 border-emerald-100"
-              )}>
-                {currentGroupLabel}
-              </span>
+        <div className="w-full pt-20 md:pt-24 pb-6 md:pb-10 px-4 md:px-6 xl:px-8 flex flex-col min-h-full">
+          <div className="w-full md:w-[60%] md:mx-auto flex flex-col min-h-full">
+          <header className="relative z-20 flex-none w-full mb-4 md:mb-6 border-b border-stone-200 dark:border-slate-800 pb-6 transition-all">
+            <div className="w-full flex justify-between items-start gap-4">
+              <div className="flex flex-col w-full text-left">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={cn(
+                    "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border",
+                    currentPlan.category === "activity" 
+                      ? "bg-blue-50 dark:bg-blue-400/10 text-blue-600 dark:text-blue-400 border-blue-200" 
+                      : "bg-emerald-50 dark:bg-emerald-400/10 text-emerald-600 dark:text-emerald-400 border-emerald-200"
+                  )}>
+                    {currentGroupLabel}
+                  </span>
+                </div>
+                <p className="text-xs tracking-[0.18em] text-stone-500 dark:text-slate-400 uppercase font-medium mb-1.5">Lesson Plan Editor // New Draft</p>
+                <input
+                  value={currentPlan.activityName}
+                  onChange={(e) => handlePlanUpdate({ activityName: e.target.value })}
+                  className="text-3xl md:text-4xl font-extrabold tracking-tight bg-transparent border-none focus:ring-0 focus:outline-none text-stone-900 dark:text-white w-full px-0"
+                  placeholder={t('ENTER_TITLE')}
+                  readOnly={isHistoryMode}
+                />
+              </div>
             </div>
-            <p className="text-xs tracking-[0.2em] text-stone-500 dark:text-slate-400 uppercase font-medium mb-1.5">Lesson Plan Editor // New Draft</p>
-              <input
-                value={currentPlan.activityName}
-                onChange={(e) => handlePlanUpdate({ activityName: e.target.value })}
-                className="text-2xl md:text-3xl font-black tracking-tight bg-transparent border-none focus:ring-0 focus:outline-none text-stone-900 dark:text-white text-center w-full"
-                placeholder={t('ENTER_TITLE')}
-                readOnly={isHistoryMode}
-              />
-            </div>
+          </header>
 
-            <div className="flex flex-wrap items-center justify-center gap-3 w-full overflow-x-auto pb-1 scrollbar-hide">
-          {!isHistoryMode && (
-             <div className="flex flex-shrink-0 items-center bg-stone-100 dark:bg-white/5 p-1 rounded-xl border border-stone-200 dark:border-white/5">
-               <Input 
-                 placeholder="命名此版本..." 
-                 value={newVersionName}
-                 onChange={(e) => setNewVersionName(e.target.value)}
-                 className="h-8 w-[150px] bg-transparent border-none text-[10px] font-bold focus-visible:ring-0"
-                 onKeyDown={(e) => {
-                   if (e.key === 'Enter') handleSaveVersion();
-                 }}
-               />
-               <Button size="sm" onClick={handleSaveVersion} className="h-8 w-8 p-0 bg-transparent hover:bg-white/10 text-stone-400 hover:text-orange-600 rounded-lg">
-                 <Save className="h-3.5 w-3.5" />
-               </Button>
-             </div>
-          )}
-
-          <div className="flex flex-shrink-0 items-center bg-stone-100 dark:bg-white/5 p-1 rounded-xl border border-stone-200 dark:border-white/5">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => setIsHistoryMode(!isHistoryMode)} 
+          <ActionBar title="" className="md:justify-end gap-1.5 md:gap-2 mb-4">
+            {!isHistoryMode && (
+              <div className="hidden sm:flex flex-shrink-0 items-center bg-stone-100 dark:bg-slate-800 p-1 rounded-xl border border-stone-200 dark:border-slate-700 mr-1 sm:mr-2">
+                <Input 
+                  placeholder="命名此版本..." 
+                  value={newVersionName}
+                  onChange={(e) => setNewVersionName(e.target.value)}
+                  className="h-8 w-[120px] md:w-[150px] bg-transparent border-none text-[10px] font-bold focus-visible:ring-0 shadow-none"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveVersion();
+                  }}
+                />
+                <Button size="sm" onClick={handleSaveVersion} className="h-8 w-8 p-0 bg-transparent hover:bg-stone-200 dark:hover:bg-slate-700 text-stone-500 hover:text-orange-600 dark:text-slate-400 dark:hover:text-amber-400 rounded-lg">
+                  <Save className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsHistoryMode(!isHistoryMode)}
               className={cn(
-                "h-8 px-4 rounded-lg font-black uppercase tracking-widest text-[10px] transition-all",
-                isHistoryMode ? "bg-orange-600 text-white shadow-lg shadow-orange-500/20" : "text-stone-500 hover:text-stone-900"
+                "h-9 px-3 rounded-lg font-bold text-xs bg-transparent",
+                isHistoryMode ? "text-orange-600 dark:text-amber-400 bg-orange-50 dark:bg-amber-400/10" : "text-slate-600 dark:text-slate-300 hover:bg-stone-100 dark:hover:bg-slate-800"
               )}
             >
-              <History className="w-3.5 h-3.5 mr-2" /> 
+              <History className="w-4 h-4 mr-1.5" />
               {isHistoryMode ? "離開紀錄" : t('LOG_BOOK')}
             </Button>
-          </div>
 
-          <div className="flex gap-2 shrink-0">
-            <Button size="sm" onClick={() => window.print()} className="bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 text-stone-700 dark:text-slate-200 hover:bg-stone-50 dark:hover:bg-slate-700 transition-colors rounded-xl font-bold uppercase tracking-widest text-[10px] h-9 whitespace-nowrap shadow-sm">
-              <FileDown className="w-4 h-4 mr-2 hidden sm:inline" /> <span className="sm:hidden">PDF</span><span className="hidden sm:inline">列印 / PDF</span>
-            </Button>
-            <Button size="sm" onClick={async () => {
-                try {
-                  toast({ title: "匯出中", description: "正在產生 Word 檔案..." });
-                  await exportToDocx(currentPlan);
-                  toast({ title: "匯出成功", description: "已經成功下載 Word 檔案" });
-                } catch (err) {
-                  toast({ title: "匯出失敗", description: "發生錯誤", variant: "destructive" });
-                }
-              }} className="bg-orange-600 hover:bg-orange-700 dark:bg-amber-500 dark:hover:bg-amber-600 text-white dark:text-slate-900 rounded-xl font-bold uppercase tracking-widest text-[10px] h-9 whitespace-nowrap shadow-sm">
-              <FileDown className="w-4 h-4 mr-2 hidden sm:inline" /> <span className="sm:hidden">Word</span><span className="hidden sm:inline">匯出 Word</span>
-            </Button>
-          </div>
-        </div>
-            </div>
-        </header>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                 <Button variant="ghost" size="sm" className="h-9 px-3 rounded-lg font-bold text-xs bg-transparent text-slate-600 dark:text-slate-300 hover:bg-stone-100 dark:hover:bg-slate-800">
+                   <FileDown className="w-4 h-4 sm:mr-1.5" />
+                   <span className="hidden sm:inline">匯出</span>
+                 </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-32 rounded-xl">
+                 <DropdownMenuItem onClick={handlePrint} className="text-xs font-bold font-fira-code">PDF / PRINT</DropdownMenuItem>
+                 <DropdownMenuItem onClick={handleExportWord} className="text-xs font-bold font-fira-code">WORD (.docx)</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-        <main className="flex-1 flex flex-col relative shrink-0 pb-32 sm:pb-40">
+            <div className="w-px h-6 bg-stone-200 dark:bg-slate-700 mx-1 hidden sm:block"></div>
+
+            <Button variant="ghost" size="icon" onClick={onUndo} disabled={!canUndo || isHistoryMode} className="h-9 w-9 rounded-lg bg-transparent text-slate-500 hover:text-orange-500 hover:bg-stone-100 dark:hover:bg-slate-800">
+              <Undo2 className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={onRedo} disabled={!canRedo || isHistoryMode} className="h-9 w-9 rounded-lg bg-transparent text-slate-500 hover:text-orange-500 hover:bg-stone-100 dark:hover:bg-slate-800">
+              <Redo2 className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={handleZoomOut} disabled={pageZoom <= 0.3} className="hidden sm:flex h-9 w-9 rounded-lg bg-transparent text-slate-500 hover:text-orange-500 hover:bg-stone-100 dark:hover:bg-slate-800">
+              <ZoomOut className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={handleFitAll} className="hidden sm:flex h-9 w-9 rounded-lg bg-transparent text-slate-500 hover:text-orange-500 hover:bg-stone-100 dark:hover:bg-slate-800">
+              <Maximize className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={handleZoomIn} disabled={pageZoom >= 2} className="hidden sm:flex h-9 w-9 rounded-lg bg-transparent text-slate-500 hover:text-orange-500 hover:bg-stone-100 dark:hover:bg-slate-800">
+              <ZoomIn className="h-4 w-4" />
+            </Button>
+          </ActionBar>
+
+          <main className="flex-1 flex flex-col relative shrink-0 pb-32 sm:pb-40">
           <div style={{ zoom: pageZoom }}>
           {isLoadingPreview ? (
             <div className="h-full min-h-[260px] flex flex-col items-center justify-center gap-2 text-stone-500 dark:text-slate-400">
@@ -534,54 +562,6 @@ export function PlanEditor({
         />
       )}
 
-      {/* Floating Action Panel (Global Editor) */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:right-6 xl:right-[21%] bg-white/90 dark:bg-slate-800/90 backdrop-blur-md p-1.5 flex items-center gap-1.5 rounded-full shadow-2xl border border-slate-200/50 dark:border-slate-700/50 z-50">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" onClick={onUndo} disabled={!canUndo || isHistoryMode} className="h-10 w-10 sm:h-12 sm:w-12 rounded-full text-slate-500 hover:text-orange-500 hover:bg-white dark:hover:bg-slate-700 transition-all">
-                <Undo2 className="h-5 w-5 sm:h-6 sm:w-6" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="top">上一步 / Undo</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" onClick={onRedo} disabled={!canRedo || isHistoryMode} className="h-10 w-10 sm:h-12 sm:w-12 rounded-full text-slate-500 hover:text-orange-500 hover:bg-white dark:hover:bg-slate-700 transition-all">
-                <Redo2 className="h-5 w-5 sm:h-6 sm:w-6" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="top">下一步 / Redo</TooltipContent>
-          </Tooltip>
-          
-          <div className="w-[1px] h-6 sm:h-8 bg-slate-200 dark:bg-slate-700 mx-0.5 sm:mx-1" />
-          
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" onClick={handleZoomOut} disabled={pageZoom <= 0.3} className="h-10 w-10 sm:h-12 sm:w-12 rounded-full text-slate-500 hover:text-orange-500 hover:bg-white dark:hover:bg-slate-700 transition-all">
-                <ZoomOut className="h-5 w-5 sm:h-6 sm:w-6" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="top">縮小 / Zoom Out</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" onClick={handleFitAll} className="h-10 w-10 sm:h-12 sm:w-12 rounded-full text-slate-500 hover:text-orange-500 hover:bg-white dark:hover:bg-slate-700 transition-all">
-                <Maximize className="h-4 w-4 sm:h-5 sm:w-5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="top">適合視窗 / Fit All</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" onClick={handleZoomIn} disabled={pageZoom >= 2} className="h-10 w-10 sm:h-12 sm:w-12 rounded-full text-slate-500 hover:text-orange-500 hover:bg-white dark:hover:bg-slate-700 transition-all">
-                <ZoomIn className="h-5 w-5 sm:h-6 sm:w-6" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="top">放大 / Zoom In</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
     </div>
   );
 }

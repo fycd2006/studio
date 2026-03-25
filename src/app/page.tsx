@@ -83,7 +83,23 @@ export default function Home() {
   }, [plans]);
 
   return (
-    <div className="relative bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 selection:bg-[#f48c25]/30 selection:text-[#f48c25] min-h-screen font-sans flex flex-col transition-colors duration-500 overflow-x-hidden">
+    <div className="relative w-screen max-w-none bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 selection:bg-[#f48c25]/30 selection:text-[#f48c25] min-h-screen font-sans flex flex-col transition-colors duration-500 overflow-x-hidden">
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            html,
+            body {
+              -ms-overflow-style: none;
+              scrollbar-width: none;
+              overflow-y: auto;
+            }
+            html::-webkit-scrollbar,
+            body::-webkit-scrollbar {
+              display: none;
+            }
+          `,
+        }}
+      />
       {/* Liquid Glass Ambient Background Orbs */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] rounded-full bg-[#f48c25]/5 dark:bg-[#f48c25]/10 blur-[120px] mix-blend-multiply dark:mix-blend-screen animate-pulse" style={{ animationDuration: '10s' }}></div>

@@ -5,12 +5,17 @@ import { RotationTableData, LessonPlan, PropItem, Camp, CampItem } from "@/types
 import { AdminTimer } from "@/components/AdminTimer";
 import { AdminRotationTable } from "@/components/AdminRotationTable";
 import { Button } from "@/components/ui/button";
-import { Clock, Table as TableIcon, Plus, ShieldCheck, Lock, Unlock, Calendar, Undo2, Redo2, Package2, ZoomIn, ZoomOut, RotateCcw, Maximize } from "lucide-react";
+import { Clock, Table as TableIcon, Plus, ShieldCheck, Lock, Unlock, Calendar, Undo2, Redo2, Package2, ZoomIn, ZoomOut, Maximize, MoreHorizontal } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminDialog } from "@/components/AdminDialog";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -22,6 +27,7 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n-context";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/hooks/use-toast";
+import { ActionBar } from "@/components/ActionBar";
 
 interface AdminSectionProps {
   tables: RotationTableData[];
@@ -75,6 +81,8 @@ export function AdminSection({
   const handleFitAll = useCallback(() => {
     setZoom(1);
   }, []);
+
+  const handlePrint = () => window.print();
 
   // Pinch-to-zoom gesture handlers
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
@@ -602,21 +610,21 @@ export function AdminSection({
 
   return (
     <div className="h-full flex flex-col bg-stone-50 dark:bg-slate-950 animate-in fade-in duration-500 relative transition-colors font-fira-sans overflow-hidden">
-      <main className="flex-1 w-full h-full overflow-y-auto min-h-0 relative">
-        <div className="min-h-full w-full px-6 md:px-8 lg:px-10 pb-8 md:pb-12">
+      <main className="flex-1 w-full h-full overflow-y-auto min-h-0 relative scrollbar-hide">
+        <div className="min-h-full w-full pt-20 md:pt-24 px-4 md:px-8 lg:px-10 pb-8 md:pb-12">
           <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="w-full h-full flex flex-col items-stretch space-y-6">
-            <header className="sticky top-0 z-50 pt-6 md:pt-8 pb-6 no-print w-full">
-              <div className="w-[60%] mx-auto rounded-2xl border border-white/35 dark:border-white/10 bg-white/65 dark:bg-slate-900/55 backdrop-blur-xl shadow-lg shadow-stone-300/30 dark:shadow-slate-950/60 px-5 md:px-6 py-4 transition-colors flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+            <header className="relative z-20 no-print w-full mb-4 md:mb-6 border-b border-stone-200 dark:border-slate-800 pb-6">
+              <div className="w-full flex flex-col md:flex-row items-start md:items-center justify-between gap-6 transition-colors">
               {/* Left: Branding & Print */}
-              <div className="flex flex-col gap-4 w-full xl:w-auto">
-            <div className="flex items-center gap-3">
+              <div className="flex flex-col gap-3 w-full md:w-auto">
+            <div className="flex items-center gap-3 w-full">
 
               <div className="w-8 h-8 rounded-xl bg-orange-600 dark:bg-amber-400 flex items-center justify-center text-white dark:text-slate-900 shadow-md shadow-orange-600/20 shrink-0">
                 <ShieldCheck className="h-4 w-4" />
               </div>
-              <div className="flex flex-col mr-2">
-                <h1 className="text-3xl md:text-4xl font-black tracking-tight text-stone-900 dark:text-white leading-none">{t('ADMIN_TITLE')}</h1>
-                <p className="text-xs tracking-[0.2em] text-stone-500 dark:text-slate-400 uppercase font-medium mt-2">Control Center // Operations</p>
+              <div className="flex flex-col mr-2 min-w-0 flex-1">
+                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white leading-none">{t('ADMIN_TITLE')}</h1>
+                <p className="hidden md:block text-xs tracking-[0.18em] text-stone-500 dark:text-slate-400 uppercase font-medium mt-2">Control Center // Operations</p>
               </div>
               <Button 
                 variant="ghost" 
@@ -635,22 +643,19 @@ export function AdminSection({
                 {isLocked ? "已鎖定" : "已解鎖"}
               </Button>
             </div>
-            <Button variant="ghost" size="sm" onClick={() => window.print()} className="rounded-xl font-bold text-[10px] h-8 px-4 bg-orange-50 dark:bg-amber-400/10 text-orange-600 dark:text-amber-400 transition-all uppercase w-fit">
-              <span className="hidden sm:inline">匯出 / PRINT</span>
-            </Button>
           </div>
 
           {/* Right: Operations & Tabs */}
-          <div className="flex flex-col items-start xl:items-end justify-end gap-4 w-full xl:w-auto">
-            <TabsList className="bg-stone-100 dark:bg-slate-800/50 p-1 rounded-xl h-10 w-full xl:w-auto overflow-x-auto justify-start border border-stone-200 dark:border-white/5">
-              <TabsTrigger value="timer" className="rounded-lg font-bold text-[10px] gap-1.5 px-4 tracking-widest uppercase h-7 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm data-[state=active]:text-orange-600 dark:data-[state=active]:text-amber-400">
-                <Clock className="h-3 w-3" /> <span className="hidden sm:inline">{t('TIMER_CONTROL')}</span>
+          <div className="flex flex-col items-start md:items-end justify-end gap-3 md:gap-4 w-full md:w-auto">
+            <TabsList className="bg-stone-100 dark:bg-slate-800/50 p-1 rounded-xl h-10 w-full md:w-auto justify-start border border-stone-200 dark:border-white/5 grid grid-cols-3 md:flex">
+              <TabsTrigger value="timer" className="rounded-lg font-bold text-[10px] gap-1.5 px-3 md:px-4 tracking-widest uppercase h-7 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm data-[state=active]:text-orange-600 dark:data-[state=active]:text-amber-400">
+                <Clock className="h-3 w-3" /> <span className="hidden md:inline">{t('TIMER_CONTROL')}</span>
               </TabsTrigger>
-              <TabsTrigger value="tables" className="rounded-lg font-bold text-[10px] gap-1.5 px-4 tracking-widest uppercase h-7 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm data-[state=active]:text-orange-600 dark:data-[state=active]:text-amber-400">
-                <TableIcon className="h-3 w-3" /> <span className="hidden sm:inline">{t('ROTATION_TABLE')}</span>
+              <TabsTrigger value="tables" className="rounded-lg font-bold text-[10px] gap-1.5 px-3 md:px-4 tracking-widest uppercase h-7 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm data-[state=active]:text-orange-600 dark:data-[state=active]:text-amber-400">
+                <TableIcon className="h-3 w-3" /> <span className="hidden md:inline">{t('ROTATION_TABLE')}</span>
               </TabsTrigger>
-              <TabsTrigger value="props" className="rounded-lg font-bold text-[10px] gap-1.5 px-4 tracking-widest uppercase h-7 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm data-[state=active]:text-orange-600 dark:data-[state=active]:text-amber-400">
-                <Package2 className="h-3 w-3" /> <span className="hidden sm:inline">{t('PROPS_LIST')}</span>
+              <TabsTrigger value="props" className="rounded-lg font-bold text-[10px] gap-1.5 px-3 md:px-4 tracking-widest uppercase h-7 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm data-[state=active]:text-orange-600 dark:data-[state=active]:text-amber-400">
+                <Package2 className="h-3 w-3" /> <span className="hidden md:inline">{t('PROPS_LIST')}</span>
               </TabsTrigger>
             </TabsList>
 
@@ -668,6 +673,27 @@ export function AdminSection({
           </div>
               </div>
             </header>
+
+            <ActionBar title="Admin Actions" className="md:justify-end">
+              <Button variant="ghost" size="sm" onClick={handlePrint} className="h-9 px-3 rounded-lg font-bold text-xs bg-transparent text-slate-600">
+                匯出 / PRINT
+              </Button>
+              <Button variant="ghost" size="icon" onClick={onUndoTable} disabled={!canUndoTable || isLocked} className="h-9 w-9 rounded-lg bg-transparent text-slate-500 hover:text-orange-500 hover:bg-black/5">
+                <Undo2 className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={onRedoTable} disabled={!canRedoTable || isLocked} className="h-9 w-9 rounded-lg bg-transparent text-slate-500 hover:text-orange-500 hover:bg-black/5">
+                <Redo2 className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={handleZoomOut} disabled={zoom <= 0.3 || activeMainTab === 'timer'} className="h-9 w-9 rounded-lg bg-transparent text-slate-500 hover:text-orange-500 hover:bg-black/5">
+                <ZoomOut className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={handleFitAll} disabled={activeMainTab === 'timer'} className="h-9 w-9 rounded-lg bg-transparent text-slate-500 hover:text-orange-500 hover:bg-black/5">
+                <Maximize className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={handleZoomIn} disabled={zoom >= 2 || activeMainTab === 'timer'} className="h-9 w-9 rounded-lg bg-transparent text-slate-500 hover:text-orange-500 hover:bg-black/5">
+                <ZoomIn className="h-4 w-4" />
+              </Button>
+            </ActionBar>
 
         <div className="w-full flex-1 relative">
             <TabsContent value="timer" className="m-0 h-full w-full">
@@ -759,55 +785,6 @@ export function AdminSection({
         </div>
       </main>
 
-      {activeMainTab !== 'timer' && (
-        <div className="fixed bottom-6 right-4 xl:right-[21%] bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-1.5 flex items-center gap-1.5 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700/50 z-50 transition-all duration-300">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={onUndoTable} disabled={!canUndoTable || isLocked} className="h-12 w-12 rounded-xl text-slate-500 hover:text-orange-500 hover:bg-white dark:hover:bg-slate-700 transition-all">
-                  <Undo2 className="h-6 w-6" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top">上一步 / Undo</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={onRedoTable} disabled={!canRedoTable || isLocked} className="h-12 w-12 rounded-xl text-slate-500 hover:text-orange-500 hover:bg-white dark:hover:bg-slate-700 transition-all">
-                  <Redo2 className="h-6 w-6" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top">下一步 / Redo</TooltipContent>
-            </Tooltip>
-            
-            <div className="w-[1px] h-8 bg-slate-200 dark:bg-slate-700 mx-1" />
-            
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={handleZoomOut} disabled={zoom <= 0.3} className="h-12 w-12 rounded-xl text-slate-500 hover:text-orange-500 hover:bg-white dark:hover:bg-slate-700 transition-all">
-                  <ZoomOut className="h-6 w-6" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top">縮小 / Zoom Out</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={handleFitAll} className="h-12 w-12 rounded-xl text-slate-500 hover:text-orange-500 hover:bg-white dark:hover:bg-slate-700 transition-all">
-                  <Maximize className="h-5 w-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top">適合視窗 / Fit All</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={handleZoomIn} disabled={zoom >= 2} className="h-12 w-12 rounded-xl text-slate-500 hover:text-orange-500 hover:bg-white dark:hover:bg-slate-700 transition-all">
-                  <ZoomIn className="h-6 w-6" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top">放大 / Zoom In</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-      )}
     </div>
   );
 }

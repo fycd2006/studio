@@ -43,7 +43,7 @@ export default function HistoryOverview() {
 
   return (
     <div className="h-full overflow-y-auto bg-stone-50 dark:bg-slate-950 text-stone-900 dark:text-slate-50 transition-colors selection:bg-[#f48c25]/30 selection:text-[#f48c25] font-sans">
-      <div className="max-w-6xl mx-auto py-12 md:py-16 px-6 md:px-8">
+      <div className="max-w-6xl mx-auto pt-24 pb-12 md:pb-16 px-6 md:px-8">
         {/* ── HEADER ─────────────── */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 border-b border-stone-200 dark:border-slate-800 pb-8">
           <div>

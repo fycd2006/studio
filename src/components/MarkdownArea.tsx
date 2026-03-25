@@ -321,7 +321,7 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
           </div>
         )}
 
-        <div className="flex items-center flex-wrap gap-1 p-1 border-b border-border no-print sticky top-0 z-40 bg-card/95 backdrop-blur-md rounded-t-2xl">
+        <div className="flex items-center flex-wrap gap-1 p-1 border-b border-border no-print sticky top-0 z-10 bg-card/95 backdrop-blur-md rounded-t-2xl">
           <TooltipProvider>
             {[
               { icon: Bold, title: "粗體 / Bold", action: () => execCommand("bold") },

@@ -1,30 +1,28 @@
 "use client"
 
 import React from "react";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { PlanSidebar } from "@/components/PlanSidebar";
 import { Toaster } from "@/components/ui/toaster";
 import { usePlans } from "@/hooks/use-plans";
 import { useAuth } from "@/lib/auth-context";
 import { usePathname } from "next/navigation";
-import { Loader2, Menu } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useRouter } from "next/navigation";
+import { TransparentNavbar } from "@/components/TransparentNavbar";
 
-/** Routes that should NOT render the sidebar */
+/** Routes that should NOT render the navbar */
 const AUTH_ROUTES = ["/login", "/signup"];
 
 /**
- * AppShell — Global layout wrapper.
- * Sidebar is ALWAYS fixed on the left EXCEPT on auth pages.
+ * AppShell — Global layout wrapper with transparent navbar.
+ * Navbar is ALWAYS visible except on auth pages.
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { isLoading: isAuthLoading } = useAuth();
   const pathname = usePathname();
   const isAuthPage = AUTH_ROUTES.some((r) => pathname.startsWith(r));
 
-  // Auth pages get a clean, sidebar-free shell
+  // Auth pages get a clean, navbar-free shell
   if (isAuthPage) {
     return (
       <>
@@ -37,7 +35,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return <AppShellInternal>{children}</AppShellInternal>;
 }
 
-/** Internal shell with sidebar — only rendered on non-auth pages */
+/** Internal shell with transparent navbar — only rendered on non-auth pages */
 function AppShellInternal({ children }: { children: React.ReactNode }) {
   const { isLoading: isAuthLoading, role } = useAuth();
   const planData = usePlans();
@@ -69,36 +67,17 @@ function AppShellInternal({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <SidebarProvider>
-      <div className="flex h-screen w-full bg-stone-50 dark:bg-slate-900 overflow-hidden font-body transition-colors">
-        <PlanSidebar
-          camps={planData.camps}
-          activeCampId={planData.activeCampId}
-          onCampSelect={planData.setActiveCampId}
-          onCampAdd={planData.addCamp}
-          onCampUpdate={planData.updateCamp}
-          onCampDelete={planData.deleteCamp}
-          onCampToggleLock={planData.toggleCampLock}
-          groups={planData.groups}
-          plans={planData.plans}
-          activePlanId={planData.activePlanId}
-          onSelect={planData.setActivePlanId}
-          onAdd={planData.addPlan}
-          onDelete={planData.deletePlan}
-          onReorder={planData.reorderPlans}
-          viewMode={planData.viewMode}
-          setViewMode={planData.setViewMode}
-        />
-        <main className="flex-1 h-full overflow-y-auto overflow-x-hidden relative flex flex-col">
-          {/* Mobile Hamburger Menu */}
-          <div className="md:hidden absolute top-4 left-4 z-50">
-            <SidebarTrigger className="h-9 w-9 rounded-lg bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border border-stone-200 dark:border-white/10 shadow-sm" />
-          </div>
-          {children}
-        </main>
-        <Toaster />
-      </div>
-    </SidebarProvider>
+    <div className="w-full bg-stone-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 font-body transition-colors min-h-screen flex flex-col">
+      {/* Transparent Navbar */}
+      <TransparentNavbar groups={planData.groups} />
+      
+      {/* Main Content Area */}
+      <main className="flex-1 w-full overflow-x-hidden relative animate-in fade-in slide-in-from-bottom-5 duration-300">
+        {children}
+      </main>
+      
+      <Toaster />
+    </div>
   );
 }
 
