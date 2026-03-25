@@ -186,7 +186,7 @@ export function PlanSidebar({
         <SidebarHeader className="border-b border-stone-200/50 dark:border-white/5 px-4 py-5 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:py-4 transition-colors z-20 relative">
           <div className="flex items-center justify-between group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-3 overflow-hidden">
             <Link href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-all duration-300 min-w-max">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden bg-stone-50 dark:bg-white/5 border border-stone-100 dark:border-white/10 p-0.5 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden bg-stone-50 dark:bg-white border border-stone-100 dark:border-white/30 p-0.5 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8">
                 <img src="/logo.png" alt="Logo" className="w-full h-full object-contain"
                   onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
                 <Sparkles className="h-5 w-5 text-orange-500 dark:text-amber-400 hidden" />

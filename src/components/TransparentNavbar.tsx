@@ -45,6 +45,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
 
   const pathname = usePathname();
   const { camps, activeCampId, groups: allGroups } = usePlans();
+  const isHome = pathname === "/";
 
   const activeCamp = camps?.find((c) => c.id === activeCampId);
   const displayGroups = groups || allGroups || [];
@@ -66,27 +67,37 @@ export function TransparentNavbar({ groups }: NavbarProps) {
   };
 
   const isMenuOpen = activeMegaMenu !== null;
-  const navTextClass = "text-white mix-blend-difference hover:opacity-80";
-  const navIconClass = "text-white mix-blend-difference hover:opacity-80";
+  const navTextClass = "text-slate-900 dark:text-white hover:opacity-80";
+  const navIconClass = "text-slate-900 dark:text-white hover:opacity-80";
 
   const planDropdownGroups = safeGroups.slice(0, 10);
   const adminDropdownItems = [
-    { label: "計時控制", href: "/admin/timer" },
-    { label: "輪替表", href: "/admin/rotation" },
-    { label: "道具清單", href: "/admin/props" },
+    { label: "計時控制", href: "/admin?tab=timer" },
+    { label: "輪替表", href: "/admin?tab=tables" },
+    { label: "道具清單", href: "/admin?tab=props" },
   ];
 
   return (
     <>
-      <nav className="fixed top-0 left-0 w-full z-50 bg-transparent border-none">
+      <nav
+        className={cn(
+          "fixed top-0 left-0 w-full z-50 transition-colors duration-300",
+          isHome
+            ? "bg-transparent border-none"
+            : "bg-white/85 dark:bg-[hsl(var(--bar-theme))] backdrop-blur-xl dark:backdrop-blur-none border-b border-stone-200/70 dark:border-[hsl(var(--bar-theme-border))] shadow-[0_1px_0_rgba(15,23,42,0.06)] dark:shadow-none"
+        )}
+      >
         <div
-          className="relative bg-transparent border-none"
+          className={cn(
+            "relative",
+            isHome ? "bg-transparent border-none" : "bg-transparent"
+          )}
           onMouseLeave={() => setActiveMegaMenu(null)}
         >
           <div className="hidden md:flex items-center justify-between px-6 py-4 h-16">
             <div className="flex items-center">
               <Link href="/" className="flex items-center gap-3 min-w-0">
-                <div className="relative w-10 h-10 rounded-full overflow-hidden ring-1 ring-white/40 shadow-[0_4px_14px_rgba(0,0,0,0.35)] flex-shrink-0">
+                <div className="relative w-10 h-10 rounded-full overflow-hidden bg-transparent dark:bg-white ring-1 ring-white/40 shadow-[0_4px_14px_rgba(0,0,0,0.35)] flex-shrink-0">
                   <Image
                     src="/NTUTCDlogo.png"
                     alt="NTUTCDlogo"
@@ -96,11 +107,11 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                     priority
                   />
                 </div>
-                <div className="flex flex-col leading-tight text-white min-w-0">
+                <div className="flex flex-col leading-tight text-slate-900 dark:text-white min-w-0">
                   <span className="text-[1.02rem] font-black tracking-[0.02em] truncate">
                     NTUT Chong De Camp
                   </span>
-                  <span className="text-[0.68rem] font-semibold tracking-[0.08em] text-white/95 ">
+                  <span className="text-[0.68rem] font-semibold tracking-[0.08em] text-slate-700 dark:text-white/95">
                     北科崇德青年社
                   </span>
                 </div>
@@ -113,8 +124,8 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                 className={cn(
                   "font-bold tracking-wider uppercase text-sm transition-colors duration-300 ",
                   isActive("/")
-                    ? "text-white underline underline-offset-8"
-                    : "text-white hover:text-orange-200"
+                    ? "text-slate-900 dark:text-white underline underline-offset-8"
+                    : "text-slate-900 dark:text-white hover:text-orange-600 dark:hover:text-orange-200"
                 )}
               >
                 Dashboard
@@ -126,8 +137,8 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                   className={cn(
                     "font-bold tracking-wider uppercase text-sm transition-colors duration-300 inline-flex items-center gap-1 ",
                     isActive("/plans")
-                      ? "text-white underline underline-offset-8"
-                      : "text-white hover:text-orange-200"
+                      ? "text-slate-900 dark:text-white underline underline-offset-8"
+                      : "text-slate-900 dark:text-white hover:text-orange-600 dark:hover:text-orange-200"
                   )}
                 >
                   Plans
@@ -141,8 +152,8 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                   className={cn(
                     "font-bold tracking-wider uppercase text-sm transition-colors duration-300 inline-flex items-center gap-1 ",
                     isActive("/admin")
-                      ? "text-white underline underline-offset-8"
-                      : "text-white hover:text-orange-200"
+                      ? "text-slate-900 dark:text-white underline underline-offset-8"
+                      : "text-slate-900 dark:text-white hover:text-orange-600 dark:hover:text-orange-200"
                   )}
                 >
                   Admin
@@ -155,8 +166,8 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                 className={cn(
                   "font-bold tracking-wider uppercase text-sm transition-colors duration-300 ",
                   isActive("/settings")
-                    ? "text-white underline underline-offset-8"
-                    : "text-white hover:text-orange-200"
+                    ? "text-slate-900 dark:text-white underline underline-offset-8"
+                    : "text-slate-900 dark:text-white hover:text-orange-600 dark:hover:text-orange-200"
                 )}
               >
                 Settings
@@ -167,7 +178,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
               {activeCamp && (
                 <div
                   className={cn(
-                    "px-3 py-1 rounded-full text-xs font-semibold text-white bg-white/15 backdrop-blur-sm "
+                    "px-3 py-1 rounded-full text-xs font-semibold text-slate-900 dark:text-white bg-white/25 dark:bg-white/15 backdrop-blur-sm"
                   )}
                 >
                   {activeCamp.name}
@@ -218,7 +229,10 @@ export function TransparentNavbar({ groups }: NavbarProps) {
           >
             <div
               className={cn(
-                "w-full border-t-0 rounded-t-none border-b border-white/20 bg-transparent"
+                "w-full border-t-0 rounded-t-none border-b",
+                isHome
+                  ? "border-white/20 bg-transparent"
+                  : "border-stone-200/70 dark:border-[hsl(var(--bar-theme-border))] bg-white/90 dark:bg-[hsl(var(--bar-theme))] backdrop-blur-xl dark:backdrop-blur-none"
               )}
             >
               <div className="max-w-6xl mx-auto px-6 py-6">
@@ -234,10 +248,10 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                       <Link
                         key={group.id}
                         href={`/plans?group=${group.slug}`}
-                        className="block rounded-lg px-4 py-3 border border-white/20 bg-transparent text-white hover:border-white/35"
+                        className="block rounded-lg px-4 py-3 border border-white/20 bg-transparent text-slate-900 dark:text-white hover:border-white/35"
                       >
                         <p className="font-semibold ">{group.nameZh}</p>
-                        <p className="text-[11px] uppercase tracking-wide text-white/80">{group.nameEn}</p>
+                        <p className="text-[11px] uppercase tracking-wide text-slate-700 dark:text-white/80">{group.nameEn}</p>
                       </Link>
                     ))}
                   </div>
@@ -249,7 +263,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                       <Link
                         key={item.href}
                         href={item.href}
-                        className="block rounded-lg px-4 py-3 border border-white/20 bg-transparent text-white font-semibold hover:border-white/35"
+                        className="block rounded-lg px-4 py-3 border border-white/20 bg-transparent text-slate-900 dark:text-white font-semibold hover:border-white/35"
                       >
                         {item.label}
                       </Link>
@@ -263,7 +277,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
           <div className="md:hidden flex flex-col">
             <div className="flex items-center justify-between px-4 py-3 min-h-16">
               <Link href="/" className="flex items-center gap-2.5 flex-1 pr-2 min-w-0">
-                <div className="relative w-9 h-9 rounded-full overflow-hidden ring-1 ring-white/40 shadow-[0_4px_14px_rgba(0,0,0,0.35)] flex-shrink-0">
+                <div className="relative w-9 h-9 rounded-full overflow-hidden bg-transparent dark:bg-white ring-1 ring-white/40 shadow-[0_4px_14px_rgba(0,0,0,0.35)] flex-shrink-0">
                   <Image
                     src="/NTUTCDlogo.png"
                     alt="NTUTCDlogo"
@@ -272,11 +286,11 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                     className="object-cover"
                   />
                 </div>
-                <div className="flex flex-col leading-tight text-white">
+                <div className="flex flex-col leading-tight text-slate-900 dark:text-white">
                   <span className="text-[0.82rem] font-extrabold tracking-[0.01em] ">
                     NTUT Chong De Camp
                   </span>
-                  <span className="text-[0.61rem] font-semibold tracking-[0.04em] text-white/95 ">
+                  <span className="text-[0.61rem] font-semibold tracking-[0.04em] text-slate-700 dark:text-white/95">
                     北科崇德青年社
                   </span>
                 </div>
@@ -285,7 +299,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
               <button
                 onClick={() => setIsMobileMenuOpen(true)}
                 className={cn(
-                  "p-2 rounded-lg transition-colors duration-300 bg-transparent text-white hover:bg-white/15"
+                    "p-2 rounded-lg transition-colors duration-300 bg-transparent text-slate-900 dark:text-white hover:bg-white/15"
                 )}
                 aria-label="Open menu"
               >
@@ -302,8 +316,8 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                     className={cn(
                       "text-[0.94rem] font-black uppercase tracking-wide whitespace-nowrap transition-colors duration-300 ",
                       isActive(item.href)
-                        ? "text-white underline underline-offset-8"
-                        : "text-white hover:text-orange-200"
+                        ? "text-slate-900 dark:text-white underline underline-offset-8"
+                        : "text-slate-900 dark:text-white hover:text-orange-600 dark:hover:text-orange-200"
                     )}
                   >
                     {item.label}

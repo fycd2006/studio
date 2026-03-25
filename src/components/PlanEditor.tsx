@@ -315,12 +315,12 @@ export function PlanEditor({
                   placeholder="輸入版本名稱..." 
                   value={newVersionName}
                   onChange={(e) => setNewVersionName(e.target.value)}
-                  className="h-8 w-[120px] md:w-[150px] bg-transparent border-none text-[10px] font-bold focus-visible:ring-0 shadow-none text-white mix-blend-difference placeholder:text-white/60"
+                  className="h-8 w-[120px] md:w-[150px] bg-transparent border-none text-[10px] font-bold focus-visible:ring-0 shadow-none text-slate-900 dark:text-white placeholder:text-slate-700 dark:placeholder:text-white/60"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleSaveVersion();
                   }}
                 />
-                <Button size="sm" onClick={handleSaveVersion} className="h-8 w-8 p-0 bg-transparent hover:bg-stone-200 dark:hover:bg-slate-700 text-white mix-blend-difference hover:opacity-100 opacity-90 transition-opacity rounded-lg">
+                <Button size="sm" onClick={handleSaveVersion} className="h-8 w-8 p-0 bg-transparent hover:bg-stone-200 dark:hover:bg-slate-700 text-slate-900 dark:text-white hover:opacity-100 opacity-90 transition-opacity rounded-lg">
                   <Save className="h-4 w-4" />
                 </Button>
               </div>
@@ -332,7 +332,7 @@ export function PlanEditor({
               onClick={() => setIsHistoryMode(!isHistoryMode)}
               className={cn(
                 "h-9 px-3 rounded-lg font-bold text-xs bg-transparent",
-                isHistoryMode ? "text-white mix-blend-difference font-bold opacity-100 underline underline-offset-4" : "text-white mix-blend-difference hover:opacity-100 opacity-90 transition-opacity"
+                isHistoryMode ? "text-slate-900 dark:text-white font-bold opacity-100 underline underline-offset-4" : "text-slate-900 dark:text-white hover:opacity-100 opacity-90 transition-opacity"
               )}
             >
               <History className="w-4 h-4 mr-1.5" />
@@ -341,7 +341,7 @@ export function PlanEditor({
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                 <Button variant="ghost" size="sm" className="h-9 px-3 rounded-lg font-bold text-xs bg-transparent text-white mix-blend-difference hover:opacity-100 opacity-90 transition-opacity">
+                 <Button variant="ghost" size="sm" className="h-9 px-3 rounded-lg font-bold text-xs bg-transparent text-slate-900 dark:text-white hover:opacity-100 opacity-90 transition-opacity">
                    <FileDown className="w-4 h-4 sm:mr-1.5" />
                    <span className="hidden sm:inline">匯出</span>
                  </Button>
@@ -354,19 +354,19 @@ export function PlanEditor({
 
             <div className="w-px h-6 bg-stone-200 dark:bg-slate-700 mx-1 hidden sm:block"></div>
 
-            <Button variant="ghost" size="icon" onClick={onUndo} disabled={!canUndo || isHistoryMode} className="h-9 w-9 rounded-lg bg-transparent text-white mix-blend-difference hover:opacity-100 opacity-90 transition-opacity">
+            <Button variant="ghost" size="icon" onClick={onUndo} disabled={!canUndo || isHistoryMode} className="h-9 w-9 rounded-lg bg-transparent text-slate-900 dark:text-white hover:opacity-100 opacity-90 transition-opacity">
               <Undo2 className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={onRedo} disabled={!canRedo || isHistoryMode} className="h-9 w-9 rounded-lg bg-transparent text-white mix-blend-difference hover:opacity-100 opacity-90 transition-opacity">
+            <Button variant="ghost" size="icon" onClick={onRedo} disabled={!canRedo || isHistoryMode} className="h-9 w-9 rounded-lg bg-transparent text-slate-900 dark:text-white hover:opacity-100 opacity-90 transition-opacity">
               <Redo2 className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={handleZoomOut} disabled={pageZoom <= 0.3} className="hidden sm:flex h-9 w-9 rounded-lg bg-transparent text-white mix-blend-difference hover:opacity-100 opacity-90 transition-opacity">
+            <Button variant="ghost" size="icon" onClick={handleZoomOut} disabled={pageZoom <= 0.3} className="hidden sm:flex h-9 w-9 rounded-lg bg-transparent text-slate-900 dark:text-white hover:opacity-100 opacity-90 transition-opacity">
               <ZoomOut className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={handleFitAll} className="hidden sm:flex h-9 w-9 rounded-lg bg-transparent text-white mix-blend-difference hover:opacity-100 opacity-90 transition-opacity">
+            <Button variant="ghost" size="icon" onClick={handleFitAll} className="hidden sm:flex h-9 w-9 rounded-lg bg-transparent text-slate-900 dark:text-white hover:opacity-100 opacity-90 transition-opacity">
               <Maximize className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={handleZoomIn} disabled={pageZoom >= 2} className="hidden sm:flex h-9 w-9 rounded-lg bg-transparent text-white mix-blend-difference hover:opacity-100 opacity-90 transition-opacity">
+            <Button variant="ghost" size="icon" onClick={handleZoomIn} disabled={pageZoom >= 2} className="hidden sm:flex h-9 w-9 rounded-lg bg-transparent text-slate-900 dark:text-white hover:opacity-100 opacity-90 transition-opacity">
               <ZoomIn className="h-4 w-4" />
             </Button>
           </ActionBar>

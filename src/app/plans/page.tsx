@@ -21,6 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { ActionBar } from "@/components/ActionBar";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
@@ -155,76 +156,88 @@ export default function PlansOverview() {
       onTouchStart={handleSwipeStart}
       onTouchEnd={handleSwipeEnd}
     >
-      <div className="max-w-6xl mx-auto pt-24 pb-6 sm:pb-12 md:pb-16 px-4 sm:px-6 md:px-8 overflow-hidden touch-pan-y">
+      <div className="max-w-6xl mx-auto pt-28 sm:pt-24 pb-6 sm:pb-12 md:pb-16 px-4 sm:px-6 md:px-8 touch-pan-y">
         {/* ── HEADER ─────────────── */}
-        <div className="flex flex-col gap-4 sm:gap-6 mb-8 sm:mb-12 border-b border-stone-200 dark:border-slate-800 pb-6 sm:pb-8">
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500 dark:text-slate-400 bg-stone-200/50 dark:bg-slate-800 px-2 py-1 rounded-sm">
-                {activeCamp?.name || "All Projects"}
-              </span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-stone-900 dark:text-white">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6 mb-8 sm:mb-16 border-b border-stone-200 dark:border-slate-800 pb-6 sm:pb-8">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-stone-900 dark:text-white mb-1.5 sm:mb-2">
               教案總覽
             </h1>
-            <p className="text-stone-500 dark:text-slate-400 text-xs sm:text-sm mt-1.5 sm:mt-2 font-medium">文件與專案管理中心 / Document Repository</p>
+            <p className="text-stone-500 dark:text-slate-400 font-medium uppercase tracking-[0.2em] text-[10px] sm:text-xs">文件與專案管理中心 / Document Repository</p>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-            <div className="flex bg-stone-100 dark:bg-slate-800 p-1 rounded-md border border-stone-200 dark:border-slate-700">
-              <button onClick={() => setViewType("grid")} className={cn("p-1 sm:p-1.5 rounded-sm transition-all cursor-pointer", viewType === "grid" ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 dark:text-slate-500 hover:text-stone-600 dark:hover:text-slate-300")} title="畫廊視圖 (Grid)">
-                <LayoutGrid className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </button>
-              <button onClick={() => setViewType("board")} className={cn("p-1 sm:p-1.5 rounded-sm transition-all cursor-pointer", viewType === "board" ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 dark:text-slate-500 hover:text-stone-600 dark:hover:text-slate-300")} title="看板視圖 (Board)">
-                <Kanban className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </button>
-              <button onClick={() => setViewType("list")} className={cn("p-1 sm:p-1.5 rounded-sm transition-all cursor-pointer", viewType === "list" ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 dark:text-slate-500 hover:text-stone-600 dark:hover:text-slate-300")} title="清單視圖 (List)">
-                <List className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </button>
-            </div>
-
-            <div className="relative w-full sm:w-auto">
-              <Button
-                onClick={() => isAdmin ? setIsAdding(!isAdding) : crewToast()}
-                className={cn("w-full sm:w-auto bg-stone-900 hover:bg-stone-800 text-white dark:bg-amber-500 dark:hover:bg-amber-600 dark:text-slate-900 h-9 sm:h-10 px-3.5 sm:px-5 font-semibold text-xs sm:text-sm transition-colors cursor-pointer rounded-md shadow-sm", !isAdmin && "opacity-60")}
-              >
-                {!isAdmin && <Lock className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1.5" />}
-                <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" /> 新增檔案
-              </Button>
-
-              <AnimatePresence>
-                {isAdding && isAdmin && (
-                  <motion.div initial={{ opacity: 0, y: 4, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 4, scale: 0.98 }} transition={{ duration: 0.15 }}
-                    className="absolute right-0 top-12 bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 rounded-lg shadow-xl p-1.5 w-56 z-50"
-                  >
-                    {groups.map((group) => (
-                      <button key={group.id} onClick={() => { handleCreatePlan(group.slug); setIsAdding(false); }} className="w-full px-3 py-2 text-left rounded-md hover:bg-stone-50 dark:hover:bg-slate-700 transition-colors cursor-pointer group">
-                        <p className="font-semibold text-sm text-stone-900 dark:text-slate-200 group-hover:text-orange-600 dark:group-hover:text-amber-400">{language === 'zh' ? group.nameZh : group.nameEn}</p>
-                        <p className="text-[10px] text-stone-400 dark:text-slate-500">Create New Plan</p>
-                      </button>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+          <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500 dark:text-slate-400 bg-stone-200/50 dark:bg-slate-800 px-2 py-1 rounded-sm w-fit">
+            {activeCamp?.name || "All Projects"}
           </div>
+
         </div>
+
+        <ActionBar title="Plans Actions" className="!flex-nowrap !justify-start md:!justify-center overflow-x-auto scrollbar-hide gap-1 md:gap-2">
+          <div className="relative shrink-0">
+            <Button
+              onClick={() => isAdmin ? setIsAdding(!isAdding) : crewToast()}
+              className={cn("shrink-0 bg-stone-900 hover:bg-stone-800 text-white dark:bg-amber-500 dark:hover:bg-amber-600 dark:text-slate-900 h-8 md:h-9 px-2 md:px-3.5 font-semibold text-[11px] md:text-xs transition-colors cursor-pointer rounded-md shadow-sm", !isAdmin && "opacity-60")}
+            >
+              {!isAdmin && <Lock className="w-3 h-3 md:w-3.5 md:h-3.5 md:mr-1.5" />}
+              <Plus className="w-3.5 h-3.5 md:w-4 md:h-4 md:mr-1.5" />
+              <span className="hidden md:inline">新增檔案</span>
+            </Button>
+
+            <AnimatePresence>
+              {isAdding && isAdmin && (
+                <motion.div initial={{ opacity: 0, y: 4, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 4, scale: 0.98 }} transition={{ duration: 0.15 }}
+                  className="absolute left-0 md:right-0 md:left-auto top-10 md:top-12 bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 rounded-lg shadow-xl p-1.5 w-56 z-50"
+                >
+                  {groups.map((group) => (
+                    <button key={group.id} onClick={() => { handleCreatePlan(group.slug); setIsAdding(false); }} className="w-full px-3 py-2 text-left rounded-md hover:bg-stone-50 dark:hover:bg-slate-700 transition-colors cursor-pointer group">
+                      <p className="font-semibold text-sm text-stone-900 dark:text-slate-200 group-hover:text-orange-600 dark:group-hover:text-amber-400">{language === 'zh' ? group.nameZh : group.nameEn}</p>
+                      <p className="text-[10px] text-stone-400 dark:text-slate-500">Create New Plan</p>
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <div className="flex items-center bg-stone-100 dark:bg-slate-800 p-0.5 md:p-1 rounded-md border border-stone-200 dark:border-slate-700 shrink-0">
+            <button onClick={() => setViewType("grid")} className={cn("p-1 md:p-1.5 rounded-sm transition-all cursor-pointer", viewType === "grid" ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 dark:text-slate-500 hover:text-stone-600 dark:hover:text-slate-300")} title="畫廊視圖 (Grid)">
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+            <button onClick={() => setViewType("board")} className={cn("p-1 md:p-1.5 rounded-sm transition-all cursor-pointer", viewType === "board" ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 dark:text-slate-500 hover:text-stone-600 dark:hover:text-slate-300")} title="看板視圖 (Board)">
+              <Kanban className="w-4 h-4" />
+            </button>
+            <button onClick={() => setViewType("list")} className={cn("p-1 md:p-1.5 rounded-sm transition-all cursor-pointer", viewType === "list" ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 dark:text-slate-500 hover:text-stone-600 dark:hover:text-slate-300")} title="清單視圖 (List)">
+              <List className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="flex items-center bg-stone-100 dark:bg-slate-800 p-0.5 md:p-1 rounded-lg border border-stone-200 dark:border-slate-700 shadow-sm shrink-0">
+            <button onClick={() => { setSwipeDirection(-1); setFilterGroup('all'); }} className={cn("px-2 md:px-3 py-1 md:py-1.5 rounded-md text-[10px] md:text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap", filterGroup === 'all' ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 hover:text-stone-600 dark:hover:text-slate-300")}>
+              <span className="md:hidden">全</span>
+              <span className="hidden md:inline">{language === 'zh' ? '全部' : 'All'}</span>
+            </button>
+            {groups.map((group) => (
+              <button key={group.id} onClick={() => { setSwipeDirection(1); setFilterGroup(group.slug); }} className={cn("px-2 md:px-3 py-1 md:py-1.5 rounded-md text-[10px] md:text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap", filterGroup === group.slug ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 hover:text-stone-600 dark:hover:text-slate-300")}>
+                <span className="md:hidden">{(language === 'zh' ? group.nameZh : group.nameEn).slice(0, 2)}</span>
+                <span className="hidden md:inline">{language === 'zh' ? group.nameZh : group.nameEn}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center bg-stone-100 dark:bg-slate-800 p-0.5 md:p-1 rounded-lg border border-stone-200 dark:border-slate-700 shrink-0 shadow-sm">
+            <button onClick={() => setSortBy('updatedAt')} className={cn("px-2 md:px-3 py-1 md:py-1.5 rounded-md text-[10px] md:text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap inline-flex items-center gap-1", sortBy === 'updatedAt' ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 hover:text-stone-600 dark:hover:text-slate-300")}>
+              <Clock className="w-3.5 h-3.5 md:hidden" />
+              <span className="hidden md:inline">時間排序</span>
+            </button>
+            <button onClick={() => setSortBy('name')} className={cn("px-2 md:px-3 py-1 md:py-1.5 rounded-md text-[10px] md:text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap inline-flex items-center gap-1", sortBy === 'name' ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 hover:text-stone-600 dark:hover:text-slate-300")}>
+              <FileText className="w-3.5 h-3.5 md:hidden" />
+              <span className="hidden md:inline">名稱排序</span>
+            </button>
+          </div>
+        </ActionBar>
 
         {/* ── TOOLBAR (Filter & Search) ─────────── */}
         <div className="flex flex-col gap-4 mb-8">
-           <div className="flex items-center gap-2 w-full overflow-x-auto pb-2 scrollbar-hide shrink-0">
-              <div className="flex items-center bg-stone-100 dark:bg-slate-800 p-1 rounded-lg border border-stone-200 dark:border-slate-700 shadow-sm shrink-0">
-                <button onClick={() => { setSwipeDirection(-1); setFilterGroup('all'); }} className={cn("px-2.5 sm:px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap", filterGroup === 'all' ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 hover:text-stone-600 dark:hover:text-slate-300")}>{language === 'zh' ? '全部' : 'All'}</button>
-                {groups.map((group) => (
-                  <button key={group.id} onClick={() => { setSwipeDirection(1); setFilterGroup(group.slug); }} className={cn("px-2.5 sm:px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap", filterGroup === group.slug ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 hover:text-stone-600 dark:hover:text-slate-300")}>{language === 'zh' ? group.nameZh : group.nameEn}</button>
-                ))}
-              </div>
-              <div className="flex items-center bg-stone-100 dark:bg-slate-800 p-1 rounded-lg border border-stone-200 dark:border-slate-700 shrink-0 shadow-sm">
-                 <button onClick={() => setSortBy('updatedAt')} className={cn("px-2.5 sm:px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap", sortBy === 'updatedAt' ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 hover:text-stone-600 dark:hover:text-slate-300")}>時間排序</button>
-                 <button onClick={() => setSortBy('name')} className={cn("px-2.5 sm:px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap", sortBy === 'name' ? "bg-white dark:bg-slate-700 text-stone-900 dark:text-amber-400 shadow-sm" : "text-stone-400 hover:text-stone-600 dark:hover:text-slate-300")}>名稱排序</button>
-              </div>
-           </div>
-           
            <div className="relative w-full">
              <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 dark:text-slate-500" />
              <Input 

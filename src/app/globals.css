@@ -77,6 +77,10 @@
     --sidebar-accent-foreground: 24 90% 65%;
     --sidebar-border: 220 15% 16%;
     --sidebar-ring: 24 100% 55%;
+
+    /* Dark navbar/actionbar brand navy (ui-ux-pro-max: Midnight Blue #0A0E27) */
+    --bar-theme: 232 59% 10%;
+    --bar-theme-border: 226 59% 18%;
   }
 }
 

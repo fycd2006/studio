@@ -66,8 +66,10 @@ function AppShellInternal({ children }: { children: React.ReactNode }) {
     );
   }
 
+  const isAdminRoute = pathname.startsWith('/admin');
+
   return (
-    <div className="w-full bg-stone-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 font-body transition-colors min-h-screen flex flex-col">
+    <div className={`w-full bg-stone-50 text-slate-900 dark:text-slate-50 font-body transition-colors min-h-screen flex flex-col ${isAdminRoute ? "dark:bg-[hsl(var(--bar-theme))]" : "dark:bg-slate-950"}`}>
       {/* Transparent Navbar */}
       <TransparentNavbar groups={planData.groups} />
       
