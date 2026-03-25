@@ -67,7 +67,7 @@ export function Dashboard({ camps, activeCampId, plans, onSelectPlan, onSetViewM
   }, [activeCamp]);
 
   return (
-    <div className="flex-1 h-full overflow-y-auto bg-background p-6 md:p-10 space-y-10 scrollbar-hide page-enter transition-colors duration-300">
+    <div className="flex-1 bg-background p-6 md:p-10 space-y-10 scrollbar-hide page-enter transition-colors duration-300">
       {/* ═══════════════════════════════════════════
           HERO SECTION — Landing Page Warmth
           ═══════════════════════════════════════════ */}

@@ -152,7 +152,7 @@ export default function PlansOverview() {
 
   return (
     <div 
-      className="h-full overflow-y-auto overflow-x-hidden bg-stone-50 dark:bg-slate-900 text-stone-900 dark:text-slate-50 transition-colors selection:bg-orange-200 dark:selection:bg-amber-500/30 font-sans touch-pan-y overscroll-x-none"
+      className="overflow-x-hidden bg-stone-50 dark:bg-slate-900 text-stone-900 dark:text-slate-50 transition-colors selection:bg-orange-200 dark:selection:bg-amber-500/30 font-sans touch-pan-y overscroll-x-none"
       onTouchStart={handleSwipeStart}
       onTouchEnd={handleSwipeEnd}
     >

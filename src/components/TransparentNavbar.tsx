@@ -1,6 +1,7 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
+import { useActionBarStore } from "@/store/action-bar-store";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -29,7 +30,7 @@ import {
 } from "@/components/ui/sheet";
 
 const NAV_ITEMS = [
-  { label: "Dashboard", href: "/", icon: Home },
+  { label: "Home", href: "/", icon: Home },
   { label: "Plans", href: "/plans", icon: FolderOpen },
   { label: "Admin", href: "/admin", icon: ShieldCheck },
   { label: "Settings", href: "/settings", icon: Settings },
@@ -42,6 +43,10 @@ interface NavbarProps {
 export function TransparentNavbar({ groups }: NavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeMegaMenu, setActiveMegaMenu] = useState<"plans" | "admin" | null>(null);
+
+  // Read scroll state from store (ActionBar writes it)
+  const isNavbarVisible = useActionBarStore((s) => s.isNavbarVisible);
+  const hasActionBar = useActionBarStore((s) => s.hasActionBar);
 
   const pathname = usePathname();
   const { camps, activeCampId, groups: allGroups } = usePlans();
@@ -81,10 +86,13 @@ export function TransparentNavbar({ groups }: NavbarProps) {
     <>
       <nav
         className={cn(
-          "fixed top-0 left-0 w-full z-50 transition-colors duration-300",
+          "fixed top-0 left-0 w-full z-50 transition-all duration-300 ease-in-out",
           isHome
             ? "bg-transparent border-none"
-            : "bg-white/85 dark:bg-[hsl(var(--bar-theme))] backdrop-blur-xl dark:backdrop-blur-none border-b border-stone-200/70 dark:border-[hsl(var(--bar-theme-border))] shadow-[0_1px_0_rgba(15,23,42,0.06)] dark:shadow-none"
+            : "bg-white/85 dark:bg-[hsl(var(--bar-theme))] backdrop-blur-xl dark:backdrop-blur-none border-b border-stone-200/70 dark:border-[hsl(var(--bar-theme-border))] shadow-[0_1px_0_rgba(15,23,42,0.06)] dark:shadow-none",
+          !isNavbarVisible && hasActionBar
+            ? "max-md:-translate-y-full"
+            : "max-md:translate-y-0"
         )}
       >
         <div
@@ -122,20 +130,20 @@ export function TransparentNavbar({ groups }: NavbarProps) {
               <Link
                 href="/"
                 className={cn(
-                  "font-bold tracking-wider uppercase text-sm transition-colors duration-300 ",
+                  "font-bold tracking-widest uppercase text-base md:text-lg transition-colors duration-300 ",
                   isActive("/")
                     ? "text-slate-900 dark:text-white underline underline-offset-8"
                     : "text-slate-900 dark:text-white hover:text-orange-600 dark:hover:text-orange-200"
                 )}
               >
-                Dashboard
+                Home
               </Link>
 
               <div className="relative group" onMouseEnter={() => setActiveMegaMenu("plans")}>
                 <Link
                   href="/plans"
                   className={cn(
-                    "font-bold tracking-wider uppercase text-sm transition-colors duration-300 inline-flex items-center gap-1 ",
+                    "font-bold tracking-widest uppercase text-base md:text-lg transition-colors duration-300 inline-flex items-center gap-1 ",
                     isActive("/plans")
                       ? "text-slate-900 dark:text-white underline underline-offset-8"
                       : "text-slate-900 dark:text-white hover:text-orange-600 dark:hover:text-orange-200"
@@ -150,7 +158,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                 <Link
                   href="/admin"
                   className={cn(
-                    "font-bold tracking-wider uppercase text-sm transition-colors duration-300 inline-flex items-center gap-1 ",
+                    "font-bold tracking-widest uppercase text-base md:text-lg transition-colors duration-300 inline-flex items-center gap-1 ",
                     isActive("/admin")
                       ? "text-slate-900 dark:text-white underline underline-offset-8"
                       : "text-slate-900 dark:text-white hover:text-orange-600 dark:hover:text-orange-200"
@@ -164,7 +172,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
               <Link
                 href="/settings"
                 className={cn(
-                  "font-bold tracking-wider uppercase text-sm transition-colors duration-300 ",
+                  "font-bold tracking-widest uppercase text-base md:text-lg transition-colors duration-300 ",
                   isActive("/settings")
                     ? "text-slate-900 dark:text-white underline underline-offset-8"
                     : "text-slate-900 dark:text-white hover:text-orange-600 dark:hover:text-orange-200"

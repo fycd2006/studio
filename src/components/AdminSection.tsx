@@ -665,8 +665,8 @@ export function AdminSection({
   };
 
   return (
-    <div className="h-full flex flex-col bg-stone-50 dark:bg-[hsl(var(--bar-theme))] animate-in fade-in duration-500 relative transition-colors font-fira-sans overflow-hidden">
-      <main className="flex-1 w-full h-full overflow-y-auto min-h-0 relative">
+    <div className="h-full flex flex-col bg-stone-50 dark:bg-[hsl(var(--bar-theme))] animate-in fade-in duration-500 relative transition-colors font-fira-sans">
+      <main className="flex-1 w-full relative">
         <div className="min-h-full w-full pt-28 sm:pt-24 px-4 sm:px-6 md:px-8 lg:px-10 pb-8 md:pb-12">
           <Tabs value={activeMainTab} onValueChange={handleMainTabChange} className="w-full flex flex-col items-stretch space-y-6">
             <header className="relative z-20 no-print w-full mb-8 sm:mb-16 border-b border-slate-300 dark:border-white/[0.06] pb-6 sm:pb-8">
