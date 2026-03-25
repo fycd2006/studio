@@ -675,22 +675,22 @@ export function AdminSection({
             </header>
 
             <ActionBar title="Admin Actions" className="md:justify-end">
-              <Button variant="ghost" size="sm" onClick={handlePrint} className="h-9 px-3 rounded-lg font-bold text-xs bg-transparent text-slate-600">
+              <Button variant="ghost" size="sm" onClick={handlePrint} className="h-9 px-3 rounded-lg font-bold text-xs bg-transparent text-white mix-blend-difference hover:opacity-100 opacity-90 transition-opacity">
                 匯出 / PRINT
               </Button>
-              <Button variant="ghost" size="icon" onClick={onUndoTable} disabled={!canUndoTable || isLocked} className="h-9 w-9 rounded-lg bg-transparent text-slate-500 hover:text-orange-500 hover:bg-black/5">
+              <Button variant="ghost" size="icon" onClick={onUndoTable} disabled={!canUndoTable || isLocked} className="h-9 w-9 rounded-lg bg-transparent text-white mix-blend-difference hover:opacity-100 opacity-90 transition-opacity">
                 <Undo2 className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={onRedoTable} disabled={!canRedoTable || isLocked} className="h-9 w-9 rounded-lg bg-transparent text-slate-500 hover:text-orange-500 hover:bg-black/5">
+              <Button variant="ghost" size="icon" onClick={onRedoTable} disabled={!canRedoTable || isLocked} className="h-9 w-9 rounded-lg bg-transparent text-white mix-blend-difference hover:opacity-100 opacity-90 transition-opacity">
                 <Redo2 className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={handleZoomOut} disabled={zoom <= 0.3 || activeMainTab === 'timer'} className="h-9 w-9 rounded-lg bg-transparent text-slate-500 hover:text-orange-500 hover:bg-black/5">
+              <Button variant="ghost" size="icon" onClick={handleZoomOut} disabled={zoom <= 0.3 || activeMainTab === 'timer'} className="h-9 w-9 rounded-lg bg-transparent text-white mix-blend-difference hover:opacity-100 opacity-90 transition-opacity">
                 <ZoomOut className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={handleFitAll} disabled={activeMainTab === 'timer'} className="h-9 w-9 rounded-lg bg-transparent text-slate-500 hover:text-orange-500 hover:bg-black/5">
+              <Button variant="ghost" size="icon" onClick={handleFitAll} disabled={activeMainTab === 'timer'} className="h-9 w-9 rounded-lg bg-transparent text-white mix-blend-difference hover:opacity-100 opacity-90 transition-opacity">
                 <Maximize className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={handleZoomIn} disabled={zoom >= 2 || activeMainTab === 'timer'} className="h-9 w-9 rounded-lg bg-transparent text-slate-500 hover:text-orange-500 hover:bg-black/5">
+              <Button variant="ghost" size="icon" onClick={handleZoomIn} disabled={zoom >= 2 || activeMainTab === 'timer'} className="h-9 w-9 rounded-lg bg-transparent text-white mix-blend-difference hover:opacity-100 opacity-90 transition-opacity">
                 <ZoomIn className="h-4 w-4" />
               </Button>
             </ActionBar>

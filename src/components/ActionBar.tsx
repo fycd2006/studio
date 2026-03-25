@@ -13,13 +13,13 @@ export function ActionBar({ children, title, className }: ActionBarProps) {
     <div
       className={cn(
         "sticky z-40 top-16 md:top-20 transition-colors duration-300",
-        "bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-b border-stone-200 dark:border-slate-800 py-3",
+        "bg-transparent border-transparent py-3",
         "-mx-4 md:-mx-8 lg:-mx-10 px-4 md:px-8 lg:px-10 mb-4 md:mb-6"
       )}
     >
       <div className="flex items-center justify-between gap-4 max-w-none w-full">
         {/* Title (Hidden on mobile, shown on desktop) */}
-        <div className="hidden md:block font-bold text-slate-900 dark:text-gray-100 text-sm tracking-wider">
+        <div className="hidden md:block font-bold text-white mix-blend-difference text-sm tracking-wider">
           {title}
         </div>
 

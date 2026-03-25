@@ -66,8 +66,8 @@ export function TransparentNavbar({ groups }: NavbarProps) {
   };
 
   const isMenuOpen = activeMegaMenu !== null;
-  const navTextClass = "text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]";
-  const navIconClass = "text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]";
+  const navTextClass = "text-white mix-blend-difference hover:opacity-80";
+  const navIconClass = "text-white mix-blend-difference hover:opacity-80";
 
   const planDropdownGroups = safeGroups.slice(0, 10);
   const adminDropdownItems = [
@@ -97,10 +97,10 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                   />
                 </div>
                 <div className="flex flex-col leading-tight text-white min-w-0">
-                  <span className="text-[1.02rem] font-black tracking-[0.02em] drop-shadow-[0_2px_6px_rgba(0,0,0,0.65)] truncate">
+                  <span className="text-[1.02rem] font-black tracking-[0.02em] truncate">
                     NTUT Chong De Camp
                   </span>
-                  <span className="text-[0.68rem] font-semibold tracking-[0.08em] text-white/95 drop-shadow-[0_2px_6px_rgba(0,0,0,0.65)]">
+                  <span className="text-[0.68rem] font-semibold tracking-[0.08em] text-white/95 ">
                     北科崇德青年社
                   </span>
                 </div>
@@ -111,7 +111,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
               <Link
                 href="/"
                 className={cn(
-                  "font-bold tracking-wider uppercase text-sm transition-colors duration-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]",
+                  "font-bold tracking-wider uppercase text-sm transition-colors duration-300 ",
                   isActive("/")
                     ? "text-white underline underline-offset-8"
                     : "text-white hover:text-orange-200"
@@ -124,7 +124,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                 <Link
                   href="/plans"
                   className={cn(
-                    "font-bold tracking-wider uppercase text-sm transition-colors duration-300 inline-flex items-center gap-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]",
+                    "font-bold tracking-wider uppercase text-sm transition-colors duration-300 inline-flex items-center gap-1 ",
                     isActive("/plans")
                       ? "text-white underline underline-offset-8"
                       : "text-white hover:text-orange-200"
@@ -139,7 +139,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                 <Link
                   href="/admin"
                   className={cn(
-                    "font-bold tracking-wider uppercase text-sm transition-colors duration-300 inline-flex items-center gap-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]",
+                    "font-bold tracking-wider uppercase text-sm transition-colors duration-300 inline-flex items-center gap-1 ",
                     isActive("/admin")
                       ? "text-white underline underline-offset-8"
                       : "text-white hover:text-orange-200"
@@ -153,7 +153,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
               <Link
                 href="/settings"
                 className={cn(
-                  "font-bold tracking-wider uppercase text-sm transition-colors duration-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]",
+                  "font-bold tracking-wider uppercase text-sm transition-colors duration-300 ",
                   isActive("/settings")
                     ? "text-white underline underline-offset-8"
                     : "text-white hover:text-orange-200"
@@ -167,7 +167,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
               {activeCamp && (
                 <div
                   className={cn(
-                    "px-3 py-1 rounded-full text-xs font-semibold text-white bg-white/15 backdrop-blur-sm drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
+                    "px-3 py-1 rounded-full text-xs font-semibold text-white bg-white/15 backdrop-blur-sm "
                   )}
                 >
                   {activeCamp.name}
@@ -236,7 +236,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                         href={`/plans?group=${group.slug}`}
                         className="block rounded-lg px-4 py-3 border border-white/20 bg-transparent text-white hover:border-white/35"
                       >
-                        <p className="font-semibold drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{group.nameZh}</p>
+                        <p className="font-semibold ">{group.nameZh}</p>
                         <p className="text-[11px] uppercase tracking-wide text-white/80">{group.nameEn}</p>
                       </Link>
                     ))}
@@ -249,7 +249,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                       <Link
                         key={item.href}
                         href={item.href}
-                        className="block rounded-lg px-4 py-3 border border-white/20 bg-transparent text-white font-semibold drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] hover:border-white/35"
+                        className="block rounded-lg px-4 py-3 border border-white/20 bg-transparent text-white font-semibold hover:border-white/35"
                       >
                         {item.label}
                       </Link>
@@ -273,10 +273,10 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                   />
                 </div>
                 <div className="flex flex-col leading-tight text-white">
-                  <span className="text-[0.82rem] font-extrabold tracking-[0.01em] drop-shadow-[0_2px_6px_rgba(0,0,0,0.65)]">
+                  <span className="text-[0.82rem] font-extrabold tracking-[0.01em] ">
                     NTUT Chong De Camp
                   </span>
-                  <span className="text-[0.61rem] font-semibold tracking-[0.04em] text-white/95 drop-shadow-[0_2px_6px_rgba(0,0,0,0.65)]">
+                  <span className="text-[0.61rem] font-semibold tracking-[0.04em] text-white/95 ">
                     北科崇德青年社
                   </span>
                 </div>
@@ -300,7 +300,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      "text-[0.94rem] font-black uppercase tracking-wide whitespace-nowrap transition-colors duration-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]",
+                      "text-[0.94rem] font-black uppercase tracking-wide whitespace-nowrap transition-colors duration-300 ",
                       isActive(item.href)
                         ? "text-white underline underline-offset-8"
                         : "text-white hover:text-orange-200"
@@ -318,7 +318,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
       <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
         <SheetContent side="right" className="w-full sm:w-96 flex flex-col bg-black/80 backdrop-blur-md border-white/20">
           <SheetHeader>
-            <SheetTitle className="text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">Navigation</SheetTitle>
+            <SheetTitle className="text-white ">Navigation</SheetTitle>
           </SheetHeader>
           <div className="flex-1 flex flex-col gap-4 mt-6 overflow-y-auto">
             {NAV_ITEMS.map((item) => (
@@ -333,7 +333,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                     : "text-white hover:bg-white/15"
                 )}
               >
-                <item.icon className="w-5 h-5 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" />
+                <item.icon className="w-5 h-5 text-white " />
                 {item.label}
               </Link>
             ))}
@@ -342,7 +342,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
           {activeCamp && (
             <div className="border-t border-white/20 pt-4 mt-4">
               <p className="text-xs text-white/80 mb-2">Current Camp</p>
-              <p className="font-semibold text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{activeCamp.name}</p>
+              <p className="font-semibold text-white ">{activeCamp.name}</p>
             </div>
           )}
         </SheetContent>
