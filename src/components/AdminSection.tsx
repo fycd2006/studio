@@ -612,7 +612,7 @@ export function AdminSection({
     <div className="h-full flex flex-col bg-stone-50 dark:bg-slate-950 animate-in fade-in duration-500 relative transition-colors font-fira-sans overflow-hidden">
       <main className="flex-1 w-full h-full overflow-y-auto min-h-0 relative scrollbar-hide">
         <div className="min-h-full w-full pt-20 md:pt-24 px-4 md:px-8 lg:px-10 pb-8 md:pb-12">
-          <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="w-full h-full flex flex-col items-stretch space-y-6">
+          <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="w-full flex flex-col items-stretch space-y-6">
             <header className="relative z-20 no-print w-full mb-4 md:mb-6 border-b border-stone-200 dark:border-slate-800 pb-6">
               <div className="w-full flex flex-col md:flex-row items-start md:items-center justify-between gap-6 transition-colors">
               {/* Left: Branding & Print */}

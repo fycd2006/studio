@@ -21,7 +21,7 @@ export default function AdminPage() {
 
   /* Crew sees read-only admin section with lock overlay */
   return (
-    <div className="h-full relative bg-stone-50 dark:bg-slate-900 text-stone-900 dark:text-slate-50 transition-colors font-sans selection:bg-orange-200 dark:selection:bg-amber-500/30 overflow-hidden">
+    <div className="h-[100dvh] relative bg-stone-50 dark:bg-slate-900 text-stone-900 dark:text-slate-50 transition-colors font-sans selection:bg-orange-200 dark:selection:bg-amber-500/30 overflow-hidden">
       <AdminSection
         tables={tables}
         onAddTable={isAdmin ? addTable : () => toast({ title: "🔒 唯讀模式", description: "您目前的權限為組員，如需修改請聯繫管理員。" })}
