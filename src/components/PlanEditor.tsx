@@ -27,7 +27,8 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize,
-  MoreHorizontal
+  MoreHorizontal,
+  RotateCcw
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
