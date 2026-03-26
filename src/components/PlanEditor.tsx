@@ -69,7 +69,7 @@ const SectionHeader = ({ title, icon: Icon }: { title: string; icon?: any }) => 
       {Icon && <Icon className="h-4.5 w-4.5 text-orange-500 dark:text-amber-400 opacity-80 transition-colors" />}
       {title}
     </h3>
-    <div className="flex-1 h-[1px] bg-stone-100 dark:bg-white/5 ml-2 transition-colors" />
+    <div className="flex-1 min-w-0 h-[1px] bg-stone-100 dark:bg-white/5 ml-2 transition-colors" />
   </div>
 );
 
@@ -280,11 +280,11 @@ export function PlanEditor({
 
   return (
     <div className="flex flex-row bg-stone-50 dark:bg-slate-900 font-body transition-colors relative w-full">
-      <div className="flex-1 overflow-x-clip relative scrollbar-hide">
+      <div className="flex-1 min-w-0 overflow-x-clip relative scrollbar-hide">
         <div className="w-full pt-20 md:pt-24 pb-6 md:pb-10 px-4 md:px-6 xl:px-8 flex flex-col">
           <div className="w-full md:w-[70%] md:mx-auto flex flex-col">
           <header className="relative z-20 flex-none w-full mb-4 md:mb-6 border-b border-stone-200 dark:border-slate-800 pb-6 transition-all">
-            <div className="w-full flex justify-between items-start gap-4">
+            <div className="w-full max-w-full flex justify-between items-start gap-4">
               <div className="flex flex-col w-full text-left">
                 <div className="flex items-center gap-2 mb-2">
                   <span className={cn(
@@ -310,7 +310,7 @@ export function PlanEditor({
 
           <ActionBar title="" className="md:justify-end gap-1.5 md:gap-2 mb-4">
             {!isHistoryMode && (
-              <div className="hidden sm:flex flex-shrink-0 items-center bg-transparent border-none mr-1 sm:mr-2">
+              <div className="flex flex-shrink-0 items-center bg-transparent border-none mr-1 sm:mr-2">
                 <Input 
                   placeholder="輸入版本名稱..." 
                   value={newVersionName}
@@ -360,18 +360,18 @@ export function PlanEditor({
             <Button variant="ghost" size="icon" onClick={onRedo} disabled={!canRedo || isHistoryMode} className="h-9 w-9 rounded-lg bg-transparent text-slate-900 dark:text-white hover:opacity-100 opacity-90 transition-opacity">
               <Redo2 className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={handleZoomOut} disabled={pageZoom <= 0.3} className="hidden sm:flex h-9 w-9 rounded-lg bg-transparent text-slate-900 dark:text-white hover:opacity-100 opacity-90 transition-opacity">
+            <Button variant="ghost" size="icon" onClick={handleZoomOut} disabled={pageZoom <= 0.3} className="flex h-9 w-9 rounded-lg bg-transparent text-slate-900 dark:text-white hover:opacity-100 opacity-90 transition-opacity">
               <ZoomOut className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={handleFitAll} className="hidden sm:flex h-9 w-9 rounded-lg bg-transparent text-slate-900 dark:text-white hover:opacity-100 opacity-90 transition-opacity">
+            <Button variant="ghost" size="icon" onClick={handleFitAll} className="flex h-9 w-9 rounded-lg bg-transparent text-slate-900 dark:text-white hover:opacity-100 opacity-90 transition-opacity">
               <Maximize className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={handleZoomIn} disabled={pageZoom >= 2} className="hidden sm:flex h-9 w-9 rounded-lg bg-transparent text-slate-900 dark:text-white hover:opacity-100 opacity-90 transition-opacity">
+            <Button variant="ghost" size="icon" onClick={handleZoomIn} disabled={pageZoom >= 2} className="flex h-9 w-9 rounded-lg bg-transparent text-slate-900 dark:text-white hover:opacity-100 opacity-90 transition-opacity">
               <ZoomIn className="h-4 w-4" />
             </Button>
           </ActionBar>
 
-          <main className="flex-1 flex flex-col relative shrink-0 pb-32 sm:pb-40">
+          <main className="flex-1 min-w-0 flex flex-col relative shrink-0 pb-32 sm:pb-40">
           <div style={{ zoom: pageZoom }}>
           {isLoadingPreview ? (
             <div className="h-full min-h-[260px] flex flex-col items-center justify-center gap-2 text-stone-500 dark:text-slate-400">
@@ -380,7 +380,7 @@ export function PlanEditor({
             </div>
           ) : (
             <Card className="border-x-0 border-y sm:border-stone-200 dark:border-white/5 shadow-none sm:shadow-xl rounded-none sm:rounded-[2rem] md:rounded-[2.5rem] overflow-hidden bg-white dark:bg-slate-900/50">
-              <CardContent className="p-4 sm:p-8 md:p-12 space-y-8 md:space-y-12 leading-[1.6]">
+              <CardContent className="p-3 sm:p-6 md:p-12 space-y-8 md:space-y-12 leading-[1.6]">
                 {isHistoryMode && (
                   <div className="flex items-center justify-between p-6 bg-orange-50/50 dark:bg-amber-400/5 rounded-2xl border border-orange-100 dark:border-amber-400/20 mb-8">
                     <div className="flex items-center gap-3">
@@ -558,7 +558,7 @@ export function PlanEditor({
             setIsHistoryMode(false);
           }}
           onUpdateVersionName={(id, name) => onUpdateVersionName?.(id, name)}
-          className="w-[300px] md:w-[350px] flex-none animate-in slide-in-from-right duration-300 border-l border-stone-200 dark:border-white/5 bg-white sm:bg-stone-50/50 dark:bg-slate-950 shadow-2xl relative z-10 h-full overflow-y-auto"
+          className="w-[85vw] sm:w-[300px] md:w-[350px] fixed sm:relative right-0 flex-none animate-in slide-in-from-right duration-300 border-l border-stone-200 dark:border-white/5 bg-white sm:bg-stone-50/50 dark:bg-slate-950 shadow-2xl z-50 sm:z-10 h-[100dvh] sm:h-full overflow-y-auto"
         />
       )}
 

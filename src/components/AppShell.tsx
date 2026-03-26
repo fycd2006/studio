@@ -74,7 +74,7 @@ function AppShellInternal({ children }: { children: React.ReactNode }) {
       <TransparentNavbar groups={planData.groups} />
       
       {/* Main Content Area */}
-      <main className="flex-1 w-full overflow-x-clip relative animate-in fade-in slide-in-from-bottom-5 duration-300">
+      <main className="flex-1 min-w-0 w-full overflow-x-clip relative animate-in fade-in slide-in-from-bottom-5 duration-300">
         {children}
       </main>
       
