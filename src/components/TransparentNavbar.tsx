@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useActionBarStore } from "@/store/action-bar-store";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -46,11 +46,13 @@ export function TransparentNavbar({ groups }: NavbarProps) {
 
   // Read scroll state from store (ActionBar writes it)
   const isNavbarVisible = useActionBarStore((s) => s.isNavbarVisible);
+  const setIsNavbarVisible = useActionBarStore((s) => s.setIsNavbarVisible);
   const hasActionBar = useActionBarStore((s) => s.hasActionBar);
 
   const pathname = usePathname();
   const { camps, activeCampId, groups: allGroups } = usePlans();
   const isHome = pathname === "/";
+  const lastScrollY = useRef(0);
 
   const activeCamp = camps?.find((c) => c.id === activeCampId);
   const displayGroups = groups || allGroups || [];
@@ -81,6 +83,25 @@ export function TransparentNavbar({ groups }: NavbarProps) {
     { label: "輪替表", href: "/admin?tab=tables" },
     { label: "道具清單", href: "/admin?tab=props" },
   ];
+
+  useEffect(() => {
+    const THRESHOLD = 10;
+
+    const handleScroll = () => {
+      const currentY = window.scrollY;
+      if (process.env.NODE_ENV !== "production") {
+        console.log("[Navbar scrollY]", currentY);
+      }
+
+      if (Math.abs(currentY - lastScrollY.current) < THRESHOLD) return;
+      const goingDown = currentY > lastScrollY.current && currentY > 60;
+      setIsNavbarVisible(!goingDown);
+      lastScrollY.current = currentY;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [setIsNavbarVisible]);
 
   return (
     <>

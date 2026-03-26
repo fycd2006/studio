@@ -280,7 +280,7 @@ export function PlanEditor({
 
   return (
     <div className="flex flex-row bg-stone-50 dark:bg-slate-900 font-body transition-colors relative w-full">
-      <div className="flex-1 overflow-x-hidden relative scrollbar-hide">
+      <div className="flex-1 overflow-x-clip relative scrollbar-hide">
         <div className="w-full pt-20 md:pt-24 pb-6 md:pb-10 px-4 md:px-6 xl:px-8 flex flex-col">
           <div className="w-full md:w-[70%] md:mx-auto flex flex-col">
           <header className="relative z-20 flex-none w-full mb-4 md:mb-6 border-b border-stone-200 dark:border-slate-800 pb-6 transition-all">
