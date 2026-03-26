@@ -110,7 +110,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
           "fixed top-0 left-0 w-full z-50 transition-all duration-300 ease-in-out",
           isHome
             ? "bg-transparent border-none"
-            : "bg-white/85 dark:bg-[hsl(var(--bar-theme))] backdrop-blur-xl dark:backdrop-blur-none border-b border-stone-200/70 dark:border-[hsl(var(--bar-theme-border))] shadow-[0_1px_0_rgba(15,23,42,0.06)] dark:shadow-none",
+            : "bg-stone-50 dark:bg-[hsl(var(--bar-theme))] border-b border-stone-200/70 dark:border-[hsl(var(--bar-theme-border))] shadow-sm dark:shadow-none",
           !isNavbarVisible && hasActionBar
             ? "max-md:-translate-y-full"
             : "max-md:translate-y-0"
@@ -261,7 +261,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                 "w-full border-t-0 rounded-t-none border-b",
                 isHome
                   ? "border-white/20 bg-transparent"
-                  : "border-stone-200/70 dark:border-[hsl(var(--bar-theme-border))] bg-white/90 dark:bg-[hsl(var(--bar-theme))] backdrop-blur-xl dark:backdrop-blur-none"
+                  : "border-stone-200/70 dark:border-[hsl(var(--bar-theme-border))] bg-stone-50 dark:bg-[hsl(var(--bar-theme))]"
               )}
             >
               <div className="max-w-6xl mx-auto px-6 py-6">

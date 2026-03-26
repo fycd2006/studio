@@ -37,7 +37,7 @@ export function ActionBar({ children, title, className }: ActionBarProps) {
         isNavbarVisible ? "top-[104px]" : "top-0",
         isHome
           ? "bg-transparent border-transparent py-1 md:py-2"
-          : "bg-white/85 dark:bg-[hsl(var(--bar-theme))] backdrop-blur-xl dark:backdrop-blur-none border-b border-stone-200/70 dark:border-[hsl(var(--bar-theme-border))] py-2",
+          : "bg-stone-50 dark:bg-[hsl(var(--bar-theme))] border-b border-stone-200/70 dark:border-[hsl(var(--bar-theme-border))] py-2",
         "-mx-4 md:-mx-8 lg:-mx-10 px-4 md:px-8 lg:px-10 mb-4 md:mb-6"
       )}
     >
