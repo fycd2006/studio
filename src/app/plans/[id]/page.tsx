@@ -56,8 +56,8 @@ export default function PlanEditorPage() {
   };
 
   return (
-    <div className="h-[100dvh] relative flex flex-col bg-stone-50 dark:bg-slate-900 text-stone-900 dark:text-slate-50 transition-colors">
-      <div className="flex-1 min-h-0 flex flex-col">
+    <div className="min-h-screen relative flex flex-col bg-stone-50 dark:bg-slate-900 text-stone-900 dark:text-slate-50 transition-colors">
+      <div className="flex-1 flex flex-col">
         <PlanEditor 
           plan={plan} 
           groups={groups}
