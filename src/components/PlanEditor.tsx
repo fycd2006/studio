@@ -101,6 +101,7 @@ export function PlanEditor({
   
   // History Mode State
   const [isHistoryMode, setIsHistoryMode] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedVersion, setSelectedVersion] = useState<PlanVersion | null>(null);
   const [previewPlan, setPreviewPlan] = useState<LessonPlan | null>(null);
   const [previousPlan, setPreviousPlan] = useState<LessonPlan | null>(null);
@@ -234,12 +235,13 @@ export function PlanEditor({
 
   // Note: handlePlanUpdate was moved higher up, so we'll just leave this spot empty to prevent duplication.
 
-  const handleSaveVersion = () => {
-    if (!newVersionName.trim()) {
+  const handleSaveVersion = (name?: string) => {
+    const nameToSave = name || newVersionName;
+    if (!nameToSave.trim()) {
       toast({ title: "請輸入版本名稱", variant: "destructive" });
       return;
     }
-    onSaveVersion?.(newVersionName);
+    onSaveVersion?.(nameToSave.trim());
     setNewVersionName("");
     toast({ title: "版本已儲存" });
   };
@@ -309,34 +311,24 @@ export function PlanEditor({
           </header>
 
           <ActionBar title="" className="md:justify-end gap-1.5 md:gap-2 mb-4">
-            {!isHistoryMode && (
-              <div className="flex flex-shrink-0 items-center bg-transparent border-none mr-1 sm:mr-2">
-                <Input 
-                  placeholder="輸入版本名稱..." 
-                  value={newVersionName}
-                  onChange={(e) => setNewVersionName(e.target.value)}
-                  className="h-8 w-[120px] md:w-[150px] bg-transparent border-none text-[10px] font-bold focus-visible:ring-0 shadow-none text-slate-900 dark:text-white placeholder:text-slate-700 dark:placeholder:text-white/60"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleSaveVersion();
-                  }}
-                />
-                <Button size="sm" onClick={handleSaveVersion} className="h-8 w-8 p-0 bg-transparent hover:bg-stone-200 dark:hover:bg-slate-700 text-slate-900 dark:text-white hover:opacity-100 opacity-90 transition-opacity rounded-lg">
-                  <Save className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
+            
             
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setIsHistoryMode(!isHistoryMode)}
+              title="版本紀錄"
+              onClick={() => {
+                const willOpen = !isSidebarOpen;
+                setIsSidebarOpen(willOpen);
+                if (willOpen && !isHistoryMode) setIsHistoryMode(true);
+                if (!willOpen && !selectedVersion) setIsHistoryMode(false);
+              }}
               className={cn(
-                "h-9 px-3 rounded-lg font-bold text-xs bg-transparent",
-                isHistoryMode ? "text-slate-900 dark:text-white font-bold opacity-100 underline underline-offset-4" : "text-slate-900 dark:text-white hover:opacity-100 opacity-90 transition-opacity"
+                "h-9 w-9 p-0 flex justify-center items-center rounded-lg font-bold text-xs bg-transparent transition-all",
+                isSidebarOpen ? "text-slate-900 dark:text-white bg-stone-200 dark:bg-slate-800 opacity-100" : "text-slate-900 dark:text-white hover:opacity-100 opacity-90 hover:bg-stone-200 dark:hover:bg-slate-800"
               )}
             >
-              <History className="w-4 h-4 mr-1.5" />
-              {isHistoryMode ? "離開紀錄" : t('LOG_BOOK')}
+              <History className="w-4 h-4" />
             </Button>
 
             <DropdownMenu>
@@ -382,22 +374,43 @@ export function PlanEditor({
             <Card className="border-x-0 border-y sm:border-stone-200 dark:border-white/5 shadow-none sm:shadow-xl rounded-none sm:rounded-[2rem] md:rounded-[2.5rem] overflow-hidden bg-white dark:bg-slate-900/50">
               <CardContent className="p-3 sm:p-6 md:p-12 space-y-8 md:space-y-12 leading-[1.6]">
                 {isHistoryMode && (
-                  <div className="flex items-center justify-between p-6 bg-orange-50/50 dark:bg-amber-400/5 rounded-2xl border border-orange-100 dark:border-amber-400/20 mb-8">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 bg-orange-50/50 dark:bg-amber-400/5 rounded-2xl border border-orange-100 dark:border-amber-400/20 mb-8 gap-4">
                     <div className="flex items-center gap-3">
                       <div className="w-1.5 h-6 bg-orange-500 rounded-full" />
                       <div>
-                        <span className="text-sm font-black text-stone-900 dark:text-white uppercase tracking-tight block">紀錄預覽 / History View</span>
+                        <span className="text-sm font-black text-stone-900 dark:text-white uppercase tracking-tight block">歷史紀錄 / History View</span>
                         {selectedVersion && (
                           <span className="text-[9px] font-bold text-stone-500 uppercase tracking-widest">
-                            Showing: {selectedVersion.name} ({format(new Date(selectedVersion.createdAt), "MM/dd HH:mm")})
+                            Showing: {selectedVersion.versionName || selectedVersion.name} ({format(new Date(selectedVersion.createdAt), "MM/dd HH:mm")})
                           </span>
                         )}
                       </div>
                     </div>
+                    {selectedVersion && (
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <Button 
+                          variant="ghost" 
+                          onClick={() => {
+                            setSelectedVersion(null);
+                            setIsHistoryMode(false);
+                            setIsSidebarOpen(false);
+                          }}
+                          className="h-10 px-4 rounded-xl font-bold text-xs flex-1 sm:flex-none"
+                        >
+                          取消 / Cancel
+                        </Button>
+                        <Button 
+                          onClick={() => handleRestoreVersion(selectedVersion.id)}
+                          className="h-10 px-6 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-orange-500/20 flex-1 sm:flex-none"
+                        >
+                          <RotateCcw className="h-4 w-4 mr-2" /> 還原 / Restore
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
 
-                <div className="space-y-12">
+        <div className="space-y-12">
                   <section>
                     <SectionHeader title="活動類型" icon={Layout} />
                     {isHistoryMode ? (
@@ -544,21 +557,28 @@ export function PlanEditor({
       </div>
 
       {/* Sidebar - Placed outside the scrollable container so it stays fixed */}
-      {isHistoryMode && (
-        <VersionHistorySidebar
+      {isSidebarOpen && (
+        <VersionHistorySidebar 
           versions={versions}
           selectedVersionId={selectedVersion?.id || null}
-          onSelectVersion={setSelectedVersion}
-          onRestore={handleRestoreVersion}
+          onSelectVersion={(v) => {
+             setSelectedVersion(v);
+             setIsHistoryMode(!!v);
+             if (window.innerWidth < 640) {
+               setIsSidebarOpen(false);
+             }
+          }}
           onDelete={handleDeleteVersion}
           showNamedOnly={showNamedOnly}
           onToggleFilter={() => setShowNamedOnly(!showNamedOnly)}
           onBackToCurrent={() => {
             setSelectedVersion(null);
             setIsHistoryMode(false);
+            if (window.innerWidth < 640) setIsSidebarOpen(false);
           }}
-          onUpdateVersionName={(id, name) => onUpdateVersionName?.(id, name)}
-          className="w-[85vw] sm:w-[300px] md:w-[350px] fixed sm:relative right-0 flex-none animate-in slide-in-from-right duration-300 border-l border-stone-200 dark:border-white/5 bg-white sm:bg-stone-50/50 dark:bg-slate-950 shadow-2xl z-50 sm:z-10 h-[100dvh] sm:h-full overflow-y-auto"
+          onUpdateVersionName={onUpdateVersionName}
+          onSaveVersion={handleSaveVersion}
+          className="w-[85vw] sm:w-[320px] fixed right-0 top-[104px] z-50 h-[calc(100dvh-104px)] shadow-2xl"
         />
       )}
 

@@ -45,6 +45,7 @@ export function VersionHistorySidebar({
   onToggleFilter,
   onBackToCurrent,
   onUpdateVersionName,
+  onSaveVersion,
   className
 }: VersionHistorySidebarProps) {
   const { t } = useTranslation();
@@ -139,11 +140,66 @@ export function VersionHistorySidebar({
                 <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white bg-orange-500 shadow-inner">
                   <span className="text-xs font-black uppercase">LIVE</span>
                 </div>
-                <div className="flex-1 min-w-0 flex items-center h-8">
-                  <span className="font-bold text-sm text-stone-900 dark:text-white truncate block">
-                    當前版本 (Current Draft)
-                  </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2 h-8">
+                    {editingId === 'current' ? (
+                      <div className="flex items-center gap-1 w-full" onClick={e => e.stopPropagation()}>
+                        <Input 
+                          placeholder="儲存當前版本..."
+                          value={editName}
+                          onChange={e => setEditName(e.target.value)}
+                          className="h-7 text-xs px-2 py-0 font-bold"
+                          autoFocus
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                                if (editName.trim() && onSaveVersion) {
+                                    onSaveVersion(editName.trim());
+                                }
+                                setEditingId(null);
+                            }
+                            if (e.key === 'Escape') setEditingId(null);
+                          }}
+                        />
+                        <Button size="icon" variant="ghost" className="h-6 w-6 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 shrink-0" onClick={(e) => {
+                          e.stopPropagation();
+                          if (editName.trim() && onSaveVersion) {
+                              onSaveVersion(editName.trim());
+                          }
+                          setEditingId(null);
+                        }}>
+                          <Check className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-6 w-6 text-stone-400 hover:text-stone-600 hover:bg-stone-100 shrink-0" onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingId(null);
+                        }}>
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <span className="font-bold text-sm text-stone-900 dark:text-white truncate block">
+                        當前版本 (Current Draft)
+                      </span>
+                    )}
+                  </div>
                 </div>
+              </div>
+              
+              <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                {editingId !== 'current' && onSaveVersion && (
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-7 w-7 text-stone-400 hover:text-stone-600"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingId('current');
+                      setEditName('');
+                    }}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                )}
               </div>
             </div>
           </div>
