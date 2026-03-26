@@ -703,20 +703,20 @@ export function AdminSection({
 
             <ActionBar title="Admin Actions" className="md:justify-end">
               <div className="flex w-full flex-wrap items-center justify-start gap-2 md:gap-3 md:w-auto md:flex-nowrap md:mr-auto">
-                <TabsList className="bg-stone-100 dark:bg-slate-800/50 p-1 rounded-xl h-10 w-full sm:w-auto justify-start border border-slate-300 dark:border-white/5 grid grid-cols-3 md:flex">
-                  <TabsTrigger value="timer" className="rounded-lg font-bold text-[10px] gap-1.5 px-3 md:px-4 tracking-widest uppercase h-7 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm data-[state=active]:text-orange-600 dark:data-[state=active]:text-amber-400">
+                <TabsList className="bg-stone-100 dark:bg-slate-800/50 p-1 rounded-xl h-10 w-full sm:w-auto justify-start border-none shadow-none grid grid-cols-3 md:flex">
+                  <TabsTrigger value="timer" className="rounded-lg font-bold text-[10px] gap-1.5 px-3 md:px-4 tracking-widest uppercase h-7 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-none data-[state=active]:text-orange-600 dark:data-[state=active]:text-amber-400">
                     <Clock className="h-3 w-3" /> <span className="hidden md:inline">{t('TIMER_CONTROL')}</span>
                   </TabsTrigger>
-                  <TabsTrigger value="tables" className="rounded-lg font-bold text-[10px] gap-1.5 px-3 md:px-4 tracking-widest uppercase h-7 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm data-[state=active]:text-orange-600 dark:data-[state=active]:text-amber-400">
+                  <TabsTrigger value="tables" className="rounded-lg font-bold text-[10px] gap-1.5 px-3 md:px-4 tracking-widest uppercase h-7 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-none data-[state=active]:text-orange-600 dark:data-[state=active]:text-amber-400">
                     <TableIcon className="h-3 w-3" /> <span className="hidden md:inline">{t('ROTATION_TABLE')}</span>
                   </TabsTrigger>
-                  <TabsTrigger value="props" className="rounded-lg font-bold text-[10px] gap-1.5 px-3 md:px-4 tracking-widest uppercase h-7 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm data-[state=active]:text-orange-600 dark:data-[state=active]:text-amber-400">
+                  <TabsTrigger value="props" className="rounded-lg font-bold text-[10px] gap-1.5 px-3 md:px-4 tracking-widest uppercase h-7 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-none data-[state=active]:text-orange-600 dark:data-[state=active]:text-amber-400">
                     <Package2 className="h-3 w-3" /> <span className="hidden md:inline">{t('PROPS_LIST')}</span>
                   </TabsTrigger>
                 </TabsList>
 
                 {activeMainTab === 'props' && (
-                  <div className="flex items-center gap-1 p-1 bg-stone-100 dark:bg-slate-800/50 rounded-xl h-9 border border-transparent dark:border-white/[0.12]/50">
+                  <div className="flex items-center gap-1 p-1 bg-stone-100 dark:bg-slate-800/50 rounded-xl h-9 border-none">
                     {['activity', 'teaching', 'all-props'].map((tab) => (
                       <button key={tab} onClick={() => setActivePropsTab(tab as typeof activePropsTab)} className={cn("px-3 h-7 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all", activePropsTab === tab ? 'bg-orange-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300')}>
                         {tab === 'activity' ? '活動' : tab === 'teaching' ? '教學' : '營期'}
