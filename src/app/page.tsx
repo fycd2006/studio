@@ -83,7 +83,7 @@ export default function Home() {
   }, [plans]);
 
   return (
-    <div className="relative w-screen max-w-none bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 selection:bg-[#f48c25]/30 selection:text-[#f48c25] min-h-screen font-sans flex flex-col transition-colors duration-500 overflow-x-hidden">
+    <div className="relative w-screen max-w-none bg-[#FBF9F6] dark:bg-slate-950 text-[#2C2A28] dark:text-slate-50 selection:bg-[#f48c25]/30 selection:text-[#f48c25] min-h-screen font-sans flex flex-col transition-colors duration-500 overflow-x-hidden">
       <style
         dangerouslySetInnerHTML={{
           __html: `
@@ -108,22 +108,22 @@ export default function Home() {
       <main className="flex-1 w-full relative z-10">
         
         {/* Full-width Hero Banner with Carousel Background */}
-        <section className="relative w-full h-[100svh] sm:h-[90svh] md:h-[800px] flex items-center overflow-hidden bg-white dark:bg-slate-950">
+        <section className="relative w-full h-[100svh] sm:h-[90svh] md:h-[800px] flex items-center overflow-hidden bg-[#FBF9F6] dark:bg-slate-950 shadow-none">
           
           {/* Background Layer: HeroCarousel */}
           <div className="absolute inset-0 z-0">
             <HeroCarousel />
             {/* Soft gradient mask for text readability */}
-            <div className="absolute inset-0 bg-gradient-to-r from-white via-white/80 dark:from-slate-950 dark:via-slate-950/80 to-transparent w-full sm:w-[90%] md:w-[80%] z-10 transition-colors duration-500"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-[#FBF9F6] via-[#FBF9F6]/80 dark:from-slate-950 dark:via-slate-950/80 to-transparent w-full sm:w-[90%] md:w-[80%] z-10 transition-colors duration-500"></div>
             {/* Subtle dimming layer for optimal contrast without crushing the photo */}
-            <div className="absolute inset-0 bg-slate-900/5 dark:bg-slate-950/20 z-10 transition-colors duration-500"></div>
+            <div className="absolute inset-0 bg-slate-900/[0.03] dark:bg-slate-950/20 z-10 transition-colors duration-500"></div>
             {/* Bottom mask to blend smoothly into the Bento grid background */}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-50 via-slate-50/50 dark:from-slate-950 dark:via-slate-950/40 to-transparent z-10 transition-colors duration-500 h-[30%] top-auto"></div>
+            <div className="absolute inset-x-0 bottom-0 z-10 h-[46%] bg-[linear-gradient(to_top,#FBF9F6_0%,rgba(251,249,246,0.97)_20%,rgba(251,249,246,0.88)_40%,rgba(251,249,246,0.68)_62%,rgba(251,249,246,0.38)_80%,rgba(251,249,246,0)_100%)] dark:bg-[linear-gradient(to_top,#020617_0%,rgba(2,6,23,0.9)_28%,rgba(2,6,23,0.55)_60%,rgba(2,6,23,0)_100%)] transition-colors duration-500"></div>
           </div>
           
           {/* EST. 2006 Badge - Elegant semi-transparent typography */}
           <div className="absolute bottom-8 right-3 sm:bottom-12 sm:right-6 md:bottom-16 md:right-16 z-20 pointer-events-none text-right hidden sm:block">
-             <span className="text-2xl sm:text-4xl md:text-6xl font-black text-slate-900/10 dark:text-white/20 tracking-tighter drop-shadow-sm leading-[0.8]">EST.<br/>2006</span>
+             <span className="text-2xl sm:text-4xl md:text-6xl font-black text-[#2C2A28]/10 dark:text-white/20 tracking-tighter drop-shadow-sm leading-[0.8]">EST.<br/>2006</span>
           </div>
 
           {/* Content Layer */}
@@ -134,7 +134,7 @@ export default function Home() {
                   {activeCamp ? `正在為 ${activeCamp.name} 創造內容` : '熱情、活力的核心'}
                 </span>
               </div>
-              <h1 className="text-[clamp(2.5rem,8vw,12rem)] sm:text-[clamp(3.5rem,9vw,12rem)] font-black leading-[0.85] tracking-tight mb-4 sm:mb-6 md:mb-8 text-slate-900 dark:text-white drop-shadow-xl">
+              <h1 className="text-[clamp(2.5rem,8vw,12rem)] sm:text-[clamp(3.5rem,9vw,12rem)] font-black leading-[0.85] tracking-tight mb-4 sm:mb-6 md:mb-8 text-[#2C2A28] dark:text-white drop-shadow-xl">
                 NTUT<br/>
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#f48c25] to-orange-400 block -mt-1 sm:-mt-2 md:-mt-4 relative z-10 pb-2">CHONG DE</span>
               </h1>
@@ -164,10 +164,10 @@ export default function Home() {
           <div className="max-w-[1920px] mx-auto grid grid-cols-1 gap-6 md:gap-10">
             
             {/* Horizontal Timeline (Milestones) */}
-            <div className="bg-white/60 dark:bg-slate-900/50 backdrop-blur-2xl border border-white/80 dark:border-slate-700/40 rounded-2xl sm:rounded-[2.5rem] p-4 sm:p-8 md:p-12 shadow-2xl shadow-slate-200/50 dark:shadow-black/40 transition-all duration-500 relative overflow-hidden group hover:border-white dark:hover:border-slate-600/60">
+            <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl rounded-2xl sm:rounded-[2.5rem] shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)] ring-1 ring-slate-900/5 dark:ring-white/10 p-4 sm:p-8 md:p-12 shadow-2xl shadow-slate-200/50 dark:shadow-black/40 transition-all duration-500 relative overflow-hidden group">
                {/* Shine effect */}
                <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
-               <h3 className="relative z-10 text-xl sm:text-2xl md:text-3xl font-black tracking-tight mb-6 sm:mb-8 md:mb-16 text-slate-900 dark:text-white flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+               <h3 className="relative z-10 text-xl sm:text-2xl md:text-3xl font-black tracking-tight mb-6 sm:mb-8 md:mb-16 text-[#2C2A28] dark:text-white flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
                   營隊里程碑 <span className="text-slate-400 dark:text-slate-500 text-sm sm:text-lg md:text-xl font-medium tracking-wide">MILESTONES</span>
                </h3>
                
@@ -175,9 +175,9 @@ export default function Home() {
                <div className="w-full overflow-x-auto overflow-y-hidden pb-4 sm:pb-8 -mx-4 px-4 sm:mx-0 sm:px-0 custom-scrollbar">
                  <div className="relative min-w-[500px] sm:min-w-[700px] h-[100px] sm:h-[120px] mt-2 sm:mt-4">
                     {/* Base Track */}
-                    <div className="absolute top-5 sm:top-6 left-6 sm:left-10 right-6 sm:right-10 h-1 sm:h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full z-0" />
+                    <div className="absolute top-5 sm:top-6 left-6 sm:left-10 right-6 sm:right-10 h-1 sm:h-1.5 bg-slate-200/40 dark:bg-slate-800/40 rounded-full backdrop-blur-md z-0" />
                     {/* Progress Track */}
-                    <div className="absolute top-5 sm:top-6 left-6 sm:left-10 h-1 sm:h-1.5 bg-[#f48c25] rounded-full transition-all duration-1000 z-0 origin-left" style={{ width: currentIdx >= 0 ? `min(100%, ${(currentIdx / (timeline.length - 1)) * 100}%)` : '0%' }} />
+                    <div className="absolute top-5 sm:top-6 left-6 sm:left-10 h-1 sm:h-1.5 bg-[#f48c25]/80 shadow-[0_0_15px_rgba(244,140,37,0.6)] rounded-full transition-all duration-1000 z-0 origin-left" style={{ width: currentIdx >= 0 ? `min(100%, ${(currentIdx / (timeline.length - 1)) * 100}%)` : '0%' }} />
                     
                     <div className="relative flex justify-between z-10 px-3 sm:px-4">
                       {timeline.map((node, i) => {
@@ -187,10 +187,10 @@ export default function Home() {
                         return (
                           <div key={node.label} className="flex flex-col items-center group w-16 sm:w-20">
                             <div className={cn(
-                              "w-9 h-9 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center border-3 sm:border-4 transition-all duration-500 bg-white dark:bg-slate-900 shadow-md",
-                              isActive ? "border-[#f48c25] text-[#f48c25] scale-110 shadow-[0_0_20px_rgba(244,140,37,0.3)]"
-                                : isDone ? "border-[#f48c25] text-[#f48c25]"
-                                : "border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500"
+                              "w-9 h-9 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center  transition-all duration-500 bg-white dark:bg-slate-900 shadow-md",
+                              isActive ? "bg-[#f48c25] text-white scale-110 shadow-[0_4px_12px_rgba(244,140,37,0.3)] dark:shadow-[0_4px_20px_rgba(244,140,37,0.4)]"
+                                : isDone ? "bg-[#f48c25]/10 text-[#f48c25]"
+                                : "bg-slate-100 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500"
                             )}>
                               <Icon className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
                             </div>
@@ -215,7 +215,7 @@ export default function Home() {
 
             {/* Recent Plans & Activity (Replacing The Core) */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-10">
-               <div className="bg-white/60 dark:bg-slate-900/50 backdrop-blur-2xl border border-white/80 dark:border-slate-700/40 rounded-[2.5rem] p-6 md:p-12 flex flex-col justify-between min-h-[400px] shadow-2xl shadow-slate-200/50 dark:shadow-black/40 transition-all duration-500 hover:border-white dark:hover:border-slate-600/60 relative overflow-hidden group">
+               <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)] ring-1 ring-slate-900/5 dark:ring-white/10 p-6 md:p-12 flex flex-col justify-between min-h-[400px] shadow-2xl shadow-slate-200/50 dark:shadow-black/40 transition-all duration-500 relative overflow-hidden group">
                  
                  {/* Premium glowing orb inside the card */}
                  <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-gradient-to-br from-[#f48c25]/20 to-orange-600/5 dark:from-[#f48c25]/10 dark:to-orange-600/5 rounded-full blur-[80px] pointer-events-none group-hover:scale-110 group-hover:bg-[#f48c25]/30 transition-all duration-1000"></div>
@@ -223,19 +223,19 @@ export default function Home() {
                  <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
 
                  <div className="relative z-10">
-                   <h3 className="text-2xl md:text-3xl font-black tracking-tight mb-8 text-slate-900 dark:text-white flex items-center gap-3">
+                   <h3 className="text-2xl md:text-3xl font-black tracking-tight mb-8 text-[#2C2A28] dark:text-white flex items-center gap-3">
                      即時動態 <span className="text-slate-400 dark:text-slate-500 text-lg md:text-xl font-semibold tracking-widest">DYNAMIC UPDATES</span>
                    </h3>
                    <ul className="space-y-4">
                      {recentPlans.map((plan, idx) => (
-                       <li key={plan.id} className="group cursor-pointer bg-white/40 dark:bg-slate-800/40 hover:bg-white dark:hover:bg-slate-800 rounded-2xl p-4 md:p-5 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all duration-300" onClick={() => router.push(`/plans/${plan.id}`)}>
+                       <li key={plan.id} className="group cursor-pointer bg-white/40 dark:bg-slate-800/40 hover:bg-white dark:hover:bg-slate-800 rounded-2xl p-4 md:p-5 hover:shadow-md dark:hover:shadow-black/40 hover:bg-white/90 dark:hover:bg-slate-800/90 backdrop-blur-md hover:ring-1 hover:ring-slate-900/5 dark:hover:ring-white/10 transition-all duration-300 transform hover:-translate-y-0.5 transition-all duration-300 shadow-[0_8px_30px_rgba(140,120,100,0.05)]" onClick={() => router.push(`/plans/${plan.id}`)}>
                          <div className="text-[10px] md:text-xs text-[#f48c25] font-semibold tracking-wider mb-2 flex items-center justify-between uppercase">
                            <span>{idx === 0 ? "JUST UPDATED" : "RECENT"}</span>
                            <span className="text-slate-400 dark:text-slate-500">{plan.updatedAt ? format(new Date(plan.updatedAt), "MM/dd HH:mm") : ""}</span>
                          </div>
                          <div className="text-slate-800 dark:text-slate-200 font-bold text-lg md:text-xl group-hover:text-[#f48c25] dark:group-hover:text-[#f48c25] transition-colors line-clamp-1 flex items-center gap-2">
                            {plan.category ? (
-                              <span className="bg-slate-200/50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-xs px-2 py-1 rounded-md shrink-0 border border-slate-300/50 dark:border-slate-700/50">
+                              <span className="bg-slate-200/50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-xs px-2 py-1 rounded-md shrink-0 ">
                                 {plan.category}
                               </span>
                            ) : null}
@@ -257,7 +257,7 @@ export default function Home() {
                  </div>
                </div>
 
-               <div className="relative min-h-[400px] rounded-[2.5rem] overflow-hidden group border border-white/80 dark:border-slate-700/40 cursor-pointer bg-white dark:bg-[#020617] p-8 md:p-12 flex flex-col justify-center shadow-2xl shadow-slate-200/50 dark:shadow-black/40 transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_20px_40px_rgba(0,0,0,0.5)]" onClick={() => router.push('/plans')}>
+               <div className="relative min-h-[400px] rounded-[2.5rem] overflow-hidden group cursor-pointer shadow-black/5 dark:shadow-black/20 bg-white/90 dark:bg-[#020617]/90 backdrop-blur-md ring-1 ring-slate-900/5 dark:ring-white/10 p-8 md:p-12 flex flex-col justify-center shadow-2xl shadow-slate-200/50 dark:shadow-black/40 transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_30px_60px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_30px_60px_rgba(0,0,0,0.6)]" onClick={() => router.push('/plans')}>
                  <div className="absolute inset-0 z-0 blur-[2px] group-hover:blur-none group-hover:scale-105 transition-all duration-1000 ease-in-out">
                    <HeroCarousel />
                  </div>
@@ -265,11 +265,11 @@ export default function Home() {
                  <div className="absolute inset-0 bg-gradient-to-tr from-white/95 via-white/70 dark:from-slate-900/60 dark:via-slate-900/20 to-transparent z-0 transition-colors duration-700 group-hover:from-white/80 dark:group-hover:from-slate-950/70"></div>
 
                  <div className="relative z-10">
-                   <h3 className="text-3xl md:text-4xl font-black tracking-tight mb-6 text-slate-900 dark:text-white flex flex-col gap-2">
+                   <h3 className="text-3xl md:text-4xl font-black tracking-tight mb-6 text-[#2C2A28] dark:text-white flex flex-col gap-2">
                      教案總覽
                      <span className="text-slate-400 dark:text-slate-400 text-lg md:text-xl font-semibold tracking-widest">LATEST PLANS</span>
                    </h3>
-                   <div className="max-w-md text-slate-700 dark:text-slate-200 font-semibold italic tracking-wide leading-relaxed md:leading-loose md:text-xl group-hover:text-slate-900 dark:group-hover:text-white transition-colors py-2 drop-shadow-md min-h-[6em] flex items-center">
+                   <div className="max-w-md text-slate-700 dark:text-slate-200 font-semibold italic tracking-wide leading-relaxed md:leading-loose md:text-xl group-hover:text-[#2C2A28] dark:group-hover:text-white transition-colors py-2 drop-shadow-md min-h-[6em] flex items-center">
                      <RotatingText items={planQuotes} intervalMs={6000} className="w-full" />
                    </div>
                  </div>
@@ -282,10 +282,10 @@ export default function Home() {
       </main>
 
       {/* Footer - Minimalist style matching the PlanEditor UI */}
-      <footer className="bg-slate-50 dark:bg-slate-950 w-full mt-auto border-t border-slate-200 dark:border-slate-800 transition-colors duration-500">
+      <footer className="bg-[#FBF9F6] dark:bg-slate-950 w-full mt-auto shadow-[0_-4px_24px_rgba(0,0,0,0.02)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.2)] transition-colors duration-500">
         <div className="flex flex-col md:flex-row justify-between items-center w-full px-6 md:px-12 py-8 md:py-12 gap-8 max-w-[1920px] mx-auto">
           <div className="flex flex-col gap-1 text-center md:text-left">
-            <span className="text-slate-900 dark:text-white font-bold uppercase tracking-widest text-lg md:text-xl">NTUT CHONG DE</span>
+            <span className="text-[#2C2A28] dark:text-white font-bold uppercase tracking-widest text-lg md:text-xl">NTUT CHONG DE</span>
             <span className="text-[10px] md:text-xs tracking-[0.1em] uppercase font-medium text-slate-500 dark:text-slate-500">
                   ©2026 ARCHITECTURAL CAMP SYSTEMS. PRECISION OPERATIONS.
             </span>

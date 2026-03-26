@@ -36,14 +36,14 @@ export function ActionBar({ children, title, className }: ActionBarProps) {
         "sticky z-40 md:top-16 transition-all duration-300",
         isNavbarVisible ? "top-[104px]" : "top-0",
         isHome
-          ? "bg-transparent border-transparent py-1 md:py-2"
-          : "bg-stone-50 dark:bg-[hsl(var(--bar-theme))] border-none shadow-none py-2",
+          ? "bg-transparent border-none py-1 md:py-2"
+          : "bg-[#FBF9F6]/90 dark:bg-[hsl(var(--bar-theme))]/90 backdrop-blur-md border-none shadow-none dark:shadow-none py-2",
         "-mx-4 md:-mx-8 lg:-mx-10 px-4 md:px-8 lg:px-10 mb-4 md:mb-6"
       )}
     >
       <div className="flex items-center justify-between gap-4 max-w-none w-full">
         {/* Title (Hidden on mobile, shown on desktop) */}
-        <div className="hidden md:block font-bold text-slate-900 dark:text-white text-sm tracking-wider">
+        <div className="hidden md:block font-bold text-[#2C2A28] dark:text-white text-sm tracking-wider">
           {title}
         </div>
 

@@ -8,27 +8,27 @@ import { PropsTable } from "@/components/PropsTable";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
-  Loader2, 
-  FileDown, 
-  Plus, 
-  Trash2, 
-  FileText, 
-  Users, 
-  Package, 
-  StickyNote, 
-  MapPin, 
-  Clock, 
-  Target, 
-  Layout, 
-  Undo2, 
-  Redo2, 
-  History, 
-  Save, 
-  ZoomIn,
-  ZoomOut,
-  Maximize,
-  MoreHorizontal,
-  RotateCcw
+ Loader2, 
+ FileDown, 
+ Plus, 
+ Trash2, 
+ FileText, 
+ Users, 
+ Package, 
+ StickyNote, 
+ MapPin, 
+ Clock, 
+ Target, 
+ Layout, 
+ Undo2, 
+ Redo2, 
+ History, 
+ Save, 
+ ZoomIn,
+ ZoomOut,
+ Maximize,
+ MoreHorizontal,
+ RotateCcw
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -37,553 +37,593 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n-context";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+ DropdownMenu,
+ DropdownMenuContent,
+ DropdownMenuItem,
+ DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { VersionHistorySidebar } from "./VersionHistorySidebar";
 import { DiffHighlighter } from "./DiffHighlighter";
 import { getChangedFields } from "@/lib/text-diff";
-import { exportToDocx } from "@/lib/export-utils";
+import { exportToDocx, exportToPdf } from "@/lib/export-utils";
 import { ActionBar } from "@/components/ActionBar";
 
 const FabricCanvas = dynamic(
-  () => import("@/components/FabricCanvas").then((mod) => mod.FabricCanvas),
-  { 
-    ssr: false,
-    loading: () => (
-      <div className="h-[200px] w-full flex items-center justify-center rounded-xl bg-stone-50">
-        <div className="flex flex-col items-center gap-2 text-stone-300">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          <p className="text-[10px] font-extrabold uppercase tracking-widest">載入中 / Loading...</p>
-        </div>
-      </div>
-    )
-  }
+ () => import("@/components/FabricCanvas").then((mod) => mod.FabricCanvas),
+ { 
+ ssr: false,
+ loading: () => (
+ <div className="h-[200px] w-full flex items-center justify-center rounded-xl bg-[#FBF9F6]">
+ <div className="flex flex-col items-center gap-2 text-stone-300">
+ <Loader2 className="h-4 w-4 animate-spin" />
+ <p className="text-[10px] font-extrabold uppercase tracking-widest">載入中 / Loading...</p>
+ </div>
+ </div>
+ )
+ }
 );
 
 const SectionHeader = ({ title, icon: Icon }: { title: string; icon?: any }) => (
-  <div className="flex items-center gap-3 mb-6 pt-8 first:pt-0">
-    <div className="w-1.5 h-6 bg-orange-500 dark:bg-amber-400 rounded-full transition-colors" />
-    <h3 className="text-sm font-black text-stone-900 dark:text-white tracking-tight flex items-center gap-2.5 uppercase">
-      {Icon && <Icon className="h-4.5 w-4.5 text-orange-500 dark:text-amber-400 opacity-80 transition-colors" />}
-      {title}
-    </h3>
-    <div className="flex-1 min-w-0 h-[1px] bg-stone-100 dark:bg-white/5 ml-2 transition-colors" />
-  </div>
+ <div className="flex items-center gap-3 mb-6 pt-8 first:pt-0">
+ <div className="w-1.5 h-6 bg-orange-500 dark:bg-amber-400 rounded-full transition-colors" />
+ <h3 className="text-sm font-black text-[#2C2A28] dark:text-white tracking-tight flex items-center gap-2.5 uppercase">
+ {Icon && <Icon className="h-4.5 w-4.5 text-orange-500 dark:text-amber-400 opacity-80 transition-colors" />}
+ {title}
+ </h3>
+ <div className="flex-1 min-w-0 h-[1px] bg-stone-100 dark:bg-white/5 ml-2 transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)]" />
+ </div>
 );
 
 interface PlanEditorProps {
-  plan: LessonPlan;
-  groups: Group[];
-  onUpdate: (id: string, updates: Partial<LessonPlan>) => void;
-  isSaving: boolean;
-  onUndo?: () => void;
-  onRedo?: () => void;
-  canUndo?: boolean;
-  canRedo?: boolean;
-  versions?: PlanVersion[];
-  onSaveVersion?: (name: string, isAuto?: boolean) => void;
-  onRestoreVersion?: (versionId: string) => void;
-  onDeleteVersion?: (versionId: string) => void;
-  onAutoSave?: () => void;
-  getFullVersionState?: (version: PlanVersion) => Promise<LessonPlan>;
-  onUpdateVersionName?: (versionId: string, versionName: string) => void;
-  activityTypes?: string[];
+ plan: LessonPlan;
+ groups: Group[];
+ onUpdate: (id: string, updates: Partial<LessonPlan>) => void;
+ isSaving: boolean;
+ onUndo?: () => void;
+ onRedo?: () => void;
+ canUndo?: boolean;
+ canRedo?: boolean;
+ versions?: PlanVersion[];
+ onSaveVersion?: (name: string, isAuto?: boolean) => void;
+ onRestoreVersion?: (versionId: string) => void;
+ onDeleteVersion?: (versionId: string) => void;
+ onAutoSave?: () => void;
+ getFullVersionState?: (version: PlanVersion) => Promise<LessonPlan>;
+ onUpdateVersionName?: (versionId: string, versionName: string) => void;
+ activityTypes?: string[];
 }
 
 export function PlanEditor({ 
-  plan, groups, onUpdate, isSaving, onUndo, onRedo, canUndo, canRedo, 
-  versions = [], onSaveVersion, onRestoreVersion, onDeleteVersion, onAutoSave, getFullVersionState, onUpdateVersionName, activityTypes = []
+ plan, groups, onUpdate, isSaving, onUndo, onRedo, canUndo, canRedo, 
+ versions = [], onSaveVersion, onRestoreVersion, onDeleteVersion, onAutoSave, getFullVersionState, onUpdateVersionName, activityTypes = []
 }: PlanEditorProps) {
-  const { t, language } = useTranslation();
-  const { toast } = useToast();
-  
-  // History Mode State
-  const [isHistoryMode, setIsHistoryMode] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [selectedVersion, setSelectedVersion] = useState<PlanVersion | null>(null);
-  const [previewPlan, setPreviewPlan] = useState<LessonPlan | null>(null);
-  const [previousPlan, setPreviousPlan] = useState<LessonPlan | null>(null);
-  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
-  
-  // Versions UI state
-  const [newVersionName, setNewVersionName] = useState("");
-  const [showNamedOnly, setShowNamedOnly] = useState(false);
+ const { t, language } = useTranslation();
+ const { toast } = useToast();
+ 
+ // History Mode State
+ const [isHistoryMode, setIsHistoryMode] = useState(false);
+ const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+ const [selectedVersion, setSelectedVersion] = useState<PlanVersion | null>(null);
+ const [previewPlan, setPreviewPlan] = useState<LessonPlan | null>(null);
+ const [previousPlan, setPreviousPlan] = useState<LessonPlan | null>(null);
+ const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+ 
+ // Versions UI state
+ const [newVersionName, setNewVersionName] = useState("");
+ const [showNamedOnly, setShowNamedOnly] = useState(false);
+ const [isCanvasRemoved, setIsCanvasRemoved] = useState(false);
 
-  // Global Editor Zoom
-  const [pageZoom, setPageZoom] = useState(1);
-  const handleZoomIn = () => setPageZoom(prev => Math.min(2, prev + 0.1));
-  const handleZoomOut = () => setPageZoom(prev => Math.max(0.3, prev - 0.1));
-  const handleFitAll = () => setPageZoom(1);
+ // Global Editor Zoom
+ const [pageZoom, setPageZoom] = useState(1);
+ const handleZoomIn = () => setPageZoom(prev => Math.min(2, prev + 0.1));
+ const handleZoomOut = () => setPageZoom(prev => Math.max(0.3, prev - 0.1));
+ const handleFitAll = () => setPageZoom(1);
 
-  const handlePrint = () => window.print();
-  const handleExportWord = async () => {
-    try {
-      toast({ title: "匯出中", description: "正在產生 Word 檔案..." });
-      await exportToDocx(currentPlan);
-      toast({ title: "匯出成功", description: "已經成功下載 Word 檔案" });
-    } catch (err) {
-      toast({ title: "匯出失敗", description: "發生錯誤", variant: "destructive" });
-    }
-  };
+ const handlePrint = async () => {
+ try {
+ toast({ title: "匯出中", description: "正在產生 PDF 檔案..." });
+ await exportToPdf(currentPlan);
+ toast({ title: "匯出成功", description: "已下載 PDF 檔案" });
+ } catch {
+ toast({ title: "匯出失敗", description: "發生錯誤", variant: "destructive" });
+ }
+ };
+ const handleExportWord = async () => {
+ try {
+ toast({ title: "匯出中", description: "正在產生 Word 檔案..." });
+ await exportToDocx(currentPlan);
+ toast({ title: "匯出成功", description: "已經成功下載 Word 檔案" });
+ } catch (err) {
+ toast({ title: "匯出失敗", description: "發生錯誤", variant: "destructive" });
+ }
+ };
 
-  // Local state for smooth typing without spamming Firestore
-  const [localPlan, setLocalPlan] = useState<LessonPlan>(plan);
-  const pendingUpdatesRef = useRef<Partial<LessonPlan>>({});
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+ // Local state for smooth typing without spamming Firestore
+ const [localPlan, setLocalPlan] = useState<LessonPlan>(plan);
+ const pendingUpdatesRef = useRef<Partial<LessonPlan>>({});
+ const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    // Only sync from remote if we don't have pending local updates
-    if (Object.keys(pendingUpdatesRef.current).length === 0) {
-      setLocalPlan(plan);
-    }
-  }, [plan]);
+ useEffect(() => {
+ // Merge remote plan with pending local changes so stale server echoes
+ // don't revert immediate local actions (e.g., add/remove canvas).
+ setLocalPlan({ ...plan, ...pendingUpdatesRef.current });
+ }, [plan]);
 
-  // Clean up timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
-  }, []);
+ // Clean up timeout on unmount
+ useEffect(() => {
+ return () => {
+ if (timeoutRef.current) clearTimeout(timeoutRef.current);
+ };
+ }, []);
 
-  const handlePlanUpdate = (updates: Partial<LessonPlan>) => {
-    // Update local UI immediately
-    setLocalPlan(prev => ({ ...prev, ...updates }));
-    
-    // Merge into pending
-    pendingUpdatesRef.current = { ...pendingUpdatesRef.current, ...updates };
+ const handlePlanUpdate = (updates: Partial<LessonPlan>) => {
+ // Update local UI immediately
+ setLocalPlan(prev => ({ ...prev, ...updates }));
+ 
+ // Merge into pending
+ pendingUpdatesRef.current = { ...pendingUpdatesRef.current, ...updates };
 
-    // Debounce the actual Firestore write
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => {
-      onUpdate(plan.id, pendingUpdatesRef.current);
-      pendingUpdatesRef.current = {}; // Clear pending after dispatch
-    }, 1000);
-  };
+ // Debounce the actual Firestore write
+ if (timeoutRef.current) clearTimeout(timeoutRef.current);
+ timeoutRef.current = setTimeout(() => {
+ onUpdate(plan.id, pendingUpdatesRef.current);
+ pendingUpdatesRef.current = {}; // Clear pending after dispatch
+ }, 1000);
+ };
 
-  const currentPlan = isHistoryMode ? (previewPlan || plan) : localPlan;
+ const handlePlanUpdateImmediate = (updates: Partial<LessonPlan>) => {
+ setLocalPlan(prev => ({ ...prev, ...updates }));
+ pendingUpdatesRef.current = { ...pendingUpdatesRef.current, ...updates };
+ if (timeoutRef.current) {
+ clearTimeout(timeoutRef.current);
+ timeoutRef.current = null;
+ }
+ onUpdate(plan.id, updates);
+ };
 
-  // Auto-Save Trigger
-  const autoSaveRef = useRef(onAutoSave);
-  // Keep the ref updated with the latest function without triggering effect re-runs
-  useEffect(() => {
-    autoSaveRef.current = onAutoSave;
-  }, [onAutoSave]);
+ const currentPlan = isHistoryMode ? (previewPlan || plan) : localPlan;
 
-  const onUpdateRef = useRef(onUpdate);
-  const planIdRef = useRef(plan.id);
+ // Auto-Save Trigger
+ const autoSaveRef = useRef(onAutoSave);
+ // Keep the ref updated with the latest function without triggering effect re-runs
+ useEffect(() => {
+ autoSaveRef.current = onAutoSave;
+ }, [onAutoSave]);
 
-  useEffect(() => {
-    onUpdateRef.current = onUpdate;
-    planIdRef.current = plan.id;
-  }, [onUpdate, plan.id]);
+ const onUpdateRef = useRef(onUpdate);
+ const planIdRef = useRef(plan.id);
 
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      // Flush pending updates before unload
-      if (Object.keys(pendingUpdatesRef.current).length > 0) {
-        onUpdateRef.current(planIdRef.current, pendingUpdatesRef.current);
-        pendingUpdatesRef.current = {};
-      }
-      autoSaveRef.current?.();
-      delete e['returnValue']; 
-    };
-    
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      // Flush pending on unmount
-      if (Object.keys(pendingUpdatesRef.current).length > 0) {
-        onUpdateRef.current(planIdRef.current, pendingUpdatesRef.current);
-        pendingUpdatesRef.current = {};
-      }
-      // Only execute auto-save on true component unmount (e.g. navigation)
-      autoSaveRef.current?.();
-    };
-  }, []);
+ useEffect(() => {
+ onUpdateRef.current = onUpdate;
+ planIdRef.current = plan.id;
+ }, [onUpdate, plan.id]);
 
-  // Load preview data when version selected
-  useEffect(() => {
-    if (!selectedVersion || !getFullVersionState) {
-      setPreviewPlan(null);
-      setPreviousPlan(null);
-      return;
-    }
+ useEffect(() => {
+ const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+ // Flush pending updates before unload
+ if (Object.keys(pendingUpdatesRef.current).length > 0) {
+ onUpdateRef.current(planIdRef.current, pendingUpdatesRef.current);
+ pendingUpdatesRef.current = {};
+ }
+ autoSaveRef.current?.();
+ delete e['returnValue']; 
+ };
+ 
+ window.addEventListener('beforeunload', handleBeforeUnload);
+ return () => {
+ window.removeEventListener('beforeunload', handleBeforeUnload);
+ // Flush pending on unmount
+ if (Object.keys(pendingUpdatesRef.current).length > 0) {
+ onUpdateRef.current(planIdRef.current, pendingUpdatesRef.current);
+ pendingUpdatesRef.current = {};
+ }
+ // Only execute auto-save on true component unmount (e.g. navigation)
+ autoSaveRef.current?.();
+ };
+ }, []);
 
-    const load = async () => {
-      setIsLoadingPreview(true);
-      try {
-        const targetState = await getFullVersionState(selectedVersion);
-        setPreviewPlan(targetState);
+ // Load preview data when version selected
+ useEffect(() => {
+ if (!selectedVersion || !getFullVersionState) {
+ setPreviewPlan(null);
+ setPreviousPlan(null);
+ return;
+ }
 
-        const currentIdx = versions.findIndex(v => v.id === selectedVersion.id);
-        if (currentIdx < versions.length - 1) {
-          const prevState = await getFullVersionState(versions[currentIdx + 1]);
-          setPreviousPlan(prevState);
-        } else {
-          setPreviousPlan(null);
-        }
-      } catch (err) {
-        console.error("Failed to load version preview:", err);
-      } finally {
-        setIsLoadingPreview(false);
-      }
-    };
-    load();
-  }, [selectedVersion, getFullVersionState, versions]);
+ const load = async () => {
+ setIsLoadingPreview(true);
+ try {
+ const targetState = await getFullVersionState(selectedVersion);
+ setPreviewPlan(targetState);
 
-  // Note: handlePlanUpdate was moved higher up, so we'll just leave this spot empty to prevent duplication.
+ const currentIdx = versions.findIndex(v => v.id === selectedVersion.id);
+ if (currentIdx < versions.length - 1) {
+ const prevState = await getFullVersionState(versions[currentIdx + 1]);
+ setPreviousPlan(prevState);
+ } else {
+ setPreviousPlan(null);
+ }
+ } catch (err) {
+ console.error("Failed to load version preview:", err);
+ } finally {
+ setIsLoadingPreview(false);
+ }
+ };
+ load();
+ }, [selectedVersion, getFullVersionState, versions]);
 
-  const handleSaveVersion = (name?: string) => {
-    const nameToSave = name || newVersionName;
-    if (!nameToSave.trim()) {
-      toast({ title: "請輸入版本名稱", variant: "destructive" });
-      return;
-    }
-    onSaveVersion?.(nameToSave.trim());
-    setNewVersionName("");
-    toast({ title: "版本已儲存" });
-  };
+ // Note: handlePlanUpdate was moved higher up, so we'll just leave this spot empty to prevent duplication.
 
-  const handleRestoreVersion = (versionId: string) => {
-    onRestoreVersion?.(versionId);
-    setIsHistoryMode(false);
-    setSelectedVersion(null);
-    toast({ title: "已還原版本" });
-  };
+ const handleSaveVersion = (name?: string) => {
+ const nameToSave = name || newVersionName;
+ if (!nameToSave.trim()) {
+ toast({ title: "請輸入版本名稱", variant: "destructive" });
+ return;
+ }
+ onSaveVersion?.(nameToSave.trim());
+ setNewVersionName("");
+ toast({ title: "版本已儲存" });
+ };
 
-  const handleDeleteVersion = (versionId: string) => {
-    if (confirm("確定要刪除此版本嗎？")) {
-      onDeleteVersion?.(versionId);
-      if (selectedVersion?.id === versionId) setSelectedVersion(null);
-      toast({ title: "已刪除版本" });
-    }
-  };
+ const handleRestoreVersion = (versionId: string) => {
+ onRestoreVersion?.(versionId);
+ setIsHistoryMode(false);
+ setSelectedVersion(null);
+ toast({ title: "已還原版本" });
+ };
 
-  const handleCanvasSave = (data: string, height: number) => {
-    handlePlanUpdate({ canvasData: data, canvasHeight: height });
-  };
+ const handleDeleteVersion = (versionId: string) => {
+ if (confirm("確定要刪除此版本嗎？")) {
+ onDeleteVersion?.(versionId);
+ if (selectedVersion?.id === versionId) setSelectedVersion(null);
+ toast({ title: "已刪除版本" });
+ }
+ };
 
-  const handleDeleteCanvas = () => {
-    if (confirm("確定要刪除此畫布嗎？此操作無法復原。")) {
-      handlePlanUpdate({ canvasData: null, canvasHeight: null });
-      toast({ title: "畫布已刪除" });
-    }
-  };
+ const handleCanvasSave = (data: string, height: number) => {
+ handlePlanUpdate({ canvasData: data, canvasHeight: height });
+ };
 
-  const hasCanvas = plan.canvasData !== null && plan.canvasData !== undefined;
-  const currentGroup = groups.find(group => group.id === currentPlan.groupId)
-    || groups.find(group => currentPlan.category === 'teaching' ? group.slug === 'teaching' : group.slug === 'activity')
-    || null;
-  const currentGroupLabel = currentGroup
-    ? (language === 'zh' ? currentGroup.nameZh : currentGroup.nameEn)
-    : (currentPlan.category === 'teaching' ? t('TEACHING_PLAN') : t('ACTIVITY_PLAN'));
+ const handleDeleteCanvas = () => {
+ if (confirm("確定要刪除此畫布嗎？此操作無法復原。")) {
+ setIsCanvasRemoved(true);
+ handlePlanUpdateImmediate({ canvasData: null, canvasHeight: null });
+ toast({ title: "畫布已刪除" });
+ }
+ };
 
-  return (
-    <div className="flex flex-row bg-stone-50 dark:bg-slate-900 font-body transition-colors relative w-full">
-      <div className="flex-1 min-w-0 overflow-x-clip relative scrollbar-hide">
-        <div className="w-full pt-20 md:pt-24 pb-6 md:pb-10 px-4 md:px-6 xl:px-8 flex flex-col">
-          <div className="w-full md:w-[70%] md:mx-auto flex flex-col">
-          <header className="relative z-20 flex-none w-full mb-4 md:mb-6 border-b border-stone-200 dark:border-slate-800 pb-6 transition-all">
-            <div className="w-full max-w-full flex justify-between items-start gap-4">
-              <div className="flex flex-col w-full text-left">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className={cn(
-                    "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border",
-                    currentPlan.category === "activity" 
-                      ? "bg-blue-50 dark:bg-blue-400/10 text-blue-600 dark:text-blue-400 border-blue-200" 
-                      : "bg-emerald-50 dark:bg-emerald-400/10 text-emerald-600 dark:text-emerald-400 border-emerald-200"
-                  )}>
-                    {currentGroupLabel}
-                  </span>
-                </div>
-                <p className="text-xs tracking-[0.18em] text-stone-500 dark:text-slate-400 uppercase font-medium mb-1.5">Lesson Plan Editor // New Draft</p>
-                <input
-                  value={currentPlan.activityName}
-                  onChange={(e) => handlePlanUpdate({ activityName: e.target.value })}
-                  className="text-3xl md:text-4xl font-extrabold tracking-tight bg-transparent border-none focus:ring-0 focus:outline-none text-stone-900 dark:text-white w-full px-0"
-                  placeholder={t('ENTER_TITLE')}
-                  readOnly={isHistoryMode}
-                />
-              </div>
-            </div>
-          </header>
+ useEffect(() => {
+ if (currentPlan.canvasData !== null && currentPlan.canvasData !== undefined) {
+ setIsCanvasRemoved(false);
+ }
+ }, [currentPlan.canvasData]);
 
-          <ActionBar title="" className="md:justify-end gap-1.5 md:gap-2 mb-4">
-            
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              title="版本紀錄"
-              onClick={() => {
-                const willOpen = !isSidebarOpen;
-                setIsSidebarOpen(willOpen);
-                if (willOpen && !isHistoryMode) setIsHistoryMode(true);
-                if (!willOpen && !selectedVersion) setIsHistoryMode(false);
-              }}
-              className={cn(
-                "h-9 w-9 p-0 flex justify-center items-center rounded-lg font-bold text-xs bg-transparent transition-all",
-                isSidebarOpen ? "text-slate-900 dark:text-white bg-stone-200 dark:bg-slate-800 opacity-100" : "text-slate-900 dark:text-white hover:opacity-100 opacity-90 hover:bg-stone-200 dark:hover:bg-slate-800"
-              )}
-            >
-              <History className="w-4 h-4" />
-            </Button>
+ const hasCanvas = !isCanvasRemoved && currentPlan.canvasData !== null && currentPlan.canvasData !== undefined;
+ const currentGroup = groups.find(group => group.id === currentPlan.groupId)
+ || groups.find(group => currentPlan.category === 'teaching' ? group.slug === 'teaching' : group.slug === 'activity')
+ || null;
+ const currentGroupLabel = currentGroup
+ ? (language === 'zh' ? currentGroup.nameZh : currentGroup.nameEn)
+ : (currentPlan.category === 'teaching' ? t('TEACHING_PLAN') : t('ACTIVITY_PLAN'));
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                 <Button variant="ghost" size="sm" className="h-9 px-3 rounded-lg font-bold text-xs bg-transparent text-slate-900 dark:text-white hover:opacity-100 opacity-90 transition-opacity">
-                   <FileDown className="w-4 h-4 sm:mr-1.5" />
-                   <span className="hidden sm:inline">匯出</span>
-                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-32 rounded-xl">
-                 <DropdownMenuItem onClick={handlePrint} className="text-xs font-bold font-fira-code">PDF / PRINT</DropdownMenuItem>
-                 <DropdownMenuItem onClick={handleExportWord} className="text-xs font-bold font-fira-code">WORD (.docx)</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+ return (
+ <div className="flex flex-row bg-[#FBF9F6] dark:bg-slate-900 font-body transition-colors relative w-full">
+ <div className="flex-1 min-w-0 overflow-x-clip relative scrollbar-hide">
+ <div className="w-full pt-20 md:pt-24 pb-6 md:pb-10 px-4 md:px-6 xl:px-8 flex flex-col">
+ <div className="w-full md:w-[70%] md:mx-auto flex flex-col">
+ <header className="relative z-20 flex-none w-full mb-4 md:mb-6 dark:pb-6 transition-all">
+ <div className="w-full max-w-full flex justify-between items-start gap-4">
+ <div className="flex flex-col w-full text-left">
+ <div className="flex items-center gap-2 mb-2">
+ <span className={cn(
+ "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border-none",
+ currentPlan.category === "activity" 
+ ? "bg-blue-50 dark:bg-blue-400/10 text-blue-600 dark:text-blue-400 " 
+ : "bg-emerald-50 dark:bg-emerald-400/10 text-emerald-600 dark:text-emerald-400 "
+ )}>
+ {currentGroupLabel}
+ </span>
+ </div>
+ <p className="text-xs tracking-[0.18em] text-stone-500 dark:text-slate-400 uppercase font-medium mb-1.5">Lesson Plan Editor // New Draft</p>
+ <input
+ value={currentPlan.activityName}
+ onChange={(e) => handlePlanUpdate({ activityName: e.target.value })}
+ className="text-3xl md:text-4xl font-extrabold tracking-tight bg-transparent  focus:ring-0 focus:outline-none text-[#2C2A28] dark:text-white w-full px-0"
+ placeholder={t('ENTER_TITLE')}
+ readOnly={isHistoryMode}
+ />
+ </div>
+ </div>
+ </header>
 
-            <div className="w-px h-6 bg-stone-200 dark:bg-slate-700 mx-1 hidden sm:block"></div>
+ <ActionBar title="" className="md:justify-end gap-1.5 md:gap-2 mb-4">
+ 
+ 
+ <Button
+ variant="ghost"
+ size="sm"
+ title="版本紀錄"
+ onClick={() => {
+ const willOpen = !isSidebarOpen;
+ setIsSidebarOpen(willOpen);
+ if (willOpen && !isHistoryMode) setIsHistoryMode(true);
+ if (!willOpen && !selectedVersion) setIsHistoryMode(false);
+ }}
+ className={cn(
+ "h-9 w-9 p-0 flex justify-center items-center rounded-lg font-bold text-xs bg-transparent transition-all",
+ isSidebarOpen ? "text-[#2C2A28] dark:text-white bg-stone-200 dark:bg-slate-800 opacity-100" : "text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 hover:bg-stone-200 dark:hover:bg-slate-800"
+ )}
+ >
+ <History className="w-4 h-4" />
+ </Button>
 
-            <Button variant="ghost" size="icon" onClick={onUndo} disabled={!canUndo || isHistoryMode} className="h-9 w-9 rounded-lg bg-transparent text-slate-900 dark:text-white hover:opacity-100 opacity-90 transition-opacity">
-              <Undo2 className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={onRedo} disabled={!canRedo || isHistoryMode} className="h-9 w-9 rounded-lg bg-transparent text-slate-900 dark:text-white hover:opacity-100 opacity-90 transition-opacity">
-              <Redo2 className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={handleZoomOut} disabled={pageZoom <= 0.3} className="flex h-9 w-9 rounded-lg bg-transparent text-slate-900 dark:text-white hover:opacity-100 opacity-90 transition-opacity">
-              <ZoomOut className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={handleFitAll} className="flex h-9 w-9 rounded-lg bg-transparent text-slate-900 dark:text-white hover:opacity-100 opacity-90 transition-opacity">
-              <Maximize className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={handleZoomIn} disabled={pageZoom >= 2} className="flex h-9 w-9 rounded-lg bg-transparent text-slate-900 dark:text-white hover:opacity-100 opacity-90 transition-opacity">
-              <ZoomIn className="h-4 w-4" />
-            </Button>
-          </ActionBar>
+ <DropdownMenu>
+ <DropdownMenuTrigger asChild>
+ <Button variant="ghost" size="sm" className="h-9 px-3 rounded-lg font-bold text-xs bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity">
+ <FileDown className="w-4 h-4 sm:mr-1.5" />
+ <span className="hidden sm:inline">匯出</span>
+ </Button>
+ </DropdownMenuTrigger>
+ <DropdownMenuContent align="end" className="w-32 rounded-xl">
+ <DropdownMenuItem onClick={handlePrint} className="text-xs font-bold font-fira-code">PDF (.pdf)</DropdownMenuItem>
+ <DropdownMenuItem onClick={handleExportWord} className="text-xs font-bold font-fira-code">WORD (.docx)</DropdownMenuItem>
+ </DropdownMenuContent>
+ </DropdownMenu>
 
-          <main className="flex-1 min-w-0 flex flex-col relative shrink-0 pb-32 sm:pb-40">
-          <div style={{ zoom: pageZoom }}>
-          {isLoadingPreview ? (
-            <div className="h-full min-h-[260px] flex flex-col items-center justify-center gap-2 text-stone-500 dark:text-slate-400">
-              <Loader2 className="h-5 w-5 animate-spin" />
-              <p className="text-xs font-bold uppercase tracking-widest">Reconstructing History...</p>
-            </div>
-          ) : (
-            <Card className="border-x-0 border-y sm:border-stone-200 dark:border-white/5 shadow-none sm:shadow-xl rounded-none sm:rounded-[2rem] md:rounded-[2.5rem] overflow-hidden bg-white dark:bg-slate-900/50">
-              <CardContent className="p-3 sm:p-6 md:p-12 space-y-8 md:space-y-12 leading-[1.6]">
-                {isHistoryMode && (
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 bg-orange-50/50 dark:bg-amber-400/5 rounded-2xl border border-orange-100 dark:border-amber-400/20 mb-8 gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-1.5 h-6 bg-orange-500 rounded-full" />
-                      <div>
-                        <span className="text-sm font-black text-stone-900 dark:text-white uppercase tracking-tight block">歷史紀錄 / History View</span>
-                        {selectedVersion && (
-                          <span className="text-[9px] font-bold text-stone-500 uppercase tracking-widest">
-                            Showing: {selectedVersion.versionName || selectedVersion.name} ({format(new Date(selectedVersion.createdAt), "MM/dd HH:mm")})
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    {selectedVersion && (
-                      <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <Button 
-                          variant="ghost" 
-                          onClick={() => {
-                            setSelectedVersion(null);
-                            setIsHistoryMode(false);
-                            setIsSidebarOpen(false);
-                          }}
-                          className="h-10 px-4 rounded-xl font-bold text-xs flex-1 sm:flex-none"
-                        >
-                          取消 / Cancel
-                        </Button>
-                        <Button 
-                          onClick={() => handleRestoreVersion(selectedVersion.id)}
-                          className="h-10 px-6 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-orange-500/20 flex-1 sm:flex-none"
-                        >
-                          <RotateCcw className="h-4 w-4 mr-2" /> 還原 / Restore
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                )}
+ <div className="w-px h-6 bg-stone-200 dark:bg-slate-700 mx-1 hidden sm:block"></div>
 
-        <div className="space-y-12">
-                  <section>
-                    <SectionHeader title="活動類型" icon={Layout} />
-                    {isHistoryMode ? (
-                       <DiffHighlighter type="text" oldValue={previousPlan?.scheduledName} newValue={previewPlan?.scheduledName} />
-                    ) : (
-                      <Select value={currentPlan.scheduledName || ""} onValueChange={(val) => handlePlanUpdate({ scheduledName: val })}>
-                        <SelectTrigger className="h-12 rounded-xl px-5 font-bold shadow-none text-base border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800">
-                          <SelectValue placeholder="-- 請選擇活動類型 --" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl font-bold bg-white dark:bg-slate-800 border overflow-hidden">
-                          {activityTypes.map(type => (
-                            <SelectItem key={type} value={type} className="rounded-lg cursor-pointer hover:bg-stone-50 dark:hover:bg-slate-700">{type}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  </section>
+ <Button variant="ghost" size="icon" onClick={onUndo} disabled={!canUndo || isHistoryMode} className="h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity">
+ <Undo2 className="h-4 w-4" />
+ </Button>
+ <Button variant="ghost" size="icon" onClick={onRedo} disabled={!canRedo || isHistoryMode} className="h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity">
+ <Redo2 className="h-4 w-4" />
+ </Button>
+ <Button variant="ghost" size="icon" onClick={handleZoomOut} disabled={pageZoom <= 0.3} className="flex h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity">
+ <ZoomOut className="h-4 w-4" />
+ </Button>
+ <Button variant="ghost" size="icon" onClick={handleFitAll} className="flex h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity">
+ <Maximize className="h-4 w-4" />
+ </Button>
+ <Button variant="ghost" size="icon" onClick={handleZoomIn} disabled={pageZoom >= 2} className="flex h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity">
+ <ZoomIn className="h-4 w-4" />
+ </Button>
+ </ActionBar>
 
-                  <section>
-                    <SectionHeader title={t('SUBJECT')} icon={Target} />
-                    {isHistoryMode ? (
-                       <DiffHighlighter type="text" oldValue={previousPlan?.activityName} newValue={previewPlan?.activityName} />
-                    ) : (
-                      <Input value={currentPlan.activityName} onChange={(e) => handlePlanUpdate({ activityName: e.target.value })} className="h-12 rounded-xl font-bold text-lg px-5 shadow-none" />
-                    )}
-                  </section>
+ <main className="flex-1 min-w-0 flex flex-col relative shrink-0 pb-32 sm:pb-40">
+ <div style={{ zoom: pageZoom }}>
+ {isLoadingPreview ? (
+ <div className="h-full min-h-[260px] flex flex-col items-center justify-center gap-2 text-stone-500 dark:text-slate-400">
+ <Loader2 className="h-5 w-5 animate-spin" />
+ <p className="text-xs font-bold uppercase tracking-widest">Reconstructing History...</p>
+ </div>
+ ) : (
+ <Card className="border-none shadow-[0_8px_30px_rgba(140,120,100,0.05)] sm:rounded-[2rem] md:rounded-[2.5rem] overflow-hidden bg-white dark:bg-slate-900/50 dark:shadow-none">
+ <CardContent className="p-3 sm:p-6 md:p-12 space-y-8 md:space-y-12 leading-[1.6]">
+ {isHistoryMode && (
+ <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 bg-orange-50/50 dark:bg-amber-400/5 rounded-2xl border-none dark:mb-8 gap-4">
+ <div className="flex items-center gap-3">
+ <div className="w-1.5 h-6 bg-orange-500 rounded-full" />
+ <div>
+ <span className="text-sm font-black text-[#2C2A28] dark:text-white uppercase tracking-tight block">歷史紀錄 / History View</span>
+ {selectedVersion && (
+ <span className="text-[9px] font-bold text-stone-500 uppercase tracking-widest">
+ Showing: {selectedVersion.versionName || selectedVersion.name} ({format(new Date(selectedVersion.createdAt), "MM/dd HH:mm")})
+ </span>
+ )}
+ </div>
+ </div>
+ {selectedVersion && (
+ <div className="flex items-center gap-2 w-full sm:w-auto">
+ <Button 
+ variant="ghost" 
+ onClick={() => {
+ setSelectedVersion(null);
+ setIsHistoryMode(false);
+ setIsSidebarOpen(false);
+ }}
+ className="h-10 px-4 rounded-xl font-bold text-xs flex-1 sm:flex-none"
+ >
+ 取消 / Cancel
+ </Button>
+ <Button 
+ onClick={() => handleRestoreVersion(selectedVersion.id)}
+ className="h-10 px-6 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-orange-500/20 flex-1 sm:flex-none"
+ >
+ <RotateCcw className="h-4 w-4 mr-2" /> 還原 / Restore
+ </Button>
+ </div>
+ )}
+ </div>
+ )}
 
-                  <section>
-                    <SectionHeader title={t('CASE_PERSONNEL')} icon={Users} />
-                    {isHistoryMode ? (
-                       <DiffHighlighter type="text" oldValue={previousPlan?.members} newValue={previewPlan?.members} />
-                    ) : (
-                      <Input value={currentPlan.members} onChange={(e) => handlePlanUpdate({ members: e.target.value })} placeholder={t('LIST_MEMBERS')} className="h-12 rounded-xl px-5 shadow-none font-bold" />
-                    )}
-                  </section>
+ <div className="space-y-12">
+ <section>
+ <SectionHeader title="活動類型" icon={Layout} />
+ {isHistoryMode ? (
+ <DiffHighlighter type="text" oldValue={previousPlan?.scheduledName} newValue={previewPlan?.scheduledName} />
+ ) : (
+ <Select value={currentPlan.scheduledName || ""} onValueChange={(val) => handlePlanUpdate({ scheduledName: val })}>
+ <SelectTrigger className="h-12 rounded-xl px-5 font-bold border-none text-base bg-white dark:bg-slate-800 shadow-[0_8px_30px_rgba(140,120,100,0.05)] dark:shadow-none">
+ <SelectValue placeholder="-- 請選擇活動類型 --" />
+ </SelectTrigger>
+ <SelectContent className="rounded-xl font-bold bg-white dark:bg-slate-800 border-none overflow-hidden shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ {activityTypes.map(type => (
+ <SelectItem key={type} value={type} className="rounded-lg cursor-pointer hover:bg-[#FBF9F6] dark:hover:bg-slate-700">{type}</SelectItem>
+ ))}
+ </SelectContent>
+ </Select>
+ )}
+ </section>
 
-                  <section>
-                    <SectionHeader title={t('MISSION_OBJ')} icon={Target} />
-                    {isHistoryMode ? (
-                       <DiffHighlighter type="markdown" oldValue={previousPlan?.purpose} newValue={previewPlan?.purpose} />
-                    ) : (
-                      <div className="rounded-xl border border-stone-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-2 md:p-3 focus-within:ring-2 focus-within:ring-orange-500/40 focus-within:border-orange-500 transition-all">
-                        <textarea
-                          value={currentPlan.purpose || ""}
-                          onChange={(e) => handlePlanUpdate({ purpose: e.target.value })}
-                          className="w-full min-h-[120px] bg-transparent border-none rounded-lg p-3 md:p-4 text-stone-800 dark:text-slate-200 outline-none resize-none font-medium text-sm md:text-base"
-                        />
-                      </div>
-                    )}
-                  </section>
+ <section>
+ <SectionHeader title={t('SUBJECT')} icon={Target} />
+ {isHistoryMode ? (
+ <DiffHighlighter type="text" oldValue={previousPlan?.activityName} newValue={previewPlan?.activityName} />
+ ) : (
+ <Input value={currentPlan.activityName} onChange={(e) => handlePlanUpdate({ activityName: e.target.value })} className="h-12 rounded-xl font-bold text-lg px-5 shadow-none" />
+ )}
+ </section>
 
-                  <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-2">
-                       <SectionHeader title={t('TIME_WINDOW')} icon={Clock} />
-                       {isHistoryMode ? (
-                          <DiffHighlighter type="text" oldValue={previousPlan?.time} newValue={previewPlan?.time} />
-                       ) : (
-                         <Input value={currentPlan.time} onChange={(e) => handlePlanUpdate({ time: e.target.value })} placeholder="14:00 - 15:30" className="h-12 rounded-xl px-5 shadow-none font-bold" />
-                       )}
-                    </div>
-                    <div className="space-y-2">
-                       <SectionHeader title={t('VENUE')} icon={MapPin} />
-                       {isHistoryMode ? (
-                          <DiffHighlighter type="text" oldValue={previousPlan?.location} newValue={previewPlan?.location} />
-                       ) : (
-                         <Input value={currentPlan.location} onChange={(e) => handlePlanUpdate({ location: e.target.value })} placeholder="3F Main Hall" className="h-12 rounded-xl px-5 shadow-none font-bold" />
-                       )}
-                    </div>
-                  </section>
+ <section>
+ <SectionHeader title={t('CASE_PERSONNEL')} icon={Users} />
+ {isHistoryMode ? (
+ <DiffHighlighter type="text" oldValue={previousPlan?.members} newValue={previewPlan?.members} />
+ ) : (
+ <Input value={currentPlan.members} onChange={(e) => handlePlanUpdate({ members: e.target.value })} placeholder={t('LIST_MEMBERS')} className="h-12 rounded-xl px-5 shadow-none font-bold" />
+ )}
+ </section>
 
-                  <section>
-                    <SectionHeader title={t('PROCEDURES')} icon={Layout} />
-                    {isHistoryMode ? (
-                       <DiffHighlighter type="markdown" oldValue={previousPlan?.process} newValue={previewPlan?.process} />
-                    ) : (
-                      <MarkdownArea value={currentPlan.process} onChange={(val) => handlePlanUpdate({ process: val })} />
-                    )}
-                  </section>
+ <section>
+ <SectionHeader title={t('MISSION_OBJ')} icon={Target} />
+ {isHistoryMode ? (
+ <DiffHighlighter type="markdown" oldValue={previousPlan?.purpose} newValue={previewPlan?.purpose} />
+ ) : (
+ <div className="rounded-xl border-none bg-white dark:bg-slate-900 p-2 md:p-3 focus-within:ring-2 focus-within:ring-orange-500/40 transition-all shadow-[0_8px_30px_rgba(140,120,100,0.05)] dark:shadow-none">
+ <textarea
+ value={currentPlan.purpose || ""}
+ onChange={(e) => handlePlanUpdate({ purpose: e.target.value })}
+ className="w-full min-h-[120px] bg-transparent  rounded-lg p-3 md:p-4 text-stone-800 dark:text-slate-200 outline-none resize-none font-medium text-sm md:text-base"
+ />
+ </div>
+ )}
+ </section>
 
-                  <section>
-                    <SectionHeader title={t('VISUAL_BLUEPRINT')} icon={FileText} />
-                    {isHistoryMode ? (
-                       <DiffHighlighter type="canvas" oldValue={previousPlan?.canvasData} newValue={previewPlan?.canvasData} />
-                    ) : (
-                      <>
-                        {hasCanvas ? (
-                          <div className="mb-6 border border-stone-200 dark:border-white/10 rounded-[1.5rem] overflow-hidden bg-stone-50 dark:bg-white/5">
-                            <div className="flex justify-end px-3 pt-3 pb-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={handleDeleteCanvas}
-                                className="h-8 px-3 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg"
-                              >
-                                <Trash2 className="h-4 w-4 mr-1.5" />
-                                刪除畫布
-                              </Button>
-                            </div>
-                            <FabricCanvas 
-                              initialData={currentPlan.canvasData || '{}'} 
-                              initialHeight={currentPlan.canvasHeight || 500} 
-                              onSave={handleCanvasSave} 
-                            />
-                          </div>
-                        ) : (
-                          <Button variant="outline" size="sm" onClick={() => handlePlanUpdate({ canvasData: '{}', canvasHeight: 500 })} className="h-10 px-5 text-[10px] font-bold text-orange-600 border-orange-200 rounded-xl uppercase tracking-widest mb-4">
-                            <Plus className="h-4 w-4 mr-2" /> {t('ADD_CANVAS')}
-                          </Button>
-                        )}
-                        <MarkdownArea value={currentPlan.content} onChange={(val) => handlePlanUpdate({ content: val })} />
-                      </>
-                    )}
-                  </section>
+ <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
+ <div className="space-y-2">
+ <SectionHeader title={t('TIME_WINDOW')} icon={Clock} />
+ {isHistoryMode ? (
+ <DiffHighlighter type="text" oldValue={previousPlan?.time} newValue={previewPlan?.time} />
+ ) : (
+ <Input value={currentPlan.time} onChange={(e) => handlePlanUpdate({ time: e.target.value })} placeholder="14:00 - 15:30" className="h-12 rounded-xl px-5 shadow-none font-bold" />
+ )}
+ </div>
+ <div className="space-y-2">
+ <SectionHeader title={t('VENUE')} icon={MapPin} />
+ {isHistoryMode ? (
+ <DiffHighlighter type="text" oldValue={previousPlan?.location} newValue={previewPlan?.location} />
+ ) : (
+ <Input value={currentPlan.location} onChange={(e) => handlePlanUpdate({ location: e.target.value })} placeholder="3F Main Hall" className="h-12 rounded-xl px-5 shadow-none font-bold" />
+ )}
+ </div>
+ </section>
 
-                  <section className="w-full flex flex-col">
-                    <SectionHeader title={t('MATERIALS')} icon={Package} />
-                    {isHistoryMode ? (
-                       <DiffHighlighter type="table" oldValue={previousPlan?.props} newValue={previewPlan?.props} />
-                    ) : (
-                      <div className="w-full lg:w-[85vw] lg:relative lg:left-1/2 lg:-translate-x-1/2">
-                        <div className="w-full overflow-x-auto">
-                          <PropsTable value={currentPlan.props} onChange={(val) => handlePlanUpdate({ props: val })} />
-                        </div>
-                      </div>
-                    )}
-                  </section>
+ <section>
+ <SectionHeader title={t('PROCEDURES')} icon={Layout} />
+ {isHistoryMode ? (
+ <DiffHighlighter type="markdown" oldValue={previousPlan?.process} newValue={previewPlan?.process} />
+ ) : (
+ <MarkdownArea value={currentPlan.process} onChange={(val) => handlePlanUpdate({ process: val })} />
+ )}
+ </section>
 
-                  <section>
-                    <SectionHeader title={t('OPENING_CLOSING') || "開場與結語"} icon={StickyNote} />
-                    {isHistoryMode ? (
-                       <DiffHighlighter type="markdown" oldValue={previousPlan?.openingClosingRemarks} newValue={previewPlan?.openingClosingRemarks} />
-                    ) : (
-                      <MarkdownArea value={currentPlan.openingClosingRemarks || ""} onChange={(val) => handlePlanUpdate({ openingClosingRemarks: val })} />
-                    )}
-                  </section>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-          </div>
-        </main>
-          </div>
-        </div>
-      </div>
+ <section>
+ <SectionHeader title={t('VISUAL_BLUEPRINT')} icon={FileText} />
+ {isHistoryMode ? (
+ <DiffHighlighter type="canvas" oldValue={previousPlan?.canvasData} newValue={previewPlan?.canvasData} />
+ ) : (
+ <>
+ {hasCanvas ? (
+ <div className="mb-6 flex flex-col w-full h-[min(70vh,calc(100dvh-12rem))] min-h-[420px] rounded-[1.5rem] overflow-hidden bg-[#FBF9F6] dark:bg-white/5 shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <div className="flex justify-end px-3 pt-3 pb-1">
+ <Button
+ variant="ghost"
+ size="sm"
+ onClick={handleDeleteCanvas}
+ className="h-8 px-3 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg"
+ >
+ <Trash2 className="h-4 w-4 mr-1.5" />
+ 刪除畫布
+ </Button>
+ </div>
+ <div className="flex-1 min-h-0">
+ <FabricCanvas 
+ initialData={currentPlan.canvasData || '{}'} 
+ initialHeight={currentPlan.canvasHeight || null} 
+ onSave={handleCanvasSave} 
+ />
+ </div>
+ </div>
+ ) : (
+ <Button variant="outline" size="sm" onClick={() => {
+ setIsCanvasRemoved(false);
+ handlePlanUpdateImmediate({ canvasData: '{}', canvasHeight: 500 });
+ }} className="h-10 px-5 text-[10px] font-bold text-orange-600  rounded-xl uppercase tracking-widest mb-4">
+ <Plus className="h-4 w-4 mr-2" /> {t('ADD_CANVAS')}
+ </Button>
+ )}
+ <MarkdownArea value={currentPlan.content} onChange={(val) => handlePlanUpdate({ content: val })} />
+ </>
+ )}
+ </section>
 
-      {/* Sidebar - Placed outside the scrollable container so it stays fixed */}
-      {isSidebarOpen && (
-        <VersionHistorySidebar 
-          versions={versions}
-          selectedVersionId={selectedVersion?.id || null}
-          onSelectVersion={(v) => {
-             setSelectedVersion(v);
-             setIsHistoryMode(!!v);
-             if (window.innerWidth < 640) {
-               setIsSidebarOpen(false);
-             }
-          }}
-          onDelete={handleDeleteVersion}
-          showNamedOnly={showNamedOnly}
-          onToggleFilter={() => setShowNamedOnly(!showNamedOnly)}
-          onBackToCurrent={() => {
-            setSelectedVersion(null);
-            setIsHistoryMode(false);
-            if (window.innerWidth < 640) setIsSidebarOpen(false);
-          }}
-          onUpdateVersionName={onUpdateVersionName}
-          onSaveVersion={handleSaveVersion}
-          className="w-[85vw] sm:w-[320px] fixed right-0 top-[104px] z-50 h-[calc(100dvh-104px)] shadow-2xl"
-        />
-      )}
+ <section className="w-full flex flex-col">
+ <SectionHeader title={t('MATERIALS')} icon={Package} />
+ {isHistoryMode ? (
+ <DiffHighlighter type="table" oldValue={previousPlan?.props} newValue={previewPlan?.props} />
+ ) : (
+ <div className="w-full lg:w-[85vw] lg:relative lg:left-1/2 lg:-translate-x-1/2">
+ <div className="w-full overflow-x-auto">
+ <PropsTable value={currentPlan.props} onChange={(val) => handlePlanUpdate({ props: val })} />
+ </div>
+ </div>
+ )}
+ </section>
 
-    </div>
-  );
+ <section>
+ <SectionHeader title={t('OPENING_CLOSING') || "開場與結語"} icon={StickyNote} />
+ {isHistoryMode ? (
+ <DiffHighlighter type="markdown" oldValue={previousPlan?.openingClosingRemarks} newValue={previewPlan?.openingClosingRemarks} />
+ ) : (
+ <MarkdownArea value={currentPlan.openingClosingRemarks || ""} onChange={(val) => handlePlanUpdate({ openingClosingRemarks: val })} />
+ )}
+ </section>
+ </div>
+ </CardContent>
+ </Card>
+ )}
+ </div>
+ </main>
+ </div>
+ </div>
+ </div>
+
+ {isSidebarOpen && (
+ <button
+ type="button"
+ aria-label="Close version history"
+ className="fixed inset-0 z-[95] bg-black/20"
+ onClick={() => setIsSidebarOpen(false)}
+ />
+ )}
+
+ {/* Sidebar - Global fixed drawer */}
+ {isSidebarOpen && (
+ <VersionHistorySidebar 
+ versions={versions}
+ selectedVersionId={selectedVersion?.id || null}
+ onSelectVersion={(v) => {
+ setSelectedVersion(v);
+ setIsHistoryMode(!!v);
+ if (window.innerWidth < 640) {
+ setIsSidebarOpen(false);
+ }
+ }}
+ onDelete={handleDeleteVersion}
+ showNamedOnly={showNamedOnly}
+ onToggleFilter={() => setShowNamedOnly(!showNamedOnly)}
+ onClose={() => setIsSidebarOpen(false)}
+ onBackToCurrent={() => {
+ setSelectedVersion(null);
+ setIsHistoryMode(false);
+ if (window.innerWidth < 640) setIsSidebarOpen(false);
+ }}
+ onUpdateVersionName={onUpdateVersionName}
+ onSaveVersion={handleSaveVersion}
+ className=""
+ />
+ )}
+
+ </div>
+ );
 }
 
