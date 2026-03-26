@@ -25,12 +25,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth-context";
@@ -47,7 +41,6 @@ interface NavbarProps {
 }
 
 export function TransparentNavbar({ groups }: NavbarProps) {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeMegaMenu, setActiveMegaMenu] = useState<"plans" | "admin" | null>(null);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   const [isQuickAddExpanded, setIsQuickAddExpanded] = useState(false);
@@ -134,7 +127,6 @@ export function TransparentNavbar({ groups }: NavbarProps) {
   };
 
   const enterBlackoutMode = () => {
-    setIsMobileMenuOpen(false);
     router.push("/admin?tab=timer&saver=1");
   };
 
@@ -151,7 +143,6 @@ export function TransparentNavbar({ groups }: NavbarProps) {
     }
 
     toast({ title: "已快速新增", description: `已新增「${groupName}」教案。` });
-    setIsMobileMenuOpen(false);
     router.push("/plans");
   };
 
@@ -316,20 +307,82 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  className="rounded-xl border-none shadow-2xl bg-black/70 backdrop-blur-md text-white shadow-2xl"
+                  className="w-[360px] rounded-2xl border-none bg-[#FBF9F6] dark:bg-black/80 backdrop-blur-md shadow-2xl p-3"
                 >
-                  {NAV_ITEMS.map((item) => (
-                    <DropdownMenuItem
-                      key={item.href}
-                      asChild
-                      className="rounded-md focus:bg-white/20 focus:text-white data-[highlighted]:bg-white/20 data-[highlighted]:text-white shadow-[0_8px_30px_rgba(140,120,100,0.05)]"
+                  <div className="flex flex-col gap-3">
+                    <div className="rounded-xl bg-stone-100/70 dark:bg-white/10 p-3">
+                      <button
+                        type="button"
+                        onClick={() => setIsQuickAddExpanded((prev) => !prev)}
+                        className="w-full flex items-center justify-between gap-2 px-1 py-1 text-[#2C2A28] dark:text-white"
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          <Plus className="w-5 h-5" />
+                          <span className="font-semibold">快速新增教案</span>
+                        </span>
+                        <ChevronDown
+                          className={cn(
+                            "w-4 h-4 transition-transform duration-300",
+                            isQuickAddExpanded ? "rotate-180" : "rotate-0"
+                          )}
+                        />
+                      </button>
+
+                      {isQuickAddExpanded &&
+                        (safeGroups.length > 0 ? (
+                          <div className="grid grid-cols-2 gap-2 pt-2">
+                            {safeGroups.map((group) => (
+                              <button
+                                type="button"
+                                key={group.id}
+                                onClick={() => handleQuickAddPlan(group.slug, group.nameZh)}
+                                className="rounded-lg px-3 py-2 text-sm font-semibold text-left text-[#2C2A28] bg-white/80 hover:bg-white dark:bg-white/10 dark:text-white dark:hover:bg-white/20 transition-colors duration-300"
+                              >
+                                {group.nameZh}
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="px-1 py-2 text-sm text-stone-500 dark:text-slate-300">目前沒有可新增的類群</div>
+                        ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={toggleAudioUnlock}
+                      className="flex items-center justify-between px-4 py-3 rounded-lg font-semibold transition-all duration-300 text-[#2C2A28] hover:bg-stone-100 dark:text-white dark:hover:bg-white/15"
                     >
-                      <Link href={item.href} className="w-full font-semibold cursor-pointer text-white hover:text-white">
-                        <item.icon className="w-4 h-4 mr-2 text-white" />
-                        {item.label}
-                      </Link>
-                    </DropdownMenuItem>
-                  ))}
+                      <span className="inline-flex items-center gap-3">
+                        <Volume2 className="w-5 h-5 text-[#2C2A28] dark:text-white" />
+                        {audioUnlocked ? "關閉音效" : "音效解鎖"}
+                      </span>
+                      <span className="text-xs font-bold text-stone-500 dark:text-slate-300">
+                        {audioUnlocked ? "已開啟" : "已關閉"}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={enterBlackoutMode}
+                      className="flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-all duration-300 text-[#2C2A28] hover:bg-stone-100 dark:text-white dark:hover:bg-white/15"
+                    >
+                      <Monitor className="w-5 h-5 text-[#2C2A28] dark:text-white" />
+                      進入省電模式
+                    </button>
+
+                    <div className="pt-2">
+                      <div className="flex items-center justify-between rounded-xl bg-stone-100/70 dark:bg-white/10 px-3 py-2">
+                        <span className="text-sm font-semibold text-[#2C2A28] dark:text-white">Theme</span>
+                        <ThemeToggle className="h-9 w-9 rounded-lg bg-white dark:bg-slate-900" />
+                      </div>
+                      {activeCamp && (
+                        <div className="pt-3">
+                          <p className="text-xs text-stone-600 dark:text-white/80 mb-1">Current Camp</p>
+                          <p className="font-semibold text-[#2C2A28] dark:text-white">{activeCamp.name}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -411,15 +464,97 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                 </div>
               </Link>
 
-              <button
-                onClick={() => setIsMobileMenuOpen(true)}
-                className={cn(
-                    "p-2 rounded-lg transition-colors duration-300 bg-transparent text-[#2C2A28] dark:text-white hover:bg-white/15"
-                )}
-                aria-label="Open menu"
-              >
-                <Menu className={cn("w-5 h-5", navIconClass)} />
-              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className={cn(
+                      "p-2 rounded-lg transition-colors duration-300 bg-transparent text-[#2C2A28] dark:text-white hover:bg-white/15"
+                    )}
+                    aria-label="Open menu"
+                  >
+                    <Menu className={cn("w-5 h-5", navIconClass)} />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="w-[92vw] max-w-[360px] rounded-2xl border-none bg-[#FBF9F6] dark:bg-black/80 backdrop-blur-md shadow-2xl p-3"
+                >
+                  <div className="flex flex-col gap-3">
+                    <div className="rounded-xl bg-stone-100/70 dark:bg-white/10 p-3">
+                      <button
+                        type="button"
+                        onClick={() => setIsQuickAddExpanded((prev) => !prev)}
+                        className="w-full flex items-center justify-between gap-2 px-1 py-1 text-[#2C2A28] dark:text-white"
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          <Plus className="w-5 h-5" />
+                          <span className="font-semibold">快速新增教案</span>
+                        </span>
+                        <ChevronDown
+                          className={cn(
+                            "w-4 h-4 transition-transform duration-300",
+                            isQuickAddExpanded ? "rotate-180" : "rotate-0"
+                          )}
+                        />
+                      </button>
+
+                      {isQuickAddExpanded &&
+                        (safeGroups.length > 0 ? (
+                          <div className="grid grid-cols-2 gap-2 pt-2">
+                            {safeGroups.map((group) => (
+                              <button
+                                type="button"
+                                key={group.id}
+                                onClick={() => handleQuickAddPlan(group.slug, group.nameZh)}
+                                className="rounded-lg px-3 py-2 text-sm font-semibold text-left text-[#2C2A28] bg-white/80 hover:bg-white dark:bg-white/10 dark:text-white dark:hover:bg-white/20 transition-colors duration-300"
+                              >
+                                {group.nameZh}
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="px-1 py-2 text-sm text-stone-500 dark:text-slate-300">目前沒有可新增的類群</div>
+                        ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={toggleAudioUnlock}
+                      className="flex items-center justify-between px-4 py-3 rounded-lg font-semibold transition-all duration-300 text-[#2C2A28] hover:bg-stone-100 dark:text-white dark:hover:bg-white/15"
+                    >
+                      <span className="inline-flex items-center gap-3">
+                        <Volume2 className="w-5 h-5 text-[#2C2A28] dark:text-white" />
+                        {audioUnlocked ? "關閉音效" : "音效解鎖"}
+                      </span>
+                      <span className="text-xs font-bold text-stone-500 dark:text-slate-300">
+                        {audioUnlocked ? "已開啟" : "已關閉"}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={enterBlackoutMode}
+                      className="flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-all duration-300 text-[#2C2A28] hover:bg-stone-100 dark:text-white dark:hover:bg-white/15"
+                    >
+                      <Monitor className="w-5 h-5 text-[#2C2A28] dark:text-white" />
+                      進入省電模式
+                    </button>
+
+                    <div className="pt-2">
+                      <div className="flex items-center justify-between rounded-xl bg-stone-100/70 dark:bg-white/10 px-3 py-2">
+                        <span className="text-sm font-semibold text-[#2C2A28] dark:text-white">Theme</span>
+                        <ThemeToggle className="h-9 w-9 rounded-lg bg-white dark:bg-slate-900" />
+                      </div>
+                      {activeCamp && (
+                        <div className="pt-3">
+                          <p className="text-xs text-stone-600 dark:text-white/80 mb-1">Current Camp</p>
+                          <p className="font-semibold text-[#2C2A28] dark:text-white">{activeCamp.name}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             <div className="px-4 pb-3">
@@ -443,84 +578,6 @@ export function TransparentNavbar({ groups }: NavbarProps) {
           </div>
         </div>
       </nav>
-
-      <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-        <SheetContent side="right" className="w-full sm:w-96 flex flex-col bg-[#FBF9F6] dark:bg-black/80 backdrop-blur-md border-none shadow-none dark:shadow-xl">
-          <SheetHeader>
-            <SheetTitle className="text-[#2C2A28] dark:text-white">Quick Panel</SheetTitle>
-          </SheetHeader>
-          <div className="flex-1 flex flex-col gap-4 mt-6 overflow-y-auto">
-            <div className="rounded-xl bg-stone-100/70 dark:bg-white/10 p-3">
-              <button
-                onClick={() => setIsQuickAddExpanded((prev) => !prev)}
-                className="w-full flex items-center justify-between gap-2 px-1 py-1 text-[#2C2A28] dark:text-white"
-              >
-                <span className="inline-flex items-center gap-2">
-                  <Plus className="w-5 h-5" />
-                  <span className="font-semibold">快速新增教案</span>
-                </span>
-                <ChevronDown
-                  className={cn(
-                    "w-4 h-4 transition-transform duration-300",
-                    isQuickAddExpanded ? "rotate-180" : "rotate-0"
-                  )}
-                />
-              </button>
-
-              {isQuickAddExpanded &&
-                (safeGroups.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-2 pt-2">
-                    {safeGroups.map((group) => (
-                      <button
-                        key={group.id}
-                        onClick={() => handleQuickAddPlan(group.slug, group.nameZh)}
-                        className="rounded-lg px-3 py-2 text-sm font-semibold text-left text-[#2C2A28] bg-white/80 hover:bg-white dark:bg-white/10 dark:text-white dark:hover:bg-white/20 transition-colors duration-300"
-                      >
-                        {group.nameZh}
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="px-1 py-2 text-sm text-stone-500 dark:text-slate-300">目前沒有可新增的類群</div>
-                ))}
-            </div>
-
-            <button
-              onClick={toggleAudioUnlock}
-              className="flex items-center justify-between px-4 py-3 rounded-lg font-semibold transition-all duration-300 text-[#2C2A28] hover:bg-stone-100 dark:text-white dark:hover:bg-white/15"
-            >
-              <span className="inline-flex items-center gap-3">
-                <Volume2 className="w-5 h-5 text-[#2C2A28] dark:text-white" />
-                {audioUnlocked ? "關閉音效" : "音效解鎖"}
-              </span>
-              <span className="text-xs font-bold text-stone-500 dark:text-slate-300">
-                {audioUnlocked ? "已開啟" : "已關閉"}
-              </span>
-            </button>
-
-            <button
-              onClick={enterBlackoutMode}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-all duration-300 text-[#2C2A28] hover:bg-stone-100 dark:text-white dark:hover:bg-white/15"
-            >
-              <Monitor className="w-5 h-5 text-[#2C2A28] dark:text-white" />
-              進入省電模式
-            </button>
-          </div>
-
-          <div className="mt-auto pt-4 border-none">
-            <div className="flex items-center justify-between rounded-xl bg-stone-100/70 dark:bg-white/10 px-3 py-2">
-              <span className="text-sm font-semibold text-[#2C2A28] dark:text-white">Theme</span>
-              <ThemeToggle className="h-9 w-9 rounded-lg bg-white dark:bg-slate-900" />
-            </div>
-            {activeCamp && (
-              <div className="pt-4 mt-4">
-                <p className="text-xs text-stone-600 dark:text-white/80 mb-2">Current Camp</p>
-                <p className="font-semibold text-[#2C2A28] dark:text-white">{activeCamp.name}</p>
-              </div>
-            )}
-          </div>
-        </SheetContent>
-      </Sheet>
 
     </>
   );

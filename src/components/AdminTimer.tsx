@@ -434,7 +434,7 @@ export function AdminTimer({ timer, isLocked, autoEnterSaverMode = false }: Admi
  <div className="w-full max-w-5xl flex flex-col space-y-10">
  
  <div className={cn(
- "w-full p-8 rounded-[2.5rem] border-none dark:flex flex-col md:flex-row items-center justify-between gap-8 shadow-xl shadow-stone-200/20 dark:shadow-none transition-all duration-500",
+ "w-full p-8 rounded-[2.5rem] border-none flex flex-col md:flex-row items-center justify-between gap-8 shadow-xl shadow-stone-200/20 dark:shadow-none transition-all duration-500",
  audioUnlocked ? "bg-emerald-50/50 dark:bg-emerald-500/5" : "bg-white dark:bg-slate-800/50"
  )}>
  <div className="flex items-center gap-6 text-center md:text-left">

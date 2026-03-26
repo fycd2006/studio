@@ -690,7 +690,7 @@ export function AdminSection({
  }
  }}
  className={cn(
- "h-9 px-3 rounded-lg font-bold text-[10px] tracking-widest uppercase transition-colors",
+ "fixed right-3 top-[calc(env(safe-area-inset-top)+104px)] z-[70] h-9 px-3 rounded-lg font-bold text-[10px] tracking-widest uppercase transition-colors bg-[#FBF9F6]/95 backdrop-blur-sm shadow-[0_8px_30px_rgba(140,120,100,0.08)] sm:static sm:top-auto sm:right-auto sm:z-auto sm:bg-transparent sm:backdrop-blur-none sm:shadow-none",
  isLocked
  ? "text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10"
  : "text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10"
