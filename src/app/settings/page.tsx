@@ -308,68 +308,79 @@ export default function SettingsPage() {
  <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-500 dark:text-slate-400 flex items-center gap-3">
  <List className="w-4 h-4 text-orange-500 dark:text-amber-400" /> 組別管理
  </h2>
- <div className="bg-white dark:bg-slate-800 rounded-xl p-8 transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
- <div className="flex flex-col gap-6">
- <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+ <div className="bg-white dark:bg-slate-800 rounded-xl p-4 md:p-8 transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
+ <div className="flex flex-col">
+ {/* Header - Desktop only */}
+ <div className="hidden md:grid md:grid-cols-[1.2fr_1.5fr_1fr_auto] gap-4 pb-3 border-b border-stone-100 dark:border-slate-800/50 mb-3 px-2">
+ <div className="text-xs font-bold tracking-wider text-stone-400 dark:text-slate-500 uppercase">中文名稱</div>
+ <div className="text-xs font-bold tracking-wider text-stone-400 dark:text-slate-500 uppercase">英文名稱 (English)</div>
+ <div className="text-xs font-bold tracking-wider text-stone-400 dark:text-slate-500 uppercase">路由/縮寫 (Slug)</div>
+ <div className="text-xs font-bold tracking-wider text-stone-400 dark:text-slate-500 uppercase text-center w-10">操作</div>
+ </div>
+
+ {/* Map groups */}
+ <div className="space-y-4 md:space-y-1 mb-6">
  {groups.map((group) => {
  const isDefault = group.slug === 'activity' || group.slug === 'teaching';
  return (
- <div key={group.id} className="rounded-xl dark: p-4 bg-[#FBF9F6]/60 dark:bg-slate-900/60 space-y-3 border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(255,255,255,0.01)]">
- <div className="flex items-center justify-between">
- <Badge className="bg-stone-100 dark:bg-slate-800 text-stone-700 dark:text-slate-300 dark: font-bold border-none">/{group.slug}</Badge>
- {!isDefault && (
+ <div key={group.id} className="flex flex-col md:grid md:grid-cols-[1.2fr_1.5fr_1fr_auto] gap-3 md:gap-4 md:items-center p-3 md:p-2 rounded-lg bg-stone-50/50 md:bg-transparent hover:bg-stone-50/80 dark:hover:bg-slate-800/30 transition-colors group">
+ <Input
+ placeholder="中文名稱"
+ value={group.nameZh}
+ onChange={(e) => updateGroup(group.id, { nameZh: e.target.value })}
+ className="bg-stone-50/50 dark:bg-slate-900/50 hover:bg-white dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 focus:ring-1 focus:ring-orange-400 dark:focus:ring-amber-400 transition-colors border-none shadow-none px-3 py-2 h-9 w-full outline-none font-medium text-sm text-[#2C2A28] dark:text-white"
+ />
+ <Input
+ placeholder="English Name"
+ value={group.nameEn}
+ onChange={(e) => updateGroup(group.id, { nameEn: e.target.value })}
+ className="bg-stone-50/50 dark:bg-slate-900/50 hover:bg-white dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 focus:ring-1 focus:ring-orange-400 dark:focus:ring-amber-400 transition-colors border-none shadow-none px-3 py-2 h-9 w-full outline-none font-medium text-sm text-[#2C2A28] dark:text-white"
+ />
+ 
+ {isDefault ? (
+ <div className="flex items-center px-3 py-2 h-9 bg-transparent border-none w-full">
+ <Badge className="bg-stone-100 dark:bg-slate-800 text-stone-700 dark:text-slate-300 font-bold border-none px-3">/{group.slug}</Badge>
+ </div>
+ ) : (
+ <Input
+ placeholder="路由 (Slug)"
+ value={group.slug}
+ onChange={(e) => updateGroup(group.id, { slug: e.target.value })}
+ className="bg-stone-50/50 dark:bg-slate-900/50 hover:bg-white dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 focus:ring-1 focus:ring-orange-400 dark:focus:ring-amber-400 transition-colors border-none shadow-none px-3 py-2 h-9 w-full outline-none font-mono text-xs text-[#2C2A28] dark:text-white"
+ />
+ )}
+ 
+ <div className="flex justify-end w-full md:w-10">
+ {!isDefault ? (
  <Button
  variant="ghost"
  size="icon"
- className="h-7 w-7 text-stone-400 hover:text-rose-500 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
+ className="h-8 w-8 text-stone-400 hover:bg-rose-50 hover:text-rose-500 dark:hover:bg-rose-500/10 dark:hover:text-rose-400 border-none transition-colors"
  onClick={() => deleteGroup(group.id)}
  >
  <Trash2 className="w-4 h-4" />
  </Button>
+ ) : (
+ <div className="h-8 w-8" />
  )}
  </div>
- <div className="space-y-2">
- <label className="text-[10px] font-black uppercase tracking-widest text-stone-500">中文名稱</label>
- <Input
- value={group.nameZh}
- onChange={(e) => updateGroup(group.id, { nameZh: e.target.value })}
- className="font-bold bg-white dark:bg-slate-900 shadow-[0_8px_30px_rgba(140,120,100,0.05)]"
- />
- </div>
- <div className="space-y-2">
- <label className="text-[10px] font-black uppercase tracking-widest text-stone-500">English Name</label>
- <Input
- value={group.nameEn}
- onChange={(e) => updateGroup(group.id, { nameEn: e.target.value })}
- className="font-bold bg-white dark:bg-slate-900 shadow-[0_8px_30px_rgba(140,120,100,0.05)]"
- />
- </div>
- {!isDefault && (
- <div className="space-y-2">
- <label className="text-[10px] font-black uppercase tracking-widest text-stone-500">Slug / Route Key</label>
- <Input
- value={group.slug}
- onChange={(e) => updateGroup(group.id, { slug: e.target.value })}
- className="font-mono bg-white dark:bg-slate-900 shadow-[0_8px_30px_rgba(140,120,100,0.05)]"
- />
- </div>
- )}
  </div>
  );
  })}
  </div>
- <div className="flex flex-col md:flex-row items-center gap-4">
+
+ {/* Add Row */}
+ <div className="flex flex-col md:grid md:grid-cols-[1.2fr_1.5fr_1fr_auto] gap-3 md:gap-4 md:items-center p-3 md:p-2 rounded-lg bg-orange-50/30 dark:bg-amber-900/10 transition-colors mt-2 border-t border-stone-100 dark:border-slate-800/50 md:border-none md:mt-0">
  <Input
- placeholder="新增組別中文名 (例如: 美宣組)"
+ placeholder="新增中文名稱"
  value={newGroupNameZh}
  onChange={(e) => setNewGroupNameZh(e.target.value)}
- className="max-w-xs font-bold bg-[#FBF9F6] dark:bg-slate-900  dark: text-[#2C2A28] dark:text-white"
+ className="bg-white dark:bg-slate-900 hover:bg-stone-50 dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 focus:ring-1 focus:ring-orange-400 transition-colors border-none shadow-none px-3 py-2 h-9 w-full outline-none font-bold text-sm text-[#2C2A28] dark:text-white"
  />
  <Input
- placeholder="English Name (e.g. Design Team)"
+ placeholder="New English Name"
  value={newGroupNameEn}
  onChange={(e) => setNewGroupNameEn(e.target.value)}
- className="max-w-xs font-bold bg-[#FBF9F6] dark:bg-slate-900  dark: text-[#2C2A28] dark:text-white"
  onKeyDown={(e) => {
  if (e.key === 'Enter' && newGroupNameZh.trim() && newGroupNameEn.trim()) {
  addGroup({ nameZh: newGroupNameZh.trim(), nameEn: newGroupNameEn.trim() });
@@ -377,7 +388,14 @@ export default function SettingsPage() {
  setNewGroupNameEn("");
  }
  }}
+ className="bg-white dark:bg-slate-900 hover:bg-stone-50 dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 focus:ring-1 focus:ring-orange-400 transition-colors border-none shadow-none px-3 py-2 h-9 w-full outline-none font-bold text-sm text-[#2C2A28] dark:text-white"
  />
+ 
+ <div className="flex items-center px-1 py-1 h-9 bg-transparent w-full">
+ <span className="text-xs text-stone-400 dark:text-slate-500 font-medium italic">自動產生 Slug / Auto-generated</span>
+ </div>
+ 
+ <div className="flex justify-end w-full md:w-auto md:min-w-[40px]">
  <Button
  onClick={() => {
  if (newGroupNameZh.trim() && newGroupNameEn.trim()) {
@@ -386,10 +404,12 @@ export default function SettingsPage() {
  setNewGroupNameEn("");
  }
  }}
- className="bg-stone-900 dark:bg-white text-white dark:text-[#2C2A28] font-bold hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors cursor-pointer shadow-[0_8px_30px_rgba(140,120,100,0.05)]"
+ size="sm"
+ className="bg-orange-600 dark:bg-amber-500 text-white font-bold hover:bg-orange-700 dark:hover:bg-amber-600 transition-colors cursor-pointer border-none shadow-none w-full md:w-auto whitespace-nowrap h-8"
  >
  新增 / Add
  </Button>
+ </div>
  </div>
  </div>
  </div>
