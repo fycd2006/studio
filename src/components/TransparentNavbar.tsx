@@ -41,6 +41,7 @@ interface NavbarProps {
 }
 
 export function TransparentNavbar({ groups }: NavbarProps) {
+  const SHORT_BEEP_URL = "/beep.wav";
   const [activeMegaMenu, setActiveMegaMenu] = useState<"plans" | "admin" | null>(null);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   const [isQuickAddExpanded, setIsQuickAddExpanded] = useState(false);
@@ -57,6 +58,16 @@ export function TransparentNavbar({ groups }: NavbarProps) {
   const { camps, activeCampId, groups: allGroups, addPlan } = usePlans();
   const isHome = pathname === "/";
   const lastScrollY = useRef(0);
+  const shortBeepRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    shortBeepRef.current = new Audio(SHORT_BEEP_URL);
+    shortBeepRef.current.preload = "auto";
+
+    return () => {
+      shortBeepRef.current = null;
+    };
+  }, []);
 
   const activeCamp = camps?.find((c) => c.id === activeCampId);
   const displayGroups = groups || allGroups || [];
@@ -98,24 +109,14 @@ export function TransparentNavbar({ groups }: NavbarProps) {
     }
 
     try {
-      const Ctx = window.AudioContext || (window as any).webkitAudioContext;
-      if (!Ctx) {
-        toast({ title: "目前瀏覽器不支援音效解鎖" });
-        return;
+      if (!shortBeepRef.current) {
+        shortBeepRef.current = new Audio(SHORT_BEEP_URL);
+        shortBeepRef.current.preload = "auto";
       }
 
-      const context = new Ctx();
-      if (context.state === "suspended") {
-        await context.resume();
-      }
-
-      const oscillator = context.createOscillator();
-      const gain = context.createGain();
-      gain.gain.value = 0.0001;
-      oscillator.connect(gain);
-      gain.connect(context.destination);
-      oscillator.start();
-      oscillator.stop(context.currentTime + 0.02);
+      shortBeepRef.current.currentTime = 0;
+      shortBeepRef.current.volume = 1.0;
+      await shortBeepRef.current.play();
 
       localStorage.setItem("camp-audio-unlocked", "true");
       window.dispatchEvent(new Event("camp-audio-sync"));
@@ -307,7 +308,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  className="w-[360px] rounded-2xl border-none bg-[#FBF9F6] dark:bg-black/80 backdrop-blur-md shadow-2xl p-3"
+                  className="w-[360px] rounded-2xl bg-[#FBF9F6] dark:bg-black/80 backdrop-blur-md shadow-2xl p-3 border-none"
                 >
                   <div className="flex flex-col gap-3">
                     <div className="rounded-xl bg-stone-100/70 dark:bg-white/10 p-3">
@@ -350,7 +351,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                     <button
                       type="button"
                       onClick={toggleAudioUnlock}
-                      className="flex items-center justify-between px-4 py-3 rounded-lg font-semibold transition-all duration-300 text-[#2C2A28] hover:bg-stone-100 dark:text-white dark:hover:bg-white/15"
+                      className="flex items-center justify-between px-4 py-3 rounded-lg font-semibold transition-all duration-300 text-[#2C2A28] hover:bg-stone-100 dark:text-white dark:hover:bg-white/15 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
                     >
                       <span className="inline-flex items-center gap-3">
                         <Volume2 className="w-5 h-5 text-[#2C2A28] dark:text-white" />
@@ -364,7 +365,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                     <button
                       type="button"
                       onClick={enterBlackoutMode}
-                      className="flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-all duration-300 text-[#2C2A28] hover:bg-stone-100 dark:text-white dark:hover:bg-white/15"
+                      className="flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-all duration-300 text-[#2C2A28] hover:bg-stone-100 dark:text-white dark:hover:bg-white/15 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
                     >
                       <Monitor className="w-5 h-5 text-[#2C2A28] dark:text-white" />
                       進入省電模式
@@ -418,7 +419,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                         href={`/plans?group=${group.slug}`}
                         className="block rounded-lg px-4 py-3 bg-white/5 dark:bg-black/20 text-[#2C2A28] dark:text-white hover:bg-white/20 dark:hover:bg-black/40 transition-all duration-300 transform hover:-translate-y-0.5 shadow-[0_8px_30px_rgba(140,120,100,0.05)]"
                       >
-                        <p className="font-semibold ">{group.nameZh}</p>
+                        <p className="font-semibold">{group.nameZh}</p>
                         <p className="text-[11px] uppercase tracking-wide text-slate-700 dark:text-white/80">{group.nameEn}</p>
                       </Link>
                     ))}
@@ -431,7 +432,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                       <Link
                         key={item.href}
                         href={item.href}
-                        className="block rounded-lg px-4 py-3 bg-transparent text-[#2C2A28] dark:text-white font-semibold "
+                        className="block rounded-lg px-4 py-3 bg-transparent text-[#2C2A28] dark:text-white font-semibold"
                       >
                         {item.label}
                       </Link>
@@ -455,7 +456,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                   />
                 </div>
                 <div className="flex flex-col leading-tight text-[#2C2A28] dark:text-white">
-                  <span className="text-[0.82rem] font-extrabold tracking-[0.01em] ">
+                  <span className="text-[0.82rem] font-extrabold tracking-[0.01em]">
                     NTUT Chong De Camp
                   </span>
                   <span className="text-[0.61rem] font-semibold tracking-[0.04em] text-slate-700 dark:text-white/95">
@@ -477,7 +478,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  className="w-[92vw] max-w-[360px] rounded-2xl border-none bg-[#FBF9F6] dark:bg-black/80 backdrop-blur-md shadow-2xl p-3"
+                  className="w-[92vw] max-w-[360px] rounded-2xl bg-[#FBF9F6] dark:bg-black/80 backdrop-blur-md shadow-2xl p-3 border-none"
                 >
                   <div className="flex flex-col gap-3">
                     <div className="rounded-xl bg-stone-100/70 dark:bg-white/10 p-3">
@@ -520,7 +521,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                     <button
                       type="button"
                       onClick={toggleAudioUnlock}
-                      className="flex items-center justify-between px-4 py-3 rounded-lg font-semibold transition-all duration-300 text-[#2C2A28] hover:bg-stone-100 dark:text-white dark:hover:bg-white/15"
+                      className="flex items-center justify-between px-4 py-3 rounded-lg font-semibold transition-all duration-300 text-[#2C2A28] hover:bg-stone-100 dark:text-white dark:hover:bg-white/15 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
                     >
                       <span className="inline-flex items-center gap-3">
                         <Volume2 className="w-5 h-5 text-[#2C2A28] dark:text-white" />
@@ -534,7 +535,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                     <button
                       type="button"
                       onClick={enterBlackoutMode}
-                      className="flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-all duration-300 text-[#2C2A28] hover:bg-stone-100 dark:text-white dark:hover:bg-white/15"
+                      className="flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-all duration-300 text-[#2C2A28] hover:bg-stone-100 dark:text-white dark:hover:bg-white/15 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
                     >
                       <Monitor className="w-5 h-5 text-[#2C2A28] dark:text-white" />
                       進入省電模式

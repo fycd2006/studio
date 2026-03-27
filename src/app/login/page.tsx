@@ -240,7 +240,7 @@ export default function LoginPage() {
  />
  <button
  type="button"
- className="absolute right-0 text-gray-400 transition-colors hover:text-gray-600"
+ className="absolute right-0 text-gray-400 transition-colors hover:text-gray-600 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
  onMouseDown={() => setShowPassword(true)}
  onMouseUp={() => setShowPassword(false)}
  onMouseLeave={() => setShowPassword(false)}
@@ -258,7 +258,7 @@ export default function LoginPage() {
  initial={{ opacity: 0, height: 0 }}
  animate={{ opacity: 1, height: "auto" }}
  exit={{ opacity: 0, height: 0 }}
- className="mx-3 sm:mx-4 rounded-sm border-none  bg-rose-50 p-2.5 sm:p-3 text-center text-xs font-semibold text-rose-600"
+ className="mx-3 sm:mx-4 rounded-sm bg-rose-50 p-2.5 sm:p-3 text-center text-xs font-semibold text-rose-600 border-none"
  >
  帳號或密碼錯誤，請重新輸入。
  </motion.div>
@@ -268,7 +268,7 @@ export default function LoginPage() {
  <button
  type="submit"
  disabled={isSubmitting}
- className="mx-3 sm:mx-4 flex h-10 sm:h-11 w-[calc(100%-1.5rem)] sm:w-[calc(100%-2rem)] items-center justify-center rounded-[4px] bg-[#ff6b00] text-xs sm:text-sm font-semibold tracking-[0.06em] text-white transition-colors hover:bg-[#e66000] disabled:cursor-not-allowed disabled:bg-[#ff6b00]/70"
+ className="mx-3 sm:mx-4 flex h-10 sm:h-11 w-[calc(100%-1.5rem)] sm:w-[calc(100%-2rem)] items-center justify-center rounded-[4px] bg-[#ff6b00] text-xs sm:text-sm font-semibold tracking-[0.06em] text-white transition-colors hover:bg-[#e66000] disabled:cursor-not-allowed disabled:bg-[#ff6b00]/70 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
  >
  {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : "Sign in"}
  </button>

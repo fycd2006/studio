@@ -186,7 +186,7 @@ export function PlanSidebar({
  <SidebarHeader className="dark:px-4 px-4 py-5 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:py-4 transition-colors z-20 relative">
  <div className="flex items-center justify-between group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-3 overflow-hidden">
  <Link href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-all duration-300 min-w-max">
- <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden bg-[#FBF9F6] dark:bg-white border-none dark:p-0.5 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8 shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden bg-[#FBF9F6] dark:bg-white dark:p-0.5 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8 shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
  <img src="/logo.png" alt="Logo" className="w-full h-full object-contain"
  onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
  <Sparkles className="h-5 w-5 text-orange-500 dark:text-amber-400 hidden" />
@@ -206,7 +206,7 @@ export function PlanSidebar({
  </Button>
  )}
  <Button variant="ghost" size="icon" onClick={toggleSidebar}
- className="h-7 w-7 rounded-lg text-stone-400 dark:text-slate-500 hover:bg-[#FBF9F6] dark:hover:bg-white/5 hover:text-orange-500 dark:hover:text-amber-400 transition-all shrink-0 cursor-pointer shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ className="h-7 w-7 rounded-lg text-stone-400 dark:text-slate-500 hover:bg-[#FBF9F6] dark:hover:bg-white/5 hover:text-orange-500 dark:hover:text-amber-400 transition-all shrink-0 cursor-pointer shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
  {isCollapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
  </Button>
  </div>
@@ -246,7 +246,7 @@ export function PlanSidebar({
 
  {/* ═══ PROJECT INFO (expanded only) ═══ */}
  <div className="mt-6 mb-2 px-3 group-data-[collapsible=icon]:hidden">
- <div className="flex flex-col gap-2 p-3 bg-[#FBF9F6]/50 dark:bg-white/5 rounded-xl border-none dark:shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <div className="flex flex-col gap-2 p-3 bg-[#FBF9F6]/50 dark:bg-white/5 rounded-xl dark:shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
  <div className="flex items-center justify-between">
  <label className="text-[9px] font-black text-stone-400 dark:text-slate-500 uppercase tracking-widest leading-none">
  Active Project
@@ -270,7 +270,7 @@ export function PlanSidebar({
  <span className="text-[11px] font-black text-[#2C2A28] dark:text-white truncate">
  {activeCamp?.isLocked ? "🔒 " : ""}{activeCamp?.name || "No Active Project"}
  </span>
- {activeCamp && <Badge className="h-4 px-1 text-[8px] font-black uppercase tracking-tighter bg-orange-100 dark:bg-amber-400/10 text-orange-600 dark:text-amber-400  shrink-0">Live</Badge>}
+ {activeCamp && <Badge className="h-4 px-1 text-[8px] font-black uppercase tracking-tighter bg-orange-100 dark:bg-amber-400/10 text-orange-600 dark:text-amber-400 shrink-0">Live</Badge>}
  </div>
  </div>
  </div>
@@ -291,12 +291,12 @@ export function PlanSidebar({
  <div className="flex items-center justify-between mb-1.5 px-2">
  <SidebarGroupLabel className="h-auto p-0 flex items-center gap-2">
  <Link href={`/lesson-plans/${group.slug}`} className="font-bold text-[10px] text-stone-400 dark:text-slate-500 uppercase tracking-[0.15em] hover:text-orange-500 dark:hover:text-amber-400 transition-colors">{groupLabel}</Link>
- <Badge className="h-4 px-1.5 text-[9px] font-bold rounded-md bg-orange-50 text-orange-600 dark:bg-amber-400/10 dark:text-amber-400  transition-colors">
+ <Badge className="h-4 px-1.5 text-[9px] font-bold rounded-md bg-orange-50 text-orange-600 dark:bg-amber-400/10 dark:text-amber-400 transition-colors">
  {catPlans.length}
  </Badge>
  </SidebarGroupLabel>
  <Button variant="ghost" size="icon"
- className="h-6 w-6 text-stone-400 dark:text-slate-500 hover:text-orange-500 dark:hover:text-amber-400 hover:bg-[#FBF9F6] dark:hover:bg-white/5 cursor-pointer transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)]"
+ className="h-6 w-6 text-stone-400 dark:text-slate-500 hover:text-orange-500 dark:hover:text-amber-400 hover:bg-[#FBF9F6] dark:hover:bg-white/5 cursor-pointer transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none"
  onClick={() => {
  const newId = onAdd(group.slug);
  if (newId) router.push(`/plans/${newId}`);
@@ -343,7 +343,7 @@ export function PlanSidebar({
  {planTitle}
  </div>
  <Button variant="ghost" size="icon"
- className="h-6 w-6 opacity-0 group-hover/item:opacity-100 rounded-md text-stone-400 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 cursor-pointer transition-colors"
+ className="h-6 w-6 opacity-0 group-hover/item:opacity-100 rounded-md text-stone-400 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 cursor-pointer transition-colors border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
  onClick={(e) => {
  e.stopPropagation();
  if (role !== 'admin') {
@@ -384,7 +384,7 @@ export function PlanSidebar({
  <Button
  variant="ghost"
  size="icon"
- className="h-7 w-7 rounded-lg text-stone-400 dark:text-slate-400 hover:text-orange-500 dark:hover:text-amber-400 hover:bg-[#FBF9F6] dark:hover:bg-white/5 transition-colors cursor-pointer shadow-[0_8px_30px_rgba(140,120,100,0.05)]"
+ className="h-7 w-7 rounded-lg text-stone-400 dark:text-slate-400 hover:text-orange-500 dark:hover:text-amber-400 hover:bg-[#FBF9F6] dark:hover:bg-white/5 transition-colors cursor-pointer shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none"
  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
  >
  {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
@@ -392,7 +392,7 @@ export function PlanSidebar({
  <Button
  variant="ghost"
  size="sm"
- className="h-7 px-2 text-xs font-bold rounded-lg text-stone-400 dark:text-slate-400 hover:text-orange-500 dark:hover:text-amber-400 hover:bg-[#FBF9F6] dark:hover:bg-white/5 transition-colors cursor-pointer shadow-[0_8px_30px_rgba(140,120,100,0.05)]"
+ className="h-7 px-2 text-xs font-bold rounded-lg text-stone-400 dark:text-slate-400 hover:text-orange-500 dark:hover:text-amber-400 hover:bg-[#FBF9F6] dark:hover:bg-white/5 transition-colors cursor-pointer shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none"
  onClick={() => setLanguage(language === 'zh' ? 'en' : 'zh')}
  >
  {language === 'zh' ? 'EN' : '中'}
@@ -404,7 +404,7 @@ export function PlanSidebar({
 
  {/* ═══ TYPE-DELETE PLAN MODAL ═══ */}
  <Dialog open={!!deletePlanTarget} onOpenChange={(open) => { if (!open) { setDeletePlanTarget(null); setDeleteInput(""); } }}>
- <DialogContent className="rounded-2xl p-8 bg-white dark:bg-slate-900  shadow-2xl max-w-md shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <DialogContent className="rounded-2xl p-8 bg-white dark:bg-slate-900 shadow-2xl max-w-md shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
  <DialogHeader><DialogTitle className="text-lg font-bold tracking-tight">刪除教案 / Delete Plan</DialogTitle></DialogHeader>
  <div className="space-y-4 py-2">
  <p className="text-sm text-slate-500">確認刪除「<strong className="text-[#2C2A28] dark:text-white">{deletePlanTarget?.name}</strong>」？此操作無法復原。</p>
@@ -417,14 +417,14 @@ export function PlanSidebar({
  <DialogFooter className="gap-2">
  <Button variant="ghost" onClick={() => { setDeletePlanTarget(null); setDeleteInput(""); }} className="rounded-lg font-semibold h-11 cursor-pointer">取消</Button>
  <Button variant="destructive" onClick={handleConfirmDeletePlan} disabled={deleteInput !== "delete"}
- className="rounded-lg font-semibold h-11 px-8 cursor-pointer disabled:opacity-40">確認刪除</Button>
+ className="rounded-lg font-semibold h-11 px-8 cursor-pointer disabled:opacity-40 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow">確認刪除</Button>
  </DialogFooter>
  </DialogContent>
  </Dialog>
 
  {/* ═══ ADD CAMP DIALOG ═══ */}
  <Dialog open={isAddCampOpen} onOpenChange={setIsAddCampOpen}>
- <DialogContent className="rounded-2xl p-8 bg-white dark:bg-slate-900  shadow-2xl shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <DialogContent className="rounded-2xl p-8 bg-white dark:bg-slate-900 shadow-2xl shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
  <DialogHeader><DialogTitle className="text-lg font-bold tracking-tight">建立營隊專案 / Create Project</DialogTitle></DialogHeader>
  <div className="py-4 space-y-5">
  <div className="space-y-2">
@@ -444,14 +444,14 @@ export function PlanSidebar({
  </div>
  <DialogFooter className="gap-2">
  <Button variant="outline" onClick={() => setIsAddCampOpen(false)} className="rounded-lg font-semibold h-11 cursor-pointer">取消</Button>
- <Button onClick={handleCreateCamp} className="gold-btn rounded-lg font-semibold h-11 px-8 cursor-pointer">確認 / Confirm</Button>
+ <Button onClick={handleCreateCamp} className="gold-btn rounded-lg font-semibold h-11 px-8 cursor-pointer border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow">確認 / Confirm</Button>
  </DialogFooter>
  </DialogContent>
  </Dialog>
 
  {/* ═══ CAMP SETTINGS DIALOG ═══ */}
  <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
- <DialogContent className="rounded-2xl p-8 bg-white dark:bg-slate-900  shadow-2xl max-w-lg shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <DialogContent className="rounded-2xl p-8 bg-white dark:bg-slate-900 shadow-2xl max-w-lg shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
  <DialogHeader><DialogTitle className="text-lg font-bold tracking-tight">專案設定 / Project Settings</DialogTitle></DialogHeader>
  <div className="py-4 space-y-6">
  <div className="space-y-2">
@@ -468,7 +468,7 @@ export function PlanSidebar({
  <Input type="date" value={tempCamp.campEndDate || ""} onChange={(e) => setTempCamp({ ...tempCamp, campEndDate: e.target.value })} className="h-11 rounded-lg font-semibold" />
  </div>
  </div>
- <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-6 pt-6  dark:">
+ <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-6 pt-6 dark:">
  {[
  { ks: 'meeting1StartDate', ke: 'meeting1EndDate', l: '一籌' },
  { ks: 'meeting2StartDate', ke: 'meeting2EndDate', l: '二籌' },

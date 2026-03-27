@@ -45,7 +45,7 @@ export default function HistoryOverview() {
  <div className="bg-[#FBF9F6] dark:bg-slate-950 text-[#2C2A28] dark:text-slate-50 transition-colors selection:bg-[#f48c25]/30 selection:text-[#f48c25] font-sans">
  <div className="max-w-6xl mx-auto pt-24 pb-12 md:pb-16 px-6 md:px-8">
  {/* ── HEADER ─────────────── */}
- <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12  dark: pb-8">
+ <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 dark: pb-8">
  <div>
  <div className="flex items-center gap-3 mb-4">
  <button 
@@ -56,7 +56,7 @@ export default function HistoryOverview() {
  </button>
  </div>
  <div className="flex items-center gap-2 mb-3">
- <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#f48c25] bg-[#f48c25]/10 dark:text-orange-400 dark:bg-orange-400/10 px-2 py-1 rounded-sm border-none border-none-[#f48c25]/20">
+ <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#f48c25] bg-[#f48c25]/10 dark:text-orange-400 dark:bg-orange-400/10 px-2 py-1 rounded-sm -[#f48c25]/20 border-none">
  {activeCamp?.name || "All Projects"}
  </span>
  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500 dark:text-slate-500 bg-stone-200/50 dark:bg-slate-800 px-2 py-1 rounded-sm">
@@ -67,13 +67,13 @@ export default function HistoryOverview() {
  <History className="w-8 h-8 md:w-10 md:h-10 text-[#f48c25]" />
  近期修改紀錄
  </h1>
- <p className="text-stone-500 dark:text-slate-400 text-sm mt-3 font-medium border-none-[#f48c25] pl-3">
+ <p className="text-stone-500 dark:text-slate-400 text-sm mt-3 font-medium -[#f48c25] pl-3 border-none">
  Activity History / 僅顯示最近 30 天內有異動的教案與活動
  </p>
  </div>
 
  <div className="flex items-center gap-4">
- <div className="flex bg-white dark:bg-slate-900 p-1 rounded-xl border-none shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <div className="flex bg-white dark:bg-slate-900 p-1 rounded-xl shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
  <button onClick={() => setViewType("grid")} className={cn("p-2 rounded-lg transition-all cursor-pointer", viewType === "grid" ? "bg-stone-100 dark:bg-slate-800 text-[#f48c25] shadow-sm" : "text-stone-400 dark:text-slate-500 hover:text-stone-600 dark:hover:text-slate-300")}>
  <LayoutGrid className="w-4 h-4" />
  </button>
@@ -86,8 +86,8 @@ export default function HistoryOverview() {
 
  {/* ── CONTENT ─────────────────────── */}
  {recentPlans.length === 0 ? (
- <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm border-none rounded-[2rem] p-20 flex flex-col items-center justify-center text-center shadow-stone-200/20 dark:shadow-none shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
- <div className="w-20 h-20 rounded-full bg-stone-100 dark:bg-slate-800 flex items-center justify-center mb-6 border-none  dark:">
+ <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm rounded-[2rem] p-20 flex flex-col items-center justify-center text-center shadow-stone-200/20 dark:shadow-none shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
+ <div className="w-20 h-20 rounded-full bg-stone-100 dark:bg-slate-800 flex items-center justify-center mb-6 dark: border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(255,255,255,0.01)]">
  <History className="w-8 h-8 text-stone-300 dark:text-slate-600" />
  </div>
  <h3 className="text-xl font-bold text-[#2C2A28] dark:text-slate-200 mb-2">最近無修改紀錄</h3>
@@ -97,7 +97,7 @@ export default function HistoryOverview() {
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
  {recentPlans.map((plan, i) => (
  <motion.div key={plan.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03, duration: 0.3 }}>
- <div className="bg-white dark:bg-slate-900 border-none rounded-2xl p-6 text-left w-full group transition-all duration-300 hover:border-none-[#f48c25]/50 dark:hover:border-none-[#f48c25]/50 hover:-translate-y-1 flex flex-col h-full cursor-pointer relative overflow-hidden shadow-[0_8px_30px_rgba(140,120,100,0.05)]" onClick={() => handleOpenPlan(plan.id)}>
+ <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 text-left w-full group transition-all duration-300 -[#f48c25]/50 dark:-[#f48c25]/50 hover:-translate-y-1 flex flex-col h-full cursor-pointer relative overflow-hidden shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none" onClick={() => handleOpenPlan(plan.id)}>
  {/* Subtle hover glow */}
  <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-[#f48c25] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
 
@@ -113,7 +113,7 @@ export default function HistoryOverview() {
  <h3 className="font-bold text-lg md:text-xl text-[#2C2A28] dark:text-slate-100 mb-2 line-clamp-2 leading-snug group-hover:text-[#f48c25] dark:group-hover:text-[#f48c25] transition-colors">{plan.activityName || "未命名文件"}</h3>
  <p className="text-xs text-stone-500 dark:text-slate-400 font-semibold mb-6 flex-1 flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" />{plan.scheduledName || "未分類"}</p>
  
- <div className="flex items-center gap-4 pt-4  dark: mt-auto">
+ <div className="flex items-center gap-4 pt-4 dark: mt-auto">
  <div className="flex items-center gap-1.5 text-[11px] text-stone-500 dark:text-slate-400 font-semibold bg-[#FBF9F6] dark:bg-slate-800/50 px-2 py-1 rounded-md">
  <Clock className="w-3.5 h-3.5 text-[#f48c25]" />
  {plan.updatedAt ? format(new Date(plan.updatedAt), "MM/dd HH:mm") : "—"}
@@ -130,7 +130,7 @@ export default function HistoryOverview() {
  ))}
  </div>
  ) : (
- <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="bg-white dark:bg-slate-900 border-none rounded-[2rem] overflow-hidden shadow-stone-200/20 dark:shadow-none shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="bg-white dark:bg-slate-900 rounded-[2rem] overflow-hidden shadow-stone-200/20 dark:shadow-none shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
  <table className="w-full text-sm text-left">
  <thead className="bg-[#FBF9F6] dark:bg-slate-950/50  dark:">
  <tr className="text-[10px] font-black uppercase tracking-[0.15em] text-stone-400 dark:text-slate-500">

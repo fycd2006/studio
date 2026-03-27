@@ -80,7 +80,7 @@ export function Dashboard({ camps, activeCampId, plans, onSelectPlan, onSetViewM
  
  <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
  <div className="space-y-6 text-center md:text-left max-w-2xl">
- <Badge className="bg-white/20 hover:bg-white/30 text-white  px-4 py-1.5 rounded-full backdrop-blur-md font-bold tracking-widest text-[10px] uppercase shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <Badge className="bg-white/20 hover:bg-white/30 text-white px-4 py-1.5 rounded-full backdrop-blur-md font-bold tracking-widest text-[10px] uppercase shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
  <Flame className="h-3 w-3 mr-1.5" />
  Volunteer Studio
  </Badge>
@@ -110,7 +110,7 @@ export function Dashboard({ camps, activeCampId, plans, onSelectPlan, onSetViewM
  </div>
  {/* Decorative Visual */}
  <div className="relative hidden lg:block">
- <div className="w-64 h-64 md:w-72 md:h-72 bg-white/10 rounded-[3rem] backdrop-blur-2xl  shadow-2xl animate-float flex items-center justify-center overflow-hidden shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <div className="w-64 h-64 md:w-72 md:h-72 bg-white/10 rounded-[3rem] backdrop-blur-2xl shadow-2xl animate-float flex items-center justify-center overflow-hidden shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
  <Sparkles className="w-24 h-24 text-white/15 absolute -top-6 -right-6" />
  <Layout className="w-28 h-28 text-white/30" />
  </div>
@@ -128,12 +128,12 @@ export function Dashboard({ camps, activeCampId, plans, onSelectPlan, onSetViewM
  { icon: Package2, label: "物資準備率 / Props Ready", value: stats.propsReadyRate, suffix: "%", sub: "教案道具裝袋狀態", color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-500/10" },
  { icon: Clock, label: "剩餘天數 / Days left", value: countdowns[0]?.days || 0, suffix: "天", sub: countdowns[0]?.label || "無即時活動", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-500/10" },
  ].map((stat, i) => (
- <Card key={i} className="glass-card glow-card p-6 rounded-[1.5rem]  flex flex-col justify-between hover:scale-[1.02] transition-all duration-300 cursor-default gradient-border-none">
+ <Card key={i} className="glass-card glow-card p-6 rounded-[1.5rem] flex flex-col justify-between hover:scale-[1.02] transition-all duration-300 cursor-default gradient- border-none">
  <div className="flex items-center justify-between mb-4">
  <div className={cn("p-3 rounded-xl shadow-sm", stat.bg)}>
  <stat.icon className={cn("h-5 w-5", stat.color)} />
  </div>
- <Badge variant="outline" className="text-[10px] font-bold  text-muted-foreground">SYNCED</Badge>
+ <Badge variant="outline" className="text-[10px] font-bold text-muted-foreground">SYNCED</Badge>
  </div>
  <div>
  <div className="flex items-baseline gap-1">
@@ -152,13 +152,13 @@ export function Dashboard({ camps, activeCampId, plans, onSelectPlan, onSetViewM
  ═══════════════════════════════════════════ */}
  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
  {/* Countdown Timeline */}
- <Card className="lg:col-span-1 glass-card glow-card p-8 rounded-[2rem] ">
+ <Card className="lg:col-span-1 glass-card glow-card p-8 rounded-[2rem]">
  <div className="flex items-center gap-3 mb-8">
  <Calendar className="h-5 w-5 text-primary" />
  <h3 className="font-headline font-bold text-lg tracking-tight text-foreground uppercase">營隊里程碑 / Milestones</h3>
  </div>
  <div className="space-y-6 relative">
- <div className="absolute left-2 top-2 bottom-2 w-0.5 bg-border-none rounded-full" />
+ <div className="absolute left-2 top-2 bottom-2 w-0.5 bg- rounded-full border-none" />
  {countdowns.length > 0 ? countdowns.map((e, i) => (
  <div key={i} className="relative pl-8 flex items-center justify-between group">
  <div className={cn(
@@ -181,13 +181,13 @@ export function Dashboard({ camps, activeCampId, plans, onSelectPlan, onSetViewM
  </Card>
 
  {/* Recently Updated Plans */}
- <Card className="lg:col-span-2 glass-card glow-card p-8 rounded-[2rem] ">
+ <Card className="lg:col-span-2 glass-card glow-card p-8 rounded-[2rem]">
  <div className="flex items-center justify-between mb-8">
  <div className="flex items-center gap-3">
  <FileText className="h-5 w-5 text-primary" />
  <h3 className="font-headline font-bold text-lg tracking-tight text-foreground uppercase">最近編輯 / Recent Activity</h3>
  </div>
- <Button variant="ghost" className="text-[10px] font-bold text-muted-foreground hover:text-primary uppercase tracking-widest cursor-pointer" onClick={() => onSetViewMode('editor')}>檢視全部 / View All</Button>
+ <Button variant="ghost" className="text-[10px] font-bold text-muted-foreground hover:text-primary uppercase tracking-widest cursor-pointer border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={() => onSetViewMode('editor')}>檢視全部 / View All</Button>
  </div>
  <div className="space-y-3">
  {stats.recentPlans.length > 0 ? stats.recentPlans.map((plan) => (

@@ -164,7 +164,7 @@ export default function Home() {
           <div className="max-w-[1920px] mx-auto grid grid-cols-1 gap-6 md:gap-10">
             
             {/* Horizontal Timeline (Milestones) */}
-            <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl rounded-2xl sm:rounded-[2.5rem] shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)] ring-1 ring-slate-900/5 dark:ring-white/10 p-4 sm:p-8 md:p-12 shadow-2xl shadow-slate-200/50 dark:shadow-black/40 transition-all duration-500 relative overflow-hidden group">
+            <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl rounded-2xl sm:rounded-[2.5rem] shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)] p-4 sm:p-8 md:p-12 shadow-2xl shadow-slate-200/50 dark:shadow-black/40 transition-all duration-500 relative overflow-hidden group border-none">
                {/* Shine effect */}
                <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
                <h3 className="relative z-10 text-xl sm:text-2xl md:text-3xl font-black tracking-tight mb-6 sm:mb-8 md:mb-16 text-[#2C2A28] dark:text-white flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
@@ -215,7 +215,7 @@ export default function Home() {
 
             {/* Recent Plans & Activity (Replacing The Core) */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-10">
-               <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)] ring-1 ring-slate-900/5 dark:ring-white/10 p-6 md:p-12 flex flex-col justify-between min-h-[400px] shadow-2xl shadow-slate-200/50 dark:shadow-black/40 transition-all duration-500 relative overflow-hidden group">
+               <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)] p-6 md:p-12 flex flex-col justify-between min-h-[400px] shadow-2xl shadow-slate-200/50 dark:shadow-black/40 transition-all duration-500 relative overflow-hidden group border-none">
                  
                  {/* Premium glowing orb inside the card */}
                  <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-gradient-to-br from-[#f48c25]/20 to-orange-600/5 dark:from-[#f48c25]/10 dark:to-orange-600/5 rounded-full blur-[80px] pointer-events-none group-hover:scale-110 group-hover:bg-[#f48c25]/30 transition-all duration-1000"></div>
@@ -228,14 +228,14 @@ export default function Home() {
                    </h3>
                    <ul className="space-y-4">
                      {recentPlans.map((plan, idx) => (
-                       <li key={plan.id} className="group cursor-pointer bg-white/40 dark:bg-slate-800/40 hover:bg-white dark:hover:bg-slate-800 rounded-2xl p-4 md:p-5 hover:shadow-md dark:hover:shadow-black/40 hover:bg-white/90 dark:hover:bg-slate-800/90 backdrop-blur-md hover:ring-1 hover:ring-slate-900/5 dark:hover:ring-white/10 transition-all duration-300 transform hover:-translate-y-0.5 transition-all duration-300 shadow-[0_8px_30px_rgba(140,120,100,0.05)]" onClick={() => router.push(`/plans/${plan.id}`)}>
+                       <li key={plan.id} className="group cursor-pointer bg-white/40 dark:bg-slate-800/40 hover:bg-white dark:hover:bg-slate-800 rounded-2xl p-4 md:p-5 hover:shadow-md dark:hover:shadow-black/40 hover:bg-white/90 dark:hover:bg-slate-800/90 backdrop-blur-md dark: transition-all duration-300 transform hover:-translate-y-0.5 transition-all duration-300 shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none" onClick={() => router.push(`/plans/${plan.id}`)}>
                          <div className="text-[10px] md:text-xs text-[#f48c25] font-semibold tracking-wider mb-2 flex items-center justify-between uppercase">
                            <span>{idx === 0 ? "JUST UPDATED" : "RECENT"}</span>
                            <span className="text-slate-400 dark:text-slate-500">{plan.updatedAt ? format(new Date(plan.updatedAt), "MM/dd HH:mm") : ""}</span>
                          </div>
                          <div className="text-slate-800 dark:text-slate-200 font-bold text-lg md:text-xl group-hover:text-[#f48c25] dark:group-hover:text-[#f48c25] transition-colors line-clamp-1 flex items-center gap-2">
                            {plan.category ? (
-                              <span className="bg-slate-200/50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-xs px-2 py-1 rounded-md shrink-0 ">
+                              <span className="bg-slate-200/50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-xs px-2 py-1 rounded-md shrink-0">
                                 {plan.category}
                               </span>
                            ) : null}
@@ -257,7 +257,7 @@ export default function Home() {
                  </div>
                </div>
 
-               <div className="relative min-h-[400px] rounded-[2.5rem] overflow-hidden group cursor-pointer shadow-black/5 dark:shadow-black/20 bg-white/90 dark:bg-[#020617]/90 backdrop-blur-md ring-1 ring-slate-900/5 dark:ring-white/10 p-8 md:p-12 flex flex-col justify-center shadow-2xl shadow-slate-200/50 dark:shadow-black/40 transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_30px_60px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_30px_60px_rgba(0,0,0,0.6)]" onClick={() => router.push('/plans')}>
+               <div className="relative min-h-[400px] rounded-[2.5rem] overflow-hidden group cursor-pointer shadow-black/5 dark:shadow-black/20 bg-white/90 dark:bg-[#020617]/90 backdrop-blur-md p-8 md:p-12 flex flex-col justify-center shadow-2xl shadow-slate-200/50 dark:shadow-black/40 transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_30px_60px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_30px_60px_rgba(0,0,0,0.6)] border-none" onClick={() => router.push('/plans')}>
                  <div className="absolute inset-0 z-0 blur-[2px] group-hover:blur-none group-hover:scale-105 transition-all duration-1000 ease-in-out">
                    <HeroCarousel />
                  </div>

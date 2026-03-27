@@ -230,7 +230,7 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
  )}>
  {selectedImage && (
  <div 
- className="fixed z-[9999] flex flex-col gap-2 p-2 bg-slate-900/95 backdrop-blur-md rounded-2xl shadow-2xl  shadow-sm animate-in fade-in zoom-in-95 duration-200"
+ className="fixed z-[9999] flex flex-col gap-2 p-2 bg-slate-900/95 backdrop-blur-md rounded-2xl shadow-2xl shadow-sm animate-in fade-in zoom-in-95 duration-200"
  style={{ 
  top: `${imageMenuPos.top}px`, 
  left: `${imageMenuPos.left}px`,
@@ -239,7 +239,7 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
  >
  <div className="flex items-center gap-1.5">
  <TooltipProvider>
- <div className="flex items-center gap-1 pr-1 ">
+ <div className="flex items-center gap-1 pr-1">
  {[
  { w: '25%', label: '25%' },
  { w: '33%', label: '33%' },
@@ -266,25 +266,25 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
  ))}
  </div>
 
- <div className="flex items-center gap-1 px-1 ">
+ <div className="flex items-center gap-1 px-1">
  <Tooltip>
  <TooltipTrigger asChild>
- <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20 shadow-[0_8px_30px_rgba(140,120,100,0.05)]" onClick={() => toggleStyle('borderRadius', '24px')}><CircleIcon className="h-4 w-4" /></Button>
+ <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20 shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none" onClick={() => toggleStyle('borderRadius', '24px')}><CircleIcon className="h-4 w-4" /></Button>
  </TooltipTrigger>
  <TooltipContent className="text-[10px] font-bold">圓角 / Round</TooltipContent>
  </Tooltip>
  <Tooltip>
  <TooltipTrigger asChild>
- <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20 shadow-[0_8px_30px_rgba(140,120,100,0.05)]" onClick={() => toggleStyle('boxShadow', '0 20px 25px -5px rgba(0,0,0,0.1)')}><Layers className="h-4 w-4" /></Button>
+ <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20 shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none" onClick={() => toggleStyle('boxShadow', '0 20px 25px -5px rgba(0,0,0,0.1)')}><Layers className="h-4 w-4" /></Button>
  </TooltipTrigger>
  <TooltipContent className="text-[10px] font-bold">陰影 / Shadow</TooltipContent>
  </Tooltip>
  </div>
 
- <div className="flex items-center gap-1 px-1 ">
+ <div className="flex items-center gap-1 px-1">
  <Tooltip>
  <TooltipTrigger asChild>
- <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20 shadow-[0_8px_30px_rgba(140,120,100,0.05)]" onClick={() => toggleStyle('aspectRatio', '16/9')}><RectangleHorizontal className="h-4 w-4" /></Button>
+ <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20 shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none" onClick={() => toggleStyle('aspectRatio', '16/9')}><RectangleHorizontal className="h-4 w-4" /></Button>
  </TooltipTrigger>
  <TooltipContent className="text-[10px] font-bold">16:9</TooltipContent>
  </Tooltip>
@@ -305,13 +305,13 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
  <div className="flex items-center gap-1 pl-1">
  <Tooltip>
  <TooltipTrigger asChild>
- <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20 shadow-[0_8px_30px_rgba(140,120,100,0.05)]" onClick={clearImageFormat}><RotateCcw className="h-4 w-4" /></Button>
+ <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20 shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none" onClick={clearImageFormat}><RotateCcw className="h-4 w-4" /></Button>
  </TooltipTrigger>
  <TooltipContent className="text-[10px] font-bold">重設 / Reset</TooltipContent>
  </Tooltip>
  <Tooltip>
  <TooltipTrigger asChild>
- <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-400 hover:bg-rose-500 hover:text-white" onClick={deleteImage}><Trash2 className="h-4 w-4" /></Button>
+ <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-400 hover:bg-rose-500 hover:text-white border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={deleteImage}><Trash2 className="h-4 w-4" /></Button>
  </TooltipTrigger>
  <TooltipContent className="text-[10px] font-bold">刪除 / Del</TooltipContent>
  </Tooltip>
@@ -321,7 +321,7 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
  </div>
  )}
 
- <div className="flex items-center flex-wrap gap-1 p-1  no-print sticky top-0 z-10 bg-card/95 backdrop-blur-md rounded-t-2xl">
+ <div className="flex items-center flex-wrap gap-1 p-1 no-print sticky top-0 z-10 bg-card/95 backdrop-blur-md rounded-t-2xl">
  <TooltipProvider>
  {[
  { icon: Bold, title: "粗體 / Bold", action: () => execCommand("bold") },
@@ -331,7 +331,7 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
  ].map((btn, i) => (
  <Tooltip key={i}>
  <TooltipTrigger asChild>
- <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary transition-all" onMouseDown={(e) => { e.preventDefault(); btn.action(); }}>
+ <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary transition-all border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onMouseDown={(e) => { e.preventDefault(); btn.action(); }}>
  <btn.icon className="h-4 w-4" />
  </Button>
  </TooltipTrigger>
@@ -339,24 +339,24 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
  </Tooltip>
  ))}
  
- <div className="w-[1px] h-4 bg-border-none mx-1" />
+ <div className="w-[1px] h-4 bg- mx-1 border-none" />
 
  <Tooltip>
  <Popover>
  <TooltipTrigger asChild>
  <PopoverTrigger asChild>
- <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary transition-all">
+ <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary transition-all border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow">
  <FontIcon className="h-4 w-4" />
  </Button>
  </PopoverTrigger>
  </TooltipTrigger>
- <PopoverContent className="w-40 p-1 rounded-xl  shadow-2xl z-[60]" side="bottom" align="start">
+ <PopoverContent className="w-40 p-1 rounded-xl shadow-2xl z-[60]" side="bottom" align="start">
  <div className="flex flex-col">
  {fontSizes.map((fs) => (
  <Button
  key={fs.size}
  variant="ghost"
- className="justify-start h-8 px-3 rounded-lg text-[10px] font-black uppercase"
+ className="justify-start h-8 px-3 rounded-lg text-[10px] font-black uppercase border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
  onMouseDown={(e) => {
  e.preventDefault();
  setFontSize(fs.size);
@@ -375,15 +375,15 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
  <Popover>
  <TooltipTrigger asChild>
  <PopoverTrigger asChild>
- <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary transition-all">
+ <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary transition-all border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow">
  <Palette className="h-4 w-4" />
  </Button>
  </PopoverTrigger>
  </TooltipTrigger>
- <PopoverContent className="w-48 p-2 rounded-2xl  shadow-2xl z-[60]" side="bottom" align="start">
+ <PopoverContent className="w-48 p-2 rounded-2xl shadow-2xl z-[60]" side="bottom" align="start">
  <div className="grid grid-cols-4 gap-2">
  {['#0f172a', '#64748b', '#3b82f6', '#06b6d4', '#ef4444', '#22c55e', '#f97316', '#a855f7'].map((color) => (
- <div key={color} className="w-7 h-7 rounded-full cursor-pointer border-none hover:shadow-sm transition-all" style={{ backgroundColor: color }} onMouseDown={(e) => { e.preventDefault(); execCommand("foreColor", color); }} />
+ <div key={color} className="w-7 h-7 rounded-full cursor-pointer hover:shadow-sm transition-all border-none" style={{ backgroundColor: color }} onMouseDown={(e) => { e.preventDefault(); execCommand("foreColor", color); }} />
  ))}
  </div>
  </PopoverContent>
@@ -391,7 +391,7 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
  <TooltipContent side="bottom" className="text-[9px] font-black uppercase">顏色 / Color</TooltipContent>
  </Tooltip>
 
- <div className="w-[1px] h-4 bg-border-none mx-1" />
+ <div className="w-[1px] h-4 bg- mx-1 border-none" />
 
  {[
  { icon: List, title: "項目 / Bullet", action: () => execCommand("insertUnorderedList") },
@@ -402,7 +402,7 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
  ].map((btn, i) => (
  <Tooltip key={i}>
  <TooltipTrigger asChild>
- <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary transition-all" onMouseDown={(e) => { e.preventDefault(); btn.action(); }}>
+ <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary transition-all border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onMouseDown={(e) => { e.preventDefault(); btn.action(); }}>
  <btn.icon className="h-4 w-4" />
  </Button>
  </TooltipTrigger>
@@ -414,7 +414,7 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
  
  <Tooltip>
  <TooltipTrigger asChild>
- <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-rose-500 transition-all" onMouseDown={(e) => { e.preventDefault(); execCommand("removeFormat"); }}>
+ <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-rose-500 transition-all border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onMouseDown={(e) => { e.preventDefault(); execCommand("removeFormat"); }}>
  <Eraser className="h-4 w-4" />
  </Button>
  </TooltipTrigger>

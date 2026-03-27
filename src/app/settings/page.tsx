@@ -69,14 +69,14 @@ export default function SettingsPage() {
  <div className="bg-[#FBF9F6] dark:bg-slate-900 text-[#2C2A28] dark:text-slate-50 transition-colors font-sans selection:bg-orange-200 dark:selection:bg-amber-500/30">
  <div className="max-w-5xl mx-auto pt-28 sm:pt-24 pb-6 sm:pb-12 md:pb-16 px-4 sm:px-6 md:px-8">
  {/* ── PAGE TITLE ──────────────────── */}
- <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6 mb-8 sm:mb-16  dark: pb-6 sm:pb-8">
+ <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6 mb-8 sm:mb-16 dark: pb-6 sm:pb-8">
  <div className="flex-1">
  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-[#2C2A28] dark:text-white mb-1.5 sm:mb-2">
  {t('SETTINGS_TITLE')}
  </h1>
  <p className="text-stone-500 dark:text-slate-400 font-medium uppercase tracking-[0.2em] text-[10px] sm:text-xs">Configuration // Governance // Security</p>
  </div>
- <Button variant="ghost" size="icon" onClick={logout} className="h-9 w-9 text-stone-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors cursor-pointer">
+ <Button variant="ghost" size="icon" onClick={logout} className="h-9 w-9 text-stone-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors cursor-pointer border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow">
  <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
  </Button>
  </div>
@@ -87,15 +87,15 @@ export default function SettingsPage() {
  <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-500 dark:text-slate-400 flex items-center gap-3">
  <User className="w-4 h-4 text-orange-500 dark:text-amber-400" /> {t('IDENTITY_GOVERNANCE')}
  </h2>
- <div className="bg-white dark:bg-slate-800 border-none rounded-xl p-8 transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <div className="bg-white dark:bg-slate-800 rounded-xl p-8 transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
  <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
  <div className="space-y-4">
  <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-slate-400">Identity Designation</label>
  <input type="text" value={profileName} onChange={(e) => setProfileName(e.target.value)}
  className="w-full bg-[#FBF9F6] dark:bg-slate-900 border-none  dark: rounded-md px-4 py-3 font-semibold focus:ring-1 focus:ring-orange-500 dark:focus:ring-amber-400 focus: dark:focus: outline-none transition-all text-[#2C2A28] dark:text-white" />
  </div>
- <div className="flex items-center gap-6 p-6 bg-[#FBF9F6] dark:bg-slate-900/50 rounded-xl border-none  dark:">
- <div className="w-16 h-16 rounded-full bg-orange-50 dark:bg-amber-400/10 flex items-center justify-center border-none  dark:">
+ <div className="flex items-center gap-6 p-6 bg-[#FBF9F6] dark:bg-slate-900/50 rounded-xl dark: border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(255,255,255,0.01)]">
+ <div className="w-16 h-16 rounded-full bg-orange-50 dark:bg-amber-400/10 flex items-center justify-center dark: border-none">
  <ShieldCheck className="w-8 h-8 text-orange-600 dark:text-amber-400" />
  </div>
  <div>
@@ -118,7 +118,7 @@ export default function SettingsPage() {
  {isAddingProject ? (
  <div className="flex items-center gap-2 bg-stone-100 dark:bg-slate-900 rounded-lg p-1 pr-2 animate-in fade-in slide-in-from-right-2 duration-200">
  <input 
- className="bg-transparent  focus:ring-0 text-[11px] font-bold text-[#2C2A28] dark:text-white w-32 px-2"
+ className="bg-transparent text-[11px] font-bold text-[#2C2A28] dark:text-white w-32 px-2 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
  placeholder="Project Name..."
  autoFocus
  value={newProjectName}
@@ -137,7 +137,7 @@ export default function SettingsPage() {
  <Button 
  size="sm" 
  variant="ghost" 
- className="h-6 w-6 p-0 rounded-md hover:bg-rose-500/10 hover:text-rose-500"
+ className="h-6 w-6 p-0 rounded-md hover:bg-rose-500/10 hover:text-rose-500 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
  onClick={() => {
  setIsAddingProject(false);
  setNewProjectName("");
@@ -148,7 +148,7 @@ export default function SettingsPage() {
  <Button 
  size="sm" 
  variant="ghost" 
- className="h-6 w-6 p-0 rounded-md hover:bg-emerald-500/10 hover:text-emerald-500"
+ className="h-6 w-6 p-0 rounded-md hover:bg-emerald-500/10 hover:text-emerald-500 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
  onClick={() => {
  if (newProjectName) {
  addCamp(newProjectName);
@@ -164,7 +164,7 @@ export default function SettingsPage() {
  <Button 
  variant="outline" 
  size="sm" 
- className="h-8 px-4 rounded-lg bg-orange-600 dark:bg-amber-400 text-white dark:text-[#2C2A28]  font-black text-[10px] uppercase tracking-widest hover:bg-orange-700 dark:hover:bg-amber-500 transition-all gap-2"
+ className="h-8 px-4 rounded-lg bg-orange-600 dark:bg-amber-400 text-white dark:text-[#2C2A28] font-black text-[10px] uppercase tracking-widest hover:bg-orange-700 dark:hover:bg-amber-500 transition-all gap-2 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
  onClick={() => setIsAddingProject(true)}
  >
  <Plus className="w-3.5 h-3.5" /> {t('NEW_PROJECT')}
@@ -173,7 +173,7 @@ export default function SettingsPage() {
  </div>
  )}
  </div>
- <div className="bg-white dark:bg-slate-800 border-none rounded-xl p-2 overflow-hidden transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <div className="bg-white dark:bg-slate-800 rounded-xl p-2 overflow-hidden transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
  <div className="divide-y divide-stone-100 dark:divide-slate-700/50">
  {camps.map((camp) => (
  <div key={camp.id}
@@ -210,7 +210,7 @@ export default function SettingsPage() {
  {camp.isLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
  </Button>
  )}
- {activeCampId === camp.id && <Badge className="bg-orange-100 dark:bg-amber-400/10 text-orange-700 dark:text-amber-400  dark: font-bold px-3 py-0.5 rounded-sm text-[10px] uppercase tracking-widest">Active</Badge>}
+ {activeCampId === camp.id && <Badge className="bg-orange-100 dark:bg-amber-400/10 text-orange-700 dark:text-amber-400 dark: font-bold px-3 py-0.5 rounded-sm text-[10px] uppercase tracking-widest">Active</Badge>}
  <ChevronRight className={cn("w-5 h-5 text-stone-300 dark:text-slate-600 group-hover:text-orange-500 dark:group-hover:text-amber-400 transition-colors", activeCampId === camp.id && "text-orange-500 dark:text-amber-400")} />
  </div>
  </div>
@@ -225,12 +225,12 @@ export default function SettingsPage() {
  <Globe className="w-4 h-4 text-orange-500 dark:text-amber-400" /> {t('PREFERENCES_TITLE')}
  </h2>
  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
- <div className="bg-white dark:bg-slate-800 border-none rounded-xl p-8 flex items-center justify-between transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <div className="bg-white dark:bg-slate-800 rounded-xl p-8 flex items-center justify-between transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
  <div>
  <h4 className="font-bold text-lg text-[#2C2A28] dark:text-white mb-1">{t('THEME_MODE')}</h4>
  <p className="text-xs text-stone-500 dark:text-slate-400 font-medium">Theme Protocol</p>
  </div>
- <div className="flex bg-stone-100 dark:bg-slate-900 p-1 rounded-md border-none  dark:">
+ <div className="flex bg-stone-100 dark:bg-slate-900 p-1 rounded-md dark: border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(255,255,255,0.01)]">
  <button onClick={() => setTheme('light')} className={cn("p-1.5 rounded-sm transition-all cursor-pointer", theme === 'light' ? "bg-white dark:bg-slate-800 text-orange-600 dark:text-amber-400 shadow-sm" : "text-stone-400 dark:text-slate-500 hover:text-stone-600 dark:hover:text-slate-300")}>
  <Sun className="w-5 h-5" />
  </button>
@@ -239,12 +239,12 @@ export default function SettingsPage() {
  </button>
  </div>
  </div>
- <div className="bg-white dark:bg-slate-800 border-none rounded-xl p-8 flex items-center justify-between transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <div className="bg-white dark:bg-slate-800 rounded-xl p-8 flex items-center justify-between transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
  <div>
  <h4 className="font-bold text-lg text-[#2C2A28] dark:text-white mb-1">{t('LANGUAGE_SWITCH')}</h4>
  <p className="text-xs text-stone-500 dark:text-slate-400 font-medium">Locale Protocol</p>
  </div>
- <div className="flex bg-stone-100 dark:bg-slate-900 p-1 rounded-md border-none  dark:">
+ <div className="flex bg-stone-100 dark:bg-slate-900 p-1 rounded-md dark: border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(255,255,255,0.01)]">
  <button onClick={() => setLanguage('zh')} className={cn("px-4 py-1.5 rounded-sm text-xs font-bold uppercase tracking-widest transition-all cursor-pointer", language === 'zh' ? "bg-white dark:bg-slate-800 text-orange-600 dark:text-amber-400 shadow-sm" : "text-stone-400 dark:text-slate-500 hover:text-stone-600 dark:hover:text-slate-300")}>中文</button>
  <button onClick={() => setLanguage('en')} className={cn("px-4 py-1.5 rounded-sm text-xs font-bold uppercase tracking-widest transition-all cursor-pointer", language === 'en' ? "bg-white dark:bg-slate-800 text-orange-600 dark:text-amber-400 shadow-sm" : "text-stone-400 dark:text-slate-500 hover:text-stone-600 dark:hover:text-slate-300")}>EN</button>
  </div>
@@ -258,12 +258,12 @@ export default function SettingsPage() {
  <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-500 dark:text-slate-400 flex items-center gap-3">
  <Calendar className="w-4 h-4 text-orange-500 dark:text-amber-400" /> {t('TIMELINE_SETUP')}
  </h2>
- <div className="bg-white dark:bg-slate-800 border-none rounded-xl p-8 transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <div className="bg-white dark:bg-slate-800 rounded-xl p-8 transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
  {timelineFields.map((field) => {
  const Icon = field.icon;
  return (
- <div key={field.label} className="p-6 bg-[#FBF9F6]/50 dark:bg-slate-900/50 rounded-xl border-none  dark: space-y-4">
+ <div key={field.label} className="p-6 bg-[#FBF9F6]/50 dark:bg-slate-900/50 rounded-xl dark: space-y-4 border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(255,255,255,0.01)]">
  <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-stone-400 dark:text-slate-500">
  <Icon className="w-3.5 h-3.5 text-orange-500 dark:text-amber-400" /> {field.label}
  </label>
@@ -301,20 +301,20 @@ export default function SettingsPage() {
  <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-500 dark:text-slate-400 flex items-center gap-3">
  <List className="w-4 h-4 text-orange-500 dark:text-amber-400" /> 組別管理
  </h2>
- <div className="bg-white dark:bg-slate-800 border-none rounded-xl p-8 transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <div className="bg-white dark:bg-slate-800 rounded-xl p-8 transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
  <div className="flex flex-col gap-6">
  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
  {groups.map((group) => {
  const isDefault = group.slug === 'activity' || group.slug === 'teaching';
  return (
- <div key={group.id} className="rounded-xl border-none  dark: p-4 bg-[#FBF9F6]/60 dark:bg-slate-900/60 space-y-3">
+ <div key={group.id} className="rounded-xl dark: p-4 bg-[#FBF9F6]/60 dark:bg-slate-900/60 space-y-3 border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(255,255,255,0.01)]">
  <div className="flex items-center justify-between">
- <Badge className="bg-stone-100 dark:bg-slate-800 text-stone-700 dark:text-slate-300 border-none  dark: font-bold">/{group.slug}</Badge>
+ <Badge className="bg-stone-100 dark:bg-slate-800 text-stone-700 dark:text-slate-300 dark: font-bold border-none">/{group.slug}</Badge>
  {!isDefault && (
  <Button
  variant="ghost"
  size="icon"
- className="h-7 w-7 text-stone-400 hover:text-rose-500"
+ className="h-7 w-7 text-stone-400 hover:text-rose-500 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
  onClick={() => deleteGroup(group.id)}
  >
  <Trash2 className="w-4 h-4" />
@@ -394,11 +394,11 @@ export default function SettingsPage() {
  <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-500 dark:text-slate-400 flex items-center gap-3">
  <List className="w-4 h-4 text-orange-500 dark:text-amber-400" /> 活動類型設定
  </h2>
- <div className="bg-white dark:bg-slate-800 border-none rounded-xl p-8 transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <div className="bg-white dark:bg-slate-800 rounded-xl p-8 transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
  <div className="flex flex-col gap-6">
  <div className="flex flex-wrap gap-2 mb-2">
  {activityTypes?.map((type) => (
- <Badge key={type} className="px-3 py-1.5 flex items-center gap-2 bg-stone-100 dark:bg-slate-900 text-stone-700 dark:text-slate-300 border-none  dark: hover:bg-stone-200 dark:hover:bg-slate-800 transition-colors">
+ <Badge key={type} className="px-3 py-1.5 flex items-center gap-2 bg-stone-100 dark:bg-slate-900 text-stone-700 dark:text-slate-300 dark: hover:bg-stone-200 dark:hover:bg-slate-800 transition-colors border-none">
  <span className="font-bold">{type}</span>
  <button 
  onClick={() => removeActivityType(type)}
@@ -441,11 +441,11 @@ export default function SettingsPage() {
 
  {/* ── ADMIN DANGER ZONE ──────────── */}
  {isAdmin && (
- <section className="space-y-6 pt-12  dark:">
+ <section className="space-y-6 pt-12 dark:">
  <h2 className="text-sm font-semibold uppercase tracking-widest text-rose-500 flex items-center gap-3">
  <ShieldAlert className="w-4 h-4" /> {t('DANGER_ZONE')}
  </h2>
- <div className="bg-rose-50 dark:bg-rose-500/5 border-none  dark: rounded-xl p-8 shadow-sm">
+ <div className="bg-rose-50 dark:bg-rose-500/5 dark: rounded-xl p-8 shadow-sm border-none">
  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
  <div className="space-y-2">
  <h4 className="font-bold text-lg text-rose-700 dark:text-rose-400">刪除當前專案目錄</h4>
@@ -468,7 +468,7 @@ export default function SettingsPage() {
  initial={{ opacity: 0, height: 0 }}
  animate={{ opacity: 1, height: "auto" }}
  exit={{ opacity: 0, height: 0 }}
- className="mt-8 pt-6  dark:"
+ className="mt-8 pt-6 dark:"
  >
  <div className="space-y-4 max-w-md">
  <label className="block text-[10px] font-bold uppercase tracking-widest text-rose-600 dark:text-rose-500">
@@ -496,7 +496,7 @@ export default function SettingsPage() {
  >
  Confirm
  </Button>
- <Button variant="ghost" className="text-stone-600 dark:text-slate-400" onClick={() => { setIsDeleting(false); setDeleteInput(""); }}>
+ <Button variant="ghost" className="text-stone-600 dark:text-slate-400 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={() => { setIsDeleting(false); setDeleteInput(""); }}>
  Cancel
  </Button>
  </div>

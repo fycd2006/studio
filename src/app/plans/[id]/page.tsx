@@ -44,7 +44,7 @@ export default function PlanEditorPage() {
  <div className="h-full flex flex-col items-center justify-center bg-[#FBF9F6] dark:bg-slate-900 text-[#2C2A28] dark:text-slate-50 transition-colors">
  <Loader2 className="w-8 h-8 animate-spin text-orange-500 hover:text-amber-400 mb-4" />
  <h2 className="text-xl font-bold">載入中或是找不到教案...</h2>
- <Button variant="ghost" className="mt-4" onClick={() => router.push("/plans")}>
+ <Button variant="ghost" className="mt-4 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={() => router.push("/plans")}>
  <ArrowLeft className="w-4 h-4 mr-2" /> 返回總覽
  </Button>
  </div>

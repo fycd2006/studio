@@ -45,7 +45,7 @@ export function AdminDialog({ open, onOpenChange, onConfirm, title }: AdminDialo
 
  return (
  <Dialog open={open} onOpenChange={onOpenChange}>
- <DialogContent className="sm:max-w-md rounded-[2rem]  shadow-2xl overflow-hidden p-8">
+ <DialogContent className="sm:max-w-md rounded-[2rem] shadow-2xl overflow-hidden p-8">
  <DialogHeader>
  <DialogTitle className="flex items-center gap-2 font-headline font-black text-lg uppercase">
  {isDeleteCamp && <AlertTriangle className="h-5 w-5 text-rose-500" />}
@@ -66,7 +66,7 @@ export function AdminDialog({ open, onOpenChange, onConfirm, title }: AdminDialo
  </DialogHeader>
  <div className="py-4 space-y-4">
  {isDeleteCamp && (
- <div className="p-3 bg-[#FBF9F6]/50 rounded-xl border-none  flex items-center gap-3">
+ <div className="p-3 bg-[#FBF9F6]/50 rounded-xl flex items-center gap-3 border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(255,255,255,0.01)]">
  <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center">
  <Download className="h-4 w-4 text-emerald-500" />
  </div>

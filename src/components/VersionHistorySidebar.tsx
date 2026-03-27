@@ -92,7 +92,7 @@ export function VersionHistorySidebar({
 
  return (
  <div className={cn("fixed top-0 right-0 h-[100dvh] w-full sm:w-96 z-[100] flex flex-col bg-white dark:bg-slate-900 dark:shadow-2xl", className)}>
- <div className="px-6 pb-4 pt-[calc(env(safe-area-inset-top,1.5rem))]  dark:">
+ <div className="px-6 pb-4 pt-[calc(env(safe-area-inset-top,1.5rem))] dark:">
  <div className="flex items-center justify-between mb-4">
  <h2 className="text-lg font-black tracking-tight text-[#2C2A28] dark:text-white uppercase flex items-center gap-2">
  <History className="h-5 w-5 text-orange-600 dark:text-amber-400" />
@@ -103,7 +103,7 @@ export function VersionHistorySidebar({
  size="icon"
  onClick={onClose}
  title="關閉版本紀錄"
- className="h-9 w-9 rounded-lg text-stone-500 hover:text-stone-700 hover:bg-stone-100 dark:hover:bg-slate-800"
+ className="h-9 w-9 rounded-lg text-stone-500 hover:text-stone-700 hover:bg-stone-100 dark:hover:bg-slate-800 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
  >
  <X className="h-4 w-4" />
  </Button>
@@ -163,7 +163,7 @@ export function VersionHistorySidebar({
  if (e.key === 'Escape') setEditingId(null);
  }}
  />
- <Button size="icon" variant="ghost" className="h-6 w-6 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 shrink-0" onClick={(e) => {
+ <Button size="icon" variant="ghost" className="h-6 w-6 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 shrink-0 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={(e) => {
  e.stopPropagation();
  if (editName.trim() && onSaveVersion) {
  onSaveVersion(editName.trim());
@@ -172,7 +172,7 @@ export function VersionHistorySidebar({
  }}>
  <Check className="h-3.5 w-3.5" />
  </Button>
- <Button size="icon" variant="ghost" className="h-6 w-6 text-stone-400 hover:text-stone-600 hover:bg-stone-100 shrink-0" onClick={(e) => {
+ <Button size="icon" variant="ghost" className="h-6 w-6 text-stone-400 hover:text-stone-600 hover:bg-stone-100 shrink-0 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={(e) => {
  e.stopPropagation();
  setEditingId(null);
  }}>
@@ -193,7 +193,7 @@ export function VersionHistorySidebar({
  <Button 
  variant="ghost" 
  size="icon" 
- className="h-7 w-7 text-stone-400 hover:text-stone-600"
+ className="h-7 w-7 text-stone-400 hover:text-stone-600 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
  onClick={(e) => {
  e.stopPropagation();
  setEditingId('current');
@@ -245,10 +245,10 @@ export function VersionHistorySidebar({
  if (e.key === 'Escape') handleCancelEdit(e);
  }}
  />
- <Button size="icon" variant="ghost" className="h-6 w-6 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 shrink-0" onClick={(e) => handleSaveEdit(e, version.id)}>
+ <Button size="icon" variant="ghost" className="h-6 w-6 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 shrink-0 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={(e) => handleSaveEdit(e, version.id)}>
  <Check className="h-3.5 w-3.5" />
  </Button>
- <Button size="icon" variant="ghost" className="h-6 w-6 text-stone-400 hover:text-stone-600 hover:bg-stone-100 shrink-0" onClick={handleCancelEdit}>
+ <Button size="icon" variant="ghost" className="h-6 w-6 text-stone-400 hover:text-stone-600 hover:bg-stone-100 shrink-0 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={handleCancelEdit}>
  <X className="h-3.5 w-3.5" />
  </Button>
  </div>
@@ -278,7 +278,7 @@ export function VersionHistorySidebar({
  <Button 
  variant="ghost" 
  size="icon" 
- className="h-7 w-7 text-stone-400 hover:text-stone-600"
+ className="h-7 w-7 text-stone-400 hover:text-stone-600 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
  onClick={(e) => handleStartEdit(e, version)}
  >
  <Pencil className="h-3.5 w-3.5" />
@@ -288,7 +288,7 @@ export function VersionHistorySidebar({
  <Button 
  variant="ghost" 
  size="icon" 
- className="h-7 w-7 text-stone-300 hover:text-rose-500"
+ className="h-7 w-7 text-stone-300 hover:text-rose-500 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
  onClick={(e) => {
  e.stopPropagation();
  onDelete(version.id);

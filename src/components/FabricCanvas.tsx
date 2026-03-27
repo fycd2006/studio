@@ -645,19 +645,19 @@ export function FabricCanvas({ initialData, initialHeight = 500, onSave }: Fabri
  <TooltipProvider>
  <Tooltip>
  <TooltipTrigger asChild>
- <Button variant={activeTool === 'select' ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-lg" onClick={() => setTool('select')}><MousePointer2 className="h-4 w-4" /></Button>
+ <Button variant={activeTool === 'select' ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-lg border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={() => setTool('select')}><MousePointer2 className="h-4 w-4" /></Button>
  </TooltipTrigger>
  <TooltipContent className="text-[10px] font-bold">選取 / Select</TooltipContent>
  </Tooltip>
  <Tooltip>
  <TooltipTrigger asChild>
- <Button variant={activeTool === 'pan' ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-lg" onClick={() => setTool('pan')}><Hand className="h-4 w-4" /></Button>
+ <Button variant={activeTool === 'pan' ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-lg border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={() => setTool('pan')}><Hand className="h-4 w-4" /></Button>
  </TooltipTrigger>
  <TooltipContent className="text-[10px] font-bold">平移 / Pan</TooltipContent>
  </Tooltip>
  <Tooltip>
  <TooltipTrigger asChild>
- <Button variant={activeTool === 'pen' ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-lg" onClick={() => setTool('pen')}><Pencil className="h-4 w-4" /></Button>
+ <Button variant={activeTool === 'pen' ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-lg border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={() => setTool('pen')}><Pencil className="h-4 w-4" /></Button>
  </TooltipTrigger>
  <TooltipContent className="text-[10px] font-bold">筆記 / Pen</TooltipContent>
  </Tooltip>
@@ -667,7 +667,7 @@ export function FabricCanvas({ initialData, initialHeight = 500, onSave }: Fabri
 
  <Popover open={isColorPickerOpen} onOpenChange={setIsColorPickerOpen}>
  <PopoverTrigger asChild>
- <div className="w-5 h-5 rounded-full cursor-pointer ring-1 ring-slate-200 dark:ring-slate-700 hover:ring-2 hover:ring-primary transition-all" style={{ backgroundColor: activeColor }} />
+ <div className="w-5 h-5 rounded-full cursor-pointer transition-all border-none" style={{ backgroundColor: activeColor }} />
  </PopoverTrigger>
  <PopoverContent className="w-48 p-3 rounded-2xl shadow-2xl bg-white dark:bg-slate-800 shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
  <div className="grid grid-cols-4 gap-2">
@@ -742,37 +742,37 @@ export function FabricCanvas({ initialData, initialHeight = 500, onSave }: Fabri
  <TooltipProvider>
  <Tooltip>
  <TooltipTrigger asChild>
- <Button variant={activeTool === 'shape' && pendingShapeRef.current === 'text' ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-lg" onClick={() => selectShape('text')}><Type className="h-4 w-4" /></Button>
+ <Button variant={activeTool === 'shape' && pendingShapeRef.current === 'text' ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-lg border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={() => selectShape('text')}><Type className="h-4 w-4" /></Button>
  </TooltipTrigger>
  <TooltipContent className="text-[10px] font-bold">文字 / Text</TooltipContent>
  </Tooltip>
  <Tooltip>
  <TooltipTrigger asChild>
- <Button variant={activeTool === 'shape' && pendingShapeRef.current === 'rect' ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-lg" onClick={() => selectShape('rect')}><Square className="h-4 w-4" /></Button>
+ <Button variant={activeTool === 'shape' && pendingShapeRef.current === 'rect' ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-lg border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={() => selectShape('rect')}><Square className="h-4 w-4" /></Button>
  </TooltipTrigger>
  <TooltipContent className="text-[10px] font-bold">矩形 / Rect</TooltipContent>
  </Tooltip>
  <Tooltip>
  <TooltipTrigger asChild>
- <Button variant={activeTool === 'shape' && pendingShapeRef.current === 'circle' ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-lg" onClick={() => selectShape('circle')}><CircleIcon className="h-4 w-4" /></Button>
+ <Button variant={activeTool === 'shape' && pendingShapeRef.current === 'circle' ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-lg border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={() => selectShape('circle')}><CircleIcon className="h-4 w-4" /></Button>
  </TooltipTrigger>
  <TooltipContent className="text-[10px] font-bold">圓形 / Circle</TooltipContent>
  </Tooltip>
  <Tooltip>
  <TooltipTrigger asChild>
- <Button variant={activeTool === 'shape' && pendingShapeRef.current === 'triangle' ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-lg" onClick={() => selectShape('triangle')}><Triangle className="h-4 w-4" /></Button>
+ <Button variant={activeTool === 'shape' && pendingShapeRef.current === 'triangle' ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-lg border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={() => selectShape('triangle')}><Triangle className="h-4 w-4" /></Button>
  </TooltipTrigger>
  <TooltipContent className="text-[10px] font-bold">三角形 / Tri</TooltipContent>
  </Tooltip>
  <Tooltip>
  <TooltipTrigger asChild>
- <Button variant={activeTool === 'shape' && pendingShapeRef.current === 'line' ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-lg" onClick={() => selectShape('line')}><Minus className="h-4 w-4" /></Button>
+ <Button variant={activeTool === 'shape' && pendingShapeRef.current === 'line' ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-lg border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={() => selectShape('line')}><Minus className="h-4 w-4" /></Button>
  </TooltipTrigger>
  <TooltipContent className="text-[10px] font-bold">直線 / Line</TooltipContent>
  </Tooltip>
  <Tooltip>
  <TooltipTrigger asChild>
- <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={addImage}><ImageIcon className="h-4 w-4" /></Button>
+ <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={addImage}><ImageIcon className="h-4 w-4" /></Button>
  </TooltipTrigger>
  <TooltipContent className="text-[10px] font-bold">圖片 / Image</TooltipContent>
  </Tooltip>
@@ -780,7 +780,7 @@ export function FabricCanvas({ initialData, initialHeight = 500, onSave }: Fabri
 
  <div className="flex-1" />
 
- <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-500 hover:bg-rose-50 rounded-lg" onClick={() => {
+ <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-500 hover:bg-rose-50 rounded-lg border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={() => {
  const activeObjects = fabricRef.current?.getActiveObjects();
  if (activeObjects && activeObjects.length > 0) {
  fabricRef.current?.remove(...activeObjects);

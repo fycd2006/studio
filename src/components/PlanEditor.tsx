@@ -359,7 +359,7 @@ export function PlanEditor({
 
  <DropdownMenu>
  <DropdownMenuTrigger asChild>
- <Button variant="ghost" size="sm" className="h-9 px-3 rounded-lg font-bold text-xs bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity">
+ <Button variant="ghost" size="sm" className="h-9 px-3 rounded-lg font-bold text-xs bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow">
  <FileDown className="w-4 h-4 sm:mr-1.5" />
  <span className="hidden sm:inline">匯出</span>
  </Button>
@@ -372,16 +372,16 @@ export function PlanEditor({
 
  <div className="w-px h-6 bg-stone-200 dark:bg-slate-700 mx-1 hidden sm:block"></div>
 
- <Button variant="ghost" size="icon" onClick={onUndo} disabled={!canUndo || isHistoryMode} className="h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity">
+ <Button variant="ghost" size="icon" onClick={onUndo} disabled={!canUndo || isHistoryMode} className="h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow">
  <Undo2 className="h-4 w-4" />
  </Button>
- <Button variant="ghost" size="icon" onClick={onRedo} disabled={!canRedo || isHistoryMode} className="h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity">
+ <Button variant="ghost" size="icon" onClick={onRedo} disabled={!canRedo || isHistoryMode} className="h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow">
  <Redo2 className="h-4 w-4" />
  </Button>
- <Button variant="ghost" size="icon" onClick={handleZoomOut} disabled={pageZoom <= 0.3} className="flex h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity">
+ <Button variant="ghost" size="icon" onClick={handleZoomOut} disabled={pageZoom <= 0.3} className="flex h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow">
  <ZoomOut className="h-4 w-4" />
  </Button>
- <Button variant="ghost" size="icon" onClick={handleFitAll} className="flex h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity">
+ <Button variant="ghost" size="icon" onClick={handleFitAll} className="flex h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow">
  <Maximize className="h-4 w-4" />
  </Button>
  <Button variant="ghost" size="icon" onClick={handleZoomIn} disabled={pageZoom >= 2} className="flex h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity">
@@ -397,10 +397,10 @@ export function PlanEditor({
  <p className="text-xs font-bold uppercase tracking-widest">Reconstructing History...</p>
  </div>
  ) : (
- <Card className="border-none shadow-[0_8px_30px_rgba(140,120,100,0.05)] sm:rounded-[2rem] md:rounded-[2.5rem] overflow-hidden bg-white dark:bg-slate-900/50 dark:shadow-none">
+ <Card className="shadow-[0_8px_30px_rgba(140,120,100,0.05)] sm:rounded-[2rem] md:rounded-[2.5rem] overflow-hidden bg-white dark:bg-slate-900/50 dark:shadow-none border-none">
  <CardContent className="p-3 sm:p-6 md:p-12 space-y-8 md:space-y-12 leading-[1.6]">
  {isHistoryMode && (
- <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 bg-orange-50/50 dark:bg-amber-400/5 rounded-2xl border-none dark:mb-8 gap-4">
+ <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 bg-orange-50/50 dark:bg-amber-400/5 rounded-2xl dark:mb-8 gap-4 border-none">
  <div className="flex items-center gap-3">
  <div className="w-1.5 h-6 bg-orange-500 rounded-full" />
  <div>
@@ -443,10 +443,10 @@ export function PlanEditor({
  <DiffHighlighter type="text" oldValue={previousPlan?.scheduledName} newValue={previewPlan?.scheduledName} />
  ) : (
  <Select value={currentPlan.scheduledName || ""} onValueChange={(val) => handlePlanUpdate({ scheduledName: val })}>
- <SelectTrigger className="h-12 rounded-xl px-5 font-bold border-none text-base bg-white dark:bg-slate-800 shadow-[0_8px_30px_rgba(140,120,100,0.05)] dark:shadow-none">
+ <SelectTrigger className="h-12 rounded-xl px-5 font-bold text-base bg-white dark:bg-slate-800 shadow-[0_8px_30px_rgba(140,120,100,0.05)] dark:shadow-none border-none">
  <SelectValue placeholder="-- 請選擇活動類型 --" />
  </SelectTrigger>
- <SelectContent className="rounded-xl font-bold bg-white dark:bg-slate-800 border-none overflow-hidden shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <SelectContent className="rounded-xl font-bold bg-white dark:bg-slate-800 overflow-hidden shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
  {activityTypes.map(type => (
  <SelectItem key={type} value={type} className="rounded-lg cursor-pointer hover:bg-[#FBF9F6] dark:hover:bg-slate-700">{type}</SelectItem>
  ))}
@@ -478,7 +478,7 @@ export function PlanEditor({
  {isHistoryMode ? (
  <DiffHighlighter type="markdown" oldValue={previousPlan?.purpose} newValue={previewPlan?.purpose} />
  ) : (
- <div className="rounded-xl border-none bg-white dark:bg-slate-900 p-2 md:p-3 focus-within:ring-2 focus-within:ring-orange-500/40 transition-all shadow-[0_8px_30px_rgba(140,120,100,0.05)] dark:shadow-none">
+ <div className="rounded-xl bg-white dark:bg-slate-900 p-2 md:p-3 focus-within: focus-within: transition-all shadow-[0_8px_30px_rgba(140,120,100,0.05)] dark:shadow-none border-none">
  <textarea
  value={currentPlan.purpose || ""}
  onChange={(e) => handlePlanUpdate({ purpose: e.target.value })}
@@ -529,7 +529,7 @@ export function PlanEditor({
  variant="ghost"
  size="sm"
  onClick={handleDeleteCanvas}
- className="h-8 px-3 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg"
+ className="h-8 px-3 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
  >
  <Trash2 className="h-4 w-4 mr-1.5" />
  刪除畫布
@@ -591,7 +591,7 @@ export function PlanEditor({
  <button
  type="button"
  aria-label="Close version history"
- className="fixed inset-0 z-[95] bg-black/20"
+ className="fixed inset-0 z-[95] bg-black/20 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
  onClick={() => setIsSidebarOpen(false)}
  />
  )}

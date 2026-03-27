@@ -139,12 +139,12 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
  const unifiedAddBtnStyle = "rounded-xl font-bold gap-2 h-8 md:h-10 px-4 md:px-6 border-none dark:text-orange-600 dark:text-amber-400 hover:bg-orange-600 dark:hover:bg-amber-400 hover:text-white dark:hover:text-[#2C2A28] transition-all text-[10px] md:text-xs bg-white dark:bg-slate-800 shadow-sm mx-auto tracking-widest uppercase";
 
  return (
- <Card className="rounded-2xl border-none dark:bg-white dark:bg-slate-900/50 overflow-hidden w-full max-w-4xl mx-auto transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <Card className="rounded-2xl dark:bg-white dark:bg-slate-900/50 overflow-hidden w-full max-w-4xl mx-auto transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
  <CardContent className="p-0">
- <div className="bg-gradient-to-r from-stone-800 to-stone-900 dark:from-slate-800 dark:to-slate-950 py-2.5 px-6 flex items-center justify-between  dark:">
+ <div className="bg-gradient-to-r from-stone-800 to-stone-900 dark:from-slate-800 dark:to-slate-950 py-2.5 px-6 flex items-center justify-between dark:">
  <div className="w-8">
  {!isReadOnly && (
- <button onClick={addStation} className="h-6 w-6 rounded-full bg-white/20 text-white hover:bg-white/40 transition-all flex items-center justify-center shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <button onClick={addStation} className="h-6 w-6 rounded-full bg-white/20 text-white hover:bg-white/40 transition-all flex items-center justify-center shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
  <Plus className="h-4 w-4" />
  </button>
  )}
@@ -169,7 +169,7 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
  <span className="font-bold text-[10px] md:text-xs text-stone-500 dark:text-slate-400 uppercase tracking-widest">{table.day || "Day 1"}</span>
  ) : (
  <Select value={table.day || "Day 1"} onValueChange={(val) => onUpdate({ day: val })}>
- <SelectTrigger className="h-7 md:h-8 rounded-lg font-bold text-[10px] text-stone-600 dark:text-slate-300 bg-white dark:bg-slate-800 border-none dark:shadow-none px-2 shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <SelectTrigger className="h-7 md:h-8 rounded-lg font-bold text-[10px] text-stone-600 dark:text-slate-300 bg-white dark:bg-slate-800 dark:shadow-none px-2 shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
  <SelectValue />
  </SelectTrigger>
  <SelectContent>
@@ -247,7 +247,7 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
  ))}
  {!isReadOnly && (
  <td className="w-10 md:w-16 p-0 text-center  dark:">
- <button className="h-8 w-8 md:h-10 md:w-10 text-stone-400 dark:text-slate-600 hover:text-rose-600 dark:hover:text-rose-400 flex items-center justify-center mx-auto transition-colors" onClick={() => onUpdate({ rounds: table.rounds.filter((_, i) => i !== rIdx) })}>
+ <button className="h-8 w-8 md:h-10 md:w-10 text-stone-400 dark:text-slate-600 hover:text-rose-600 dark:hover:text-rose-400 flex items-center justify-center mx-auto transition-colors border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={() => onUpdate({ rounds: table.rounds.filter((_, i) => i !== rIdx) })}>
  <Trash2 className="h-4 w-4 md:h-5 md:w-5" />
  </button>
  </td>
@@ -297,7 +297,7 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
  ))}
  {!isReadOnly && (
  <td className="w-10 md:w-16 p-0 text-center  dark:">
- <button className="h-8 w-8 md:h-10 md:w-10 text-stone-400 dark:text-slate-600 hover:text-rose-600 dark:hover:text-rose-400 flex items-center justify-center mx-auto transition-colors" onClick={() => onUpdate({ teamOrders: table.teamOrders.filter((_, i) => i !== tIdx) })}>
+ <button className="h-8 w-8 md:h-10 md:w-10 text-stone-400 dark:text-slate-600 hover:text-rose-600 dark:hover:text-rose-400 flex items-center justify-center mx-auto transition-colors border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={() => onUpdate({ teamOrders: table.teamOrders.filter((_, i) => i !== tIdx) })}>
  <Trash2 className="h-4 w-4 md:h-5 md:w-5" />
  </button>
  </td>
@@ -320,7 +320,7 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
 
  {!isReadOnly && (
  <div className="bg-[#FBF9F6]/10 dark:bg-white/5 p-2 md:p-4 flex justify-end dark:no-print shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
- <Button variant="ghost" size="sm" className="text-stone-400 dark:text-slate-600 hover:text-rose-700 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 font-bold text-[10px] sm:text-xs md:text-sm tracking-widest transition-all rounded-lg h-8 md:h-10 px-4" onClick={onDelete}>
+ <Button variant="ghost" size="sm" className="text-stone-400 dark:text-slate-600 hover:text-rose-700 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 font-bold text-[10px] sm:text-xs md:text-sm tracking-widest transition-all rounded-lg h-8 md:h-10 px-4 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={onDelete}>
  <Trash2 className="h-4 w-4 md:h-5 md:w-5 mr-1" /> {t('DELETE_TABLE')}
  </Button>
  </div>

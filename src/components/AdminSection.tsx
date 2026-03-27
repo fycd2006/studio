@@ -290,8 +290,8 @@ export function AdminSection({
  }, {} as Record<string, { plan: LessonPlan; prop: PropItem }[]>);
 
  return (
- <div className="w-full bg-white dark:bg-[hsl(var(--bar-theme-border-none))] border-none rounded-2xl dark:/[0.08] overflow-hidden mb-8 transition-colors shadow-sm dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
- <div className="py-3 px-4 flex justify-between items-center  dark:/[0.08] bg-[#FBF9F6] dark:bg-black/20">
+ <div className="w-full bg-white dark:bg-[hsl(var(--bar-theme-))] rounded-2xl dark:/[0.08] overflow-hidden mb-8 transition-colors shadow-sm dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)] border-none">
+ <div className="py-3 px-4 flex justify-between items-center dark:/[0.08] bg-[#FBF9F6] dark:bg-black/20">
  <h2 className="font-fira-code font-black text-[#2C2A28] dark:text-slate-100 tracking-[0.1em] uppercase text-sm">{title}</h2>
  </div>
  
@@ -415,7 +415,7 @@ export function AdminSection({
  onClick={handleAddCampItem}
  size="sm"
  variant="ghost"
- className="w-full h-10 border-none  dark:/[0.1] text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.05] transition-all gap-2 font-bold tracking-widest shadow-[0_8px_30px_rgba(140,120,100,0.05)]"
+ className="w-full h-10 dark:/[0.1] text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.05] transition-all gap-2 font-bold tracking-widest shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none"
  >
  <Plus className="h-4 w-4" /> 新增道具
  </Button>
@@ -439,8 +439,8 @@ export function AdminSection({
  }, {} as Record<string, CampItem[]>);
 
  return (
- <div className="w-full bg-white dark:bg-[hsl(var(--bar-theme-border-none))] border-none rounded-2xl dark:/[0.08] overflow-hidden mb-8 transition-colors shadow-sm dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
- <div className="py-3 px-4 flex justify-between items-center  dark:/[0.08] bg-[#FBF9F6] dark:bg-black/20">
+ <div className="w-full bg-white dark:bg-[hsl(var(--bar-theme-))] rounded-2xl dark:/[0.08] overflow-hidden mb-8 transition-colors shadow-sm dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)] border-none">
+ <div className="py-3 px-4 flex justify-between items-center dark:/[0.08] bg-[#FBF9F6] dark:bg-black/20">
  <h2 className="text-center font-fira-code font-black text-[#2C2A28] dark:text-slate-100 tracking-[0.1em] uppercase text-sm">{t('PROPS_LIST')}</h2></div>
  
  <div className="w-full overflow-x-auto touch-pan-x touch-pan-y overscroll-x-contain">
@@ -651,7 +651,7 @@ export function AdminSection({
  onClick={handleAddCampItem}
  size="sm"
  variant="ghost"
- className="w-full h-10 border-none  dark:/[0.1] text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.05] transition-all gap-2 font-bold tracking-widest shadow-[0_8px_30px_rgba(140,120,100,0.05)]"
+ className="w-full h-10 dark:/[0.1] text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.05] transition-all gap-2 font-bold tracking-widest shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none"
  >
  <Plus className="h-4 w-4" /> 新增道具
  </Button>
@@ -670,7 +670,7 @@ export function AdminSection({
  <main className="flex-1 min-w-0 w-full relative">
  <div className="w-full pt-28 sm:pt-24 px-4 sm:px-6 md:px-8 lg:px-10 pb-8 md:pb-12">
  <Tabs value={activeMainTab} onValueChange={handleMainTabChange} className="w-full flex flex-col items-stretch space-y-6">
- <header className="relative z-20 no-print w-full mb-8 sm:mb-16  dark:/[0.06] pb-6 sm:pb-8">
+ <header className="relative z-20 no-print w-full mb-8 sm:mb-16 dark:/[0.06] pb-6 sm:pb-8">
  <div className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6 transition-colors">
  <div className="flex-1 min-w-0">
  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-[#2C2A28] dark:text-white mb-1.5 sm:mb-2">
@@ -704,7 +704,7 @@ export function AdminSection({
 
  <ActionBar title="Admin Actions" className="md:justify-end">
  <div className="flex w-full flex-wrap items-center justify-start gap-2 md:gap-3 md:w-auto md:flex-nowrap md:mr-auto">
- <TabsList className="bg-stone-100 dark:bg-slate-800/50 p-1 rounded-xl h-10 w-full sm:w-auto justify-start  shadow-none grid grid-cols-3 md:flex">
+ <TabsList className="bg-stone-100 dark:bg-slate-800/50 p-1 rounded-xl h-10 w-full sm:w-auto justify-start shadow-none grid grid-cols-3 md:flex">
  <TabsTrigger value="timer" className="rounded-lg font-bold text-[10px] gap-1.5 px-3 md:px-4 tracking-widest uppercase h-7 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-none data-[state=active]:text-orange-600 dark:data-[state=active]:text-amber-400 shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
  <Clock className="h-3 w-3" /> <span className="hidden md:inline">{t('TIMER_CONTROL')}</span>
  </TabsTrigger>
@@ -717,7 +717,7 @@ export function AdminSection({
  </TabsList>
 
  {activeMainTab === 'props' && (
- <div className="flex items-center gap-1 p-1 bg-stone-100 dark:bg-slate-800/50 rounded-xl h-9 ">
+ <div className="flex items-center gap-1 p-1 bg-stone-100 dark:bg-slate-800/50 rounded-xl h-9">
  {['activity', 'teaching', 'all-props'].map((tab) => (
  <button key={tab} onClick={() => setActivePropsTab(tab as typeof activePropsTab)} className={cn("px-3 h-7 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all", activePropsTab === tab ? 'bg-orange-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300')}>
  {tab === 'activity' ? '活動' : tab === 'teaching' ? '教學' : '營期'}
@@ -727,19 +727,19 @@ export function AdminSection({
  )}
  </div>
 
- <Button variant="ghost" size="sm" onClick={handlePrint} className="h-9 px-3 rounded-lg font-bold text-xs bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity">
+ <Button variant="ghost" size="sm" onClick={handlePrint} className="h-9 px-3 rounded-lg font-bold text-xs bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow">
  匯出 / PRINT
  </Button>
- <Button variant="ghost" size="icon" onClick={onUndoTable} disabled={!canUndoTable || isLocked} className="h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity">
+ <Button variant="ghost" size="icon" onClick={onUndoTable} disabled={!canUndoTable || isLocked} className="h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow">
  <Undo2 className="h-4 w-4" />
  </Button>
- <Button variant="ghost" size="icon" onClick={onRedoTable} disabled={!canRedoTable || isLocked} className="h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity">
+ <Button variant="ghost" size="icon" onClick={onRedoTable} disabled={!canRedoTable || isLocked} className="h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow">
  <Redo2 className="h-4 w-4" />
  </Button>
- <Button variant="ghost" size="icon" onClick={handleZoomOut} disabled={zoom <= 0.3 || activeMainTab === 'timer'} className="h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity">
+ <Button variant="ghost" size="icon" onClick={handleZoomOut} disabled={zoom <= 0.3 || activeMainTab === 'timer'} className="h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow">
  <ZoomOut className="h-4 w-4" />
  </Button>
- <Button variant="ghost" size="icon" onClick={handleFitAll} disabled={activeMainTab === 'timer'} className="h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity">
+ <Button variant="ghost" size="icon" onClick={handleFitAll} disabled={activeMainTab === 'timer'} className="h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow">
  <Maximize className="h-4 w-4" />
  </Button>
  <Button variant="ghost" size="icon" onClick={handleZoomIn} disabled={zoom >= 2 || activeMainTab === 'timer'} className="h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity">
@@ -757,17 +757,17 @@ export function AdminSection({
  </TabsContent>
 
  <TabsContent value="tables" className="m-0 data-[state=active]:flex flex-col space-y-6 md:space-y-8 pb-32">
- <div className="bg-orange-50/20 dark:bg-slate-900/50 rounded-2xl border-none  dark:/[0.06] p-4 shrink-0 flex flex-wrap md:flex-nowrap items-center justify-between gap-4 mt-2">
+ <div className="bg-orange-50/20 dark:bg-slate-900/50 rounded-2xl dark:/[0.06] p-4 shrink-0 flex flex-wrap md:flex-nowrap items-center justify-between gap-4 mt-2 border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(255,255,255,0.01)]">
  <div className="flex items-center gap-4">
  <div className="flex items-center gap-2">
  <Calendar className="h-3.5 w-3.5 text-orange-400 dark:text-slate-500 shrink-0" />
  <span className="text-[9px] font-fira-code font-black text-slate-500 dark:text-slate-400 tracking-widest hidden sm:inline">天數</span>
  </div>
  <Select value={selectedDay} onValueChange={setSelectedDay}>
- <SelectTrigger className="w-32 h-8 rounded-lg font-fira-code font-black text-[10px]  dark:/[0.12] bg-white dark:bg-slate-800 dark:text-slate-200 focus:ring-0 transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <SelectTrigger className="w-32 h-8 rounded-lg font-fira-code font-black text-[10px] dark:/[0.12] bg-white dark:bg-slate-800 dark:text-slate-200 transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
  <SelectValue placeholder="選擇" />
  </SelectTrigger>
- <SelectContent className="rounded-xl  dark:/[0.12] shadow-2xl dark:bg-slate-800 dark:text-slate-200 font-fira-code">
+ <SelectContent className="rounded-xl dark:/[0.12] shadow-2xl dark:bg-slate-800 dark:text-slate-200 font-fira-code">
  {dayOptions.map(day => (
  <SelectItem key={day} value={day} className="rounded-lg font-bold text-xs dark:focus:bg-slate-700">{day}</SelectItem>
  ))}
@@ -804,7 +804,7 @@ export function AdminSection({
  ))
  ) : (
  <div className="flex flex-col items-center justify-center py-24 text-center space-y-6">
- <div className="w-16 h-16 rounded-3xl bg-white dark:bg-slate-800/50 flex items-center justify-center text-orange-200 dark:text-slate-600 border-none  dark:/[0.12]/50 shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <div className="w-16 h-16 rounded-3xl bg-white dark:bg-slate-800/50 flex items-center justify-center text-orange-200 dark:text-slate-600 dark:/[0.12]/50 shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
  <TableIcon className="h-6 w-6" />
  </div>
  <p className="text-[10px] font-fira-code font-black text-slate-400 dark:text-slate-500 tracking-widest uppercase">目前無資料</p>

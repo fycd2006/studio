@@ -340,7 +340,7 @@ export default function PlansOverview() {
  >
  <div className="max-w-6xl mx-auto pt-28 sm:pt-24 pb-6 sm:pb-12 md:pb-16 px-4 sm:px-6 md:px-8 touch-pan-y">
  {/* ── HEADER ─────────────── */}
- <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6 mb-8 sm:mb-16  dark: pb-6 sm:pb-8">
+ <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6 mb-8 sm:mb-16 dark: pb-6 sm:pb-8">
  <div className="flex-1 min-w-0">
  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-[#2C2A28] dark:text-white mb-1.5 sm:mb-2">
  教案總覽
@@ -369,7 +369,7 @@ export default function PlansOverview() {
  <DropdownMenuContent
  align="start"
  sideOffset={8}
- className="w-56 bg-white dark:bg-slate-800 border-none shadow-[0_8px_30px_rgba(140,120,100,0.05)] dark:shadow-none"
+ className="w-56 bg-white dark:bg-slate-800 shadow-[0_8px_30px_rgba(140,120,100,0.05)] dark:shadow-none border-none"
  >
  {groups.map((group) => (
  <DropdownMenuItem
@@ -399,7 +399,7 @@ export default function PlansOverview() {
  <span className="hidden md:inline">{isBatchDownloading ? "下載中..." : "下載全部"}</span>
  </Button>
  </DropdownMenuTrigger>
- <DropdownMenuContent align="start" sideOffset={8} className="w-56 bg-white dark:bg-slate-800 border-none shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <DropdownMenuContent align="start" sideOffset={8} className="w-56 bg-white dark:bg-slate-800 shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
  <DropdownMenuItem
  onSelect={(e) => {
  e.preventDefault();
@@ -439,7 +439,7 @@ export default function PlansOverview() {
  </DropdownMenuContent>
  </DropdownMenu>
 
- <div className="flex items-center bg-stone-100 dark:bg-slate-800 p-0.5 md:p-1 rounded-md border-none  dark: shrink-0">
+ <div className="flex items-center bg-stone-100 dark:bg-slate-800 p-0.5 md:p-1 rounded-md dark: shrink-0 border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(255,255,255,0.01)]">
  <button onClick={() => setViewType("grid")} className={cn("p-1 md:p-1.5 rounded-sm transition-all cursor-pointer", viewType === "grid" ? "bg-white dark:bg-slate-700 text-[#2C2A28] dark:text-amber-400 shadow-sm" : "text-stone-400 dark:text-slate-500 hover:text-stone-600 dark:hover:text-slate-300")} title="畫廊視圖 (Grid)">
  <LayoutGrid className="w-4 h-4" />
  </button>
@@ -451,7 +451,7 @@ export default function PlansOverview() {
  </button>
  </div>
 
- <div className="flex items-center bg-stone-100 dark:bg-slate-800 p-0.5 md:p-1 rounded-lg border-none  dark: shadow-sm shrink-0">
+ <div className="flex items-center bg-stone-100 dark:bg-slate-800 p-0.5 md:p-1 rounded-lg dark: shadow-sm shrink-0 border-none">
  <button onClick={() => { setSwipeDirection(-1); setFilterGroup('all'); }} className={cn("px-2 md:px-3 py-1 md:py-1.5 rounded-md text-[10px] md:text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap", filterGroup === 'all' ? "bg-white dark:bg-slate-700 text-[#2C2A28] dark:text-amber-400 shadow-sm" : "text-stone-400 hover:text-stone-600 dark:hover:text-slate-300")}>
  <span className="md:hidden">全</span>
  <span className="hidden md:inline">{language === 'zh' ? '全部' : 'All'}</span>
@@ -464,7 +464,7 @@ export default function PlansOverview() {
  ))}
  </div>
 
- <div className="flex items-center bg-stone-100 dark:bg-slate-800 p-0.5 md:p-1 rounded-lg border-none  dark: shrink-0 shadow-sm">
+ <div className="flex items-center bg-stone-100 dark:bg-slate-800 p-0.5 md:p-1 rounded-lg dark: shrink-0 shadow-sm border-none">
  <button onClick={() => setSortBy('updatedAt')} className={cn("px-2 md:px-3 py-1 md:py-1.5 rounded-md text-[10px] md:text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap inline-flex items-center gap-1", sortBy === 'updatedAt' ? "bg-white dark:bg-slate-700 text-[#2C2A28] dark:text-amber-400 shadow-sm" : "text-stone-400 hover:text-stone-600 dark:hover:text-slate-300")}>
  <Clock className="w-3.5 h-3.5 md:hidden" />
  <span className="hidden md:inline">時間排序</span>
@@ -501,8 +501,8 @@ export default function PlansOverview() {
  className="w-full"
  >
  {filteredPlans.length === 0 ? (
- <div className="bg-white dark:bg-slate-800 border-none rounded-lg sm:rounded-xl p-12 sm:p-20 flex flex-col items-center justify-center text-center shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
- <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[#FBF9F6] dark:bg-slate-900 flex items-center justify-center mb-3 sm:mb-4 border-none  dark:">
+ <div className="bg-white dark:bg-slate-800 rounded-lg sm:rounded-xl p-12 sm:p-20 flex flex-col items-center justify-center text-center shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
+ <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[#FBF9F6] dark:bg-slate-900 flex items-center justify-center mb-3 sm:mb-4 dark: border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(255,255,255,0.01)]">
  <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-stone-300 dark:text-slate-600" />
  </div>
  <h3 className="text-base sm:text-lg font-semibold text-[#2C2A28] dark:text-slate-200 mb-1">查無文件</h3>
@@ -512,7 +512,7 @@ export default function PlansOverview() {
  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
  {filteredPlans.map((plan, i) => (
  <motion.div key={plan.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03, duration: 0.2 }} className="h-full">
- <div className="bg-white dark:bg-slate-800 border-none rounded-lg sm:rounded-xl p-4 sm:p-6 text-left w-full group transition-all duration-300 hover: dark:hover: flex flex-col h-full cursor-pointer shadow-[0_8px_30px_rgba(140,120,100,0.05)]" onClick={() => handleOpenPlan(plan.id)}>
+ <div className="bg-white dark:bg-slate-800 rounded-lg sm:rounded-xl p-4 sm:p-6 text-left w-full group transition-all duration-300 hover: dark:hover: flex flex-col h-full cursor-pointer shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none" onClick={() => handleOpenPlan(plan.id)}>
  <div className="flex justify-between items-start mb-3 sm:mb-4">
  <Badge className={cn("px-2 py-0.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider border-none", plan.category === "activity" ? "bg-blue-50 text-blue-600  dark:bg-blue-900/30 dark:text-blue-400 dark:" : "bg-emerald-50 text-emerald-600  dark:bg-emerald-900/30 dark:text-emerald-400 dark:")}>
  {(() => {
@@ -529,7 +529,7 @@ export default function PlansOverview() {
  <h3 className="font-semibold text-sm sm:text-base text-[#2C2A28] dark:text-slate-100 mb-1 line-clamp-2 leading-snug group-hover:text-orange-600 dark:group-hover:text-amber-400 transition-colors">{plan.activityName || "未命名文件"}</h3>
  <p className="text-xs text-stone-500 dark:text-slate-400 font-medium mb-3 sm:mb-4 flex-1">{plan.scheduledName || "無分類"}</p>
  
- <div className="flex items-center gap-4 pt-3 sm:pt-4  dark: mt-auto">
+ <div className="flex items-center gap-4 pt-3 sm:pt-4 dark: mt-auto">
  <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px] text-stone-400 dark:text-slate-500 font-medium">
  <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
  {plan.updatedAt ? format(new Date(plan.updatedAt), "MM/dd HH:mm") : "—"}
@@ -552,7 +552,7 @@ export default function PlansOverview() {
  const colorPool = ['bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-violet-500', 'bg-cyan-500'];
  const color = colorPool[index % colorPool.length];
  return (
- <div key={group.id} className="flex-1 min-w-[320px] max-w-sm flex flex-col bg-stone-100/50 dark:bg-slate-800/30 rounded-2xl p-4 border-none  dark: shadow-sm snap-center">
+ <div key={group.id} className="flex-1 min-w-[320px] max-w-sm flex flex-col bg-stone-100/50 dark:bg-slate-800/30 rounded-2xl p-4 dark: shadow-sm snap-center border-none">
  <div className="flex items-center justify-between mb-4 px-1 shrink-0">
  <h3 className="font-bold text-sm text-[#2C2A28] dark:text-slate-100 flex items-center gap-2">
  <div className={cn("w-2 h-2 rounded-full", color)}></div>
@@ -581,7 +581,7 @@ export default function PlansOverview() {
  })}
  </div>
  ) : (
- <div className="bg-white dark:bg-slate-800 border-none rounded-xl overflow-hidden shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <div className="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
  <table className="w-full text-sm text-left">
  <thead className="bg-[#FBF9F6] dark:bg-slate-900/50  dark:">
  <tr className="text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-slate-400">
@@ -626,7 +626,7 @@ export default function PlansOverview() {
  <AnimatePresence>
  {deleteTarget && (
  <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-stone-900/50 dark:bg-slate-900/80 backdrop-blur-sm">
- <motion.div initial={{ scale: 0.98, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.98, opacity: 0 }} transition={{ duration: 0.15 }} className="bg-white dark:bg-slate-800 border-none p-8 rounded-xl max-w-sm w-full relative space-y-6 shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <motion.div initial={{ scale: 0.98, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.98, opacity: 0 }} transition={{ duration: 0.15 }} className="bg-white dark:bg-slate-800 p-8 rounded-xl max-w-sm w-full relative space-y-6 shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
  <div className="space-y-2">
  <h4 className="text-lg font-semibold text-[#2C2A28] dark:text-white">刪除文件</h4>
  <p className="text-sm text-stone-500 dark:text-slate-400">請輸入 <span className="font-mono text-rose-500 bg-rose-50 dark:bg-rose-500/10 px-1 py-0.5 rounded">delete</span> 刪除「{deleteTarget.name}」。此操作不可復原。</p>
@@ -637,7 +637,7 @@ export default function PlansOverview() {
  />
  <div className="flex justify-end gap-3 pt-2">
  <Button variant="ghost" onClick={() => setDeleteTarget(null)} className="h-9 font-medium text-stone-600 dark:text-slate-300">取消</Button>
- <Button variant="destructive" onClick={confirmDelete} disabled={deleteInput !== "delete"} className="h-9 font-medium px-6 bg-rose-600 hover:bg-rose-700">
+ <Button variant="destructive" onClick={confirmDelete} disabled={deleteInput !== "delete"} className="h-9 font-medium px-6 bg-rose-600 hover:bg-rose-700 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow">
  刪除
  </Button>
  </div>

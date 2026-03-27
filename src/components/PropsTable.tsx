@@ -142,11 +142,11 @@ export function PropsTable({ label, value = [], onChange }: PropsTableProps) {
  </label>
  )}
 
- <div className="w-full border-none dark:rounded-[1.5rem] overflow-hidden bg-white dark:bg-slate-900/50 shadow-stone-200/20 dark:shadow-none transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <div className="w-full dark:rounded-[1.5rem] overflow-hidden bg-white dark:bg-slate-900/50 shadow-stone-200/20 dark:shadow-none transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
  <div className="w-full overflow-x-auto">
  <Table className="w-full min-w-[760px] md:min-w-0 table-fixed block md:table">
  <TableHeader className="bg-[#FBF9F6]/50 dark:bg-slate-900/50 hidden md:table-header-group">
- <TableRow className="  dark:">
+ <TableRow className="dark:">
  <TableHead className="w-[34%] font-bold text-[#2C2A28] dark:text-slate-400 dark:h-12 text-[12px] uppercase tracking-widest">{t('PROP_NAME')}</TableHead>
  <TableHead className="w-[12%] font-bold text-[#2C2A28] dark:text-slate-400 dark:text-center text-[12px] uppercase tracking-widest">Qty</TableHead>
  <TableHead className="w-[12%] font-bold text-[#2C2A28] dark:text-slate-400 dark:text-center text-[12px] uppercase tracking-widest">Unit</TableHead>
@@ -157,7 +157,7 @@ export function PropsTable({ label, value = [], onChange }: PropsTableProps) {
  <TableBody className="block md:table-row-group">
  {value && value.length > 0 ? (
  value.map((row) => (
- <TableRow key={row.id} className="border-none dark:rounded-xl md:rounded-none last:hover:bg-[#FBF9F6]/50 dark:hover:bg-white/5 transition-colors block md:table-row p-4 md:p-0 space-y-3 md:space-y-0 relative shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <TableRow key={row.id} className="dark:rounded-xl md:rounded-none last:hover:bg-[#FBF9F6]/50 dark:hover:bg-white/5 transition-colors block md:table-row p-4 md:p-0 space-y-3 md:space-y-0 relative shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
  <TableCell className="align-top p-0 block md:table-cell">
  <div className="md:hidden text-[12px] font-bold text-stone-400 dark:text-slate-500 uppercase px-4 pt-2">{t('PROP_NAME')}</div>
  <AutoExpandingTextarea 
@@ -192,7 +192,7 @@ export function PropsTable({ label, value = [], onChange }: PropsTableProps) {
  />
  </TableCell>
  <TableCell className="text-center no-print align-top pt-2 block md:table-cell absolute md:static top-2 right-2 md:top-auto md:right-auto">
- <Button variant="ghost" size="icon" className="h-9 w-9 text-stone-400 dark:text-slate-600 hover:text-rose-600 dark:hover:text-rose-400" onClick={() => handleRemoveRow(row.id)}>
+ <Button variant="ghost" size="icon" className="h-9 w-9 text-stone-400 dark:text-slate-600 hover:text-rose-600 dark:hover:text-rose-400 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={() => handleRemoveRow(row.id)}>
  <Trash2 className="h-4 w-4" />
  </Button>
  </TableCell>
@@ -213,7 +213,7 @@ export function PropsTable({ label, value = [], onChange }: PropsTableProps) {
  <Button 
  variant="outline" 
  onClick={handleAddRow}
- className="h-10 px-8 rounded-xl text-orange-600 dark:text-amber-400 dark:hover:bg-orange-50 dark:hover:bg-amber-400/5 gap-3 font-bold uppercase tracking-widest text-[12px] transition-all shadow-sm"
+ className="h-10 px-8 rounded-xl text-orange-600 dark:text-amber-400 dark:hover:bg-orange-50 dark:hover:bg-amber-400/5 gap-3 font-bold uppercase tracking-widest text-[12px] transition-all shadow-sm border-none"
  >
  <Plus className="h-4 w-4" />
  {t('ADD_ROW')}

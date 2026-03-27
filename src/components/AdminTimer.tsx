@@ -468,10 +468,10 @@ export function AdminTimer({ timer, isLocked, autoEnterSaverMode = false }: Admi
  </div>
 
  {!isLocked && (
- <Card className="w-full p-6 md:p-10 rounded-[3rem] border-none dark:shadow-stone-200/20 dark:shadow-none bg-white dark:bg-slate-800/50 flex flex-col space-y-8 md:space-y-10 transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <Card className="w-full p-6 md:p-10 rounded-[3rem] dark:shadow-stone-200/20 dark:shadow-none bg-white dark:bg-slate-800/50 flex flex-col space-y-8 md:space-y-10 transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 md:gap-4">
  <div className="flex items-center gap-5">
- <div className="p-4 bg-stone-100 dark:bg-white/5 rounded-2xl border-none dark:shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <div className="p-4 bg-stone-100 dark:bg-white/5 rounded-2xl dark:shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
  <ShieldCheck className="h-7 w-7 text-stone-600 dark:text-slate-400" />
  </div>
  <div>
@@ -508,11 +508,11 @@ export function AdminTimer({ timer, isLocked, autoEnterSaverMode = false }: Admi
  onChange={(e) => item.set(Math.min(99, parseInt(e.target.value) || 0))} 
  className="h-14 rounded-2xl dark:bg-[#FBF9F6] dark:bg-slate-900 font-bold text-center text-lg focus:ring-2 focus:ring-amber-500/20 text-[#2C2A28] dark:text-white w-full" 
  />
- <span className="absolute -top-3 right-3 px-2 bg-white dark:bg-slate-800 text-[9px] font-bold text-stone-400 dark:text-slate-500 border-none dark:rounded-md uppercase shadow-[0_8px_30px_rgba(140,120,100,0.05)]">{item.label}</span>
+ <span className="absolute -top-3 right-3 px-2 bg-white dark:bg-slate-800 text-[9px] font-bold text-stone-400 dark:text-slate-500 dark:rounded-md uppercase shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">{item.label}</span>
  </div>
  ))}
  </div>
- <Button onClick={updateDuration} className="w-full md:w-auto h-14 px-10 rounded-2xl font-bold text-[11px] bg-stone-900 dark:bg-white text-white dark:text-[#2C2A28] uppercase tracking-widest shrink-0 hover:opacity-90 transition-all active:scale-95 shadow-[0_8px_30px_rgba(140,120,100,0.05)]">{t('APPLY')}</Button>
+ <Button onClick={updateDuration} className="w-full md:w-auto h-14 px-10 rounded-2xl font-bold text-[11px] bg-stone-900 dark:bg-white text-white dark:text-[#2C2A28] uppercase tracking-widest shrink-0 hover:opacity-90 transition-all active:scale-95 shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">{t('APPLY')}</Button>
  </div>
  </div>
 
@@ -529,7 +529,7 @@ export function AdminTimer({ timer, isLocked, autoEnterSaverMode = false }: Admi
  </Button>
  <Button 
  variant="outline" 
- className="h-16 rounded-[1.5rem] font-bold text-xs gap-3 border-none dark:uppercase tracking-[0.2em] text-stone-600 dark:text-slate-400 hover:bg-[#FBF9F6] dark:hover:bg-white/5 transition-all shadow-[0_8px_30px_rgba(140,120,100,0.05)]" 
+ className="h-16 rounded-[1.5rem] font-bold text-xs gap-3 dark:uppercase tracking-[0.2em] text-stone-600 dark:text-slate-400 hover:bg-[#FBF9F6] dark:hover:bg-white/5 transition-all shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none" 
  onClick={resetTimer}
  >
  <RotateCcw className="h-6 w-6" /> RESET
@@ -539,11 +539,11 @@ export function AdminTimer({ timer, isLocked, autoEnterSaverMode = false }: Admi
  </Card>
  )}
 
- <Card className="w-full rounded-[2.5rem] md:rounded-[4rem]  shadow-2xl bg-stone-950 text-white flex flex-col items-center justify-between p-6 md:p-12 lg:p-16 min-h-[450px] relative overflow-hidden transition-all duration-700">
+ <Card className="w-full rounded-[2.5rem] md:rounded-[4rem] shadow-2xl bg-stone-950 text-white flex flex-col items-center justify-between p-6 md:p-12 lg:p-16 min-h-[450px] relative overflow-hidden transition-all duration-700">
  <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-stone-900 to-stone-950 opacity-100 pointer-events-none" />
  <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-6 mb-8 relative z-10">
  <div className="flex items-center gap-4 w-full sm:w-auto overflow-hidden">
- <div className="p-3 bg-white/5 rounded-xl backdrop-blur-md shrink-0 border-none  shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <div className="p-3 bg-white/5 rounded-xl backdrop-blur-md shrink-0 shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
  <BellRing className="h-6 w-6 text-amber-500" />
  </div>
  <div className="flex flex-col min-w-0">
@@ -584,7 +584,7 @@ export function AdminTimer({ timer, isLocked, autoEnterSaverMode = false }: Admi
  <div className="text-[14px] md:text-[18px] font-black text-slate-400 mt-4 tracking-[0.2em]">
  {now ? now.toLocaleTimeString('zh-TW', { hour12: false }) : "--:--:--"}
  </div>
- <div className="w-full max-w-2xl h-6 bg-white/5 rounded-full overflow-hidden mt-8 border-none  p-1 relative shadow-inner shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <div className="w-full max-w-2xl h-6 bg-white/5 rounded-full overflow-hidden mt-8 p-1 relative shadow-inner shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
  <div className={cn(
  "h-full transition-all duration-1000 rounded-full shadow-lg",
  isCritical ? "bg-gradient-to-r from-rose-600 to-rose-400" : isFinished ? "bg-rose-800" : "bg-gradient-to-r from-primary to-accent"
