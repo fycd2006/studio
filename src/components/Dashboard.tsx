@@ -58,9 +58,9 @@ export function Dashboard({ camps, activeCampId, plans, onSelectPlan, onSetViewM
  };
 
  return [
- { label: "一籌 / 1st Meeting", days: calculateDays(activeCamp.meeting1Date), color: "bg-orange-500" },
- { label: "二籌 / 2nd Meeting", days: calculateDays(activeCamp.meeting2Date), color: "bg-amber-500" },
- { label: "三籌 / 3rd Meeting", days: calculateDays(activeCamp.meeting3Date), color: "bg-yellow-500" },
+ { label: "一收 / 1st Collection", days: calculateDays(activeCamp.meeting1Date), color: "bg-orange-500" },
+ { label: "二收 / 2nd Collection", days: calculateDays(activeCamp.meeting2Date), color: "bg-amber-500" },
+ { label: "三收 / 3rd Collection", days: calculateDays(activeCamp.meeting3Date), color: "bg-yellow-500" },
  { label: "營期開始 / Camp Start", days: calculateDays(activeCamp.startDate), color: "bg-primary" }
  ].filter(item => item.days !== null && item.days >= 0)
  .sort((a, b) => (a.days ?? 0) - (b.days ?? 0));

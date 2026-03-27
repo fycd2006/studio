@@ -24,9 +24,9 @@ const zh = {
 
   // Timeline
   MILESTONES: "營隊里程碑",
-  MILESTONE_1: "一籌",
-  MILESTONE_2: "二籌",
-  MILESTONE_3: "三籌",
+  MILESTONE_1: "一收",
+  MILESTONE_2: "二收",
+  MILESTONE_3: "三收",
   MILESTONE_STATION: "駐站",
   MILESTONE_START: "營期開始",
   MILESTONE_1_DESC: "策略制定與核心目標設定",
@@ -129,9 +129,9 @@ const zh = {
   LOADING: "正在載入...",
 
   // Meetings
-  MEETING_1: "一籌",
-  MEETING_2: "二籌",
-  MEETING_3: "三籌",
+  MEETING_1: "一收",
+  MEETING_2: "二收",
+  MEETING_3: "三收",
   CAMP_START: "營期開始",
 
   // Homepage Actions

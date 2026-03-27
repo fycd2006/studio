@@ -128,9 +128,9 @@ const en = {
   LOADING: "Loading...",
 
   // Meetings
-  MEETING_1: "1st Meeting",
-  MEETING_2: "2nd Meeting",
-  MEETING_3: "3rd Meeting",
+  MEETING_1: "1st Collection",
+  MEETING_2: "2nd Collection",
+  MEETING_3: "3rd Collection",
   CAMP_START: "Camp Start",
 
   // Homepage Actions

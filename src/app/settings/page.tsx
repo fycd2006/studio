@@ -52,12 +52,12 @@ export default function SettingsPage() {
 
 
  const timelineFields = [
- { startKey: "meeting1StartDate" as const, endKey: "meeting1EndDate" as const, label: "一籌", icon: Clock },
- { startKey: "meeting2StartDate" as const, endKey: "meeting2EndDate" as const, label: "二籌", icon: Clock },
- { startKey: "meeting3StartDate" as const, endKey: "meeting3EndDate" as const, label: "三籌", icon: Clock },
- { startKey: "trainingStartDate" as const, endKey: "trainingEndDate" as const, label: "營隊集訓", icon: Clock },
- { startKey: "siteStartDate" as const, endKey: "siteEndDate" as const, label: "駐站", icon: MapPin },
- { startKey: "campStartDate" as const, endKey: "campEndDate" as const, label: "營期", icon: Tent },
+ { startKey: "meeting1StartDate" as const, endKey: "meeting1EndDate" as const, label: "一收", icon: Clock, type: "single" },
+ { startKey: "meeting2StartDate" as const, endKey: "meeting2EndDate" as const, label: "二收", icon: Clock, type: "single" },
+ { startKey: "meeting3StartDate" as const, endKey: "meeting3EndDate" as const, label: "三收", icon: Clock, type: "single" },
+ { startKey: "trainingStartDate" as const, endKey: "trainingEndDate" as const, label: "營隊集訓", icon: Clock, type: "range" },
+ { startKey: "siteStartDate" as const, endKey: "siteEndDate" as const, label: "駐站", icon: MapPin, type: "single" },
+ { startKey: "campStartDate" as const, endKey: "campEndDate" as const, label: "營期", icon: Tent, type: "range" },
  ];
 
  const handleUpdate = (updates: Partial<typeof activeCamp>) => {

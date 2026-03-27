@@ -55,9 +55,9 @@ export default function Home() {
   ], []);
 
   const timeline = useMemo(() => [
-    { label: "一籌", date: activeCamp?.meeting1StartDate, icon: Clock },
-    { label: "二籌", date: activeCamp?.meeting2StartDate, icon: Clock },
-    { label: "三籌", date: activeCamp?.meeting3StartDate, icon: Clock },
+    { label: "一收", date: activeCamp?.meeting1StartDate, icon: Clock },
+    { label: "二收", date: activeCamp?.meeting2StartDate, icon: Clock },
+    { label: "三收", date: activeCamp?.meeting3StartDate, icon: Clock },
     { label: "集訓", date: activeCamp?.trainingStartDate, icon: Clock },
     { label: "駐站", date: activeCamp?.siteStartDate, icon: MapPin },
     { label: "營期", date: activeCamp?.campStartDate, icon: Tent },

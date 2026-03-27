@@ -470,9 +470,9 @@ export function PlanSidebar({
  </div>
  <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-6 pt-6 dark:">
  {[
- { ks: 'meeting1StartDate', ke: 'meeting1EndDate', l: '一籌' },
- { ks: 'meeting2StartDate', ke: 'meeting2EndDate', l: '二籌' },
- { ks: 'meeting3StartDate', ke: 'meeting3EndDate', l: '三籌' },
+ { ks: 'meeting1StartDate', ke: 'meeting1EndDate', l: '一收' },
+ { ks: 'meeting2StartDate', ke: 'meeting2EndDate', l: '二收' },
+ { ks: 'meeting3StartDate', ke: 'meeting3EndDate', l: '三收' },
  { ks: 'trainingStartDate', ke: 'trainingEndDate', l: '集訓' },
  { ks: 'siteStartDate', ke: 'siteEndDate', l: '駐站' },
  ].map(f => (
