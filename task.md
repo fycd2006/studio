@@ -1,0 +1,9 @@
+- [x] Create `use-presence.ts` hook for Firestore presence tracking.
+- [x] Add `onFocus` and `onBlur` support to `MarkdownArea.tsx` and `PropsTable.tsx`.
+- [x] Refactor `PlanEditor.tsx`:
+  - Integrate `usePresence`
+  - Render locking UI state for fields
+  - Implement local undo/redo stack
+  - Flash forced writes on `savePlanVersion`
+- [x] Refactor `use-plans.ts`:
+  - Avoid pushing `allPlans` history on every single `updatePlan` (Resolved via local history decoupled from global overwrite)

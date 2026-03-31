@@ -357,6 +357,30 @@ export async function exportToDocx(
     console.warn("Export API unavailable, fallback to local DOCX generation", error);
   }
 
+  const blob = await buildRichDocxBlob(plan, canvasImageData);
+  const fileName = buildPlanBaseFileName(plan);
+  await triggerBlobDownload(blob, `${fileName}.docx`, DOCX_MIME, ".docx", options);
+}
+
+/**
+ * 產生與 exportToDocx 完全相同的渲染 Word Blob，但不觸發下載。
+ * 供打包 ZIP 備份使用。
+ */
+export async function exportToDocxBlob(plan: LessonPlan, canvasImageData?: string): Promise<Blob> {
+  return buildRichDocxBlob(plan, canvasImageData);
+}
+
+/** Internal: build the rich docx blob (shared by exportToDocx and exportToDocxBlob) */
+async function buildRichDocxBlob(plan: LessonPlan, canvasImageData?: string): Promise<Blob> {
+  // 若未明確傳入畫布圖片，從 canvasData JSON 動態渲染 PNG
+  let resolvedCanvas = canvasImageData;
+  if (!resolvedCanvas && plan.canvasData && typeof plan.canvasData === 'string' && plan.canvasData.trim().startsWith('{')) {
+    try {
+      resolvedCanvas = await renderCanvasJsonToPng(plan.canvasData, plan.canvasHeight || 500);
+    } catch (e) {
+      console.warn('Failed to render canvas JSON to PNG for export', e);
+    }
+  }
   const children: any[] = [
     // 總標題
     new Paragraph({
@@ -402,10 +426,10 @@ export async function exportToDocx(
   ];
 
   // 如果有畫布圖片
-  if (canvasImageData) {
+  if (resolvedCanvas) {
     children.push(createStyledHeading("【教案視覺圖表】"));
     try {
-      const base64Data = canvasImageData.split(',')[1];
+      const base64Data = resolvedCanvas.split(',')[1] || resolvedCanvas;
       children.push(new Paragraph({
         children: [
           new ImageRun({
@@ -534,38 +558,27 @@ export async function exportToDocx(
   });
 
   try {
-    const blob = await Packer.toBlob(doc);
-    const fileName = buildPlanBaseFileName(plan);
-    await triggerBlobDownload(blob, `${fileName}.docx`, DOCX_MIME, ".docx", options);
+    return await Packer.toBlob(doc);
   } catch (error) {
     console.error("Primary DOCX export failed, using fallback", error);
-
     const fallbackDoc = new Document({
-      sections: [
-        {
-          children: [
-            new Paragraph({
-              text: stripInvalidXmlChars(`${plan.scheduledName || "教案"} - ${plan.activityName || "未命名教案"}`),
-              heading: HeadingLevel.TITLE,
-            }),
-            new Paragraph({ text: `成員：${stripInvalidXmlChars(plan.members || "無")}` }),
-            new Paragraph({ text: `時間：${stripInvalidXmlChars(plan.time || "無")}` }),
-            new Paragraph({ text: `地點：${stripInvalidXmlChars(plan.location || "無")}` }),
-            new Paragraph({ text: "" }),
-            new Paragraph({ text: `教案目的：${htmlToPlainText(plan.purpose) || "無"}` }),
-            new Paragraph({ text: `教案流程：${htmlToPlainText(plan.process) || "無"}` }),
-            new Paragraph({ text: `教案內容：${htmlToPlainText(plan.content) || "無"}` }),
-            new Paragraph({ text: `分工：${htmlToPlainText(plan.divisionOfLabor) || "無"}` }),
-            new Paragraph({ text: `備註：${htmlToPlainText(plan.remarks) || "無"}` }),
-            new Paragraph({ text: `開場結語：${htmlToPlainText(plan.openingClosingRemarks) || "無"}` }),
-          ],
-        },
-      ],
+      sections: [{
+        children: [
+          new Paragraph({ text: stripInvalidXmlChars(`${plan.scheduledName || "教案"} - ${plan.activityName || "未命名教案"}`), heading: HeadingLevel.TITLE }),
+          new Paragraph({ text: `成員：${stripInvalidXmlChars(plan.members || "無")}` }),
+          new Paragraph({ text: `時間：${stripInvalidXmlChars(plan.time || "無")}` }),
+          new Paragraph({ text: `地點：${stripInvalidXmlChars(plan.location || "無")}` }),
+          new Paragraph({ text: "" }),
+          new Paragraph({ text: `教案目的：${htmlToPlainText(plan.purpose) || "無"}` }),
+          new Paragraph({ text: `教案流程：${htmlToPlainText(plan.process) || "無"}` }),
+          new Paragraph({ text: `教案內容：${htmlToPlainText(plan.content) || "無"}` }),
+          new Paragraph({ text: `分工：${htmlToPlainText(plan.divisionOfLabor) || "無"}` }),
+          new Paragraph({ text: `備註：${htmlToPlainText(plan.remarks) || "無"}` }),
+          new Paragraph({ text: `開場結語：${htmlToPlainText(plan.openingClosingRemarks) || "無"}` }),
+        ],
+      }],
     });
-
-    const fallbackBlob = await Packer.toBlob(fallbackDoc);
-    const fileName = buildPlanBaseFileName(plan);
-    await triggerBlobDownload(fallbackBlob, `${fileName}.docx`, DOCX_MIME, ".docx", options);
+    return await Packer.toBlob(fallbackDoc);
   }
 }
 
@@ -627,4 +640,46 @@ export async function exportPlansAsZip(
   const serverName = parseFileNameFromContentDisposition(response.headers.get("content-disposition"));
   const blob = await response.blob();
   await triggerBlobDownload(blob, serverName || fallbackName, ZIP_MIME, ".zip", options);
+}
+
+/**
+ * 將 Fabric.js canvas JSON 渲染為 PNG data:image URL。
+ * 使用離屏 canvas，不需要已掛載的畫布元件。
+ */
+async function renderCanvasJsonToPng(canvasJson: string, height: number): Promise<string> {
+  const { fabric } = await import('fabric');
+  
+  return new Promise((resolve, reject) => {
+    // Create offscreen canvas element
+    const canvasEl = document.createElement('canvas');
+    canvasEl.width = 800;
+    canvasEl.height = height || 500;
+    canvasEl.style.display = 'none';
+    document.body.appendChild(canvasEl);
+
+    try {
+      const offscreen = new fabric.Canvas(canvasEl, {
+        backgroundColor: '#ffffff',
+      });
+
+      offscreen.loadFromJSON(canvasJson, () => {
+        offscreen.renderAll();
+        const dataUrl = offscreen.toDataURL({ format: 'png', multiplier: 2 });
+        // Cleanup
+        offscreen.dispose();
+        canvasEl.remove();
+        resolve(dataUrl);
+      });
+
+      // Timeout safety — don't hang forever
+      setTimeout(() => {
+        try { offscreen.dispose(); } catch {}
+        canvasEl.remove();
+        reject(new Error('Canvas render timed out'));
+      }, 10000);
+    } catch (e) {
+      canvasEl.remove();
+      reject(e);
+    }
+  });
 }

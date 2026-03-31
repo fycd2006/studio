@@ -1,0 +1,20 @@
+﻿src/ai/dev.ts(2,24): error TS2307: Cannot find module 'dotenv' or its corresponding type declarations.
+src/ai/genkit.ts(1,22): error TS2307: Cannot find module 'genkit' or its corresponding type declarations.
+src/ai/genkit.ts(2,24): error TS2307: Cannot find module '@genkit-ai/google-genai' or its corresponding type declarations.
+src/components/Dashboard.tsx(61,65): error TS2551: Property 'meeting1Date' does not exist on type 'Camp'. Did you mean 'meeting1EndDate'?
+src/components/Dashboard.tsx(62,65): error TS2551: Property 'meeting2Date' does not exist on type 'Camp'. Did you mean 'meeting2EndDate'?
+src/components/Dashboard.tsx(63,65): error TS2551: Property 'meeting3Date' does not exist on type 'Camp'. Did you mean 'meeting3EndDate'?
+src/components/FabricCanvas.tsx(165,9): error TS2339: Property 'lowerCanvasEl' does not exist on type 'Canvas'.
+src/components/FabricCanvas.tsx(166,13): error TS2339: Property 'upperCanvasEl' does not exist on type 'Canvas'.
+src/components/FabricCanvas.tsx(167,9): error TS2339: Property 'upperCanvasEl' does not exist on type 'Canvas'.
+src/components/ui/calendar.tsx(57,2): error TS2353: Object literal may only specify known properties, and 'IconLeft' does not exist in type 'Partial<CustomComponents>'.
+src/components/ui/calendar.tsx(57,15): error TS7031: Binding element 'className' implicitly has an 'any' type.
+src/components/ui/calendar.tsx(60,16): error TS7031: Binding element 'className' implicitly has an 'any' type.
+src/components/ui/carousel.tsx(6,8): error TS2307: Cannot find module 'embla-carousel-react' or its corresponding type declarations.
+src/lib/export-utils.ts(260,47): error TS2322: Type '"center"' is not assignable to type '"left"'.
+src/lib/export-utils.ts(261,46): error TS2322: Type '"right"' is not assignable to type '"left"'.
+src/lib/export-utils.ts(435,24): error TS2345: Argument of type '{ data: Uint8Array<ArrayBuffer>; transformation: { width: number; height: number; }; }' is not assignable to parameter of type 'IImageOptions'.
+  Type '{ data: Uint8Array<ArrayBuffer>; transformation: { width: number; height: number; }; }' is not assignable to type 'SvgMediaOptions & CoreImageOptions'.
+    Type '{ data: Uint8Array<ArrayBuffer>; transformation: { width: number; height: number; }; }' is missing the following properties from type 'SvgMediaOptions': type, fallback
+src/lib/i18n-context.tsx(36,16): error TS7053: Element implicitly has an 'any' type because expression of type '"DELETE" | "RUNNING" | "STANDBY" | "SITE_NAME" | "SITE_SUB_NAME" | "SETTINGS" | "OVERVIEW" | "ADMIN_SYNC" | "ACTIVITY_PLAN" | "TEACHING_PLAN" | "DAYS_REMAINING" | "ALL_RECORDS" | ... 161 more ... | "ALERT_DISABLED_DESC"' can't be used to index type '{ SITE_NAME: string; SITE_SUB_NAME: string; SETTINGS: string; OVERVIEW: string; ADMIN_SYNC: string; ACTIVITY_PLAN: string; TEACHING_PLAN: string; DAYS_REMAINING: string; ALL_RECORDS: string; ... 163 more ...; STANDBY: string; }'.
+  Property 'OPENING_CLOSING' does not exist on type '{ SITE_NAME: string; SITE_SUB_NAME: string; SETTINGS: string; OVERVIEW: string; ADMIN_SYNC: string; ACTIVITY_PLAN: string; TEACHING_PLAN: string; DAYS_REMAINING: string; ALL_RECORDS: string; ... 163 more ...; STANDBY: string; }'.

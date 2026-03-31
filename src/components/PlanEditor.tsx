@@ -33,7 +33,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import dynamic from "next/dynamic";
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n-context";
 import {
@@ -47,6 +47,35 @@ import { DiffHighlighter } from "./DiffHighlighter";
 import { getChangedFields } from "@/lib/text-diff";
 import { exportToDocx, exportToPdf } from "@/lib/export-utils";
 import { ActionBar } from "@/components/ActionBar";
+import { usePresence } from "@/hooks/use-presence";
+
+const FieldContainer = ({ 
+  children, 
+  field, 
+  isLockedByOther, 
+  getLockInfo 
+}: { 
+  children: React.ReactNode, 
+  field: string, 
+  isLockedByOther: (f: string) => boolean,
+  getLockInfo: (f: string) => any
+}) => {
+  const locked = isLockedByOther(field);
+  const info = getLockInfo(field);
+  return (
+    <div className="relative group">
+      <div className={cn("transition-opacity", locked && "opacity-50 pointer-events-none")}>
+        {children}
+      </div>
+      {locked && info && (
+        <div className="absolute -top-3 right-2 z-10 bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg pointer-events-none flex items-center gap-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+          {info.name} 編輯中...
+        </div>
+      )}
+    </div>
+  );
+};
 
 const FabricCanvas = dynamic(
  () => import("@/components/FabricCanvas").then((mod) => mod.FabricCanvas),
@@ -99,6 +128,7 @@ export function PlanEditor({
 }: PlanEditorProps) {
  const { t, language } = useTranslation();
  const { toast } = useToast();
+ const { lockField, unlockField, isLockedByOther, getLockInfo } = usePresence(plan.id);
  
  // History Mode State
  const [isHistoryMode, setIsHistoryMode] = useState(false);
@@ -143,21 +173,45 @@ export function PlanEditor({
  const pendingUpdatesRef = useRef<Partial<LessonPlan>>({});
  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+ // Local history stack
+ const [localHistory, setLocalHistory] = useState<{ past: LessonPlan[], future: LessonPlan[] }>({ past: [], future: [] });
+
+ const recordHistory = useCallback(() => {
+   setLocalHistory(prev => {
+     const last = prev.past[prev.past.length - 1];
+     if (last && JSON.stringify(last) === JSON.stringify(localPlan)) return prev;
+     return { past: [...prev.past.slice(-20), localPlan], future: [] };
+   });
+ }, [localPlan]);
+
+ const handleFocus = useCallback((field: string) => {
+   lockField(field);
+   recordHistory();
+ }, [lockField, recordHistory]);
+
+ const handleBlur = useCallback((field: string) => {
+   unlockField(field);
+ }, [unlockField]);
+
  useEffect(() => {
  // Merge remote plan with pending local changes so stale server echoes
  // don't revert immediate local actions (e.g., add/remove canvas).
  setLocalPlan({ ...plan, ...pendingUpdatesRef.current });
  }, [plan]);
 
- // Clean up timeout on unmount
- useEffect(() => {
- return () => {
- if (timeoutRef.current) clearTimeout(timeoutRef.current);
- };
- }, []);
+  // Clean up debounce timeout on unmount (actual flush logic is below in the beforeunload effect)
+  useEffect(() => {
+  return () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+  };
+  }, []);
 
  const handlePlanUpdate = (updates: Partial<LessonPlan>) => {
  // Update local UI immediately
+ if (Object.keys(pendingUpdatesRef.current).length === 0) {
+   // Record snapshot right before a new burst of typing
+   recordHistory();
+ }
  setLocalPlan(prev => ({ ...prev, ...updates }));
  
  // Merge into pending
@@ -168,7 +222,7 @@ export function PlanEditor({
  timeoutRef.current = setTimeout(() => {
  onUpdate(plan.id, pendingUpdatesRef.current);
  pendingUpdatesRef.current = {}; // Clear pending after dispatch
- }, 1000);
+ }, 1500);
  };
 
  const handlePlanUpdateImmediate = (updates: Partial<LessonPlan>) => {
@@ -178,8 +232,61 @@ export function PlanEditor({
  clearTimeout(timeoutRef.current);
  timeoutRef.current = null;
  }
- onUpdate(plan.id, updates);
+ onUpdate(plan.id, pendingUpdatesRef.current);
+ pendingUpdatesRef.current = {};
  };
+
+ const handleLocalUndo = () => {
+   if (localHistory.past.length === 0 || isHistoryMode) return;
+   const previous = localHistory.past[localHistory.past.length - 1];
+   setLocalHistory(prev => ({
+     past: prev.past.slice(0, -1),
+     future: [localPlan, ...prev.future]
+   }));
+   handlePlanUpdateImmediate(previous);
+ };
+
+ const handleLocalRedo = () => {
+   if (localHistory.future.length === 0 || isHistoryMode) return;
+   const next = localHistory.future[0];
+   setLocalHistory(prev => ({
+     past: [...prev.past, localPlan],
+     future: prev.future.slice(1)
+   }));
+   handlePlanUpdateImmediate(next);
+ };
+
+ const handleLocalUndoRef = useRef(handleLocalUndo);
+ const handleLocalRedoRef = useRef(handleLocalRedo);
+ 
+ useEffect(() => {
+   handleLocalUndoRef.current = handleLocalUndo;
+   handleLocalRedoRef.current = handleLocalRedo;
+ });
+
+ useEffect(() => {
+   const handleKeyDown = (e: KeyboardEvent) => {
+     const target = e.target as HTMLElement;
+     if (['INPUT', 'TEXTAREA'].includes(target.tagName) || target.isContentEditable) {
+       return;
+     }
+
+     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+       e.preventDefault();
+       if (e.shiftKey) {
+         handleLocalRedoRef.current();
+       } else {
+         handleLocalUndoRef.current();
+       }
+     } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+       e.preventDefault();
+       handleLocalRedoRef.current();
+     }
+   };
+   
+   window.addEventListener('keydown', handleKeyDown);
+   return () => window.removeEventListener('keydown', handleKeyDown);
+ }, []);
 
  const currentPlan = isHistoryMode ? (previewPlan || plan) : localPlan;
 
@@ -255,6 +362,13 @@ export function PlanEditor({
  // Note: handlePlanUpdate was moved higher up, so we'll just leave this spot empty to prevent duplication.
 
  const handleSaveVersion = (name?: string) => {
+ // Flush pending updates immediately before saving version
+ if (Object.keys(pendingUpdatesRef.current).length > 0) {
+   onUpdateRef.current(planIdRef.current, pendingUpdatesRef.current);
+   pendingUpdatesRef.current = {};
+   if (timeoutRef.current) clearTimeout(timeoutRef.current);
+ }
+
  const nameToSave = name || newVersionName;
  if (!nameToSave.trim()) {
  toast({ title: "請輸入版本名稱", variant: "destructive" });
@@ -280,7 +394,7 @@ export function PlanEditor({
  }
  };
 
- const handleCanvasSave = (data: string, height: number) => {
+ const handleCanvasSave = (data: string, height: number, _image: string) => {
  handlePlanUpdate({ canvasData: data, canvasHeight: height });
  };
 
@@ -372,10 +486,10 @@ export function PlanEditor({
 
  <div className="w-px h-6 bg-stone-200 dark:bg-slate-700 mx-1 hidden sm:block"></div>
 
- <Button variant="ghost" size="icon" onClick={onUndo} disabled={!canUndo || isHistoryMode} className="h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow">
+ <Button variant="ghost" size="icon" onClick={handleLocalUndo} disabled={localHistory.past.length === 0 || isHistoryMode} className="h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow">
  <Undo2 className="h-4 w-4" />
  </Button>
- <Button variant="ghost" size="icon" onClick={onRedo} disabled={!canRedo || isHistoryMode} className="h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow">
+ <Button variant="ghost" size="icon" onClick={handleLocalRedo} disabled={localHistory.future.length === 0 || isHistoryMode} className="h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow">
  <Redo2 className="h-4 w-4" />
  </Button>
  <Button variant="ghost" size="icon" onClick={handleZoomOut} disabled={pageZoom <= 0.3} className="flex h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow">
@@ -460,7 +574,15 @@ export function PlanEditor({
  {isHistoryMode ? (
  <DiffHighlighter type="text" oldValue={previousPlan?.activityName} newValue={previewPlan?.activityName} />
  ) : (
- <Input value={currentPlan.activityName} onChange={(e) => handlePlanUpdate({ activityName: e.target.value })} className="h-12 rounded-xl font-bold text-lg px-5 shadow-none" />
+ <FieldContainer field="activityName" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+   <Input 
+     value={currentPlan.activityName} 
+     onChange={(e) => handlePlanUpdate({ activityName: e.target.value })} 
+     onFocus={() => handleFocus('activityName')}
+     onBlur={() => handleBlur('activityName')}
+     className="h-12 rounded-xl font-bold text-lg px-5 shadow-none" 
+   />
+ </FieldContainer>
  )}
  </section>
 
@@ -469,7 +591,16 @@ export function PlanEditor({
  {isHistoryMode ? (
  <DiffHighlighter type="text" oldValue={previousPlan?.members} newValue={previewPlan?.members} />
  ) : (
- <Input value={currentPlan.members} onChange={(e) => handlePlanUpdate({ members: e.target.value })} placeholder={t('LIST_MEMBERS')} className="h-12 rounded-xl px-5 shadow-none font-bold" />
+ <FieldContainer field="members" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+   <Input 
+     value={currentPlan.members} 
+     onChange={(e) => handlePlanUpdate({ members: e.target.value })} 
+     onFocus={() => handleFocus('members')}
+     onBlur={() => handleBlur('members')}
+     placeholder={t('LIST_MEMBERS')} 
+     className="h-12 rounded-xl px-5 shadow-none font-bold" 
+   />
+ </FieldContainer>
  )}
  </section>
 
@@ -478,13 +609,17 @@ export function PlanEditor({
  {isHistoryMode ? (
  <DiffHighlighter type="markdown" oldValue={previousPlan?.purpose} newValue={previewPlan?.purpose} />
  ) : (
- <div className="rounded-xl bg-white dark:bg-slate-900 p-2 md:p-3 focus-within: focus-within: transition-all shadow-[0_8px_30px_rgba(140,120,100,0.05)] dark:shadow-none border-none">
- <textarea
- value={currentPlan.purpose || ""}
- onChange={(e) => handlePlanUpdate({ purpose: e.target.value })}
- className="w-full min-h-[120px] bg-transparent  rounded-lg p-3 md:p-4 text-stone-800 dark:text-slate-200 outline-none resize-none font-medium text-sm md:text-base"
- />
- </div>
+ <FieldContainer field="purpose" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+   <div className="rounded-xl bg-white dark:bg-slate-900 p-2 md:p-3 focus-within: focus-within: transition-all shadow-[0_8px_30px_rgba(140,120,100,0.05)] dark:shadow-none border-none">
+   <textarea
+   value={currentPlan.purpose || ""}
+   onChange={(e) => handlePlanUpdate({ purpose: e.target.value })}
+   onFocus={() => handleFocus('purpose')}
+   onBlur={() => handleBlur('purpose')}
+   className="w-full min-h-[120px] bg-transparent  rounded-lg p-3 md:p-4 text-stone-800 dark:text-slate-200 outline-none resize-none font-medium text-sm md:text-base"
+   />
+   </div>
+ </FieldContainer>
  )}
  </section>
 
@@ -494,7 +629,16 @@ export function PlanEditor({
  {isHistoryMode ? (
  <DiffHighlighter type="text" oldValue={previousPlan?.time} newValue={previewPlan?.time} />
  ) : (
- <Input value={currentPlan.time} onChange={(e) => handlePlanUpdate({ time: e.target.value })} placeholder="14:00 - 15:30" className="h-12 rounded-xl px-5 shadow-none font-bold" />
+ <FieldContainer field="time" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+   <Input 
+     value={currentPlan.time} 
+     onChange={(e) => handlePlanUpdate({ time: e.target.value })} 
+     onFocus={() => handleFocus('time')}
+     onBlur={() => handleBlur('time')}
+     placeholder="14:00 - 15:30" 
+     className="h-12 rounded-xl px-5 shadow-none font-bold" 
+   />
+ </FieldContainer>
  )}
  </div>
  <div className="space-y-2">
@@ -502,7 +646,16 @@ export function PlanEditor({
  {isHistoryMode ? (
  <DiffHighlighter type="text" oldValue={previousPlan?.location} newValue={previewPlan?.location} />
  ) : (
- <Input value={currentPlan.location} onChange={(e) => handlePlanUpdate({ location: e.target.value })} placeholder="3F Main Hall" className="h-12 rounded-xl px-5 shadow-none font-bold" />
+ <FieldContainer field="location" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+   <Input 
+     value={currentPlan.location} 
+     onChange={(e) => handlePlanUpdate({ location: e.target.value })} 
+     onFocus={() => handleFocus('location')}
+     onBlur={() => handleBlur('location')}
+     placeholder="3F Main Hall" 
+     className="h-12 rounded-xl px-5 shadow-none font-bold" 
+   />
+ </FieldContainer>
  )}
  </div>
  </section>
@@ -512,7 +665,14 @@ export function PlanEditor({
  {isHistoryMode ? (
  <DiffHighlighter type="markdown" oldValue={previousPlan?.process} newValue={previewPlan?.process} />
  ) : (
- <MarkdownArea value={currentPlan.process} onChange={(val) => handlePlanUpdate({ process: val })} />
+ <FieldContainer field="process" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+   <MarkdownArea 
+     value={currentPlan.process} 
+     onChange={(val) => handlePlanUpdate({ process: val })} 
+     onFocus={() => handleFocus('process')}
+     onBlur={() => handleBlur('process')}
+   />
+ </FieldContainer>
  )}
  </section>
 
@@ -523,7 +683,17 @@ export function PlanEditor({
  ) : (
  <>
  {hasCanvas ? (
- <div className="mb-6 flex flex-col w-full h-[min(70vh,calc(100dvh-12rem))] min-h-[420px] rounded-[1.5rem] overflow-hidden bg-[#FBF9F6] dark:bg-white/5 shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <FieldContainer field="canvasData" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+ <div 
+   className="mb-6 flex flex-col w-full h-[min(70vh,calc(100dvh-12rem))] min-h-[420px] rounded-[1.5rem] overflow-hidden bg-[#FBF9F6] dark:bg-white/5 shadow-[0_8px_30px_rgba(140,120,100,0.05)] outline-none focus-within:ring-2 focus-within:ring-orange-500/20"
+   tabIndex={0}
+   onFocus={() => handleFocus('canvasData')}
+   onBlur={(e) => {
+     if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+       handleBlur('canvasData');
+     }
+   }}
+ >
  <div className="flex justify-end px-3 pt-3 pb-1">
  <Button
  variant="ghost"
@@ -543,6 +713,7 @@ export function PlanEditor({
  />
  </div>
  </div>
+ </FieldContainer>
  ) : (
  <Button variant="outline" size="sm" onClick={() => {
  setIsCanvasRemoved(false);
@@ -551,7 +722,14 @@ export function PlanEditor({
  <Plus className="h-4 w-4 mr-2" /> {t('ADD_CANVAS')}
  </Button>
  )}
- <MarkdownArea value={currentPlan.content} onChange={(val) => handlePlanUpdate({ content: val })} />
+ <FieldContainer field="content" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+   <MarkdownArea 
+     value={currentPlan.content} 
+     onChange={(val) => handlePlanUpdate({ content: val })} 
+     onFocus={() => handleFocus('content')}
+     onBlur={() => handleBlur('content')}
+   />
+ </FieldContainer>
  </>
  )}
  </section>
@@ -561,10 +739,17 @@ export function PlanEditor({
  {isHistoryMode ? (
  <DiffHighlighter type="table" oldValue={previousPlan?.props} newValue={previewPlan?.props} />
  ) : (
- <div className="w-full lg:w-[85vw] lg:relative lg:left-1/2 lg:-translate-x-1/2">
- <div className="w-full overflow-x-auto">
- <PropsTable value={currentPlan.props} onChange={(val) => handlePlanUpdate({ props: val })} />
+ <div className="w-full">
+ <FieldContainer field="props" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+ <div className="w-full overflow-x-auto pb-2">
+ <PropsTable 
+   value={currentPlan.props} 
+   onChange={(val) => handlePlanUpdate({ props: val })} 
+   onFocus={() => handleFocus('props')}
+   onBlur={() => handleBlur('props')}
+ />
  </div>
+ </FieldContainer>
  </div>
  )}
  </section>
@@ -574,7 +759,14 @@ export function PlanEditor({
  {isHistoryMode ? (
  <DiffHighlighter type="markdown" oldValue={previousPlan?.openingClosingRemarks} newValue={previewPlan?.openingClosingRemarks} />
  ) : (
- <MarkdownArea value={currentPlan.openingClosingRemarks || ""} onChange={(val) => handlePlanUpdate({ openingClosingRemarks: val })} />
+ <FieldContainer field="openingClosingRemarks" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+   <MarkdownArea 
+     value={currentPlan.openingClosingRemarks || ""} 
+     onChange={(val) => handlePlanUpdate({ openingClosingRemarks: val })} 
+     onFocus={() => handleFocus('openingClosingRemarks')}
+     onBlur={() => handleBlur('openingClosingRemarks')}
+   />
+ </FieldContainer>
  )}
  </section>
  </div>

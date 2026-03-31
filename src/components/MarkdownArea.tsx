@@ -31,9 +31,11 @@ interface MarkdownAreaProps {
  label?: string;
  value: string;
  onChange: (value: string) => void;
+ onFocus?: () => void;
+ onBlur?: () => void;
 }
 
-export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
+export function MarkdownArea({ label, value, onChange, onFocus: onFocusProp, onBlur: onBlurProp }: MarkdownAreaProps) {
  const editorRef = useRef<HTMLDivElement>(null);
  const [isFocused, setIsFocused] = useState(false);
  const [selectedImage, setSelectedImage] = useState<HTMLImageElement | null>(null);
@@ -429,8 +431,8 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
  contentEditable
  onInput={handleInput}
  onClick={handleEditorClick}
- onFocus={() => setIsFocused(true)}
- onBlur={() => setIsFocused(false)}
+ onFocus={() => { setIsFocused(true); onFocusProp?.(); }}
+ onBlur={() => { setIsFocused(false); onBlurProp?.(); }}
  onPaste={handlePaste}
  className={cn(
  "w-full max-w-full min-h-[290px] p-4 md:p-8 bg-card text-foreground outline-none prose prose-p:bg-transparent prose-li:bg-transparent prose-sm transition-all duration-300",
@@ -439,9 +441,9 @@ export function MarkdownArea({ label, value, onChange }: MarkdownAreaProps) {
  "[&_ul]:list-disc [&_ol]:list-decimal [&_ul,&_ol]:ml-6 [&_ol]:my-3",
  "[&_p]:leading-[1.7] [&_p]:mb-3 [&_p]:text-foreground",
  "[&_img]:cursor-pointer [&_img]:transition-all [&_img]:duration-300 [&_img]:shadow-md [&_img:hover]:shadow-lg [&_img]:rounded-xl [&_img]:inline-block [&_img]:max-w-full [&_img]:align-top",
- "empty:before:content-[attr(placeholder)] empty:before:text-muted-foreground empty:before:font-medium"
+ "empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground empty:before:font-medium"
  )}
- placeholder={`撰寫教案內容... (支援貼上圖片) / Write content here... (Supports pasting images)`}
+ data-placeholder={`撰寫教案內容... (支援貼上圖片) / Write content here... (Supports pasting images)`}
  />
  </div>
  </div>

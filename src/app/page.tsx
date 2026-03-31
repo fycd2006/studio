@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { usePlans } from "@/hooks/use-plans";
 import { useRouter } from "next/navigation";
@@ -55,18 +55,18 @@ export default function Home() {
   ], []);
 
   const timeline = useMemo(() => [
-    { label: "一收", date: activeCamp?.meeting1StartDate, icon: Clock },
-    { label: "二收", date: activeCamp?.meeting2StartDate, icon: Clock },
-    { label: "三收", date: activeCamp?.meeting3StartDate, icon: Clock },
-    { label: "集訓", date: activeCamp?.trainingStartDate, icon: Clock },
-    { label: "駐站", date: activeCamp?.siteStartDate, icon: MapPin },
-    { label: "營期", date: activeCamp?.campStartDate, icon: Tent },
+    { label: "一收", start: activeCamp?.meeting1StartDate, end: activeCamp?.meeting1EndDate, icon: Clock },
+    { label: "二收", start: activeCamp?.meeting2StartDate, end: activeCamp?.meeting2EndDate, icon: Clock },
+    { label: "三收", start: activeCamp?.meeting3StartDate, end: activeCamp?.meeting3EndDate, icon: Clock },
+    { label: "集訓", start: activeCamp?.trainingStartDate, end: activeCamp?.trainingEndDate, icon: Clock },
+    { label: "駐站", start: activeCamp?.siteStartDate, end: activeCamp?.siteEndDate, icon: MapPin },
+    { label: "營期", start: activeCamp?.campStartDate, end: activeCamp?.campEndDate, icon: Tent },
   ], [activeCamp]);
 
   const currentIdx = useMemo(() => {
     let lastValidIdx = -1;
     for (let i = 0; i < timeline.length; i++) {
-        if (isPast(timeline[i].date)) {
+        if (isPast(timeline[i].start)) {
             lastValidIdx = i;
         } else {
             break;
@@ -171,38 +171,54 @@ export default function Home() {
                   營隊里程碑 <span className="text-slate-400 dark:text-slate-500 text-sm sm:text-lg md:text-xl font-medium tracking-wide">MILESTONES</span>
                </h3>
                
-               {/* Mobile Scrollable Container */}
-               <div className="w-full overflow-x-auto overflow-y-hidden pb-4 sm:pb-8 -mx-4 px-4 sm:mx-0 sm:px-0 custom-scrollbar">
-                 <div className="relative min-w-[500px] sm:min-w-[700px] h-[100px] sm:h-[120px] mt-2 sm:mt-4">
+               {/* Responsive Container without Horizontal Scroll */}
+               <div className="w-full pb-4 sm:pb-8">
+                 <div className="relative w-full h-[90px] sm:h-[120px] mt-2 sm:mt-4">
                     {/* Base Track */}
-                    <div className="absolute top-5 sm:top-6 left-6 sm:left-10 right-6 sm:right-10 h-1 sm:h-1.5 bg-slate-200/40 dark:bg-slate-800/40 rounded-full backdrop-blur-md z-0" />
+                    <div className="absolute top-3.5 sm:top-6 left-[8%] right-[8%] h-0.5 sm:h-1 bg-slate-200/40 dark:bg-slate-800/40 rounded-full backdrop-blur-md z-0" />
                     {/* Progress Track */}
-                    <div className="absolute top-5 sm:top-6 left-6 sm:left-10 h-1 sm:h-1.5 bg-[#f48c25]/80 shadow-[0_0_15px_rgba(244,140,37,0.6)] rounded-full transition-all duration-1000 z-0 origin-left" style={{ width: currentIdx >= 0 ? `min(100%, ${(currentIdx / (timeline.length - 1)) * 100}%)` : '0%' }} />
+                    <div className="absolute top-3.5 sm:top-6 left-[8%] h-0.5 sm:h-1 bg-[#f48c25]/80 shadow-[0_0_15px_rgba(244,140,37,0.6)] rounded-full transition-all duration-1000 z-0 origin-left" style={{ width: currentIdx >= 0 ? `min(84%, ${(currentIdx / (timeline.length - 1)) * 84}%)` : '0%' }} />
                     
-                    <div className="relative flex justify-between z-10 px-3 sm:px-4">
+                    <div className="relative flex justify-between z-10 w-full px-1 sm:px-4">
                       {timeline.map((node, i) => {
                         const isActive = i === currentIdx;
+                        const isNext = i === currentIdx + 1;
                         const isDone = i <= currentIdx;
                         const Icon = node.icon;
                         return (
-                          <div key={node.label} className="flex flex-col items-center group w-16 sm:w-20">
+                          <div key={node.label} className="flex flex-col items-center group flex-1">
                             <div className={cn(
-                              "w-9 h-9 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center  transition-all duration-500 bg-white dark:bg-slate-900 shadow-md",
+                              "relative w-8 h-8 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center transition-all duration-500 bg-white dark:bg-slate-900 shadow-sm",
                               isActive ? "bg-[#f48c25] text-white scale-110 shadow-[0_4px_12px_rgba(244,140,37,0.3)] dark:shadow-[0_4px_20px_rgba(244,140,37,0.4)]"
                                 : isDone ? "bg-[#f48c25]/10 text-[#f48c25]"
+                                : isNext ? "bg-white dark:bg-slate-800 text-[#f48c25] border border-dashed border-[#f48c25]/50 scale-105 shadow-[0_2px_8px_rgba(244,140,37,0.15)]"
                                 : "bg-slate-100 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500"
                             )}>
-                              <Icon className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
+                              {isActive && (
+                                <div className="absolute inset-0 rounded-full border-2 border-[#f48c25] animate-ping opacity-75"></div>
+                              )}
+                              {isNext && (
+                                <div className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded-full bg-rose-500 animate-pulse border-2 border-white dark:border-slate-900"></div>
+                              )}
+                              <Icon className="w-3.5 h-3.5 sm:w-5 sm:h-5 md:w-6 md:h-6 relative z-10" />
                             </div>
-                            <div className="mt-2 sm:mt-4 md:mt-6 text-center w-20 sm:w-24">
+                            <div className="mt-2 sm:mt-4 md:mt-6 text-center w-[130%] sm:w-32 -mx-[15%] sm:mx-0">
                               <span className={cn(
-                                "block text-xs sm:text-sm md:text-base font-bold tracking-wide",
-                                isActive ? "text-[#f48c25]" : isDone ? "text-slate-800 dark:text-slate-200" : "text-slate-400 dark:text-slate-600"
+                                "block text-[10px] sm:text-sm md:text-base font-bold tracking-tight sm:tracking-wide",
+                                isActive ? "text-[#f48c25]" : isNext ? "text-[#f48c25] dark:text-[#f48c25]" : isDone ? "text-slate-800 dark:text-slate-200" : "text-slate-400 dark:text-slate-600"
                               )}>
                                 {node.label}
                               </span>
                               <span className="block text-[9px] sm:text-[10px] font-semibold tracking-wider text-slate-400 dark:text-slate-500 mt-0.5 sm:mt-1 uppercase">
-                                {node.date ? format(new Date(node.date), 'MM/dd') : 'TBD'}
+                                {(() => {
+                                  const { start, end } = node;
+                                  if (!start) return 'TBD';
+                                  const startStr = format(new Date(start), 'MM/dd');
+                                  if (end && end !== start) {
+                                    return `${startStr} - ${format(new Date(end), 'MM/dd')}`;
+                                  }
+                                  return startStr;
+                                })()}
                               </span>
                             </div>
                           </div>

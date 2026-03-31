@@ -25,7 +25,7 @@ import { useTheme } from "next-themes";
 interface FabricCanvasProps {
  initialData?: string | null;
  initialHeight?: number | null;
- onSave: (data: string, height: number) => void;
+ onSave: (data: string, height: number, image: string) => void;
 }
 
 export function FabricCanvas({ initialData, initialHeight = 500, onSave }: FabricCanvasProps) {
@@ -35,6 +35,7 @@ export function FabricCanvas({ initialData, initialHeight = 500, onSave }: Fabri
  const onSaveRef = useRef(onSave);
  const clipboard = useRef<any>(null);
  const isInitialLoad = useRef(true);
+ const isInternalUpdate = useRef(false);
  
  const { resolvedTheme } = useTheme();
  const [brushColor, setBrushColor] = useState("");
@@ -75,9 +76,11 @@ export function FabricCanvas({ initialData, initialHeight = 500, onSave }: Fabri
  typeof initialData === 'string' && 
  initialData.trim().startsWith('{')
  ) {
+ isInternalUpdate.current = true;
  fabricRef.current.loadFromJSON(initialData, () => {
  fabricRef.current?.renderAll();
  lastSavedData.current = initialData;
+ isInternalUpdate.current = false;
  });
  }
  }, [initialData]);
@@ -208,12 +211,15 @@ export function FabricCanvas({ initialData, initialHeight = 500, onSave }: Fabri
 
  if (isInitialLoad.current && initialData && typeof initialData === 'string' && initialData.trim().startsWith('{')) {
  try {
+ isInternalUpdate.current = true;
  canvas.loadFromJSON(initialData, () => {
  canvas.renderAll();
  isInitialLoad.current = false;
+ isInternalUpdate.current = false;
  });
  } catch (e) {
  isInitialLoad.current = false;
+ isInternalUpdate.current = false;
  }
  } else if (isInitialLoad.current) {
  isInitialLoad.current = false;
@@ -311,16 +317,19 @@ export function FabricCanvas({ initialData, initialHeight = 500, onSave }: Fabri
  });
 
  const handleSave = () => {
- if (fabricRef.current && !isInitialLoad.current) {
+ if (fabricRef.current && !isInitialLoad.current && !isInternalUpdate.current) {
  const json = JSON.stringify(fabricRef.current.toJSON());
  lastSavedData.current = json;
- onSaveRef.current(json, fabricRef.current.getHeight());
+ // 產生 PNG 快照供 Word 匯出使用
+ const pngDataUrl = fabricRef.current.toDataURL({ format: 'png', multiplier: 2 });
+ onSaveRef.current(json, fabricRef.current.getHeight(), pngDataUrl);
  }
  };
 
  canvas.on('object:modified', handleSave);
  canvas.on('object:added', handleSave);
  canvas.on('object:removed', handleSave);
+ canvas.on('path:created', handleSave);
 
  const handleKeyDown = (e: KeyboardEvent) => {
  const isInput = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName || '') || 

@@ -109,10 +109,12 @@ interface PropsTableProps {
  label?: string;
  value: PropItem[];
  onChange: (value: PropItem[]) => void;
+ onFocus?: () => void;
+ onBlur?: () => void;
 }
 
-export function PropsTable({ label, value = [], onChange }: PropsTableProps) {
- const { t } = useTranslation();
+export function PropsTable({ label, value = [], onChange, onFocus, onBlur }: PropsTableProps) {
+ const { t, language } = useTranslation();
 
  const handleAddRow = () => {
  const newRow: PropItem = {
@@ -142,24 +144,31 @@ export function PropsTable({ label, value = [], onChange }: PropsTableProps) {
  </label>
  )}
 
- <div className="w-full dark:rounded-[1.5rem] overflow-hidden bg-white dark:bg-slate-900/50 shadow-stone-200/20 dark:shadow-none transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
- <div className="w-full overflow-x-auto">
- <Table className="w-full min-w-[760px] md:min-w-0 table-fixed block md:table">
- <TableHeader className="bg-[#FBF9F6]/50 dark:bg-slate-900/50 hidden md:table-header-group">
- <TableRow className="dark:">
- <TableHead className="w-[34%] font-bold text-[#2C2A28] dark:text-slate-400 dark:h-12 text-[12px] uppercase tracking-widest">{t('PROP_NAME')}</TableHead>
- <TableHead className="w-[12%] font-bold text-[#2C2A28] dark:text-slate-400 dark:text-center text-[12px] uppercase tracking-widest">Qty</TableHead>
- <TableHead className="w-[12%] font-bold text-[#2C2A28] dark:text-slate-400 dark:text-center text-[12px] uppercase tracking-widest">Unit</TableHead>
- <TableHead className="w-[34%] font-bold text-[#2C2A28] dark:text-slate-400 dark:text-[12px] uppercase tracking-widest">{t('OP_REMARKS')}</TableHead>
- <TableHead className="w-[8%] text-center no-print font-bold text-[#2C2A28] dark:text-slate-400 text-[12px] uppercase">{t('DELETE')}</TableHead>
+ <div 
+    className="w-full dark:rounded-[1.5rem] overflow-hidden bg-white dark:bg-slate-900/50 shadow-stone-200/20 dark:shadow-none transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none"
+    onFocus={onFocus}
+    onBlur={(e) => {
+      if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+        onBlur?.();
+      }
+    }}
+  >
+ <div className="w-full overflow-x-auto rounded-[1.5rem] border border-stone-200 dark:border-slate-800">
+ <Table className="w-full min-w-[760px] table-fixed">
+ <TableHeader className="bg-[#FBF9F6]/80 dark:bg-slate-900/80 border-b border-stone-200 dark:border-slate-800">
+ <TableRow>
+ <TableHead className="w-[34%] font-bold text-[#2C2A28] dark:text-slate-400 h-12 text-[12px] uppercase tracking-widest border-r border-stone-200 dark:border-slate-800 px-4 bg-[#FBF9F6]/50 dark:bg-slate-900/50">{t('PROP_NAME')}</TableHead>
+ <TableHead className="w-[12%] font-bold text-[#2C2A28] dark:text-slate-400 text-center text-[12px] uppercase tracking-widest border-r border-stone-200 dark:border-slate-800 bg-[#FBF9F6]/50 dark:bg-slate-900/50">Qty</TableHead>
+ <TableHead className="w-[12%] font-bold text-[#2C2A28] dark:text-slate-400 text-center text-[12px] uppercase tracking-widest border-r border-stone-200 dark:border-slate-800 bg-[#FBF9F6]/50 dark:bg-slate-900/50">Unit</TableHead>
+ <TableHead className="w-[34%] font-bold text-[#2C2A28] dark:text-slate-400 text-[12px] uppercase tracking-widest border-r border-stone-200 dark:border-slate-800 px-4 bg-[#FBF9F6]/50 dark:bg-slate-900/50">{t('OP_REMARKS')}</TableHead>
+ <TableHead className="w-[8%] text-center no-print font-bold text-[#2C2A28] dark:text-slate-400 text-[12px] uppercase bg-[#FBF9F6]/50 dark:bg-slate-900/50">{t('DELETE')}</TableHead>
  </TableRow>
  </TableHeader>
- <TableBody className="block md:table-row-group">
+ <TableBody>
  {value && value.length > 0 ? (
  value.map((row) => (
- <TableRow key={row.id} className="dark:rounded-xl md:rounded-none last:hover:bg-[#FBF9F6]/50 dark:hover:bg-white/5 transition-colors block md:table-row p-4 md:p-0 space-y-3 md:space-y-0 relative shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
- <TableCell className="align-top p-0 block md:table-cell">
- <div className="md:hidden text-[12px] font-bold text-stone-400 dark:text-slate-500 uppercase px-4 pt-2">{t('PROP_NAME')}</div>
+ <TableRow key={row.id} className="transition-colors hover:bg-stone-50/50 dark:hover:bg-slate-800/50 border-b border-stone-200 dark:border-slate-800 last:border-0">
+ <TableCell className="align-top p-0 border-r border-stone-200 dark:border-slate-800">
  <AutoExpandingTextarea 
  value={row.name} 
  onChange={(val) => handleUpdateRow(row.id, 'name', val)} 
@@ -167,23 +176,21 @@ export function PropsTable({ label, value = [], onChange }: PropsTableProps) {
  className="px-4"
  />
  </TableCell>
- <TableCell className="text-center align-top p-0 md:whitespace-nowrap flex items-center md:table-cell">
- <div className="md:hidden text-[12px] font-bold text-stone-400 dark:text-slate-500 uppercase px-4 w-1/3 text-left">Qty</div>
+ <TableCell className="text-center align-top p-0 border-r border-stone-200 dark:border-slate-800">
  <LocalInput 
  value={row.quantity} 
  onChange={(val) => handleUpdateRow(row.id, 'quantity', val)} 
  placeholder="1" 
  />
  </TableCell>
- <TableCell className="text-center align-top p-0 block md:table-cell">
+ <TableCell className="text-center align-top p-0 border-r border-stone-200 dark:border-slate-800">
  <LocalInput 
  value={row.unit} 
  onChange={(val) => handleUpdateRow(row.id, 'unit', val)} 
  placeholder="Unit" 
  />
  </TableCell>
- <TableCell className="align-top p-0 block md:table-cell">
- <div className="md:hidden text-[12px] font-bold text-stone-400 dark:text-slate-500 uppercase px-4 pt-2">{t('OP_REMARKS')}</div>
+ <TableCell className="align-top p-0 border-r border-stone-200 dark:border-slate-800">
  <AutoExpandingTextarea 
  value={row.remarks || ""} 
  onChange={(val) => handleUpdateRow(row.id, 'remarks', val)} 
@@ -191,10 +198,12 @@ export function PropsTable({ label, value = [], onChange }: PropsTableProps) {
  className="px-4"
  />
  </TableCell>
- <TableCell className="text-center no-print align-top pt-2 block md:table-cell absolute md:static top-2 right-2 md:top-auto md:right-auto">
- <Button variant="ghost" size="icon" className="h-9 w-9 text-stone-400 dark:text-slate-600 hover:text-rose-600 dark:hover:text-rose-400 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={() => handleRemoveRow(row.id)}>
+ <TableCell className="text-center align-middle p-0">
+ <div className="flex justify-center items-center h-full w-full py-2">
+ <Button variant="ghost" size="icon" className="h-9 w-9 text-stone-400 dark:text-slate-600 hover:text-rose-600 dark:hover:text-rose-400" onClick={() => handleRemoveRow(row.id)}>
  <Trash2 className="h-4 w-4" />
  </Button>
+ </div>
  </TableCell>
  </TableRow>
  ))
@@ -206,17 +215,17 @@ export function PropsTable({ label, value = [], onChange }: PropsTableProps) {
  </TableRow>
  )}
  </TableBody>
- <TableFooter className="bg-transparent no-print block md:table-footer-group">
- <TableRow className="block md:table-row">
- <TableCell colSpan={5} className="p-0 block md:table-cell">
- <div className="flex justify-center p-5">
+ <TableFooter className="bg-transparent no-print border-t border-stone-200 dark:border-slate-800">
+ <TableRow>
+ <TableCell colSpan={5} className="p-0">
+ <div className="flex justify-center p-3">
  <Button 
  variant="outline" 
  onClick={handleAddRow}
  className="h-10 px-8 rounded-xl text-orange-600 dark:text-amber-400 dark:hover:bg-orange-50 dark:hover:bg-amber-400/5 gap-3 font-bold uppercase tracking-widest text-[12px] transition-all shadow-sm border-none"
  >
  <Plus className="h-4 w-4" />
- {t('ADD_ROW')}
+ {language === 'zh' ? '新增道具' : 'Add Prop'}
  </Button>
  </div>
  </TableCell>

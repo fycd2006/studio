@@ -26,6 +26,8 @@ import {
  List,
  Trash2,
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { exportProjectBackupZip } from "@/lib/export-excel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -33,12 +35,13 @@ import { Input } from "@/components/ui/input";
 
 export default function SettingsPage() {
  const { role, logout } = useAuth();
- const { camps, activeCampId, setActiveCampId, deleteCamp, updateCamp, addCamp, activityTypes, addActivityType, removeActivityType, groups, addGroup, updateGroup, deleteGroup } = usePlans();
+ const { camps, activeCampId, setActiveCampId, deleteCamp, updateCamp, addCamp, activityTypes, addActivityType, removeActivityType, groups, addGroup, updateGroup, deleteGroup, plans, tables } = usePlans();
  const { theme, setTheme } = useTheme();
  const { language, setLanguage, t } = useTranslation();
+ const { toast } = useToast();
 
  const [profileName, setProfileName] = useState(role === 'admin' ? "STUDIO_ADMIN" : "CREW_MEMBER");
- const [isDeleting, setIsDeleting] = useState(false);
+ const [isDeleting, setIsDeleting] = useState<boolean | "downloading">(false);
  const [isAddingProject, setIsAddingProject] = useState(false);
  const [newProjectName, setNewProjectName] = useState("");
  const [deleteInput, setDeleteInput] = useState("");
@@ -511,17 +514,26 @@ export default function SettingsPage() {
  />
  <Button
  variant="destructive"
- disabled={deleteInput !== "delete"}
- onClick={() => {
+ disabled={deleteInput !== "delete" || isDeleting === "downloading"}
+ onClick={async () => {
  if (activeCampId) {
+ setIsDeleting("downloading");
+ toast({ title: "備份中 / Backing up", description: "正在打包所有教案 (Word) 與清單 (Excel) 為 ZIP..." });
+ try {
+ await exportProjectBackupZip(activeCampId, activeCamp?.name || "專案", camps, plans, tables);
+ toast({ title: "備份完成", description: "ZIP 備份已下載，即將刪除專案。" });
+ } catch (e) {
+ console.error("Backup failed", e);
+ toast({ title: "備份失敗", description: "無法產生備份檔案，但仍將繼續刪除。", variant: "destructive" });
+ }
  deleteCamp(activeCampId);
  setIsDeleting(false);
  setDeleteInput("");
  }
  }}
- className="font-bold"
+ className="font-bold gap-2"
  >
- Confirm
+ {isDeleting === "downloading" ? "Backup & Deleting..." : "Confirm"}
  </Button>
  <Button variant="ghost" className="text-stone-600 dark:text-slate-400 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={() => { setIsDeleting(false); setDeleteInput(""); }}>
  Cancel

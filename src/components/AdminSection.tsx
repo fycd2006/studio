@@ -295,24 +295,24 @@ export function AdminSection({
  <h2 className="font-fira-code font-black text-[#2C2A28] dark:text-slate-100 tracking-[0.1em] uppercase text-sm">{title}</h2>
  </div>
  
- <div className="w-full overflow-x-auto touch-pan-x touch-pan-y overscroll-x-contain">
- <table className="w-full text-sm text-left  table-fixed">
- <thead className="text-stone-500 dark:text-slate-200 text-[10px] font-fira-code font-black uppercase tracking-[0.2em] sticky top-0 bg-white/90 dark:bg-black/20 backdrop-blur-xl z-10 dark:/[0.08] shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <div className="w-full overflow-x-auto touch-pan-x touch-pan-y overscroll-x-contain border border-stone-200 dark:border-slate-800 rounded-b-2xl">
+ <table className="w-full min-w-[760px] md:min-w-[1000px] text-sm text-left table-fixed border-collapse">
+ <thead className="text-stone-500 dark:text-slate-200 text-[10px] font-fira-code font-black uppercase tracking-[0.2em] sticky top-0 bg-white/90 dark:bg-black/20 backdrop-blur-xl z-10 shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-b border-stone-200 dark:border-slate-800 text-center">
  <tr>
- <th className="w-[12%] px-4 py-3  dark:/[0.06]">{t('CATEGORY')}</th>
- <th className="w-[14%] px-4 py-3  dark:/[0.06]">{t('SUBJECT')}</th>
- <th className="w-[12%] px-4 py-3  dark:/[0.06]">{t('ASSIGNED_PERSONNEL')}</th>
- <th className="w-[16%] px-4 py-3  dark:/[0.06] min-w-[100px]  dark:/[0.06]">{t('PROP_NAME')}</th>
- <th className="w-[8%] px-4 py-3  dark:/[0.06] whitespace-nowrap  dark:/[0.06]">Qty</th>
- <th className="w-[8%] px-4 py-3  dark:/[0.06] whitespace-nowrap  dark:/[0.06]">Unit</th>
- <th className="w-[16%] px-4 py-3  dark:/[0.06] min-w-[100px]  dark:/[0.06]">{t('OP_REMARKS')}</th>
- <th className="w-[7%] px-4 py-3 text-center  dark:/[0.06] whitespace-nowrap  dark:/[0.06]">{t('PACKED')}</th>
- <th className="w-[7%] px-4 py-3 text-center  dark:/[0.06] whitespace-nowrap  dark:/[0.06]">{t('CHECKED')}</th>
+ <th className="w-[12%] px-4 py-3 border-r border-stone-200 dark:border-slate-800">{t('CATEGORY')}</th>
+ <th className="w-[14%] px-4 py-3 border-r border-stone-200 dark:border-slate-800">{t('SUBJECT')}</th>
+ <th className="w-[12%] px-4 py-3 border-r border-stone-200 dark:border-slate-800">{t('ASSIGNED_PERSONNEL')}</th>
+ <th className="w-[16%] px-4 py-3 min-w-[100px] border-r border-stone-200 dark:border-slate-800">{t('PROP_NAME')}</th>
+ <th className="w-[8%] px-4 py-3 whitespace-nowrap border-r border-stone-200 dark:border-slate-800">Qty</th>
+ <th className="w-[8%] px-4 py-3 whitespace-nowrap border-r border-stone-200 dark:border-slate-800">Unit</th>
+ <th className="w-[16%] px-4 py-3 min-w-[100px] border-r border-stone-200 dark:border-slate-800">{t('OP_REMARKS')}</th>
+ <th className="w-[7%] px-4 py-3 whitespace-nowrap border-r border-stone-200 dark:border-slate-800">{t('PACKED')}</th>
+ <th className="w-[7%] px-4 py-3 whitespace-nowrap">{t('CHECKED')}</th>
  </tr>
  </thead>
  <tbody>
  {Object.keys(propGroups).length === 0 ? (
- <tr><td colSpan={9} className="text-center py-12 text-slate-500 dark:text-slate-600 font-bold">目前沒有任何道具資料</td></tr>
+ <tr><td colSpan={9} className="text-center py-12 text-slate-500 dark:text-slate-600 font-bold border-b border-stone-200 dark:border-slate-800">目前沒有任何道具資料</td></tr>
  ) : null}
  
  {Object.entries(propGroups).map(([categoryName, items], gIndex) => {
@@ -330,33 +330,33 @@ export function AdminSection({
 
  return (
  <tr key={`${item.plan.id}-${item.prop.id}`} className={cn(
- "group  dark:/[0.06] hover:bg-[#FBF9F6] dark:hover:bg-[#FBF9F6]/[0.04] transition-colors duration-200",
+ "group hover:bg-[#FBF9F6] dark:hover:bg-[#FBF9F6]/[0.04] transition-colors duration-200 border-b border-stone-200 dark:border-slate-800 last:border-0",
  item.prop.isFromClub && item.prop.isToPurchase ? "bg-emerald-50/30 dark:bg-emerald-900/12" : "bg-white dark:bg-transparent"
  )}>
  {isFirstInGroup && (
- <td className="px-4 py-3 font-fira-code font-black text-xs sm:text-sm text-slate-800 dark:text-slate-400 align-top  dark:/[0.06]" rowSpan={items.length}>
+ <td className="px-4 py-3 font-fira-code font-black text-xs sm:text-sm text-slate-800 dark:text-slate-400 align-top border-r border-stone-200 dark:border-slate-800" rowSpan={items.length}>
  {categoryName}
  </td>
  )}
  {isFirstInPlan && (
- <td className="px-4 py-3 font-bold text-xs sm:text-sm text-slate-700 dark:text-slate-300 align-top  dark:/[0.06]" rowSpan={planItems.length}>
+ <td className="px-4 py-3 font-bold text-xs sm:text-sm text-slate-700 dark:text-slate-300 align-top border-r border-stone-200 dark:border-slate-800" rowSpan={planItems.length}>
  {item.plan.activityName || '-'}
  </td>
  )}
  {isFirstInPlan && (
- <td className="px-4 py-3 text-xs sm:text-sm text-slate-600 dark:text-slate-400 align-top  dark:/[0.06]" rowSpan={planItems.length}>
+ <td className="px-4 py-3 text-xs sm:text-sm text-slate-600 dark:text-slate-400 align-top border-r border-stone-200 dark:border-slate-800" rowSpan={planItems.length}>
  {item.plan.members || '-'}
  </td>
  )}
- <td className="px-2 py-2 align-middle  dark:/[0.06]">
+ <td className="px-2 py-2 align-middle border-r border-stone-200 dark:border-slate-800">
  <PropInput 
  value={item.prop.name}
  onChange={(v) => handleUpdatePropItem(item.plan.id, item.prop.id, { name: v })}
  disabled={isLocked}
- className="font-medium text-slate-700 dark:text-slate-200"
+ className="font-medium text-slate-700 dark:text-slate-200 text-center"
  />
  </td>
- <td className="px-2 py-2 align-middle  dark:/[0.06]">
+ <td className="px-2 py-2 align-middle border-r border-stone-200 dark:border-slate-800">
  <PropInput 
  value={item.prop.quantity}
  onChange={(v) => handleUpdatePropItem(item.plan.id, item.prop.id, { quantity: v })}
@@ -364,7 +364,7 @@ export function AdminSection({
  className="text-center font-fira-code font-bold text-slate-700 dark:text-slate-200"
  />
  </td>
- <td className="px-2 py-2 align-middle  dark:/[0.06]">
+ <td className="px-2 py-2 align-middle border-r border-stone-200 dark:border-slate-800">
  <PropInput 
  value={item.prop.unit === 'custom' ? '' : item.prop.unit}
  onChange={(v) => handleUpdatePropItem(item.plan.id, item.prop.id, { unit: v })}
@@ -372,15 +372,15 @@ export function AdminSection({
  className="text-center text-slate-600 dark:text-slate-400"
  />
  </td>
- <td className="px-2 py-2 align-middle  dark:/[0.06]">
+ <td className="px-2 py-2 align-middle border-r border-stone-200 dark:border-slate-800">
  <PropInput 
  value={item.prop.remarks || ''}
  onChange={(v) => handleUpdatePropItem(item.plan.id, item.prop.id, { remarks: v })}
  disabled={isLocked}
- className="text-slate-500 dark:text-slate-400"
+ className="text-slate-500 dark:text-slate-400 text-center"
  />
  </td>
- <td className="px-4 py-3 text-center align-middle  dark:/[0.06]">
+ <td className="px-4 py-3 text-center align-middle border-r border-stone-200 dark:border-slate-800">
  <div className="flex justify-center items-center h-full">
  <Checkbox 
  checked={item.prop.isFromClub || false} 
@@ -390,7 +390,7 @@ export function AdminSection({
  />
  </div>
  </td>
- <td className="px-4 py-3 text-center align-middle  dark:/[0.06]">
+ <td className="px-4 py-3 text-center align-middle">
  <div className="flex justify-center items-center h-full">
  <Checkbox 
  checked={item.prop.isToPurchase || false} 
@@ -443,17 +443,17 @@ export function AdminSection({
  <div className="py-3 px-4 flex justify-between items-center dark:/[0.08] bg-[#FBF9F6] dark:bg-black/20">
  <h2 className="text-center font-fira-code font-black text-[#2C2A28] dark:text-slate-100 tracking-[0.1em] uppercase text-sm">{t('PROPS_LIST')}</h2></div>
  
- <div className="w-full overflow-x-auto touch-pan-x touch-pan-y overscroll-x-contain">
- <table className="w-full text-sm text-left  table-fixed">
- <thead className="text-stone-500 dark:text-slate-200 text-[10px] font-fira-code font-black uppercase tracking-[0.2em] sticky top-0 z-10 bg-white/90 dark:bg-black/20 backdrop-blur-xl dark:/[0.08] shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <div className="w-full overflow-x-auto touch-pan-x touch-pan-y overscroll-x-contain border border-stone-200 dark:border-slate-800 rounded-b-2xl">
+ <table className="w-full min-w-[760px] md:min-w-[1000px] text-sm text-left table-fixed border-collapse">
+ <thead className="text-stone-500 dark:text-slate-200 text-[10px] font-fira-code font-black uppercase tracking-[0.2em] sticky top-0 z-10 bg-white/90 dark:bg-black/20 backdrop-blur-xl shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-b border-stone-200 dark:border-slate-800 text-center">
  <tr>
- <th className="w-[16%] px-4 py-3  dark:/[0.06]">{t('PROP_USAGE')}</th>
- <th className="w-[16%] px-4 py-3  dark:/[0.06] min-w-[100px]  dark:/[0.06]">{t('PROP_NAME')}</th>
- <th className="w-[16%] px-4 py-3  dark:/[0.06]">{t('ASSIGNED_PERSONNEL')}</th>
- <th className="w-[28%] px-4 py-3  dark:/[0.06]">{t('MATERIALS')}</th>
- <th className="w-[12%] px-4 py-3 text-center  dark:/[0.06] whitespace-nowrap  dark:/[0.06]">{t('PACKED')}</th>
- <th className="w-[12%] px-4 py-3 text-center  dark:/[0.06] whitespace-nowrap  dark:/[0.06]">{t('CHECKED')}</th>
- {!isLocked && <th className="w-[10%] px-4 py-3 text-center  dark:/[0.06]">操作</th>}
+ <th className="w-[16%] px-4 py-3 border-r border-stone-200 dark:border-slate-800">{t('PROP_USAGE')}</th>
+ <th className="w-[16%] px-4 py-3 min-w-[100px] border-r border-stone-200 dark:border-slate-800">{t('PROP_NAME')}</th>
+ <th className="w-[16%] px-4 py-3 border-r border-stone-200 dark:border-slate-800">{t('ASSIGNED_PERSONNEL')}</th>
+ <th className="w-[28%] px-4 py-3 border-r border-stone-200 dark:border-slate-800">{t('MATERIALS')}</th>
+ <th className="w-[12%] px-4 py-3 whitespace-nowrap border-r border-stone-200 dark:border-slate-800">{t('PACKED')}</th>
+ <th className="w-[12%] px-4 py-3 whitespace-nowrap border-r border-stone-200 dark:border-slate-800">{t('CHECKED')}</th>
+ {!isLocked && <th className="w-[10%] px-4 py-3 text-center">操作</th>}
  </tr>
  </thead>
  
@@ -461,25 +461,25 @@ export function AdminSection({
  <tbody>
  <tr><td colSpan={isLocked ? 6 : 7} className="px-4 py-4 font-fira-code font-black text-orange-600 dark:text-amber-500 text-xs sm:text-sm uppercase tracking-widest bg-transparent  dark:/[0.06]">活動組 - 教案道具確認</td></tr>
  {Object.keys(activityGroups).length === 0 ? (
- <tr><td colSpan={isLocked ? 6 : 7} className="text-center py-6 text-slate-400 dark:text-slate-500 font-bold  dark:/[0.06]">目前沒有活動組資料</td></tr>
+ <tr><td colSpan={isLocked ? 6 : 7} className="text-center py-6 text-slate-400 dark:text-slate-500 font-bold border-b border-stone-200 dark:border-slate-800">目前沒有活動組資料</td></tr>
  ) : Object.entries(activityGroups).map(([categoryName, catePlans]) => (
  catePlans.map((plan, pIndex) => (
  <tr key={`act-${plan.id}`} className={cn(
- "group  dark:/[0.06] hover:bg-[#FBF9F6] dark:hover:bg-[#FBF9F6]/[0.04] transition-colors duration-200",
+ "group hover:bg-[#FBF9F6] dark:hover:bg-[#FBF9F6]/[0.04] transition-colors duration-200 border-b border-stone-200 dark:border-slate-800 last:border-0",
  plan.isPreDepartureChecked && plan.isPropsPacked ? "bg-emerald-50/30 dark:bg-emerald-900/12" : "bg-white dark:bg-transparent"
  )}>
  {pIndex === 0 && (
- <td className="px-4 py-3 font-fira-code font-black text-xs sm:text-sm text-slate-800 dark:text-slate-400 align-top  dark:/[0.06]" rowSpan={catePlans.length}>
+ <td className="px-4 py-3 font-fira-code font-black text-xs sm:text-sm text-slate-800 dark:text-slate-400 align-top border-r border-stone-200 dark:border-slate-800" rowSpan={catePlans.length}>
  {categoryName}
  </td>
  )}
- <td className="px-4 py-3 font-bold text-xs sm:text-sm text-slate-700 dark:text-slate-300 align-top  dark:/[0.06]">
+ <td className="px-4 py-3 font-bold text-xs sm:text-sm text-slate-700 dark:text-slate-300 align-top border-r border-stone-200 dark:border-slate-800 text-center">
  {plan.activityName || '-'}
  </td>
- <td className="px-4 py-3 text-xs sm:text-sm text-slate-600 dark:text-slate-400 align-top  dark:/[0.06]">
+ <td className="px-4 py-3 text-xs sm:text-sm text-slate-600 dark:text-slate-400 align-top border-r border-stone-200 dark:border-slate-800 text-center">
  {plan.members || '-'}
  </td>
- <td className="px-4 py-3 text-slate-600 dark:text-slate-300 text-xs sm:text-sm  dark:/[0.06]">
+ <td className="px-4 py-3 text-slate-600 dark:text-slate-300 text-xs sm:text-sm border-r border-stone-200 dark:border-slate-800">
  {plan.props.length > 0 ? (
  <ul className="space-y-1.5 list-none">
  {plan.props.map(prop => (
@@ -495,17 +495,17 @@ export function AdminSection({
  <span className="text-slate-400 dark:text-slate-500 italic font-medium">無所需物品</span>
  )}
  </td>
- <td className="px-4 py-3 text-center align-middle  dark:/[0.06]">
+ <td className="px-4 py-3 text-center align-middle border-r border-stone-200 dark:border-slate-800">
  <div className="flex justify-center items-center h-full">
  <Checkbox checked={plan.isPropsPacked || false} disabled={isLocked} onCheckedChange={(c) => onUpdatePlan(plan.id, { isPropsPacked: c === true })} className="h-5 w-5 dark:data-[state=checked]:bg-emerald-500" />
  </div>
  </td>
- <td className="px-4 py-3 text-center align-middle  dark:/[0.06]">
+ <td className="px-4 py-3 text-center align-middle border-r border-stone-200 dark:border-slate-800">
  <div className="flex justify-center flex-col items-center h-full">
  <Checkbox checked={plan.isPreDepartureChecked || false} disabled={isLocked} onCheckedChange={(c) => onUpdatePlan(plan.id, { isPreDepartureChecked: c === true })} className="h-5 w-5 dark:data-[state=checked]:bg-emerald-500" />
  </div>
  </td>
- {!isLocked && <td className="px-4 py-3 text-center align-middle  dark:/[0.06]"></td>}
+ {!isLocked && <td className="px-4 py-3 text-center align-middle"></td>}
  </tr>
  ))
  ))}
@@ -515,25 +515,25 @@ export function AdminSection({
  <tbody>
  <tr><td colSpan={isLocked ? 6 : 7} className="px-4 py-4 font-fira-code font-black text-blue-600 dark:text-blue-400 text-xs sm:text-sm uppercase tracking-widest bg-transparent  dark:/[0.06]">教學組 - 教案道具確認</td></tr>
  {Object.keys(teachingGroups).length === 0 ? (
- <tr><td colSpan={isLocked ? 6 : 7} className="text-center py-6 text-slate-400 dark:text-slate-500 font-bold  dark:/[0.06]">目前沒有教學組資料</td></tr>
+ <tr><td colSpan={isLocked ? 6 : 7} className="text-center py-6 text-slate-400 dark:text-slate-500 font-bold border-b border-stone-200 dark:border-slate-800">目前沒有教學組資料</td></tr>
  ) : Object.entries(teachingGroups).map(([categoryName, catePlans]) => (
  catePlans.map((plan, pIndex) => (
  <tr key={`tch-${plan.id}`} className={cn(
- "group  dark:/[0.06] hover:bg-[#FBF9F6] dark:hover:bg-[#FBF9F6]/[0.04] transition-colors duration-200",
+ "group hover:bg-[#FBF9F6] dark:hover:bg-[#FBF9F6]/[0.04] transition-colors duration-200 border-b border-stone-200 dark:border-slate-800 last:border-0",
  plan.isPreDepartureChecked && plan.isPropsPacked ? "bg-emerald-50/30 dark:bg-emerald-900/10" : "bg-white dark:bg-slate-900/20"
  )}>
  {pIndex === 0 && (
- <td className="px-4 py-3 font-fira-code font-black text-xs sm:text-sm text-slate-800 dark:text-slate-400 align-top  dark:/[0.06]" rowSpan={catePlans.length}>
+ <td className="px-4 py-3 font-fira-code font-black text-xs sm:text-sm text-slate-800 dark:text-slate-400 align-top border-r border-stone-200 dark:border-slate-800" rowSpan={catePlans.length}>
  {categoryName}
  </td>
  )}
- <td className="px-4 py-3 font-bold text-xs sm:text-sm text-slate-700 dark:text-slate-300 align-top  dark:/[0.06]">
+ <td className="px-4 py-3 font-bold text-xs sm:text-sm text-slate-700 dark:text-slate-300 align-top border-r border-stone-200 dark:border-slate-800 text-center">
  {plan.activityName || '-'}
  </td>
- <td className="px-4 py-3 text-xs sm:text-sm text-slate-600 dark:text-slate-400 align-top  dark:/[0.06]">
+ <td className="px-4 py-3 text-xs sm:text-sm text-slate-600 dark:text-slate-400 align-top border-r border-stone-200 dark:border-slate-800 text-center">
  {plan.members || '-'}
  </td>
- <td className="px-4 py-3 text-slate-600 dark:text-slate-300 text-xs sm:text-sm  dark:/[0.06]">
+ <td className="px-4 py-3 text-slate-600 dark:text-slate-300 text-xs sm:text-sm border-r border-stone-200 dark:border-slate-800">
  {plan.props.length > 0 ? (
  <ul className="space-y-1.5 list-none">
  {plan.props.map(prop => (
@@ -549,17 +549,17 @@ export function AdminSection({
  <span className="text-slate-400 dark:text-slate-500 italic font-medium">無所需物品</span>
  )}
  </td>
- <td className="px-4 py-3 text-center align-middle  dark:/[0.06]">
+ <td className="px-4 py-3 text-center align-middle border-r border-stone-200 dark:border-slate-800">
  <div className="flex justify-center items-center h-full">
  <Checkbox checked={plan.isPropsPacked || false} disabled={isLocked} onCheckedChange={(c) => onUpdatePlan(plan.id, { isPropsPacked: c === true })} className="h-5 w-5 dark:data-[state=checked]:bg-emerald-500" />
  </div>
  </td>
- <td className="px-4 py-3 text-center align-middle  dark:/[0.06]">
+ <td className="px-4 py-3 text-center align-middle border-r border-stone-200 dark:border-slate-800">
  <div className="flex justify-center flex-col items-center h-full">
  <Checkbox checked={plan.isPreDepartureChecked || false} disabled={isLocked} onCheckedChange={(c) => onUpdatePlan(plan.id, { isPreDepartureChecked: c === true })} className="h-5 w-5 dark:data-[state=checked]:bg-emerald-500" />
  </div>
  </td>
- {!isLocked && <td className="px-4 py-3 text-center align-middle  dark:/[0.06]"></td>}
+ {!isLocked && <td className="px-4 py-3 text-center align-middle"></td>}
  </tr>
  ))
  ))}
@@ -569,15 +569,15 @@ export function AdminSection({
  <tbody>
  <tr><td colSpan={isLocked ? 6 : 7} className="px-4 py-4 font-fira-code font-black text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm uppercase tracking-widest bg-transparent  dark:/[0.06]">營期其他物品確認</td></tr>
  {Object.keys(usageGroups).length === 0 ? (
- <tr><td colSpan={isLocked ? 6 : 7} className="text-center py-4 text-slate-400 dark:text-slate-600 font-bold  dark:/[0.06]">目前沒有營期物品資料</td></tr>
+ <tr><td colSpan={isLocked ? 6 : 7} className="text-center py-4 text-slate-400 dark:text-slate-600 font-bold border-b border-stone-200 dark:border-slate-800">目前沒有營期物品資料</td></tr>
  ) : Object.entries(usageGroups).map(([usageName, items]) => (
  items.map((item, pIndex) => (
  <tr key={`cmp-${item.id}`} className={cn(
- "group  dark:/[0.06] hover:bg-[#FBF9F6] dark:hover:bg-[#FBF9F6]/[0.04] transition-colors duration-200",
+ "group hover:bg-[#FBF9F6] dark:hover:bg-[#FBF9F6]/[0.04] transition-colors duration-200 border-b border-stone-200 dark:border-slate-800 last:border-0",
  item.isChecked && item.isPacked ? "bg-emerald-50/30 dark:bg-emerald-900/10" : "bg-white dark:bg-slate-900/20"
  )}>
  {pIndex === 0 && (
- <td className="px-4 py-3 font-fira-code font-black text-xs sm:text-sm text-slate-800 dark:text-slate-400 align-top  dark:/[0.06]" rowSpan={items.length}>
+ <td className="px-4 py-3 font-fira-code font-black text-xs sm:text-sm text-slate-800 dark:text-slate-400 align-top border-r border-stone-200 dark:border-slate-800" rowSpan={items.length}>
  {isLocked ? (
  usageName
  ) : (
@@ -587,26 +587,26 @@ export function AdminSection({
  items.forEach(i => handleUpdateCampItem(i.id, { usage: v }));
  }}
  disabled={isLocked}
- className="font-black text-slate-800 dark:text-slate-200"
+ className="font-black text-slate-800 dark:text-slate-200 text-center"
  />
  )}
  </td>
  )}
- <td className="px-4 py-3 align-middle  dark:/[0.06]">
+ <td className="px-4 py-3 align-middle border-r border-stone-200 dark:border-slate-800">
  <PropInput 
  value={item.name}
  onChange={(v) => handleUpdateCampItem(item.id, { name: v })}
  disabled={isLocked}
- className="font-bold text-slate-700 dark:text-slate-300"
+ className="font-bold text-slate-700 dark:text-slate-300 text-center"
  />
  </td>
- <td className="px-4 py-3 text-xs sm:text-sm text-slate-400 dark:text-slate-600 align-middle  dark:/[0.06]">
+ <td className="px-4 py-3 text-xs sm:text-sm text-slate-400 dark:text-slate-600 align-middle border-r border-stone-200 dark:border-slate-800 text-center">
  -
  </td>
- <td className="px-4 py-3 text-xs sm:text-sm text-slate-400 dark:text-slate-600 align-middle  dark:/[0.06]">
+ <td className="px-4 py-3 text-xs sm:text-sm text-slate-400 dark:text-slate-600 align-middle border-r border-stone-200 dark:border-slate-800 text-center">
  -
  </td>
- <td className="px-4 py-3 text-center align-middle  dark:/[0.06]">
+ <td className="px-4 py-3 text-center align-middle border-r border-stone-200 dark:border-slate-800">
  <div className="flex justify-center items-center h-full">
  <Checkbox 
  checked={item.isPacked || false} 
@@ -616,7 +616,7 @@ export function AdminSection({
  />
  </div>
  </td>
- <td className="px-4 py-3 text-center align-middle  dark:/[0.06]">
+ <td className="px-4 py-3 text-center align-middle border-r border-stone-200 dark:border-slate-800">
  <div className="flex justify-center items-center h-full">
  <Checkbox 
  checked={item.isChecked || false} 
@@ -627,7 +627,7 @@ export function AdminSection({
  </div>
  </td>
  {!isLocked && (
- <td className="px-4 py-3 text-center align-middle  dark:/[0.06]">
+ <td className="px-4 py-3 text-center align-middle">
  <Button
  variant="ghost"
  size="sm"
@@ -701,17 +701,17 @@ export function AdminSection({
  </Button>
  </div>
  </header>
-
+ 
  <ActionBar title="Admin Actions" className="md:justify-end">
  <div className="flex w-full flex-wrap items-center justify-start gap-2 md:gap-3 md:w-auto md:flex-nowrap md:mr-auto">
- <TabsList className="bg-stone-100 dark:bg-slate-800/50 p-1 rounded-xl h-10 w-full sm:w-auto justify-start shadow-none grid grid-cols-3 md:flex">
- <TabsTrigger value="timer" className="rounded-lg font-bold text-[10px] gap-1.5 px-3 md:px-4 tracking-widest uppercase h-7 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-none data-[state=active]:text-orange-600 dark:data-[state=active]:text-amber-400 shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <TabsList className="bg-stone-100 dark:bg-slate-800/40 p-1 rounded-xl h-11 w-full sm:w-auto justify-start shadow-inner grid grid-cols-3 md:flex custom-scrollbar gap-1">
+ <TabsTrigger value="timer" className="rounded-lg font-bold text-[10px] gap-1.5 px-3 md:px-6 tracking-widest uppercase h-9 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm data-[state=active]:text-orange-600 dark:data-[state=active]:text-amber-400">
  <Clock className="h-3 w-3" /> <span className="hidden md:inline">{t('TIMER_CONTROL')}</span>
  </TabsTrigger>
- <TabsTrigger value="tables" className="rounded-lg font-bold text-[10px] gap-1.5 px-3 md:px-4 tracking-widest uppercase h-7 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-none data-[state=active]:text-orange-600 dark:data-[state=active]:text-amber-400 shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <TabsTrigger value="tables" className="rounded-lg font-bold text-[10px] gap-1.5 px-3 md:px-6 tracking-widest uppercase h-9 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm data-[state=active]:text-orange-600 dark:data-[state=active]:text-amber-400">
  <TableIcon className="h-3 w-3" /> <span className="hidden md:inline">{t('ROTATION_TABLE')}</span>
  </TabsTrigger>
- <TabsTrigger value="props" className="rounded-lg font-bold text-[10px] gap-1.5 px-3 md:px-4 tracking-widest uppercase h-7 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-none data-[state=active]:text-orange-600 dark:data-[state=active]:text-amber-400 shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <TabsTrigger value="props" className="rounded-lg font-bold text-[10px] gap-1.5 px-3 md:px-6 tracking-widest uppercase h-9 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm data-[state=active]:text-orange-600 dark:data-[state=active]:text-amber-400">
  <Package2 className="h-3 w-3" /> <span className="hidden md:inline">{t('PROPS_LIST')}</span>
  </TabsTrigger>
  </TabsList>

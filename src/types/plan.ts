@@ -111,6 +111,7 @@ export interface LessonPlan {
   remarks: string; 
   openingClosingRemarks: string; 
   canvasData?: string | null; 
+  canvasImage?: string | null;
   canvasHeight?: number | null; 
   googleDocUrl: string;
   order: number;
