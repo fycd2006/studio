@@ -115,6 +115,13 @@
   }
 }
 
+/* Mobile zoom: force editor text to inherit container font-size */
+@media (max-width: 767px) {
+  .prose.prose-sm {
+    font-size: inherit !important;
+  }
+}
+
 /* ═══════════════════════════════════════════════
    Dot Grid Background
    ═══════════════════════════════════════════════ */

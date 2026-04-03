@@ -91,10 +91,15 @@ export function useCollection<T = any>(
             ? (memoizedTargetRefOrQuery as CollectionReference).path
             : (memoizedTargetRefOrQuery as unknown as InternalQuery)._query.path.canonicalString()
 
+        console.error("[useCollection Error] Native Firebase Error:", error);
+
         const contextualError = new FirestorePermissionError({
           operation: 'list',
           path,
-        })
+        });
+        
+        // Expose the original error message instead of purely swallowing it
+        contextualError.message = `[Real Error: ${error.code}] ${error.message}\n\n` + contextualError.message;
 
         setError(contextualError)
         setData(null)
