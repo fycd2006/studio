@@ -115,6 +115,7 @@ export interface LessonPlan {
   canvasHeight?: number | null; 
   googleDocUrl: string;
   order: number;
+  versionName?: string | null;
   updatedAt: number;
   isPropsPacked?: boolean;
   isPreDepartureChecked?: boolean;

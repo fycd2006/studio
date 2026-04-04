@@ -457,6 +457,10 @@ export function usePlans() {
     const filteredUpdates = Object.fromEntries(
       Object.entries(updates).filter(([_, v]) => v !== undefined)
     );
+    // If not actively setting a versionName, clear it out since it's modified and no longer exactly the named version
+    if (!('versionName' in filteredUpdates)) {
+      filteredUpdates.versionName = null as any;
+    }
     updateDocumentNonBlocking(doc(db, 'lessonPlans', id), { ...filteredUpdates, updatedAt: Date.now() });
   }, [db, pushPlanHistory]);
 
@@ -546,6 +550,11 @@ export function usePlans() {
     }
 
     setDocumentNonBlocking(doc(db, 'planVersions', versionId), newVersion, { merge: true });
+    
+    // Assign the new version name to the current plan document if not an auto-save
+    if (!isAuto) {
+      updateDocumentNonBlocking(doc(db, 'lessonPlans', activePlanId), { versionName: name });
+    }
   }, [db, user, activePlanId, activePlanVersions, getFullVersionState]);
 
   const autoSaveCurrentState = useCallback(() => {
@@ -559,7 +568,7 @@ export function usePlans() {
     
     const fullState = await getFullVersionState(versionToRestore);
     const { id: _planId, updatedAt, ...snapshotData } = fullState;
-    updatePlan(activePlanId, snapshotData);
+    updatePlan(activePlanId, { ...snapshotData, versionName: versionToRestore.name });
   }, [db, activePlanId, activePlanVersions, updatePlan, getFullVersionState]);
 
   const updatePlanVersionName = useCallback((versionId: string, versionName: string) => {

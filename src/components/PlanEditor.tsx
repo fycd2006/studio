@@ -842,6 +842,7 @@ export function PlanEditor({
       {isSidebarOpen && (
         <VersionHistorySidebar
           versions={versions}
+          currentVersionName={currentPlan.versionName}
           selectedVersionId={selectedVersion?.id || null}
           onSelectVersion={(v) => {
             setSelectedVersion(v);
