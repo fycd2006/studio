@@ -480,7 +480,6 @@ export function PlanEditor({
             onClick={() => {
               const willOpen = !isSidebarOpen;
               setIsSidebarOpen(willOpen);
-              if (willOpen && !isHistoryMode) setIsHistoryMode(true);
               if (!willOpen && !selectedVersion) setIsHistoryMode(false);
             }}
             className={cn(
