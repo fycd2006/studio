@@ -145,7 +145,7 @@ export function PropsTable({ label, value = [], onChange, onFocus, onBlur }: Pro
  )}
 
  <div 
-    className="w-full dark:rounded-[1.5rem] overflow-hidden bg-white dark:bg-slate-900/50 shadow-stone-200/20 dark:shadow-none transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none"
+    className="w-full rounded-xl overflow-hidden bg-white dark:bg-slate-900/50 shadow-stone-200/20 dark:shadow-none transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none"
     onFocus={onFocus}
     onBlur={(e) => {
       if (!e.currentTarget.contains(e.relatedTarget as Node)) {
@@ -153,7 +153,7 @@ export function PropsTable({ label, value = [], onChange, onFocus, onBlur }: Pro
       }
     }}
   >
- <div className="w-full overflow-x-auto rounded-[1.5rem] border border-stone-200 dark:border-slate-800">
+ <div className="w-full overflow-x-auto rounded-xl border border-stone-200 dark:border-slate-800">
  <Table className="w-full min-w-[760px] table-fixed">
  <TableHeader className="bg-[#FBF9F6]/80 dark:bg-slate-900/80 border-b border-stone-200 dark:border-slate-800">
  <TableRow>

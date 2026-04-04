@@ -1,6 +1,7 @@
-"use client";
+﻿"use client";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { 
  Bold, 
  Italic, 
@@ -25,51 +26,163 @@ export function MarkdownToolbar({ className }: { className?: string }) {
  document.execCommand(command, false, val);
  };
 
- const setFontSize = (size: string) => {
- document.execCommand("styleWithCSS", false, "true");
- document.execCommand("fontSize", false, "3"); 
+ const fontSizePresetsPt = [8, 9, 10, 11, 12, 14, 18, 24, 30, 36, 48, 60, 72];
+ const [fontSizeInput, setFontSizeInput] = useState("12");
+ const [savedRange, setSavedRange] = useState<Range | null>(null);
+
+ const saveSelection = () => {
  const selection = window.getSelection();
  if (selection && selection.rangeCount > 0) {
+ setSavedRange(selection.getRangeAt(0).cloneRange());
+ }
+ };
+
+ const syncFontSizeFromSelection = () => {
+ const selection = window.getSelection();
+ if (!selection || selection.rangeCount === 0) return;
+
  const range = selection.getRangeAt(0);
- const span = document.createElement("span");
- span.style.fontSize = size;
- try {
- range.surroundContents(span);
- } catch (e) {
- execCommand("insertHTML", `<span style="font-size: ${size}">${selection.toString()}</span>`);
- }
- }
+ const node = range.startContainer;
+ const element = node.nodeType === Node.TEXT_NODE ? node.parentElement : (node as HTMLElement);
+ if (!element) return;
+
+ const px = Number.parseFloat(window.getComputedStyle(element).fontSize || "16");
+ if (!Number.isFinite(px)) return;
+ const pt = Math.round((px * 72 / 96) * 10) / 10;
+ setFontSizeInput(String(pt));
  };
 
- const fontSizes = [
- { label: "小 / S", size: "12px" },
- { label: "中 / M", size: "16px" },
- { label: "大 / L", size: "20px" },
- { label: "特大 / XL", size: "24px" },
- ];
+ const restoreSelection = () => {
+ if (!savedRange) return;
 
- // For mobile sticky auto-hide
- const [isVisible, setIsVisible] = useState(true);
- const [lastScrollY, setLastScrollY] = useState(0);
+ const startNode = savedRange.startContainer;
+ const startElement = startNode.nodeType === Node.TEXT_NODE ? startNode.parentElement : (startNode as HTMLElement);
+ const editableRoot = startElement?.closest('[contenteditable="true"]') as HTMLElement | null;
+ editableRoot?.focus();
 
- useEffect(() => {
- const handleScroll = () => {
- const currentScrollY = window.scrollY;
- // hide when scrolling down, show when up
- if (currentScrollY > lastScrollY && currentScrollY > 100) {
- setIsVisible(false);
+ const selection = window.getSelection();
+ if (!selection) return;
+ selection.removeAllRanges();
+ selection.addRange(savedRange);
+ };
+
+ const parsePt = (raw: string) => {
+ const normalized = raw.trim().toLowerCase().replace(/pt$/, "").trim();
+ if (!normalized) return null;
+ const value = Number(normalized);
+ if (!Number.isFinite(value)) return null;
+ return Math.min(300, Math.max(1, Math.round(value * 10) / 10));
+ };
+
+ const applyFontSizePt = (pt: number) => {
+ restoreSelection();
+
+ const selection = window.getSelection();
+ if (!selection || selection.rangeCount === 0) return;
+
+ const range = selection.getRangeAt(0);
+ const sizedSpan = document.createElement("span");
+ sizedSpan.style.fontSize = `${pt}pt`;
+
+ if (range.collapsed) {
+ // Keep typing at the chosen size by inserting a styled placeholder span at caret.
+ sizedSpan.appendChild(document.createTextNode("\u200b"));
+ range.insertNode(sizedSpan);
+
+ const caret = document.createRange();
+ caret.setStart(sizedSpan.firstChild as Text, 1);
+ caret.collapse(true);
+ selection.removeAllRanges();
+ selection.addRange(caret);
+ setSavedRange(caret.cloneRange());
  } else {
- setIsVisible(true);
- }
- setLastScrollY(currentScrollY);
- };
+ try {
+        const contents = range.extractContents();
+        // Remove overriding child styles
+        const elements = contents.querySelectorAll("*");
+        elements.forEach((el) => {
+          if (el instanceof HTMLElement) {
+             el.style.fontSize = ""; // strip specific override
+             if (!el.getAttribute("style")) el.removeAttribute("style");
+          }
+        });
+        sizedSpan.appendChild(contents);
+        range.insertNode(sizedSpan);
+        
+        const after = document.createRange();
+        after.selectNodeContents(sizedSpan);
+        selection.removeAllRanges();
+        selection.addRange(after);
+        setSavedRange(after.cloneRange());
+      } catch (err) {
+        console.error("Scale apply error: ", err);
+      }
+    }
 
- const handleFocusIn = (e: FocusEvent) => {
- const target = e.target as HTMLElement;
- if (target.isContentEditable) {
- setIsVisible(true);
- }
- };
+    setFontSizeInput(String(pt));
+  };
+
+  const commitFontSizeInput = () => {
+    const parsed = parsePt(fontSizeInput);
+    if (parsed === null) return;
+    applyFontSizePt(parsed);
+  };
+
+  const stepFontSize = (delta: number) => {
+    const current = parsePt(fontSizeInput) ?? 12;
+    applyFontSizePt(current + delta);
+  };
+
+  const handleClearFormat = () => {
+    restoreSelection();
+    execCommand("removeFormat");
+    
+    // Custom pass for leftover inline spans (from color/fontSize tools)
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return;
+
+    try {
+      const range = selection.getRangeAt(0);
+      const contents = range.extractContents();
+      
+      const elements = contents.querySelectorAll("*");
+      elements.forEach((el) => {
+        if (el instanceof HTMLElement) {
+          el.removeAttribute("style");
+          el.removeAttribute("color");
+          el.removeAttribute("size");
+          el.removeAttribute("face");
+        }
+      });
+      
+      range.insertNode(contents);
+    } catch (err) {
+      console.error("Clear format error: ", err);
+    }
+  };
+
+  // For mobile sticky auto-hide
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      // hide when scrolling down, show when up
+      if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        setIsVisible(false);
+      } else {
+        setIsVisible(true);
+      }
+      setLastScrollY(currentScrollY);
+    };
+
+    const handleFocusIn = (e: FocusEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.isContentEditable) {
+        setIsVisible(true);
+      }
+    };
 
  window.addEventListener('scroll', handleScroll, { passive: true });
  document.addEventListener('focusin', handleFocusIn);
@@ -89,10 +202,10 @@ export function MarkdownToolbar({ className }: { className?: string }) {
  )}>
  <TooltipProvider>
  {[
- { icon: Bold, title: "粗體 / Bold", action: () => execCommand("bold") },
- { icon: Italic, title: "斜體 / Italic", action: () => execCommand("italic") },
- { icon: Underline, title: "底線 / Underline", action: () => execCommand("underline") },
- { icon: Strikethrough, title: "刪除線 / Strike", action: () => execCommand("strikeThrough") },
+ { icon: Bold, title: "蝎? / Bold", action: () => execCommand("bold") },
+ { icon: Italic, title: "?? / Italic", action: () => execCommand("italic") },
+ { icon: Underline, title: "摨? / Underline", action: () => execCommand("underline") },
+ { icon: Strikethrough, title: "?芷蝺?/ Strike", action: () => execCommand("strikeThrough") },
  ].map((btn, i) => (
  <Tooltip key={i}>
  <TooltipTrigger asChild>
@@ -107,33 +220,79 @@ export function MarkdownToolbar({ className }: { className?: string }) {
  <div className="w-[1px] h-4 bg-stone-200 dark:bg-slate-700 mx-1 border-none" />
 
  <Tooltip>
- <Popover>
+ <Popover onOpenChange={(open) => { if (open) { saveSelection(); syncFontSizeFromSelection(); } }}>
  <TooltipTrigger asChild>
  <PopoverTrigger asChild>
- <Button variant="ghost" size="icon" className="h-8 w-8 text-stone-500 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white transition-all border-none">
+ <Button
+ variant="ghost"
+ size="icon"
+ className="h-8 w-8 text-stone-500 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white transition-all border-none"
+ onMouseDown={() => {
+ saveSelection();
+ syncFontSizeFromSelection();
+ }}
+ >
  <FontIcon className="h-4 w-4" />
  </Button>
  </PopoverTrigger>
  </TooltipTrigger>
- <PopoverContent className="w-40 p-1 rounded-xl shadow-2xl z-[60]" side="bottom" align="start">
- <div className="flex flex-col">
- {fontSizes.map((fs) => (
+ <PopoverContent className="w-56 p-2 rounded-xl shadow-2xl z-[60]" side="bottom" align="start">
+ <div className="flex items-center gap-1.5 mb-2">
  <Button
- key={fs.size}
- variant="ghost"
- className="justify-start h-8 px-3 rounded-lg text-[10px] font-black uppercase border-none hover:bg-stone-100 dark:hover:bg-slate-800"
+ variant="outline"
+ size="icon"
+ className="h-8 w-8 rounded-lg border-stone-200 dark:border-slate-700"
  onMouseDown={(e) => {
  e.preventDefault();
- setFontSize(fs.size);
+ stepFontSize(-1);
  }}
  >
- {fs.label}
+ -
+ </Button>
+ <Input
+ value={fontSizeInput}
+ onChange={(e) => setFontSizeInput(e.target.value)}
+ onKeyDown={(e) => {
+ if (e.key === "Enter") {
+ e.preventDefault();
+ commitFontSizeInput();
+ }
+ }}
+ onBlur={commitFontSizeInput}
+ className="h-8 text-xs font-semibold text-center"
+ inputMode="decimal"
+ />
+ <span className="text-xs font-semibold text-stone-500 dark:text-slate-400">pt</span>
+ <Button
+ variant="outline"
+ size="icon"
+ className="h-8 w-8 rounded-lg border-stone-200 dark:border-slate-700"
+ onMouseDown={(e) => {
+ e.preventDefault();
+ stepFontSize(1);
+ }}
+ >
+ +
+ </Button>
+ </div>
+ <div className="grid grid-cols-4 gap-1">
+ {fontSizePresetsPt.map((pt) => (
+ <Button
+ key={pt}
+ variant="ghost"
+ className="justify-center h-8 rounded-lg text-xs font-bold border-none hover:bg-stone-100 dark:hover:bg-slate-800"
+ onMouseDown={(e) => {
+ e.preventDefault();
+ applyFontSizePt(pt);
+ }}
+ >
+ {pt}
  </Button>
  ))}
  </div>
  </PopoverContent>
  </Popover>
- <TooltipContent side="bottom" className="text-[9px] font-black uppercase">字體 / Font Size</TooltipContent>
+ <TooltipContent side="bottom" className="text-[9px] font-black uppercase">摮? / Font Size</TooltipContent>
  </Tooltip>
 
  <Tooltip>
@@ -153,17 +312,17 @@ export function MarkdownToolbar({ className }: { className?: string }) {
  </div>
  </PopoverContent>
  </Popover>
- <TooltipContent side="bottom" className="text-[9px] font-black uppercase">顏色 / Color</TooltipContent>
+ <TooltipContent side="bottom" className="text-[9px] font-black uppercase">憿 / Color</TooltipContent>
  </Tooltip>
 
  <div className="w-[1px] h-4 bg-stone-200 dark:bg-slate-700 mx-1 border-none" />
 
  {[
- { icon: List, title: "項目 / Bullet", action: () => execCommand("insertUnorderedList") },
- { icon: ListOrdered, title: "清單 / List", action: () => execCommand("insertOrderedList") },
- { icon: AlignLeft, title: "左 / Left", action: () => execCommand("justifyLeft") },
- { icon: AlignCenter, title: "中 / Center", action: () => execCommand("justifyCenter") },
- { icon: AlignRight, title: "右 / Right", action: () => execCommand("justifyRight") },
+ { icon: List, title: "? / Bullet", action: () => execCommand("insertUnorderedList") },
+ { icon: ListOrdered, title: "皜 / List", action: () => execCommand("insertOrderedList") },
+ { icon: AlignLeft, title: "撌?/ Left", action: () => execCommand("justifyLeft") },
+ { icon: AlignCenter, title: "銝?/ Center", action: () => execCommand("justifyCenter") },
+ { icon: AlignRight, title: "??/ Right", action: () => execCommand("justifyRight") },
  ].map((btn, i) => (
  <Tooltip key={i}>
  <TooltipTrigger asChild>
@@ -183,7 +342,7 @@ export function MarkdownToolbar({ className }: { className?: string }) {
  <Eraser className="h-4 w-4" />
  </Button>
  </TooltipTrigger>
- <TooltipContent side="bottom" className="text-[9px] font-black uppercase">清除 / Clear</TooltipContent>
+ <TooltipContent side="bottom" className="text-[9px] font-black uppercase">皜 / Clear</TooltipContent>
  </Tooltip>
  </TooltipProvider>
  </div>

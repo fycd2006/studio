@@ -456,7 +456,7 @@ export function PlanEditor({
                   </div>
                   <p className="text-xs tracking-[0.18em] text-stone-500 dark:text-slate-400 uppercase font-medium mb-1.5">Lesson Plan Editor // New Draft</p>
                   <input
-                    value={currentPlan.activityName}
+                    value={(currentPlan.activityName || "").replace(/<[^>]*>?/gm, '')}
                     onChange={(e) => handlePlanUpdate({ activityName: e.target.value })}
                     className="text-3xl md:text-4xl font-extrabold tracking-tight bg-transparent  focus:ring-0 focus:outline-none text-[#2C2A28] dark:text-white w-full px-0"
                     placeholder={t('ENTER_TITLE')}
@@ -612,7 +612,7 @@ export function PlanEditor({
                             <DiffHighlighter type="text" oldValue={previousPlan?.scheduledName} newValue={previewPlan?.scheduledName} />
                           ) : (
                             <Select value={currentPlan.scheduledName || ""} onValueChange={(val) => handlePlanUpdate({ scheduledName: val })}>
-                              <SelectTrigger className="h-12 rounded-none px-2 font-bold text-base bg-transparent dark:bg-transparent shadow-none hover:bg-stone-50 dark:hover:bg-slate-700 border-none focus:ring-0">
+                              <SelectTrigger className="h-12 rounded-xl px-3 font-bold text-base bg-transparent dark:bg-transparent shadow-none hover:bg-stone-50 dark:hover:bg-slate-700 border-none focus:ring-0 transition-colors">
                                 <SelectValue placeholder="-- 請選擇活動類型 --" />
                               </SelectTrigger>
                               <SelectContent className="rounded-xl font-bold bg-white dark:bg-slate-800 overflow-hidden shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
@@ -695,7 +695,7 @@ export function PlanEditor({
                                     onChange={(val) => handlePlanUpdate({ time: val })}
                                     onFocus={() => handleFocus('time')}
                                     onBlur={() => handleBlur('time')}
-                                    placeholder="14:00 - 15:30"
+                                    placeholder="20min"
                                     minHeight="38px"
                                   />
                                 </FieldContainer>
@@ -785,7 +785,7 @@ export function PlanEditor({
                                   onChange={(val) => handlePlanUpdate({ openingClosingRemarks: val })}
                                   onFocus={() => handleFocus('openingClosingRemarks')}
                                   onBlur={() => handleBlur('openingClosingRemarks')}
-                                  placeholder="開場白與結語備註... / Opening & closing remarks..."
+                                  placeholder="開場與結語... / Opening & closing..."
                                   minHeight="120px"
                                 />
                               </FieldContainer>
@@ -842,7 +842,6 @@ export function PlanEditor({
       {isSidebarOpen && (
         <VersionHistorySidebar
           versions={versions}
-          currentVersionName={currentPlan.versionName}
           selectedVersionId={selectedVersion?.id || null}
           onSelectVersion={(v) => {
             setSelectedVersion(v);

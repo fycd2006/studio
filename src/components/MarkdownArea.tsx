@@ -43,6 +43,8 @@ export function MarkdownArea({ label, value, onChange, onFocus: onFocusProp, onB
     const [selectedImage, setSelectedImage] = useState<HTMLImageElement | null>(null);
     const [imageMenuPos, setImageMenuPos] = useState({ top: 0, left: 0 });
 
+    const isEditorEmpty = !value || value.replace(/<(img|table|iframe|video)[^>]*>/gi, 'HAS_MEDIA').replace(/<[^>]*>|&nbsp;|\s/gi, '').length === 0;
+
     useEffect(() => {
         if (editorRef.current && editorRef.current.innerHTML !== value) {
             editorRef.current.innerHTML = value || "<div><br></div>";
@@ -296,6 +298,11 @@ export function MarkdownArea({ label, value, onChange, onFocus: onFocusProp, onB
 
 
                 <div style={{ minHeight }} className="h-auto relative">
+                    {isEditorEmpty && (
+                        <div className="absolute top-1 left-1 md:top-2 md:left-2 p-0 m-0 pointer-events-none text-muted-foreground font-medium text-[14px] select-none z-10 w-full whitespace-pre-wrap break-words">
+                            {placeholder || `撰寫教案內容... (支援貼上圖片) / Write content here... (Supports pasting images)`}
+                        </div>
+                    )}
                     <div
                         ref={editorRef}
                         contentEditable
@@ -306,14 +313,13 @@ export function MarkdownArea({ label, value, onChange, onFocus: onFocusProp, onB
                         onPaste={handlePaste}
                         style={{ minHeight }}
                         className={cn(
-                            "w-full max-w-full h-auto p-1 md:p-2 bg-transparent text-foreground outline-none prose prose-p:bg-transparent prose-li:bg-transparent prose-sm transition-all duration-300",
+                            "relative w-full max-w-full h-auto p-1 md:p-2 bg-transparent text-foreground outline-none prose prose-p:bg-transparent prose-li:bg-transparent prose-sm text-[14px] transition-all duration-[300ms]",
                             "dark:prose-invert break-words whitespace-pre-wrap",
                             "focus:ring-0",
                             "[&_ul]:list-disc [&_ol]:list-decimal [&_ul,&_ol]:ml-6 [&_ol]:my-3",
                             "[&_p]:leading-[1.7] [&_p]:mb-3 [&_p:last-child]:mb-0 [&_p]:text-foreground",
                             "[&_img]:cursor-pointer [&_img]:transition-all [&_img]:duration-300 [&_img]:shadow-md [&_img:hover]:shadow-lg [&_img]:rounded-xl [&_img]:inline-block [&_img]:max-w-full [&_img]:h-auto [&_img]:object-contain [&_img]:align-top",
-                            "[&_table]:block [&_table]:overflow-x-auto [&_table]:w-full [&_table]:max-w-full",
-                            "empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground empty:before:font-medium"
+                            "[&_table]:block [&_table]:overflow-x-auto [&_table]:w-full [&_table]:max-w-full"
                         )}
                         data-placeholder={placeholder || `撰寫教案內容... (支援貼上圖片) / Write content here... (Supports pasting images)`}
                     />

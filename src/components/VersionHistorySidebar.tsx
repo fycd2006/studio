@@ -24,7 +24,6 @@ import { useTranslation } from "@/lib/i18n-context";
 
 interface VersionHistorySidebarProps {
  versions: PlanVersion[];
- currentVersionName?: string | null;
  selectedVersionId: string | null;
  onSelectVersion: (version: PlanVersion | null) => void;
  onDelete?: (versionId: string) => void;
@@ -39,7 +38,6 @@ interface VersionHistorySidebarProps {
 
 export function VersionHistorySidebar({
  versions,
- currentVersionName,
  selectedVersionId,
  onSelectVersion,
  onDelete,
@@ -183,7 +181,7 @@ export function VersionHistorySidebar({
  </div>
  ) : (
  <span className="font-bold text-sm text-[#2C2A28] dark:text-white truncate block">
- {currentVersionName || "當前版本 (Current Draft)"}
+ 當前版本 (Current Draft)
  </span>
  )}
  </div>
