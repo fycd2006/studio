@@ -4,8 +4,8 @@
   "description": "營隊教案管理工具 / Camp Lesson Plan Management",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#FFFBF7",
-  "theme_color": "#ea580c",
+  "background_color": "#FBF9F6",
+  "theme_color": "#FBF9F6",
   "orientation": "any",
   "icons": [
     {

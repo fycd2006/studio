@@ -618,6 +618,7 @@ export function usePlans() {
   }, [db, camps]);
 
   return {
+    isLoading: isUserLoading || campsData === null || allPlansData === null,
     camps, activeCampId, setActiveCampId, addCamp, updateCamp, deleteCamp, toggleCampLock,
     plans: allPlans.filter(p => p.campId === activeCampId), 
     tables: allTables.filter(t => t.campId === activeCampId), 

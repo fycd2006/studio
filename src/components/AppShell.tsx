@@ -58,10 +58,18 @@ function AppShellInternal({ children }: { children: React.ReactNode }) {
  }
  }, [role, planData.activeCampId, planData.camps, isAuthLoading, toast, router]);
 
- if (isAuthLoading) {
+ if (isAuthLoading || planData.isLoading) {
  return (
- <div className="h-screen w-full flex items-center justify-center bg-[#FBF9F6] dark:bg-slate-900">
- <Loader2 className="w-8 h-8 animate-spin text-orange-500 dark:text-amber-400" />
+ <div className="h-screen w-full flex flex-col gap-4 items-center justify-center bg-[#FBF9F6] dark:bg-slate-950 font-body">
+ <div className="relative">
+ <Loader2 className="w-12 h-12 animate-spin text-primary opacity-80" />
+ <div className="absolute inset-0 w-12 h-12 rounded-full border-4 border-primary/20 animate-pulse"></div>
+ </div>
+ <div className="text-primary font-bold tracking-widest text-sm uppercase drop-shadow-sm flex items-center gap-2">
+ <span className="inline-block w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0s' }}></span>
+ <span className="inline-block w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0.15s' }}></span>
+ <span className="inline-block w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0.3s' }}></span>
+ </div>
  </div>
  );
  }

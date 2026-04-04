@@ -298,6 +298,18 @@ export function PlanEditor({
 
   const onUpdateRef = useRef(onUpdate);
   const planIdRef = useRef(plan.id);
+  const toolbarRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.visualViewport && toolbarRef.current) {
+        const offset = window.innerHeight - window.visualViewport.height;
+        toolbarRef.current.style.bottom = `${offset}px`;
+      }
+    };
+    window.visualViewport?.addEventListener('resize', handleResize);
+    return () => window.visualViewport?.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     onUpdateRef.current = onUpdate;
@@ -400,7 +412,7 @@ export function PlanEditor({
 
   return (
     <div className={cn(
-      "flex flex-row font-body transition-colors relative w-full min-h-screen",
+      "flex flex-row font-body transition-colors relative w-full min-h-[100dvh]",
       isPrintMode ? "bg-[#FBF9F6] dark:bg-[hsl(var(--bar-theme))]" : "bg-white dark:bg-slate-800"
     )}>
       <div className="flex-1 min-w-0 relative flex flex-col">
@@ -790,7 +802,9 @@ export function PlanEditor({
         </div>
       </div>
 
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-[60] pb-[env(safe-area-inset-bottom)] pointer-events-none">
+      <div 
+        ref={toolbarRef}
+        className="md:hidden fixed bottom-0 left-0 right-0 z-[60] pb-[env(safe-area-inset-bottom)] pointer-events-none transition-[bottom] duration-150 ease-out">
         <div className="pointer-events-auto bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-gray-800 shadow-[0_-4px_15px_rgba(0,0,0,0.05)] w-full">
           <MarkdownToolbar className="justify-start pb-2 pt-1 shadow-none border-none border-t-0" />
         </div>
