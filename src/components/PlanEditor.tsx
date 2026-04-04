@@ -301,14 +301,34 @@ export function PlanEditor({
   const toolbarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleResize = () => {
+    const handleViewportChange = () => {
       if (window.visualViewport && toolbarRef.current) {
-        const offset = window.innerHeight - window.visualViewport.height;
-        toolbarRef.current.style.bottom = `${offset}px`;
+        // 計算鍵盤彈起時產生出來的實際偏移 (佈局視圖底部 - 視覺視圖底部)
+        const offset = window.innerHeight - (window.visualViewport.height + window.visualViewport.offsetTop);
+        const keyboardOffset = Math.max(0, offset);
+        
+        // 即時設定絕對底部值，無動畫延遲
+        toolbarRef.current.style.bottom = `${keyboardOffset}px`;
+
+        // 如果鍵盤處於彈起狀態（大於 10px 作為閥值），則移除預設的安全區 padding，避免與鍵盤間有空隙
+        if (keyboardOffset > 10) {
+          toolbarRef.current.style.paddingBottom = "0px";
+        } else {
+          toolbarRef.current.style.paddingBottom = "env(safe-area-inset-bottom)";
+        }
       }
     };
-    window.visualViewport?.addEventListener('resize', handleResize);
-    return () => window.visualViewport?.removeEventListener('resize', handleResize);
+
+    window.visualViewport?.addEventListener('resize', handleViewportChange);
+    window.visualViewport?.addEventListener('scroll', handleViewportChange);
+    
+    // 初始化執行一次確保狀態正確
+    handleViewportChange();
+
+    return () => {
+      window.visualViewport?.removeEventListener('resize', handleViewportChange);
+      window.visualViewport?.removeEventListener('scroll', handleViewportChange);
+    };
   }, []);
 
   useEffect(() => {
@@ -804,7 +824,7 @@ export function PlanEditor({
 
       <div 
         ref={toolbarRef}
-        className="md:hidden fixed bottom-0 left-0 right-0 z-[60] pb-[env(safe-area-inset-bottom)] pointer-events-none transition-[bottom] duration-150 ease-out">
+        className="md:hidden fixed bottom-0 left-0 right-0 z-[60] pb-[env(safe-area-inset-bottom)] pointer-events-none will-change-[bottom]">
         <div className="pointer-events-auto bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-gray-800 shadow-[0_-4px_15px_rgba(0,0,0,0.05)] w-full">
           <MarkdownToolbar className="justify-start pb-2 pt-1 shadow-none border-none border-t-0" />
         </div>
