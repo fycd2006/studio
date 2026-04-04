@@ -287,6 +287,7 @@ export function PlanEditor({
   }, []);
 
   const currentPlan = isHistoryMode ? (previewPlan || plan) : localPlan;
+  const isScriptMode = currentPlan.scheduledName === '劇本';
 
   // Auto-Save Trigger
   const autoSaveRef = useRef(onAutoSave);
@@ -592,41 +593,45 @@ export function PlanEditor({
                           )}
                         </section>
 
-                        <section>
-                          <SectionHeader title={t('SUBJECT')} icon={Target} />
-                          {isHistoryMode ? (
-                            <DiffHighlighter type="text" oldValue={previousPlan?.activityName} newValue={previewPlan?.activityName} />
-                          ) : (
-                            <FieldContainer field="activityName" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
-                              <MarkdownArea
-                                value={currentPlan.activityName}
-                                onChange={(val) => handlePlanUpdate({ activityName: val })}
-                                onFocus={() => handleFocus('activityName')}
-                                onBlur={() => handleBlur('activityName')}
-                                placeholder="輸入教案名稱 / Enter subject title"
-                                minHeight="38px"
-                              />
-                            </FieldContainer>
-                          )}
-                        </section>
+                        {!isScriptMode && (
+                          <section>
+                            <SectionHeader title={t('SUBJECT')} icon={Target} />
+                            {isHistoryMode ? (
+                              <DiffHighlighter type="text" oldValue={previousPlan?.activityName} newValue={previewPlan?.activityName} />
+                            ) : (
+                              <FieldContainer field="activityName" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+                                <MarkdownArea
+                                  value={currentPlan.activityName}
+                                  onChange={(val) => handlePlanUpdate({ activityName: val })}
+                                  onFocus={() => handleFocus('activityName')}
+                                  onBlur={() => handleBlur('activityName')}
+                                  placeholder="輸入教案名稱 / Enter subject title"
+                                  minHeight="38px"
+                                />
+                              </FieldContainer>
+                            )}
+                          </section>
+                        )}
 
-                        <section>
-                          <SectionHeader title={t('CASE_PERSONNEL')} icon={Users} />
-                          {isHistoryMode ? (
-                            <DiffHighlighter type="text" oldValue={previousPlan?.members} newValue={previewPlan?.members} />
-                          ) : (
-                            <FieldContainer field="members" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
-                              <MarkdownArea
-                                value={currentPlan.members}
-                                onChange={(val) => handlePlanUpdate({ members: val })}
-                                onFocus={() => handleFocus('members')}
-                                onBlur={() => handleBlur('members')}
-                                placeholder="列出相關人員... / List members..."
-                                minHeight="38px"
-                              />
-                            </FieldContainer>
-                          )}
-                        </section>
+                        {!isScriptMode && (
+                          <section>
+                            <SectionHeader title={t('CASE_PERSONNEL')} icon={Users} />
+                            {isHistoryMode ? (
+                              <DiffHighlighter type="text" oldValue={previousPlan?.members} newValue={previewPlan?.members} />
+                            ) : (
+                              <FieldContainer field="members" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+                                <MarkdownArea
+                                  value={currentPlan.members}
+                                  onChange={(val) => handlePlanUpdate({ members: val })}
+                                  onFocus={() => handleFocus('members')}
+                                  onBlur={() => handleBlur('members')}
+                                  placeholder="列出相關人員... / List members..."
+                                  minHeight="38px"
+                                />
+                              </FieldContainer>
+                            )}
+                          </section>
+                        )}
 
                         <section>
                           <SectionHeader title={t('MISSION_OBJ')} icon={Target} />
@@ -646,59 +651,63 @@ export function PlanEditor({
                           )}
                         </section>
 
-                        <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                          <div className="space-y-2">
-                            <SectionHeader title={t('TIME_WINDOW')} icon={Clock} />
-                            {isHistoryMode ? (
-                              <DiffHighlighter type="text" oldValue={previousPlan?.time} newValue={previewPlan?.time} />
-                            ) : (
-                              <FieldContainer field="time" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
-                                <MarkdownArea
-                                  value={currentPlan.time}
-                                  onChange={(val) => handlePlanUpdate({ time: val })}
-                                  onFocus={() => handleFocus('time')}
-                                  onBlur={() => handleBlur('time')}
-                                  placeholder="14:00 - 15:30"
-                                  minHeight="38px"
-                                />
-                              </FieldContainer>
-                            )}
-                          </div>
-                          <div className="space-y-2">
-                            <SectionHeader title={t('VENUE')} icon={MapPin} />
-                            {isHistoryMode ? (
-                              <DiffHighlighter type="text" oldValue={previousPlan?.location} newValue={previewPlan?.location} />
-                            ) : (
-                              <FieldContainer field="location" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
-                                <MarkdownArea
-                                  value={currentPlan.location}
-                                  onChange={(val) => handlePlanUpdate({ location: val })}
-                                  onFocus={() => handleFocus('location')}
-                                  onBlur={() => handleBlur('location')}
-                                  placeholder="3F Main Hall"
-                                  minHeight="38px"
-                                />
-                              </FieldContainer>
-                            )}
-                          </div>
-                        </section>
+                        {!isScriptMode && (
+                          <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="space-y-2">
+                              <SectionHeader title={t('TIME_WINDOW')} icon={Clock} />
+                              {isHistoryMode ? (
+                                <DiffHighlighter type="text" oldValue={previousPlan?.time} newValue={previewPlan?.time} />
+                              ) : (
+                                <FieldContainer field="time" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+                                  <MarkdownArea
+                                    value={currentPlan.time}
+                                    onChange={(val) => handlePlanUpdate({ time: val })}
+                                    onFocus={() => handleFocus('time')}
+                                    onBlur={() => handleBlur('time')}
+                                    placeholder="14:00 - 15:30"
+                                    minHeight="38px"
+                                  />
+                                </FieldContainer>
+                              )}
+                            </div>
+                            <div className="space-y-2">
+                              <SectionHeader title={t('VENUE')} icon={MapPin} />
+                              {isHistoryMode ? (
+                                <DiffHighlighter type="text" oldValue={previousPlan?.location} newValue={previewPlan?.location} />
+                              ) : (
+                                <FieldContainer field="location" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+                                  <MarkdownArea
+                                    value={currentPlan.location}
+                                    onChange={(val) => handlePlanUpdate({ location: val })}
+                                    onFocus={() => handleFocus('location')}
+                                    onBlur={() => handleBlur('location')}
+                                    placeholder="3F Main Hall"
+                                    minHeight="38px"
+                                  />
+                                </FieldContainer>
+                              )}
+                            </div>
+                          </section>
+                        )}
 
-                        <section>
-                          <SectionHeader title={t('PROCEDURES')} icon={Layout} />
-                          {isHistoryMode ? (
-                            <DiffHighlighter type="markdown" oldValue={previousPlan?.process} newValue={previewPlan?.process} />
-                          ) : (
-                            <FieldContainer field="process" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
-                              <MarkdownArea
-                                value={currentPlan.process}
-                                onChange={(val) => handlePlanUpdate({ process: val })}
-                                onFocus={() => handleFocus('process')}
-                                onBlur={() => handleBlur('process')}
-                                placeholder="詳細描述活動流程... / Describe the procedures..."
-                              />
-                            </FieldContainer>
-                          )}
-                        </section>
+                        {!isScriptMode && (
+                          <section>
+                            <SectionHeader title={t('PROCEDURES')} icon={Layout} />
+                            {isHistoryMode ? (
+                              <DiffHighlighter type="markdown" oldValue={previousPlan?.process} newValue={previewPlan?.process} />
+                            ) : (
+                              <FieldContainer field="process" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+                                <MarkdownArea
+                                  value={currentPlan.process}
+                                  onChange={(val) => handlePlanUpdate({ process: val })}
+                                  onFocus={() => handleFocus('process')}
+                                  onBlur={() => handleBlur('process')}
+                                  placeholder="詳細描述活動流程... / Describe the procedures..."
+                                />
+                              </FieldContainer>
+                            )}
+                          </section>
+                        )}
 
                         <section>
                           <SectionHeader title={t('VISUAL_BLUEPRINT')} icon={FileText} />
@@ -733,19 +742,39 @@ export function PlanEditor({
                           )}
                         </section>
 
+                        {!isScriptMode && (
+                          <section>
+                            <SectionHeader title={t('OPENING_CLOSING') || "開場與結語"} icon={StickyNote} />
+                            {isHistoryMode ? (
+                              <DiffHighlighter type="markdown" oldValue={previousPlan?.openingClosingRemarks} newValue={previewPlan?.openingClosingRemarks} />
+                            ) : (
+                              <FieldContainer field="openingClosingRemarks" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+                                <MarkdownArea
+                                  value={currentPlan.openingClosingRemarks || ""}
+                                  onChange={(val) => handlePlanUpdate({ openingClosingRemarks: val })}
+                                  onFocus={() => handleFocus('openingClosingRemarks')}
+                                  onBlur={() => handleBlur('openingClosingRemarks')}
+                                  placeholder="開場白與結語備註... / Opening & closing remarks..."
+                                  minHeight="120px"
+                                />
+                              </FieldContainer>
+                            )}
+                          </section>
+                        )}
+
                         <section>
-                          <SectionHeader title={t('OPENING_CLOSING') || "開場與結語"} icon={StickyNote} />
+                          <SectionHeader title="備註" icon={StickyNote} />
                           {isHistoryMode ? (
-                            <DiffHighlighter type="markdown" oldValue={previousPlan?.openingClosingRemarks} newValue={previewPlan?.openingClosingRemarks} />
+                            <DiffHighlighter type="markdown" oldValue={previousPlan?.remarks} newValue={previewPlan?.remarks} />
                           ) : (
-                            <FieldContainer field="openingClosingRemarks" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+                            <FieldContainer field="remarks" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
                               <MarkdownArea
-                                value={currentPlan.openingClosingRemarks || ""}
-                                onChange={(val) => handlePlanUpdate({ openingClosingRemarks: val })}
-                                onFocus={() => handleFocus('openingClosingRemarks')}
-                                onBlur={() => handleBlur('openingClosingRemarks')}
-                                placeholder="開場白與結語備註... / Opening & closing remarks..."
-                                minHeight="200px"
+                                value={currentPlan.remarks || ""}
+                                onChange={(val) => handlePlanUpdate({ remarks: val })}
+                                onFocus={() => handleFocus('remarks')}
+                                onBlur={() => handleBlur('remarks')}
+                                placeholder="加入備註 (選填)... / Add remarks (Optional)..."
+                                minHeight="120px"
                               />
                             </FieldContainer>
                           )}

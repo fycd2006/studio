@@ -381,6 +381,8 @@ async function buildRichDocxBlob(plan: LessonPlan, canvasImageData?: string): Pr
       console.warn('Failed to render canvas JSON to PNG for export', e);
     }
   }
+  const isScriptMode = plan.scheduledName === '劇本';
+
   const children: any[] = [
     // 總標題
     new Paragraph({
@@ -396,33 +398,37 @@ async function buildRichDocxBlob(plan: LessonPlan, canvasImageData?: string): Pr
       spacing: { after: 600 }
     }),
     
-    createStyledHeading("【教案成員】"),
-    new Paragraph({ 
-      children: [new TextRun({ text: stripInvalidXmlChars(plan.members || "無"), color: TEXT_COLOR, size: 24 })], 
-      spacing: { after: 200 } 
-    }),
+    ...(isScriptMode ? [] : [
+      createStyledHeading("【教案成員】"),
+      new Paragraph({ 
+        children: [new TextRun({ text: stripInvalidXmlChars(plan.members || "無"), color: TEXT_COLOR, size: 24 })], 
+        spacing: { after: 200 } 
+      })
+    ]),
 
     createStyledHeading("【教案目的】"),
     ...parseHtmlToDocx(plan.purpose),
 
-    new Paragraph({
-      children: [
-        new TextRun({ text: "【教案時間】", bold: true, color: PRIMARY_COLOR, size: 24 }),
-        new TextRun({ text: ` ${stripInvalidXmlChars(plan.time || "無")}`, color: TEXT_COLOR, size: 24 }),
-      ],
-      spacing: { before: 200, after: 120 }
-    }),
+    ...(isScriptMode ? [] : [
+      new Paragraph({
+        children: [
+          new TextRun({ text: "【教案時間】", bold: true, color: PRIMARY_COLOR, size: 24 }),
+          new TextRun({ text: ` ${stripInvalidXmlChars(plan.time || "無")}`, color: TEXT_COLOR, size: 24 }),
+        ],
+        spacing: { before: 200, after: 120 }
+      }),
 
-    new Paragraph({
-      children: [
-        new TextRun({ text: "【教案地點】", bold: true, color: PRIMARY_COLOR, size: 24 }),
-        new TextRun({ text: ` ${stripInvalidXmlChars(plan.location || "無")}`, color: TEXT_COLOR, size: 24 }),
-      ],
-      spacing: { before: 120, after: 300 }
-    }),
-    
-    createStyledHeading("【教案流程】"),
-    ...parseHtmlToDocx(plan.process),
+      new Paragraph({
+        children: [
+          new TextRun({ text: "【教案地點】", bold: true, color: PRIMARY_COLOR, size: 24 }),
+          new TextRun({ text: ` ${stripInvalidXmlChars(plan.location || "無")}`, color: TEXT_COLOR, size: 24 }),
+        ],
+        spacing: { before: 120, after: 300 }
+      }),
+      
+      createStyledHeading("【教案流程】"),
+      ...parseHtmlToDocx(plan.process),
+    ])
   ];
 
   // 如果有畫布圖片
@@ -452,8 +458,10 @@ async function buildRichDocxBlob(plan: LessonPlan, canvasImageData?: string): Pr
     createStyledHeading("【教案內容說明】"),
     ...parseHtmlToDocx(plan.content),
 
-    createStyledHeading("【分工】"),
-    ...parseHtmlToDocx(plan.divisionOfLabor)
+    ...(isScriptMode ? [] : [
+      createStyledHeading("【分工】"),
+      ...parseHtmlToDocx(plan.divisionOfLabor)
+    ])
   );
 
   // 道具表格匯出
@@ -520,8 +528,10 @@ async function buildRichDocxBlob(plan: LessonPlan, canvasImageData?: string): Pr
     createStyledHeading("【備註】"),
     ...parseHtmlToDocx(plan.remarks),
 
-    createStyledHeading("【開場結語】"),
-    ...parseHtmlToDocx(plan.openingClosingRemarks)
+    ...(isScriptMode ? [] : [
+      createStyledHeading("【開場結語】"),
+      ...parseHtmlToDocx(plan.openingClosingRemarks)
+    ])
   );
 
   const doc = new Document({
@@ -594,18 +604,30 @@ export async function exportToPdf(plan: LessonPlan, options?: { useSaveDialog?: 
   }
 
   const fileName = buildPlanBaseFileName(plan);
-  const lines = [
-    `Members: ${toAscii(plan.members || "N/A")}`,
-    `Time: ${toAscii(plan.time || "N/A")}`,
-    `Location: ${toAscii(plan.location || "N/A")}`,
-    "",
-    `Purpose: ${toAscii(htmlToPlainText(plan.purpose) || "N/A")}`,
-    `Process: ${toAscii(htmlToPlainText(plan.process) || "N/A")}`,
-    `Content: ${toAscii(htmlToPlainText(plan.content) || "N/A")}`,
-    `Division: ${toAscii(htmlToPlainText(plan.divisionOfLabor) || "N/A")}`,
-    `Remarks: ${toAscii(htmlToPlainText(plan.remarks) || "N/A")}`,
-    `Opening/Closing: ${toAscii(htmlToPlainText(plan.openingClosingRemarks) || "N/A")}`,
-  ];
+  const isScriptMode = plan.scheduledName === '劇本';
+  
+  let lines: string[] = [];
+
+  if (isScriptMode) {
+    lines = [
+      `Purpose: ${toAscii(htmlToPlainText(plan.purpose) || "N/A")}`,
+      `Content: ${toAscii(htmlToPlainText(plan.content) || "N/A")}`,
+      `Remarks: ${toAscii(htmlToPlainText(plan.remarks) || "N/A")}`,
+    ];
+  } else {
+    lines = [
+      `Members: ${toAscii(plan.members || "N/A")}`,
+      `Time: ${toAscii(plan.time || "N/A")}`,
+      `Location: ${toAscii(plan.location || "N/A")}`,
+      "",
+      `Purpose: ${toAscii(htmlToPlainText(plan.purpose) || "N/A")}`,
+      `Process: ${toAscii(htmlToPlainText(plan.process) || "N/A")}`,
+      `Content: ${toAscii(htmlToPlainText(plan.content) || "N/A")}`,
+      `Division: ${toAscii(htmlToPlainText(plan.divisionOfLabor) || "N/A")}`,
+      `Remarks: ${toAscii(htmlToPlainText(plan.remarks) || "N/A")}`,
+      `Opening/Closing: ${toAscii(htmlToPlainText(plan.openingClosingRemarks) || "N/A")}`,
+    ];
+  }
 
   const pdfBytes = buildSimplePdfBytes(
     `${toAscii(plan.scheduledName || "Plan")} - ${toAscii(plan.activityName || "Untitled")}`,
