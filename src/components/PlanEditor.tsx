@@ -82,9 +82,9 @@ const FieldContainer = ({
 
 
 const SectionHeader = ({ title, icon: Icon }: { title: string; icon?: any }) => (
-  <div className="flex items-center gap-3 mb-4 pt-6 first:pt-0 border-b border-stone-100 dark:border-white/5 pb-2">
-    {Icon && <Icon className="h-4 w-4 text-stone-400 dark:text-stone-500 opacity-80" />}
-    <h3 className="text-sm font-bold text-stone-700 dark:text-slate-300 tracking-wide">
+  <div className="flex items-center gap-3 mb-4 pt-6 first:pt-0 border-b border-stone-100 dark:border-white/10 pb-3">
+    {Icon && <Icon className="h-5 w-5 text-stone-400 dark:text-stone-400 opacity-90" />}
+    <h3 className="text-lg font-headline font-bold text-stone-800 dark:text-slate-100 tracking-wide">
       {title}
     </h3>
   </div>
@@ -505,7 +505,19 @@ export function PlanEditor({
           </DropdownMenu>
 
           <div className="w-px h-6 bg-stone-200 dark:bg-slate-700 mx-1 hidden sm:block"></div>
+            {isSaving ? (
+              <Button variant="ghost" size="sm" disabled className="h-9 gap-1.5 px-2 rounded-lg bg-transparent text-amber-600 dark:text-amber-500 opacity-70 transition-opacity border-none hover:bg-transparent">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-xs font-bold font-headline hidden sm:inline-block md:hidden lg:inline-block">儲存中...</span>
+              </Button>
+            ) : (
+              <Button variant="ghost" size="sm" onClick={() => onAutoSave?.()} disabled={isHistoryMode} className="h-9 gap-1.5 px-2 rounded-lg bg-transparent text-stone-400 dark:text-slate-500 hover:text-stone-700 dark:hover:text-slate-300 opacity-90 transition-opacity border-none">
+                <Save className="h-4 w-4" />
+                <span className="text-xs font-bold font-headline hidden sm:inline-block md:hidden lg:inline-block">儲存/同步</span>
+              </Button>
+            )}
 
+            <div className="w-px h-6 bg-stone-200 dark:bg-slate-700 mx-1 hidden sm:block"></div>
           <Button variant="ghost" size="icon" onClick={handleLocalUndo} disabled={localHistory.past.length === 0 || isHistoryMode} className="h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow">
             <Undo2 className="h-4 w-4" />
           </Button>
@@ -820,10 +832,7 @@ export function PlanEditor({
       <div 
         ref={toolbarRef}
         className="md:hidden fixed bottom-0 left-0 right-0 z-[60] pb-[env(safe-area-inset-bottom)] pointer-events-none will-change-[bottom]">
-        <div className="pointer-events-auto bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-gray-800 shadow-[0_-4px_15px_rgba(0,0,0,0.05)] w-full">
-          <MarkdownToolbar className="justify-start pb-2 pt-1 shadow-none border-none border-t-0" />
-        </div>
-      </div>
+          <div className="pointer-events-auto bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-t border-stone-200 dark:border-stone-800 shadow-[0_-8px_30px_rgba(0,0,0,0.1)] dark:shadow-[0_-8px_30px_rgba(0,0,0,0.3)] w-full">
 
       {isSidebarOpen && (
         <button
