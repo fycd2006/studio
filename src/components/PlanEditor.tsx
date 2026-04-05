@@ -3,6 +3,7 @@
 import { LessonPlan, SCHEDULE_OPTIONS, PlanVersion, Group } from "@/types/plan";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ResponsiveActivitySelectV3 } from "@/components/responsive-activity-select-v3";
 import { MarkdownArea } from "@/components/MarkdownArea";
 import { MarkdownToolbar } from "@/components/MarkdownToolbar";
 import { PropsTable } from "@/components/PropsTable";
@@ -611,16 +612,11 @@ export function PlanEditor({
                           {isHistoryMode ? (
                             <DiffHighlighter type="text" oldValue={previousPlan?.scheduledName} newValue={previewPlan?.scheduledName} />
                           ) : (
-                            <Select value={currentPlan.scheduledName || ""} onValueChange={(val) => handlePlanUpdate({ scheduledName: val })}>
-                              <SelectTrigger className="h-12 rounded-xl px-3 font-bold text-base bg-transparent dark:bg-transparent shadow-none hover:bg-stone-50 dark:hover:bg-slate-700 border-none focus:ring-0 transition-colors">
-                                <SelectValue placeholder="-- 請選擇活動類型 --" />
-                              </SelectTrigger>
-                              <SelectContent className="rounded-xl font-bold bg-white dark:bg-slate-800 overflow-hidden shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
-                                {activityTypes.map(type => (
-                                  <SelectItem key={type} value={type} className="rounded-lg cursor-pointer hover:bg-[#FBF9F6] dark:hover:bg-slate-700">{type}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <ResponsiveActivitySelectV3 
+                              value={currentPlan.scheduledName || ""}
+                              onValueChange={(val) => handlePlanUpdate({ scheduledName: val })}
+                              options={activityTypes}
+                            />
                           )}
                         </section>
 
