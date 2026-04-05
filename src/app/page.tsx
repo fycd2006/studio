@@ -134,9 +134,9 @@ export default function Home() {
                   {activeCamp ? `正在為 ${activeCamp.name} 創造內容` : '熱情、活力的核心'}
                 </span>
               </div>
-              <h1 className="text-[clamp(2.5rem,8vw,12rem)] sm:text-[clamp(3.5rem,9vw,12rem)] font-black leading-[0.85] tracking-tight mb-4 sm:mb-6 md:mb-8 text-[#2C2A28] dark:text-white drop-shadow-xl">
-                NTUT<br/>
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#f48c25] to-orange-400 block -mt-1 sm:-mt-2 md:-mt-4 relative z-10 pb-2">CHONG DE</span>
+              <h1 className="flex flex-col text-[clamp(2.75rem,8vw,12rem)] sm:text-[clamp(4rem,9vw,12rem)] font-black leading-[0.85] tracking-tight mb-4 sm:mb-6 md:mb-8 text-[#2C2A28] dark:text-white drop-shadow-xl uppercase">
+                <span className="block">NTUT</span>
+                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-amber-400 pb-2 md:pb-4 pt-[0.02em]">CHONG DE</span>
               </h1>
               <div className="max-w-2xl text-sm sm:text-base md:text-lg lg:text-2xl text-slate-800 dark:text-slate-200 leading-relaxed md:leading-loose mb-6 sm:mb-8 md:mb-10 lg:mb-12 font-semibold italic tracking-wide py-2 drop-shadow-md min-h-[4em] sm:min-h-[5em] flex items-center overflow-hidden">
                 <RotatingText items={heroQuotes} intervalMs={6000} className="w-full" />

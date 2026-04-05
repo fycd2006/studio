@@ -11,6 +11,8 @@ import {
  LayoutGrid,
  List,
  Clock,
+ ArrowUp,
+ ArrowDown,
  ChevronRight,
  Download,
  MoreHorizontal,
@@ -57,12 +59,36 @@ export default function PlansOverview() {
  const [searchQuery, setSearchQuery] = useState("");
  const [filterGroup, setFilterGroup] = useState<string>("all");
  const [sortBy, setSortBy] = useState<"updatedAt" | "name">("updatedAt");
+ const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
  const [swipeDirection, setSwipeDirection] = useState<1 | -1>(1);
  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
+
+ const handleSortClick = (nextSortBy: "updatedAt" | "name") => {
+ if (sortBy === nextSortBy) {
+ setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+ return;
+ }
+
+ setSortBy(nextSortBy);
+ setSortDirection(nextSortBy === "updatedAt" ? "desc" : "asc");
+ };
 
  const groupOrder = useMemo(() => ["all", ...groups.map((g) => g.slug)], [groups]);
 
  const normalizeKey = (value?: string | null) => (value || "").trim().toLowerCase();
+ const toPlainText = (value?: string | null) =>
+ (value || "")
+ .replace(/<[^>]*>/g, " ")
+ .replace(/[\`*_~#>[\]()!]/g, " ")
+ .replace(/\s+/g, " ")
+ .trim();
+
+ const getPlanDisplayName = (plan: typeof plans[number]) =>
+ toPlainText(plan.activityName) || "未命名文件";
+ const getPlanDisplayCategory = (plan: typeof plans[number]) =>
+ toPlainText(plan.scheduledName) || "無分類";
+ const getPlanDisplayMembers = (plan: typeof plans[number]) =>
+ toPlainText(plan.members);
 
  const mapCategoryToSlug = (value?: string | null) => {
  const key = normalizeKey(value);
@@ -138,20 +164,22 @@ export default function PlansOverview() {
  if (searchQuery.trim()) {
  const q = searchQuery.toLowerCase();
  result = result.filter(p => 
- (p.activityName || "").toLowerCase().includes(q) ||
- (p.scheduledName || "").toLowerCase().includes(q) ||
- (p.members || "").toLowerCase().includes(q)
+ toPlainText(p.activityName).toLowerCase().includes(q) ||
+ toPlainText(p.scheduledName).toLowerCase().includes(q) ||
+ toPlainText(p.members).toLowerCase().includes(q)
  );
  }
  result = [...result].sort((a, b) => {
  if (sortBy === "updatedAt") {
- return (b.updatedAt || 0) - (a.updatedAt || 0);
+ const timeCompare = (a.updatedAt || 0) - (b.updatedAt || 0);
+ return sortDirection === "asc" ? timeCompare : -timeCompare;
  } else {
- return (a.activityName || "").localeCompare(b.activityName || "");
+ const nameCompare = toPlainText(a.activityName).localeCompare(toPlainText(b.activityName));
+ return sortDirection === "asc" ? nameCompare : -nameCompare;
  }
  });
  return result;
- }, [plans, filterGroup, searchQuery, sortBy, groups]);
+ }, [plans, filterGroup, searchQuery, sortBy, sortDirection, groups]);
 
  const crewToast = () => toast({
  title: "🔒 唯讀模式",
@@ -319,7 +347,7 @@ export default function PlansOverview() {
  onSelect={(e) => {
  e.preventDefault();
  e.stopPropagation();
- handleDeletePlan(plan.id, plan.activityName || "未命名文件");
+ handleDeletePlan(plan.id, getPlanDisplayName(plan));
  }}
  className="cursor-pointer text-rose-600 focus:text-rose-600"
  >
@@ -465,13 +493,23 @@ export default function PlansOverview() {
  </div>
 
  <div className="flex items-center bg-stone-100 dark:bg-slate-800 p-0.5 md:p-1 rounded-lg dark: shrink-0 shadow-sm border-none">
- <button onClick={() => setSortBy('updatedAt')} className={cn("px-2 md:px-3 py-1 md:py-1.5 rounded-md text-[10px] md:text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap inline-flex items-center gap-1", sortBy === 'updatedAt' ? "bg-white dark:bg-slate-700 text-[#2C2A28] dark:text-amber-400 shadow-sm" : "text-stone-400 hover:text-stone-600 dark:hover:text-slate-300")}>
+ <button onClick={() => handleSortClick('updatedAt')} className={cn("px-2 md:px-3 py-1 md:py-1.5 rounded-md text-[10px] md:text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap inline-flex items-center gap-1", sortBy === 'updatedAt' ? "bg-white dark:bg-slate-700 text-[#2C2A28] dark:text-amber-400 shadow-sm" : "text-stone-400 hover:text-stone-600 dark:hover:text-slate-300")}>
  <Clock className="w-3.5 h-3.5 md:hidden" />
  <span className="hidden md:inline">時間排序</span>
+ {sortBy === 'updatedAt' && (
+ <span className="inline-flex items-center">
+ {sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+ </span>
+ )}
  </button>
- <button onClick={() => setSortBy('name')} className={cn("px-2 md:px-3 py-1 md:py-1.5 rounded-md text-[10px] md:text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap inline-flex items-center gap-1", sortBy === 'name' ? "bg-white dark:bg-slate-700 text-[#2C2A28] dark:text-amber-400 shadow-sm" : "text-stone-400 hover:text-stone-600 dark:hover:text-slate-300")}>
+ <button onClick={() => handleSortClick('name')} className={cn("px-2 md:px-3 py-1 md:py-1.5 rounded-md text-[10px] md:text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap inline-flex items-center gap-1", sortBy === 'name' ? "bg-white dark:bg-slate-700 text-[#2C2A28] dark:text-amber-400 shadow-sm" : "text-stone-400 hover:text-stone-600 dark:hover:text-slate-300")}>
  <FileText className="w-3.5 h-3.5 md:hidden" />
  <span className="hidden md:inline">名稱排序</span>
+ {sortBy === 'name' && (
+ <span className="inline-flex items-center">
+ {sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+ </span>
+ )}
  </button>
  </div>
  </ActionBar>
@@ -526,18 +564,18 @@ export default function PlansOverview() {
  </div>
  </div>
  
- <h3 className="font-semibold text-sm sm:text-base text-[#2C2A28] dark:text-slate-100 mb-1 line-clamp-2 leading-snug group-hover:text-orange-600 dark:group-hover:text-amber-400 transition-colors">{plan.activityName || "未命名文件"}</h3>
- <p className="text-xs text-stone-500 dark:text-slate-400 font-medium mb-3 sm:mb-4 flex-1">{plan.scheduledName || "無分類"}</p>
+ <h3 className="font-semibold text-sm sm:text-base text-[#2C2A28] dark:text-slate-100 mb-1 line-clamp-2 leading-snug group-hover:text-orange-600 dark:group-hover:text-amber-400 transition-colors">{getPlanDisplayName(plan)}</h3>
+ <p className="text-xs text-stone-500 dark:text-slate-400 font-medium mb-3 sm:mb-4 flex-1">{getPlanDisplayCategory(plan)}</p>
  
  <div className="flex items-center gap-4 pt-3 sm:pt-4 dark: mt-auto">
  <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px] text-stone-400 dark:text-slate-500 font-medium">
  <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
  {plan.updatedAt ? format(new Date(plan.updatedAt), "MM/dd HH:mm") : "—"}
  </div>
- {plan.members && (
+ {getPlanDisplayMembers(plan) && (
  <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px] text-stone-400 dark:text-slate-500 font-medium">
  <Users className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
- <span className="line-clamp-1 max-w-[80px]">{plan.members}</span>
+ <span className="line-clamp-1 max-w-[80px]">{getPlanDisplayMembers(plan)}</span>
  </div>
  )}
  </div>
@@ -564,12 +602,12 @@ export default function PlansOverview() {
  {items.map(plan => (
  <div key={plan.id} onClick={() => handleOpenPlan(plan.id)} className="bg-white dark:bg-slate-800 border-none rounded-xl p-4 cursor-pointer hover: dark:hover: transition-all shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
  <div className="flex items-start justify-between gap-2 mb-1">
- <h4 className="font-semibold text-[13px] text-[#2C2A28] dark:text-slate-100 mb-1 line-clamp-2">{plan.activityName || "未命名文件"}</h4>
+ <h4 className="font-semibold text-[13px] text-[#2C2A28] dark:text-slate-100 mb-1 line-clamp-2">{getPlanDisplayName(plan)}</h4>
  {renderPlanActions(plan)}
  </div>
- <p className="text-[10px] text-stone-500 dark:text-slate-400 font-medium mb-3">{plan.scheduledName || "無分類"}</p>
+ <p className="text-[10px] text-stone-500 dark:text-slate-400 font-medium mb-3">{getPlanDisplayCategory(plan)}</p>
  <div className="flex items-center justify-between text-[9px] text-stone-400 dark:text-slate-500 font-black tracking-widest uppercase">
- <span>{plan.members || "—"}</span>
+ <span>{getPlanDisplayMembers(plan) || "—"}</span>
  <span>{plan.updatedAt ? format(new Date(plan.updatedAt), "MM/dd") : "—"}</span>
  </div>
  </div>
@@ -596,7 +634,7 @@ export default function PlansOverview() {
  <tbody className="divide-y divide-stone-100 dark:divide-slate-700/50">
  {filteredPlans.map((plan) => (
  <tr key={plan.id} onClick={() => handleOpenPlan(plan.id)} className="hover:bg-[#FBF9F6] dark:hover:bg-slate-700/50 transition-colors cursor-pointer group">
- <td className="px-6 py-4 font-semibold text-[#2C2A28] dark:text-slate-200 group-hover:text-orange-600 dark:group-hover:text-amber-400 transition-colors">{plan.activityName || "未命名文件"}</td>
+ <td className="px-6 py-4 font-semibold text-[#2C2A28] dark:text-slate-200 group-hover:text-orange-600 dark:group-hover:text-amber-400 transition-colors">{getPlanDisplayName(plan)}</td>
  <td className="px-6 py-4">
  <Badge className={cn("px-2 py-0 text-[9px] font-bold uppercase border-none", plan.category === "activity" ? "bg-blue-50 text-blue-600  dark:bg-blue-900/30 dark:text-blue-400 dark:" : "bg-emerald-50 text-emerald-600  dark:bg-emerald-900/30 dark:text-emerald-400 dark:")}>
  {(() => {
@@ -605,8 +643,8 @@ export default function PlansOverview() {
  })()}
  </Badge>
  </td>
- <td className="px-6 py-4 text-stone-500 dark:text-slate-400 font-medium">{plan.scheduledName || "—"}</td>
- <td className="px-6 py-4 text-stone-500 dark:text-slate-400 font-medium">{plan.members || "—"}</td>
+ <td className="px-6 py-4 text-stone-500 dark:text-slate-400 font-medium">{getPlanDisplayCategory(plan) || "—"}</td>
+ <td className="px-6 py-4 text-stone-500 dark:text-slate-400 font-medium">{getPlanDisplayMembers(plan) || "—"}</td>
  <td className="px-6 py-4 text-stone-400 dark:text-slate-500 text-xs font-medium">{plan.updatedAt ? format(new Date(plan.updatedAt), "yyyy/MM/dd HH:mm") : "—"}</td>
  <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
  <div className="flex justify-end">{renderPlanActions(plan)}</div>

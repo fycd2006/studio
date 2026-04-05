@@ -469,8 +469,8 @@ export function PlanEditor({
           </div>
         </div>
 
-        <ActionBar title="" className="md:justify-end gap-1.5 md:gap-2">
-          <div className="hidden md:flex flex-row items-center bg-white/50 dark:bg-slate-800/50 rounded-xl px-1 mr-auto shadow-sm">
+        <ActionBar title="" className="md:justify-center gap-1.5 md:gap-2">
+          <div className="hidden md:flex flex-row items-center bg-white/50 dark:bg-slate-800/50 rounded-xl px-1 shadow-sm">
             <MarkdownToolbar className="bg-transparent border-none sm:border-none px-0" />
           </div>
 
@@ -505,19 +505,14 @@ export function PlanEditor({
           </DropdownMenu>
 
           <div className="w-px h-6 bg-stone-200 dark:bg-slate-700 mx-1 hidden sm:block"></div>
-            {isSaving ? (
-              <Button variant="ghost" size="sm" disabled className="h-9 gap-1.5 px-2 rounded-lg bg-transparent text-amber-600 dark:text-amber-500 opacity-70 transition-opacity border-none hover:bg-transparent">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-xs font-bold font-headline hidden sm:inline-block md:hidden lg:inline-block">儲存中...</span>
-              </Button>
-            ) : (
-              <Button variant="ghost" size="sm" onClick={() => onAutoSave?.()} disabled={isHistoryMode} className="h-9 gap-1.5 px-2 rounded-lg bg-transparent text-stone-400 dark:text-slate-500 hover:text-stone-700 dark:hover:text-slate-300 opacity-90 transition-opacity border-none">
-                <Save className="h-4 w-4" />
-                <span className="text-xs font-bold font-headline hidden sm:inline-block md:hidden lg:inline-block">儲存/同步</span>
-              </Button>
-            )}
+          
+          {isSaving && (
+            <div className="flex items-center justify-center gap-1.5 px-2 h-9 text-amber-600 dark:text-amber-500 opacity-70">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="text-xs font-bold font-headline hidden sm:inline-block md:hidden lg:inline-block">儲存中...</span>
+            </div>
+          )}
 
-            <div className="w-px h-6 bg-stone-200 dark:bg-slate-700 mx-1 hidden sm:block"></div>
           <Button variant="ghost" size="icon" onClick={handleLocalUndo} disabled={localHistory.past.length === 0 || isHistoryMode} className="h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow">
             <Undo2 className="h-4 w-4" />
           </Button>
@@ -833,6 +828,9 @@ export function PlanEditor({
         ref={toolbarRef}
         className="md:hidden fixed bottom-0 left-0 right-0 z-[60] pb-[env(safe-area-inset-bottom)] pointer-events-none will-change-[bottom]">
           <div className="pointer-events-auto bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-t border-stone-200 dark:border-stone-800 shadow-[0_-8px_30px_rgba(0,0,0,0.1)] dark:shadow-[0_-8px_30px_rgba(0,0,0,0.3)] w-full">
+            <MarkdownToolbar className="justify-start pb-2 pt-1 shadow-none border-none border-t-0" />
+          </div>
+      </div>
 
       {isSidebarOpen && (
         <button

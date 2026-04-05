@@ -50,7 +50,8 @@ function processPython(
   outputPath: string
 ): Promise<boolean> {
   return new Promise((resolve, reject) => {
-    const python = spawn("python3", [
+    const pythonCommand = process.platform === "win32" ? "python" : "python3";
+    const python = spawn(pythonCommand, [
       path.join(process.cwd(), "scripts/process_image_style.py"),
       inputPath,
       outputPath,
