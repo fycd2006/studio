@@ -411,14 +411,14 @@ export default function PlansOverview() {
 
  return (
  <div 
- className="overflow-x-clip bg-[#F9F8F6] dark:bg-slate-900 text-[#2C2A28] dark:text-slate-50 transition-colors selection:bg-orange-200 dark:selection:bg-amber-500/30 font-sans touch-pan-y overscroll-x-none relative min-h-screen"
+ className="overflow-x-clip bg-[#F9F8F6] dark:bg-slate-900 text-[#2C2A28] dark:text-slate-50 transition-colors selection:bg-orange-200 dark:selection:bg-amber-500/30 font-sans touch-pan-y overscroll-x-none relative min-h-screen flex flex-col sm:block"
  onTouchStart={handleSwipeStart}
  onTouchEnd={handleSwipeEnd}
  >
 
- <div className="max-w-[1400px] mx-auto pt-24 sm:pt-32 pb-12 sm:pb-24 px-4 sm:px-6 md:px-8 xl:px-12 touch-pan-y relative z-10">
+ <div className="max-w-[1400px] mx-auto pt-24 sm:pt-32 pb-12 sm:pb-24 px-4 sm:px-6 md:px-8 xl:px-12 touch-pan-y relative z-10 w-full flex flex-col sm:block overflow-y-auto sm:overflow-y-visible flex-1 sm:flex-none">
  {/* ── HEADER ─────────────── */}
- <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6 mb-8 sm:mb-12 pb-6 sm:pb-8 relative z-10">
+ <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6 mb-8 sm:mb-12 pb-6 sm:pb-8 relative z-10 shrink-0">
  <div className="flex-1 min-w-0">
  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-[#2C2A28] dark:text-white mb-1.5 sm:mb-2">
  教案總覽中心
@@ -598,7 +598,7 @@ export default function PlansOverview() {
  </ActionBar>
 
  {/* ── TOOLBAR (Filter & Search) ─────────── */}
- <div className="flex flex-col gap-4 mb-4 sm:mb-8 max-w-2xl">
+ <div className="flex flex-col gap-4 mb-4 sm:mb-8 max-w-2xl shrink-0">
  <div className="relative group">
  <Search className="w-4 h-4 sm:w-5 sm:h-5 absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 dark:text-slate-500 group-focus-within:text-orange-500 dark:group-focus-within:text-amber-500 transition-colors" />
  <Input 
@@ -611,7 +611,7 @@ export default function PlansOverview() {
  </div>
 
  {/* ── CONTENT ─────────────────────── */}
- <div className="relative overflow-hidden w-full touch-pan-y min-h-[50vh]">
+ <div className="relative overflow-hidden w-full touch-pan-y sm:min-h-[50vh] flex-1 sm:flex-none overflow-y-auto sm:overflow-y-visible pr-1 sm:pr-0">
  <AnimatePresence mode="popLayout" initial={false}>
  <motion.div
  key={`${filterGroup}-${viewType}`}
