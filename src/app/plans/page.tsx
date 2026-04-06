@@ -134,12 +134,24 @@ export default function PlansOverview() {
  };
 
  const handleSwipeStart = (e: React.TouchEvent<HTMLDivElement>) => {
+ // Don't track swipe if touch started on ActionBar
+ const target = e.target as HTMLElement;
+ if (target.closest('.action-bar-container')) {
+ swipeStartRef.current = null;
+ return;
+ }
  const t = e.touches[0];
  swipeStartRef.current = { x: t.clientX, y: t.clientY };
  };
 
  const handleSwipeEnd = (e: React.TouchEvent<HTMLDivElement>) => {
  if (viewType === "board") return;
+ // Don't switch if swipe ended on ActionBar
+ const target = e.target as HTMLElement;
+ if (target.closest('.action-bar-container')) {
+ swipeStartRef.current = null;
+ return;
+ }
  const start = swipeStartRef.current;
  if (!start) return;
 
@@ -429,7 +441,7 @@ export default function PlansOverview() {
  </div>
  </div>
 
- <ActionBar title="PLANS ACTIONS" className="!flex-nowrap !justify-start md:!justify-between overflow-x-auto scrollbar-hide gap-2 md:gap-3 mb-4 p-0 !w-full">
+ <ActionBar title="PLANS ACTIONS" className="action-bar-container !flex-nowrap !justify-start md:!justify-between overflow-x-auto scrollbar-hide gap-2 md:gap-3 mb-4 p-0 !w-full">
             <div className={cn("flex flex-nowrap items-center gap-1 shrink-0", actionBarTheme.clusterInset)}>
               <DropdownMenu open={isAdding} onOpenChange={handleAddMenuOpenChange}>
                 <DropdownMenuTrigger asChild>
