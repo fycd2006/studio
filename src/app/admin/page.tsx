@@ -10,7 +10,7 @@ export default function AdminPage() {
  const { role } = useAuth();
  const { toast } = useToast();
  const {
- plans, tables, camps, activeCampId,
+ plans, tables, camps, groups, activeCampId,
  addTable, updateTable, deleteTable,
  undoTable, redoTable, canUndoTable, canRedoTable,
  updatePlan, updateCamp,
@@ -33,6 +33,7 @@ export default function AdminPage() {
  canRedoTable={isAdmin ? canRedoTable : false}
  timer={{ ...timer, audioEnabled }}
  plans={plans}
+ groups={groups}
  onUpdatePlan={isAdmin ? updatePlan : () => toast({ title: "🔒 唯讀模式", description: "您目前的權限為組員，如需修改請聯繫管理員。" })}
  camps={camps}
  activeCampId={activeCampId}

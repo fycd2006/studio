@@ -2,7 +2,7 @@
 
 import { usePlans } from "@/hooks/use-plans";
 import { useRouter } from "next/navigation";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { ShieldCheck, Tent, Clock, MapPin, ChevronRight, Settings, Layers, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -23,8 +23,15 @@ function isPast(dateStr?: string) {
 
 export default function Home() {
   const router = useRouter();
-  const { camps, activeCampId, plans } = usePlans();
+  const { camps, activeCampId, plans, isLoading } = usePlans();
   const activeCamp = camps?.find((c) => c.id === activeCampId);
+
+  useEffect(() => {
+    if (isLoading) return;
+    if ((camps?.length || 0) === 0) {
+      router.replace('/settings?createProject=1');
+    }
+  }, [isLoading, camps, router]);
 
   const heroQuotes = useMemo(() => [
     "崇德人，崇德魂!",

@@ -137,6 +137,8 @@ export function usePlans() {
   useEffect(() => {
     if (activeCampId) {
       localStorage.setItem('activeCampId', activeCampId);
+    } else {
+      localStorage.removeItem('activeCampId');
     }
   }, [activeCampId]);
 
@@ -397,10 +399,19 @@ export function usePlans() {
   }, [settings, db]);
 
   useEffect(() => {
-    if (camps && camps.length > 0 && !activeCampId) {
+    if (campsData === null) return;
+
+    if (!camps.length) {
+      if (activeCampId !== null) setActiveCampId(null);
+      return;
+    }
+
+    const hasValidActiveCamp = !!activeCampId && camps.some(c => c.id === activeCampId);
+    if (!hasValidActiveCamp) {
+      // camps query is ordered by createdAt desc, so index 0 is the latest project.
       setActiveCampId(camps[0].id);
     }
-  }, [camps, activeCampId]);
+  }, [campsData, camps, activeCampId]);
 
   const addCamp = useCallback((name: string, fields?: Partial<Camp>) => {
     if (!db || !user) return;

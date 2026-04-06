@@ -37,7 +37,8 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import dynamic from "next/dynamic";
 import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { cn } from "@/lib/utils";
+import { cn, getUnifiedGroupBadgeParams } from "@/lib/utils";
+import { actionBarTheme } from "@/lib/actionbar-theme";
 import { useTranslation } from "@/lib/i18n-context";
 import {
   DropdownMenu,
@@ -307,7 +308,7 @@ export function PlanEditor({
         // 計算鍵盤彈起時產生出來的實際偏移 (佈局視圖底部 - 視覺視圖底部)
         const offset = window.innerHeight - (window.visualViewport.height + window.visualViewport.offsetTop);
         const keyboardOffset = Math.max(0, offset);
-        
+
         // 即時設定絕對底部值，無動畫延遲
         toolbarRef.current.style.bottom = `${keyboardOffset}px`;
 
@@ -322,7 +323,7 @@ export function PlanEditor({
 
     window.visualViewport?.addEventListener('resize', handleViewportChange);
     window.visualViewport?.addEventListener('scroll', handleViewportChange);
-    
+
     // 初始化執行一次確保狀態正確
     handleViewportChange();
 
@@ -439,7 +440,7 @@ export function PlanEditor({
       <div className="flex-1 min-w-0 relative flex flex-col">
         <div className={cn(
           "w-full flex flex-col items-center",
-          isPrintMode ? "pt-20 md:pt-24 px-4 md:px-0" : "pt-20 pb-0 px-4"
+          isPrintMode ? "pt-28 md:pt-24 px-4 md:px-0" : "pt-28 md:pt-20 pb-0 px-4"
         )}>
           <div className="w-full md:max-w-[816px] flex flex-col">
             <header className="relative z-20 flex-none w-full mb-4 md:mb-6 dark:pb-6 transition-all">
@@ -448,9 +449,10 @@ export function PlanEditor({
                   <div className="flex items-center gap-2 mb-2">
                     <span className={cn(
                       "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border-none",
-                      currentPlan.category === "activity"
-                        ? "bg-blue-50 dark:bg-blue-400/10 text-blue-600 dark:text-blue-400 "
-                        : "bg-emerald-50 dark:bg-emerald-400/10 text-emerald-600 dark:text-emerald-400 "
+                      (() => {
+                        const params = getUnifiedGroupBadgeParams(currentGroup?.slug || currentPlan.category, currentGroup?.nameZh || '');
+                        return `${params.lightBg} ${params.lightText}`;
+                      })()
                     )}>
                       {currentGroupLabel}
                     </span>
@@ -469,10 +471,12 @@ export function PlanEditor({
           </div>
         </div>
 
-        <ActionBar title="" className="md:justify-center gap-1.5 md:gap-2">
-          <div className="hidden md:flex flex-row items-center bg-white/50 dark:bg-slate-800/50 rounded-xl px-1 shadow-sm">
+        <ActionBar title="" tone="warm" className="justify-center gap-1.5 md:gap-2">
+          <div className={cn("hidden md:flex flex-row items-center px-1", actionBarTheme.cluster)}>
             <MarkdownToolbar className="bg-transparent border-none sm:border-none px-0" />
           </div>
+
+          <div className={cn(actionBarTheme.separator, "hidden sm:block mx-1")} />
 
           <Button
             variant="ghost"
@@ -484,8 +488,11 @@ export function PlanEditor({
               if (!willOpen && !selectedVersion) setIsHistoryMode(false);
             }}
             className={cn(
-              "h-9 w-9 p-0 flex justify-center items-center rounded-lg font-bold text-xs bg-transparent transition-all",
-              isSidebarOpen ? "text-[#2C2A28] dark:text-white bg-stone-200 dark:bg-slate-800 opacity-100" : "text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 hover:bg-stone-200 dark:hover:bg-slate-800"
+              "p-0 font-bold text-xs",
+              actionBarTheme.controlGhost,
+              actionBarTheme.controlIcon,
+              actionBarTheme.controlElevated,
+              isSidebarOpen && "bg-stone-200 dark:bg-slate-700"
             )}
           >
             <History className="w-4 h-4" />
@@ -493,7 +500,7 @@ export function PlanEditor({
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-9 px-3 rounded-lg font-bold text-xs bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow">
+              <Button variant="ghost" size="sm" className={cn(actionBarTheme.controlGhost, "px-4 font-bold text-xs transition-all shadow-sm hover:shadow-md")}>
                 <FileDown className="w-4 h-4 sm:mr-1.5" />
                 <span className="hidden sm:inline">匯出</span>
               </Button>
@@ -504,8 +511,8 @@ export function PlanEditor({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <div className="w-px h-6 bg-stone-200 dark:bg-slate-700 mx-1 hidden sm:block"></div>
-          
+          <div className={cn(actionBarTheme.separator, "mx-1 hidden sm:block")}></div>
+
           {isSaving && (
             <div className="flex items-center justify-center gap-1.5 px-2 h-9 text-amber-600 dark:text-amber-500 opacity-70">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -513,25 +520,29 @@ export function PlanEditor({
             </div>
           )}
 
-          <Button variant="ghost" size="icon" onClick={handleLocalUndo} disabled={localHistory.past.length === 0 || isHistoryMode} className="h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow">
+          <div className={cn(actionBarTheme.separator, "hidden sm:block mx-1")} />
+
+          <Button variant="ghost" size="icon" onClick={handleLocalUndo} disabled={localHistory.past.length === 0 || isHistoryMode} className={cn(actionBarTheme.controlGhost, actionBarTheme.controlIcon, "hover:shadow-sm")}>
             <Undo2 className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={handleLocalRedo} disabled={localHistory.future.length === 0 || isHistoryMode} className="h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow">
+          <Button variant="ghost" size="icon" onClick={handleLocalRedo} disabled={localHistory.future.length === 0 || isHistoryMode} className={cn(actionBarTheme.controlGhost, actionBarTheme.controlIcon, "hover:shadow-sm")}>
             <Redo2 className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={handleZoomOut} disabled={pageZoom <= 0.3} className="flex h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow">
+          <Button variant="ghost" size="icon" onClick={handleZoomOut} disabled={pageZoom <= 0.3} className={cn(actionBarTheme.control, actionBarTheme.controlIcon, actionBarTheme.controlElevated)}>
             <ZoomOut className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={handleFitAll} className="flex h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow">
+          <Button variant="ghost" size="icon" onClick={handleFitAll} className={cn(actionBarTheme.control, actionBarTheme.controlIcon, actionBarTheme.controlElevated)}>
             <Maximize className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={handleZoomIn} disabled={pageZoom >= 2} className="flex h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity">
+          <Button variant="ghost" size="icon" onClick={handleZoomIn} disabled={pageZoom >= 2} className={cn(actionBarTheme.control, actionBarTheme.controlIcon, actionBarTheme.controlElevated)}>
             <ZoomIn className="h-4 w-4" />
           </Button>
+
+          <div className={cn(actionBarTheme.separator, "hidden sm:block mx-1")} />
+
           {isMobile && (
             <>
-              <div className="w-px h-6 bg-stone-200 dark:bg-slate-700 mx-1"></div>
-              <Button variant="ghost" size="icon" onClick={() => setIsMobilePrintView(!isMobilePrintView)} className="flex h-9 w-9 rounded-lg bg-transparent text-[#2C2A28] dark:text-white hover:opacity-100 opacity-90 transition-opacity" title="切換檢視模式">
+              <Button variant="ghost" size="icon" onClick={() => setIsMobilePrintView(!isMobilePrintView)} className={cn(actionBarTheme.control, actionBarTheme.controlIcon, actionBarTheme.controlElevated)} title="切換檢視模式">
                 {isMobilePrintView ? <Smartphone className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
               </Button>
             </>
@@ -562,274 +573,274 @@ export function PlanEditor({
                     !isPrintMode && "[&_.prose]:text-[inherit] [&_.prose_p]:text-[inherit] [&_.prose_li]:text-[inherit] [&_.prose_h1]:text-[2em] [&_.prose_h2]:text-[1.5em] [&_.prose_h3]:text-[1.17em]"
                   )}
                 >
-                {isLoadingPreview ? (
-                  <div className="h-full min-h-[260px] w-full md:w-[816px] flex flex-col items-center justify-center gap-2 text-stone-500 dark:text-slate-400">
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    <p className="text-xs font-bold uppercase tracking-widest">Reconstructing History...</p>
-                  </div>
-                ) : (
-                  <div className={cn(
-                    "w-full overflow-visible bg-white dark:bg-slate-800 transition-all",
-                    isPrintMode ? "shadow-md rounded-none sm:rounded-sm border-none sm:border border-stone-200 dark:border-slate-700" : "shadow-none rounded-none border-none"
-                  )}>
+                  {isLoadingPreview ? (
+                    <div className="h-full min-h-[260px] w-full md:w-[816px] flex flex-col items-center justify-center gap-2 text-stone-500 dark:text-slate-400">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <p className="text-xs font-bold uppercase tracking-widest">Reconstructing History...</p>
+                    </div>
+                  ) : (
                     <div className={cn(
-                      "leading-[1.6]",
-                      isPrintMode ? "px-6 md:px-10 py-10 space-y-6 md:space-y-8" : "px-2 py-6 space-y-5"
+                      "w-full overflow-visible bg-white dark:bg-slate-800 transition-all",
+                      isPrintMode ? "shadow-md rounded-none sm:rounded-sm border-none sm:border border-stone-200 dark:border-slate-700" : "shadow-none rounded-none border-none"
                     )}>
-                      {isHistoryMode && (
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 bg-orange-50/50 dark:bg-amber-400/5 rounded-2xl dark:mb-8 gap-4 border-none">
-                          <div className="flex items-center gap-3">
-                            <div className="w-1.5 h-6 bg-orange-500 rounded-full" />
-                            <div>
-                              <span className="text-sm font-black text-[#2C2A28] dark:text-white uppercase tracking-tight block">歷史紀錄 / History View</span>
-                              {selectedVersion && (
-                                <span className="text-[9px] font-bold text-stone-500 uppercase tracking-widest">
-                                  Showing: {selectedVersion.versionName || selectedVersion.name} ({format(new Date(selectedVersion.createdAt), "MM/dd HH:mm")})
-                                </span>
-                              )}
+                      <div className={cn(
+                        "leading-[1.6]",
+                        isPrintMode ? "px-6 md:px-10 py-10 space-y-6 md:space-y-8" : "px-2 py-6 space-y-5"
+                      )}>
+                        {isHistoryMode && (
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 bg-orange-50/50 dark:bg-amber-400/5 rounded-2xl dark:mb-8 gap-4 border-none">
+                            <div className="flex items-center gap-3">
+                              <div className="w-1.5 h-6 bg-orange-500 rounded-full" />
+                              <div>
+                                <span className="text-sm font-black text-[#2C2A28] dark:text-white uppercase tracking-tight block">歷史紀錄 / History View</span>
+                                {selectedVersion && (
+                                  <span className="text-[9px] font-bold text-stone-500 uppercase tracking-widest">
+                                    Showing: {selectedVersion.versionName || selectedVersion.name} ({format(new Date(selectedVersion.createdAt), "MM/dd HH:mm")})
+                                  </span>
+                                )}
+                              </div>
                             </div>
+                            {selectedVersion && (
+                              <div className="flex items-center gap-2 w-full sm:w-auto">
+                                <Button
+                                  variant="ghost"
+                                  onClick={() => {
+                                    setSelectedVersion(null);
+                                    setIsHistoryMode(false);
+                                    setIsSidebarOpen(false);
+                                  }}
+                                  className="h-10 px-4 rounded-xl font-bold text-xs flex-1 sm:flex-none"
+                                >
+                                  取消 / Cancel
+                                </Button>
+                                <Button
+                                  onClick={() => handleRestoreVersion(selectedVersion.id)}
+                                  className="h-10 px-6 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-orange-500/20 flex-1 sm:flex-none"
+                                >
+                                  <RotateCcw className="h-4 w-4 mr-2" /> 還原 / Restore
+                                </Button>
+                              </div>
+                            )}
                           </div>
-                          {selectedVersion && (
-                            <div className="flex items-center gap-2 w-full sm:w-auto">
-                              <Button
-                                variant="ghost"
-                                onClick={() => {
-                                  setSelectedVersion(null);
-                                  setIsHistoryMode(false);
-                                  setIsSidebarOpen(false);
-                                }}
-                                className="h-10 px-4 rounded-xl font-bold text-xs flex-1 sm:flex-none"
-                              >
-                                取消 / Cancel
-                              </Button>
-                              <Button
-                                onClick={() => handleRestoreVersion(selectedVersion.id)}
-                                className="h-10 px-6 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-orange-500/20 flex-1 sm:flex-none"
-                              >
-                                <RotateCcw className="h-4 w-4 mr-2" /> 還原 / Restore
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      <div className="space-y-12">
-                        <section>
-                          <SectionHeader title="活動類型" icon={Layout} />
-                          {isHistoryMode ? (
-                            <DiffHighlighter type="text" oldValue={previousPlan?.scheduledName} newValue={previewPlan?.scheduledName} />
-                          ) : (
-                            <ResponsiveActivitySelectV3 
-                              value={currentPlan.scheduledName || ""}
-                              onValueChange={(val) => handlePlanUpdate({ scheduledName: val })}
-                              options={activityTypes}
-                            />
-                          )}
-                        </section>
-
-                        {!isScriptMode && (
-                          <section>
-                            <SectionHeader title={t('SUBJECT')} icon={Target} />
-                            {isHistoryMode ? (
-                              <DiffHighlighter type="text" oldValue={previousPlan?.activityName} newValue={previewPlan?.activityName} />
-                            ) : (
-                              <FieldContainer field="activityName" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
-                                <MarkdownArea
-                                  value={currentPlan.activityName}
-                                  onChange={(val) => handlePlanUpdate({ activityName: val })}
-                                  onFocus={() => handleFocus('activityName')}
-                                  onBlur={() => handleBlur('activityName')}
-                                  placeholder="輸入教案名稱 / Enter subject title"
-                                  minHeight="38px"
-                                />
-                              </FieldContainer>
-                            )}
-                          </section>
                         )}
 
-                        {!isScriptMode && (
+                        <div className="space-y-12">
                           <section>
-                            <SectionHeader title={t('CASE_PERSONNEL')} icon={Users} />
+                            <SectionHeader title="活動類型" icon={Layout} />
                             {isHistoryMode ? (
-                              <DiffHighlighter type="text" oldValue={previousPlan?.members} newValue={previewPlan?.members} />
+                              <DiffHighlighter type="text" oldValue={previousPlan?.scheduledName} newValue={previewPlan?.scheduledName} />
                             ) : (
-                              <FieldContainer field="members" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
-                                <MarkdownArea
-                                  value={currentPlan.members}
-                                  onChange={(val) => handlePlanUpdate({ members: val })}
-                                  onFocus={() => handleFocus('members')}
-                                  onBlur={() => handleBlur('members')}
-                                  placeholder="列出相關人員... / List members..."
-                                  minHeight="38px"
-                                />
-                              </FieldContainer>
-                            )}
-                          </section>
-                        )}
-
-                        <section>
-                          <SectionHeader title={t('MISSION_OBJ')} icon={Target} />
-                          {isHistoryMode ? (
-                            <DiffHighlighter type="markdown" oldValue={previousPlan?.purpose} newValue={previewPlan?.purpose} />
-                          ) : (
-                            <FieldContainer field="purpose" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
-                              <MarkdownArea
-                                value={currentPlan.purpose || ""}
-                                onChange={(val) => handlePlanUpdate({ purpose: val })}
-                                onFocus={() => handleFocus('purpose')}
-                                onBlur={() => handleBlur('purpose')}
-                                placeholder="描述活動目標與宗旨... / Describe mission objectives..."
-                                minHeight="120px"
+                              <ResponsiveActivitySelectV3
+                                value={currentPlan.scheduledName || ""}
+                                onValueChange={(val) => handlePlanUpdate({ scheduledName: val })}
+                                options={activityTypes}
                               />
-                            </FieldContainer>
-                          )}
-                        </section>
-
-                        {!isScriptMode && (
-                          <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div className="space-y-2">
-                              <SectionHeader title={t('TIME_WINDOW')} icon={Clock} />
-                              {isHistoryMode ? (
-                                <DiffHighlighter type="text" oldValue={previousPlan?.time} newValue={previewPlan?.time} />
-                              ) : (
-                                <FieldContainer field="time" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
-                                  <MarkdownArea
-                                    value={currentPlan.time}
-                                    onChange={(val) => handlePlanUpdate({ time: val })}
-                                    onFocus={() => handleFocus('time')}
-                                    onBlur={() => handleBlur('time')}
-                                    placeholder="20min"
-                                    minHeight="38px"
-                                  />
-                                </FieldContainer>
-                              )}
-                            </div>
-                            <div className="space-y-2">
-                              <SectionHeader title={t('VENUE')} icon={MapPin} />
-                              {isHistoryMode ? (
-                                <DiffHighlighter type="text" oldValue={previousPlan?.location} newValue={previewPlan?.location} />
-                              ) : (
-                                <FieldContainer field="location" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
-                                  <MarkdownArea
-                                    value={currentPlan.location}
-                                    onChange={(val) => handlePlanUpdate({ location: val })}
-                                    onFocus={() => handleFocus('location')}
-                                    onBlur={() => handleBlur('location')}
-                                    placeholder="3F Main Hall"
-                                    minHeight="38px"
-                                  />
-                                </FieldContainer>
-                              )}
-                            </div>
-                          </section>
-                        )}
-
-                        {!isScriptMode && (
-                          <section>
-                            <SectionHeader title={t('PROCEDURES')} icon={Layout} />
-                            {isHistoryMode ? (
-                              <DiffHighlighter type="markdown" oldValue={previousPlan?.process} newValue={previewPlan?.process} />
-                            ) : (
-                              <FieldContainer field="process" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
-                                <MarkdownArea
-                                  value={currentPlan.process}
-                                  onChange={(val) => handlePlanUpdate({ process: val })}
-                                  onFocus={() => handleFocus('process')}
-                                  onBlur={() => handleBlur('process')}
-                                  placeholder="詳細描述活動流程... / Describe the procedures..."
-                                />
-                              </FieldContainer>
                             )}
                           </section>
-                        )}
 
-                        <section>
-                          <SectionHeader title={t('VISUAL_BLUEPRINT')} icon={FileText} />
-                          <FieldContainer field="content" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
-                            <MarkdownArea
-                              value={currentPlan.content}
-                              onChange={(val) => handlePlanUpdate({ content: val })}
-                              onFocus={() => handleFocus('content')}
-                              onBlur={() => handleBlur('content')}
-                              placeholder="撰寫教案內容... (支援貼上圖片) / Write lesson content here..."
-                            />
-                          </FieldContainer>
-                        </section>
-
-                        <section className="w-full flex flex-col">
-                          <SectionHeader title={t('MATERIALS')} icon={Package} />
-                          {isHistoryMode ? (
-                            <DiffHighlighter type="table" oldValue={previousPlan?.props} newValue={previewPlan?.props} />
-                          ) : (
-                            <div className="w-full">
-                              <FieldContainer field="props" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
-                                <div className="w-full overflow-x-auto pb-2">
-                                  <PropsTable
-                                    value={currentPlan.props}
-                                    onChange={(val) => handlePlanUpdate({ props: val })}
-                                    onFocus={() => handleFocus('props')}
-                                    onBlur={() => handleBlur('props')}
+                          {!isScriptMode && (
+                            <section>
+                              <SectionHeader title={t('SUBJECT')} icon={Target} />
+                              {isHistoryMode ? (
+                                <DiffHighlighter type="text" oldValue={previousPlan?.activityName} newValue={previewPlan?.activityName} />
+                              ) : (
+                                <FieldContainer field="activityName" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+                                  <MarkdownArea
+                                    value={currentPlan.activityName}
+                                    onChange={(val) => handlePlanUpdate({ activityName: val })}
+                                    onFocus={() => handleFocus('activityName')}
+                                    onBlur={() => handleBlur('activityName')}
+                                    placeholder="輸入教案名稱 / Enter subject title"
+                                    minHeight="38px"
                                   />
-                                </div>
-                              </FieldContainer>
-                            </div>
+                                </FieldContainer>
+                              )}
+                            </section>
                           )}
-                        </section>
 
-                        {!isScriptMode && (
+                          {!isScriptMode && (
+                            <section>
+                              <SectionHeader title={t('CASE_PERSONNEL')} icon={Users} />
+                              {isHistoryMode ? (
+                                <DiffHighlighter type="text" oldValue={previousPlan?.members} newValue={previewPlan?.members} />
+                              ) : (
+                                <FieldContainer field="members" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+                                  <MarkdownArea
+                                    value={currentPlan.members}
+                                    onChange={(val) => handlePlanUpdate({ members: val })}
+                                    onFocus={() => handleFocus('members')}
+                                    onBlur={() => handleBlur('members')}
+                                    placeholder="列出相關人員... / List members..."
+                                    minHeight="38px"
+                                  />
+                                </FieldContainer>
+                              )}
+                            </section>
+                          )}
+
                           <section>
-                            <SectionHeader title={t('OPENING_CLOSING') || "開場與結語"} icon={StickyNote} />
+                            <SectionHeader title={t('MISSION_OBJ')} icon={Target} />
                             {isHistoryMode ? (
-                              <DiffHighlighter type="markdown" oldValue={previousPlan?.openingClosingRemarks} newValue={previewPlan?.openingClosingRemarks} />
+                              <DiffHighlighter type="markdown" oldValue={previousPlan?.purpose} newValue={previewPlan?.purpose} />
                             ) : (
-                              <FieldContainer field="openingClosingRemarks" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+                              <FieldContainer field="purpose" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
                                 <MarkdownArea
-                                  value={currentPlan.openingClosingRemarks || ""}
-                                  onChange={(val) => handlePlanUpdate({ openingClosingRemarks: val })}
-                                  onFocus={() => handleFocus('openingClosingRemarks')}
-                                  onBlur={() => handleBlur('openingClosingRemarks')}
-                                  placeholder="開場與結語... / Opening & closing..."
+                                  value={currentPlan.purpose || ""}
+                                  onChange={(val) => handlePlanUpdate({ purpose: val })}
+                                  onFocus={() => handleFocus('purpose')}
+                                  onBlur={() => handleBlur('purpose')}
+                                  placeholder="描述活動目標與宗旨... / Describe mission objectives..."
                                   minHeight="120px"
                                 />
                               </FieldContainer>
                             )}
                           </section>
-                        )}
 
-                        <section>
-                          <SectionHeader title="備註" icon={StickyNote} />
-                          {isHistoryMode ? (
-                            <DiffHighlighter type="markdown" oldValue={previousPlan?.remarks} newValue={previewPlan?.remarks} />
-                          ) : (
-                            <FieldContainer field="remarks" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+                          {!isScriptMode && (
+                            <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                              <div className="space-y-2">
+                                <SectionHeader title={t('TIME_WINDOW')} icon={Clock} />
+                                {isHistoryMode ? (
+                                  <DiffHighlighter type="text" oldValue={previousPlan?.time} newValue={previewPlan?.time} />
+                                ) : (
+                                  <FieldContainer field="time" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+                                    <MarkdownArea
+                                      value={currentPlan.time}
+                                      onChange={(val) => handlePlanUpdate({ time: val })}
+                                      onFocus={() => handleFocus('time')}
+                                      onBlur={() => handleBlur('time')}
+                                      placeholder="20min"
+                                      minHeight="38px"
+                                    />
+                                  </FieldContainer>
+                                )}
+                              </div>
+                              <div className="space-y-2">
+                                <SectionHeader title={t('VENUE')} icon={MapPin} />
+                                {isHistoryMode ? (
+                                  <DiffHighlighter type="text" oldValue={previousPlan?.location} newValue={previewPlan?.location} />
+                                ) : (
+                                  <FieldContainer field="location" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+                                    <MarkdownArea
+                                      value={currentPlan.location}
+                                      onChange={(val) => handlePlanUpdate({ location: val })}
+                                      onFocus={() => handleFocus('location')}
+                                      onBlur={() => handleBlur('location')}
+                                      placeholder="3F Main Hall"
+                                      minHeight="38px"
+                                    />
+                                  </FieldContainer>
+                                )}
+                              </div>
+                            </section>
+                          )}
+
+                          {!isScriptMode && (
+                            <section>
+                              <SectionHeader title={t('PROCEDURES')} icon={Layout} />
+                              {isHistoryMode ? (
+                                <DiffHighlighter type="markdown" oldValue={previousPlan?.process} newValue={previewPlan?.process} />
+                              ) : (
+                                <FieldContainer field="process" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+                                  <MarkdownArea
+                                    value={currentPlan.process}
+                                    onChange={(val) => handlePlanUpdate({ process: val })}
+                                    onFocus={() => handleFocus('process')}
+                                    onBlur={() => handleBlur('process')}
+                                    placeholder="詳細描述活動流程... / Describe the procedures..."
+                                  />
+                                </FieldContainer>
+                              )}
+                            </section>
+                          )}
+
+                          <section>
+                            <SectionHeader title={t('VISUAL_BLUEPRINT')} icon={FileText} />
+                            <FieldContainer field="content" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
                               <MarkdownArea
-                                value={currentPlan.remarks || ""}
-                                onChange={(val) => handlePlanUpdate({ remarks: val })}
-                                onFocus={() => handleFocus('remarks')}
-                                onBlur={() => handleBlur('remarks')}
-                                placeholder="加入備註 (選填)... / Add remarks (Optional)..."
-                                minHeight="120px"
+                                value={currentPlan.content}
+                                onChange={(val) => handlePlanUpdate({ content: val })}
+                                onFocus={() => handleFocus('content')}
+                                onBlur={() => handleBlur('content')}
+                                placeholder="撰寫教案內容... (支援貼上圖片) / Write lesson content here..."
                               />
                             </FieldContainer>
+                          </section>
+
+                          <section className="w-full flex flex-col">
+                            <SectionHeader title={t('MATERIALS')} icon={Package} />
+                            {isHistoryMode ? (
+                              <DiffHighlighter type="table" oldValue={previousPlan?.props} newValue={previewPlan?.props} />
+                            ) : (
+                              <div className="w-full">
+                                <FieldContainer field="props" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+                                  <div className="w-full overflow-x-auto pb-2">
+                                    <PropsTable
+                                      value={currentPlan.props}
+                                      onChange={(val) => handlePlanUpdate({ props: val })}
+                                      onFocus={() => handleFocus('props')}
+                                      onBlur={() => handleBlur('props')}
+                                    />
+                                  </div>
+                                </FieldContainer>
+                              </div>
+                            )}
+                          </section>
+
+                          {!isScriptMode && (
+                            <section>
+                              <SectionHeader title={t('OPENING_CLOSING') || "開場與結語"} icon={StickyNote} />
+                              {isHistoryMode ? (
+                                <DiffHighlighter type="markdown" oldValue={previousPlan?.openingClosingRemarks} newValue={previewPlan?.openingClosingRemarks} />
+                              ) : (
+                                <FieldContainer field="openingClosingRemarks" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+                                  <MarkdownArea
+                                    value={currentPlan.openingClosingRemarks || ""}
+                                    onChange={(val) => handlePlanUpdate({ openingClosingRemarks: val })}
+                                    onFocus={() => handleFocus('openingClosingRemarks')}
+                                    onBlur={() => handleBlur('openingClosingRemarks')}
+                                    placeholder="開場與結語... / Opening & closing..."
+                                    minHeight="120px"
+                                  />
+                                </FieldContainer>
+                              )}
+                            </section>
                           )}
-                        </section>
+
+                          <section>
+                            <SectionHeader title="備註" icon={StickyNote} />
+                            {isHistoryMode ? (
+                              <DiffHighlighter type="markdown" oldValue={previousPlan?.remarks} newValue={previewPlan?.remarks} />
+                            ) : (
+                              <FieldContainer field="remarks" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+                                <MarkdownArea
+                                  value={currentPlan.remarks || ""}
+                                  onChange={(val) => handlePlanUpdate({ remarks: val })}
+                                  onFocus={() => handleFocus('remarks')}
+                                  onBlur={() => handleBlur('remarks')}
+                                  placeholder="加入備註 (選填)... / Add remarks (Optional)..."
+                                  minHeight="120px"
+                                />
+                              </FieldContainer>
+                            )}
+                          </section>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
               </div>
             </main>
           </div>
         </div>
       </div>
 
-      <div 
+      <div
         ref={toolbarRef}
         className="md:hidden fixed bottom-0 left-0 right-0 z-[60] pb-[env(safe-area-inset-bottom)] pointer-events-none will-change-[bottom]">
-          <div className="pointer-events-auto bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-t border-stone-200 dark:border-stone-800 shadow-[0_-8px_30px_rgba(0,0,0,0.1)] dark:shadow-[0_-8px_30px_rgba(0,0,0,0.3)] w-full">
-            <MarkdownToolbar className="justify-start pb-2 pt-1 shadow-none border-none border-t-0" />
-          </div>
+        <div className="pointer-events-auto bg-background w-full">
+          <MarkdownToolbar className="justify-start pb-2 pt-1 shadow-none border-none border-t-0" />
+        </div>
       </div>
 
       {isSidebarOpen && (

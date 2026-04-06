@@ -43,25 +43,25 @@ function AppShellInternal({ children }: { children: React.ReactNode }) {
  const { toast } = useToast();
  const router = useRouter();
 
- // RBAC Redirect: If crew attempts to access a locked camp
- React.useEffect(() => {
- if (!isAuthLoading && role === 'crew' && planData.activeCampId) {
- const activeCamp = planData.camps.find(c => c.id === planData.activeCampId);
- if (activeCamp?.isLocked) {
- toast({
- title: "🔒 專案已鎖定 / Project Locked",
- description: "該專案目前處於鎖定狀態，僅管理員可存取。",
- variant: "destructive"
- });
- router.push("/");
- }
- }
- }, [role, planData.activeCampId, planData.camps, isAuthLoading, toast, router]);
+  // RBAC Redirect: If crew attempts to access a locked camp
+  React.useEffect(() => {
+  if (!isAuthLoading && role === 'crew' && planData.activeCampId) {
+  const activeCamp = planData.camps.find(c => c.id === planData.activeCampId);
+  if (activeCamp?.isLocked) {
+  toast({
+  title: "🔒 專案已鎖定 / Project Locked",
+  description: "該專案目前處於鎖定狀態，僅管理員可存取。",
+  variant: "destructive"
+  });
+  router.push("/");
+  }
+  }
+  }, [role, planData.activeCampId, planData.camps, isAuthLoading, toast, router]);
 
- if (isAuthLoading || planData.isLoading) {
- return (
- <div className="h-screen w-full flex flex-col gap-4 items-center justify-center bg-[#FBF9F6] dark:bg-slate-950 font-body">
- <div className="relative">
+  if (isAuthLoading || planData.isLoading) {
+  return (
+  <div className="h-screen w-full flex flex-col gap-4 items-center justify-center bg-[#FBF9F6] dark:bg-slate-950 font-body">
+  <div className="relative">
  <Loader2 className="w-12 h-12 animate-spin text-primary opacity-80" />
  <div className="absolute inset-0 w-12 h-12 rounded-full border-4 border-primary/20 animate-pulse"></div>
  </div>

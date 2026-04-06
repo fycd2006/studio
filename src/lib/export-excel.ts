@@ -41,6 +41,23 @@ export async function exportProjectBackupZip(
   triggerDownload(zipBlob, `${sanitize(campName)}_專案備份_${dateTag()}.zip`);
 }
 
+/**
+ * 匯出行政中樞使用的單一 Excel（活動/教學/營期/闖關表）。
+ */
+export function exportAdminExcel(
+  campId: string,
+  campName: string,
+  camps: Camp[],
+  plans: LessonPlan[],
+  tables: RotationTableData[]
+) {
+  const campPlans = plans.filter((p) => p.campId === campId);
+  const campTables = tables.filter((t) => t.campId === campId);
+  const camp = camps.find((c) => c.id === campId);
+  const excelBlob = buildStyledExcel(campId, camp, campPlans, campTables);
+  triggerDownload(excelBlob, `${sanitize(campName)}_道具清單_闖關表_${dateTag()}.xlsx`);
+}
+
 // ══════════════════════════════════════════════════
 //  Excel 建構 (含樣式渲染)
 // ══════════════════════════════════════════════════

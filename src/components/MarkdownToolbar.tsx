@@ -22,6 +22,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useEffect, useState } from "react";
 
 export function MarkdownToolbar({ className }: { className?: string }) {
+ const toolbarIconButtonClass = "h-9 w-9 rounded-lg text-stone-600 dark:text-slate-300 border border-transparent hover:bg-stone-200/70 dark:hover:bg-slate-800/70 active:bg-stone-300/70 dark:active:bg-slate-700/80 focus-visible:ring-2 focus-visible:ring-blue-500/80 dark:focus-visible:ring-blue-400/80 focus-visible:outline-none transition-colors";
+
  const execCommand = (command: string, val: string | undefined = undefined) => {
  document.execCommand(command, false, val);
  };
@@ -195,7 +197,7 @@ export function MarkdownToolbar({ className }: { className?: string }) {
 
  return (
  <div className={cn(
- "flex items-center overflow-x-auto whitespace-nowrap scrollbar-hide gap-1 p-1 bg-white dark:bg-slate-900 border-none sm:border border-stone-200 dark:border-slate-800 transition-all duration-300 w-full",
+ "flex items-center overflow-x-auto whitespace-nowrap scrollbar-hide gap-1.5 px-1.5 py-1 bg-transparent rounded-xl transition-all duration-300 w-full",
  className,
  // add mobile sliding animation class if applied
  className?.includes('fixed') ? (isVisible ? "translate-y-0" : "translate-y-full") : ""
@@ -209,7 +211,7 @@ export function MarkdownToolbar({ className }: { className?: string }) {
  ].map((btn, i) => (
  <Tooltip key={i}>
  <TooltipTrigger asChild>
- <Button variant="ghost" size="icon" className="h-8 w-8 text-stone-500 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white transition-all border-none focus:ring-0" onMouseDown={(e) => { e.preventDefault(); btn.action(); }}>
+ <Button variant="ghost" size="icon" className={toolbarIconButtonClass} onMouseDown={(e) => { e.preventDefault(); btn.action(); }}>
  <btn.icon className="h-4 w-4" />
  </Button>
  </TooltipTrigger>
@@ -217,7 +219,7 @@ export function MarkdownToolbar({ className }: { className?: string }) {
  </Tooltip>
  ))}
  
- <div className="w-[1px] h-4 bg-stone-200 dark:bg-slate-700 mx-1 border-none" />
+ <div className="w-px h-5 bg-stone-300/80 dark:bg-slate-700/80 mx-1.5 border-none" />
 
  <Tooltip>
  <Popover onOpenChange={(open) => { if (open) { saveSelection(); syncFontSizeFromSelection(); } }}>
@@ -226,7 +228,7 @@ export function MarkdownToolbar({ className }: { className?: string }) {
  <Button
  variant="ghost"
  size="icon"
- className="h-8 w-8 text-stone-500 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white transition-all border-none"
+ className={toolbarIconButtonClass}
  onMouseDown={() => {
  saveSelection();
  syncFontSizeFromSelection();
@@ -236,12 +238,12 @@ export function MarkdownToolbar({ className }: { className?: string }) {
  </Button>
  </PopoverTrigger>
  </TooltipTrigger>
- <PopoverContent className="w-56 p-2 rounded-xl shadow-2xl z-[60]" side="bottom" align="start">
+ <PopoverContent className="w-56 p-2 rounded-xl shadow-2xl z-[60] rounded-xl" side="bottom" align="start">
  <div className="flex items-center gap-1.5 mb-2">
  <Button
  variant="outline"
  size="icon"
- className="h-8 w-8 rounded-lg border-stone-200 dark:border-slate-700"
+ className="h-8 w-8 rounded-xl border-stone-200 dark:border-slate-700"
  onMouseDown={(e) => {
  e.preventDefault();
  stepFontSize(-1);
@@ -266,7 +268,7 @@ export function MarkdownToolbar({ className }: { className?: string }) {
  <Button
  variant="outline"
  size="icon"
- className="h-8 w-8 rounded-lg border-stone-200 dark:border-slate-700"
+ className="h-8 w-8 rounded-xl border-stone-200 dark:border-slate-700"
  onMouseDown={(e) => {
  e.preventDefault();
  stepFontSize(1);
@@ -299,12 +301,12 @@ export function MarkdownToolbar({ className }: { className?: string }) {
  <Popover>
  <TooltipTrigger asChild>
  <PopoverTrigger asChild>
- <Button variant="ghost" size="icon" className="h-8 w-8 text-stone-500 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white transition-all border-none">
+ <Button variant="ghost" size="icon" className={toolbarIconButtonClass}>
  <Palette className="h-4 w-4" />
  </Button>
  </PopoverTrigger>
  </TooltipTrigger>
- <PopoverContent className="w-48 p-2 rounded-2xl shadow-2xl z-[60]" side="bottom" align="start">
+ <PopoverContent className="w-48 p-2 rounded-2xl shadow-2xl z-[60] rounded-xl" side="bottom" align="start">
  <div className="grid grid-cols-4 gap-2">
  {['#0f172a', '#64748b', '#3b82f6', '#06b6d4', '#ef4444', '#22c55e', '#f97316', '#a855f7'].map((color) => (
  <div key={color} className="w-7 h-7 rounded-full cursor-pointer hover:shadow-sm transition-all border-none" style={{ backgroundColor: color }} onMouseDown={(e) => { e.preventDefault(); execCommand("foreColor", color); }} />
@@ -315,7 +317,7 @@ export function MarkdownToolbar({ className }: { className?: string }) {
  <TooltipContent side="bottom" className="text-[9px] font-black uppercase">憿 / Color</TooltipContent>
  </Tooltip>
 
- <div className="w-[1px] h-4 bg-stone-200 dark:bg-slate-700 mx-1 border-none" />
+ <div className="w-px h-5 bg-stone-300/80 dark:bg-slate-700/80 mx-1.5 border-none" />
 
  {[
  { icon: List, title: "? / Bullet", action: () => execCommand("insertUnorderedList") },
@@ -326,7 +328,7 @@ export function MarkdownToolbar({ className }: { className?: string }) {
  ].map((btn, i) => (
  <Tooltip key={i}>
  <TooltipTrigger asChild>
- <Button variant="ghost" size="icon" className="h-8 w-8 text-stone-500 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white transition-all border-none" onMouseDown={(e) => { e.preventDefault(); btn.action(); }}>
+ <Button variant="ghost" size="icon" className={toolbarIconButtonClass} onMouseDown={(e) => { e.preventDefault(); btn.action(); }}>
  <btn.icon className="h-4 w-4" />
  </Button>
  </TooltipTrigger>
@@ -338,7 +340,7 @@ export function MarkdownToolbar({ className }: { className?: string }) {
  
  <Tooltip>
  <TooltipTrigger asChild>
- <Button variant="ghost" size="icon" className="h-8 w-8 text-stone-500 dark:text-slate-400 hover:text-rose-500 transition-all border-none" onMouseDown={(e) => { e.preventDefault(); execCommand("removeFormat"); }}>
+ <Button variant="ghost" size="icon" className={cn(toolbarIconButtonClass, "hover:text-rose-500 dark:hover:text-rose-400")} onMouseDown={(e) => { e.preventDefault(); execCommand("removeFormat"); }}>
  <Eraser className="h-4 w-4" />
  </Button>
  </TooltipTrigger>

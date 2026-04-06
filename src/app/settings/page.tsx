@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth-context";
 import { usePlans } from "@/hooks/use-plans";
@@ -32,6 +32,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { useSearchParams } from "next/navigation";
 
 export default function SettingsPage() {
  const { role, logout } = useAuth();
@@ -39,6 +40,7 @@ export default function SettingsPage() {
  const { theme, setTheme } = useTheme();
  const { language, setLanguage, t } = useTranslation();
  const { toast } = useToast();
+	const searchParams = useSearchParams();
 
  const [profileName, setProfileName] = useState(role === 'admin' ? "STUDIO_ADMIN" : "CREW_MEMBER");
  const [isDeleting, setIsDeleting] = useState<boolean | "downloading">(false);
@@ -52,6 +54,12 @@ export default function SettingsPage() {
 
  const activeCamp = camps.find(c => c.id === activeCampId);
  const isAdmin = role === 'admin';
+
+	useEffect(() => {
+		if (searchParams.get('createProject') === '1' && isAdmin) {
+			setIsAddingProject(true);
+		}
+	}, [searchParams, isAdmin]);
 
 
  const timelineFields = [

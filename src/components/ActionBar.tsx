@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
+import { actionBarTheme } from "@/lib/actionbar-theme";
 import { usePathname } from "next/navigation";
 import { useActionBarStore } from "@/store/action-bar-store";
 
@@ -9,11 +10,11 @@ interface ActionBarProps {
   children: React.ReactNode;
   title?: string;
   className?: string;
+  tone?: "warm" | "plain";
 }
 
-export function ActionBar({ children, title, className }: ActionBarProps) {
+export function ActionBar({ children, title, className, tone = "warm" }: ActionBarProps) {
   const pathname = usePathname();
-  const isHome = pathname === "/";
   const isNavbarVisible = useActionBarStore((s) => s.isNavbarVisible);
   const setIsNavbarVisible = useActionBarStore((s) => s.setIsNavbarVisible);
   const setHasActionBar = useActionBarStore((s) => s.setHasActionBar);
@@ -33,22 +34,25 @@ export function ActionBar({ children, title, className }: ActionBarProps) {
     <div
       ref={ref}
       className={cn(
-        "sticky z-40 md:top-16 transition-all duration-300",
+        "sticky z-[45] md:top-16 transition-all duration-300",
         isNavbarVisible ? "top-[104px]" : "top-0",
-        isHome
-          ? "bg-transparent border-none py-1 md:py-2"
-          : "bg-[#FBF9F6]/90 dark:bg-[hsl(var(--bar-theme))]/90 backdrop-blur-md border-none shadow-none dark:shadow-none py-2",
-        "-mx-4 md:-mx-8 lg:-mx-10 px-4 md:px-8 lg:px-10 mb-4 md:mb-6"
+        tone === "plain"
+          ? "bg-transparent"
+          : actionBarTheme.shell,
+        "py-2",
+        "-mx-4 md:-mx-8 lg:-mx-10 px-4 md:px-8 lg:px-10 mb-4 md:mb-5"
       )}
     >
-      <div className="flex items-center justify-between gap-4 max-w-none w-full">
+      <div className="flex items-center justify-between gap-3 max-w-none w-full min-h-[38px]">
         {/* Title (Hidden on mobile, shown on desktop) */}
-        <div className="hidden md:block font-bold text-[#2C2A28] dark:text-white text-sm tracking-wider">
-          {title}
-        </div>
+        {title && (
+          <div className="hidden lg:block font-extrabold text-stone-500 dark:text-slate-400 text-[10px] uppercase tracking-[0.22em] whitespace-nowrap">
+            {title}
+          </div>
+        )}
 
         {/* Action Buttons - Responsive */}
-        <div className={cn("flex items-center gap-2 flex-wrap justify-end flex-1 md:justify-center md:flex-1", className)}>
+        <div className={cn("flex items-center gap-2 flex-nowrap overflow-x-auto scrollbar-hide justify-start flex-1", className)}>
           {children}
         </div>
       </div>
