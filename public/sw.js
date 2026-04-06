@@ -1,10 +1,8 @@
-const CACHE_NAME = 'ntut-cd-camp-v1';
+const CACHE_NAME = 'ntut-cd-camp-v2';
 const STATIC_ASSETS = [
-  '/',
   '/beep.wav',
   '/logo.png',
   '/favicon.ico',
-  '/manifest.json',
   '/timer-worker.js'
 ];
 
@@ -36,19 +34,60 @@ self.addEventListener('activate', function(event) {
   );
 });
 
-// Fetch event: Cache First for static assets, Network First for API/Firestore
+// Fetch event: keep app shell/chunks fresh while preserving simple offline support.
 self.addEventListener('fetch', function(event) {
   const url = new URL(event.request.url);
   
   // Skip non-GET requests
   if (event.request.method !== 'GET') return;
   
+  // Only handle same-origin requests.
+  if (url.origin !== self.location.origin) return;
+
   // Skip Firestore, Firebase Auth, and analytics requests (always network)
   if (url.hostname.includes('firestore') || 
       url.hostname.includes('firebase') ||
       url.hostname.includes('googleapis') ||
       url.hostname.includes('google-analytics') ||
       url.pathname.startsWith('/api/')) {
+    return;
+  }
+
+  // Never serve stale Next.js build artifacts after new deploys.
+  if (url.pathname.startsWith('/_next/')) {
+    event.respondWith(
+      fetch(event.request).then(function(networkResponse) {
+        if (networkResponse && networkResponse.status === 200) {
+          var clonedResponse = networkResponse.clone();
+          caches.open(CACHE_NAME).then(function(cache) {
+            cache.put(event.request, clonedResponse);
+          });
+        }
+        return networkResponse;
+      }).catch(function() {
+        return caches.match(event.request);
+      })
+    );
+    return;
+  }
+
+  // Navigations should prefer network so HTML points to latest chunk hashes.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).then(function(networkResponse) {
+        if (networkResponse && networkResponse.status === 200) {
+          var clonedResponse = networkResponse.clone();
+          caches.open(CACHE_NAME).then(function(cache) {
+            cache.put(event.request, clonedResponse);
+          });
+        }
+        return networkResponse;
+      }).catch(function() {
+        return caches.match(event.request).then(function(cachedResponse) {
+          return cachedResponse || caches.match('/');
+        });
+      })
+    );
     return;
   }
 
