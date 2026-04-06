@@ -232,7 +232,7 @@ export function AdminSection({
   type PropTableRow = { plan: LessonPlan; prop: PropItem | null };
 
   const toPropRows = (targetPlans: LessonPlan[]): PropTableRow[] =>
-    targetPlans.flatMap((plan) => {
+    targetPlans.flatMap((plan): PropTableRow[] => {
       const props = plan.props || [];
       if (props.length === 0) {
         return [{ plan, prop: null }];

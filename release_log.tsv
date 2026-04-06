@@ -1,0 +1,88 @@
+﻿810c6de	2026-03-10	Refactor: improve responsive UI and UX for rotation and props tables
+1a42e17	2026-03-11	feat: disable chat input while the agent is generating or streaming responses.
+2256ea3	2026-03-11	feat: add extreme saver mode to prevent iOS background sleep for timer
+beddaff	2026-03-11	fix: change 3-minute alarm to use short beeps with wav format for iOS compatibility
+046c57f	2026-03-11	feat: change 3-minute alarm to play short double-beeps for 3 rounds
+74dc260	2026-03-11	feat: make saver mode full-screen
+77a560d	2026-03-11	fix: simplify 3-minute alarm to a single uninterruptable beep for iOS compatibility
+3599271	2026-03-12	feat: double-beep x3 rounds using independent Audio instances + single beep test audio
+0d9718f	2026-03-12	fix: adjust 3-min warning to 3 beeps, keep test audio as 1 beep, 0-min as long alarm
+18995eb	2026-03-12	fix: resolve Next.js 15 Script component undefined error in layout
+c4e8932	2026-03-12	fix: ensure test audio plays reliably by using fresh Audio instance
+3594961	2026-03-12	fix: mount hidden audio tags to ensure reliable iOS playback for alarms and test audio
+30dd24b	2026-03-12	feat: version history enhancements, saver mode portal, local beep audio, double-beep alarm pattern
+4e6e730	2026-03-12	feat: implement zoomable props list and synchronize project structure
+d395321	2026-03-12	feat(whiteboard): optimize UX, fix object insertion and brush UI
+3d7e692	2026-03-12	chore: clean up accidental studio subdirectory
+814e212	2026-03-12	trigger: force vercel deploy
+0892711	2026-03-12	fix: resolve undo/redo crash by using setDoc with merge and handling deletions
+cb1f881	2026-03-12	Merge pull request #1 from fycd2006/trigger-vercel
+232fe79	2026-03-12	feat: use custom logo image with fallback to icon
+f8cbb09	2026-03-12	chore: update logo image
+6225fae	2026-03-12	chore: add logo and favicon
+a7454e7	2026-03-12	chore: update favicon
+752abe8	2026-03-12	chore: update files
+6457248	2026-03-12	chore: update website title to NTUT CD Camp
+78a3412	2026-03-12	fix: improve sidebar collapsed UI for logo, admin sync, and plan items
+427d16d	2026-03-12	feat: display current time on timer broadcast and saver views
+ed32bc4	2026-03-12	fix: request wake lock unconditionally instead of only when running
+9e983a8	2026-03-12	feat: add pre-wake notifications before timer milestones to wake phone screen
+f83cd2b	2026-03-12	fix: widen pre-wake notification window to prevent timing drift skips
+e9e54a8	2026-03-12	fix: make pre-wake notifications strictly silent
+74bc0aa	2026-03-12	fix: only trigger 3-min warning when duration exceeds 3 minutes
+36f702d	2026-03-12	feat: add PWA manifest and meta tags for installable app
+69b5e1e	2026-03-12	feat: enhance notifications with tags, renotify, and action buttons
+2c7a435	2026-03-12	fix: add viewport-fit=cover and safe area padding for PWA fullscreen
+035f010	2026-03-12	fix: dynamically change theme-color to black in saver mode to remove orange line
+0b2ab34	2026-03-12	fix: set theme-color to black globally to remove orange statusbar in PWA
+237ec48	2026-03-12	revert: restore orange theme-color, keep dynamic black only for saver mode
+5df20fc	2026-03-12	feat: optimize timer with NTP sync, Web Worker, audio warm-up, offline UI, SW caching
+00c5b05	2026-03-12	fix: undo now skips duplicate history entries to ensure visible state changes
+17330da	2026-03-13	feat: version preview with diff comparison, named filter, auto-save on restore
+cdd8f40	2026-03-18	feat: Full-site visual revamp with Framer Motion, next-themes, and Navigation enhancements
+b598455	2026-03-20	feat: refine RBAC, Settings dashboard, and project synchronization
+c3206ca	2026-03-21	UI overhaul: Permissions, Navigation, Global FAP, and Version History Sidebar UI
+7565f8b	2026-03-23	feat: add Google Photos and RotatingText dashboard enhancements
+e17f5db	2026-03-23	style: remove quotation marks and borders
+bd9e2fd	2026-03-23	feat: add albums_json to restore background photos
+49f4b58	2026-03-23	fix(carousel): add loop conditions and key to swiper
+4b72913	2026-03-23	feat(api): add local json fallback for hero images
+2240682	2026-03-23	feat: sidebar refactor, multi-view plan overview, and word export
+2980c2e	2026-03-23	style: polish sidebar z-index, visibility, and homepage borders
+bdba765	2026-03-23	style: fix mobile sidebar bg-color for proper light/dark mode support
+f23b51c	2026-03-23	fix: mobile sidebar toggles and timer audio text
+d94db2b	2026-03-24	? Remove image processing from homepage, keep advanced art style for login page only
+dfed146	2026-03-24	? Fix mobile responsiveness across all pages - improve touch targets, spacing, and layout
+153c69b	2026-03-24	?? Fix JSX syntax errors caused by escaped quote marks
+20bdb9d	2026-03-24	? 蝘駁憭??慰?⊥???銝行???芋撘??撣???瘚桀?撌亙???憿?d0b2b3f	2026-03-25	refactor: optimize admin section and generic action bar UI, remove duplicates
+8738705	2026-03-25	fix(layout): lock h-[100dvh] for Admin & PlanEditor pages to restore native sticky behavior for Action Bar
+367d8b5	2026-03-25	style: remove drop shadow and apply mix-blend-difference auto text inversion to Navbar and Action Bar
+567c5be	2026-03-25	fix(layout): adjust ActionBar sticky offset to seamlessly connect with Navbar without visible gaps
+df36654	2026-03-25	chore: update admin UI and add utility scripts
+f9c1783	2026-03-26	feat: optimize navbar auto-hide and fix double scrollbars UI/UX
+291d9a8	2026-03-26	fix scroll clipping by removing fixed-height layout constraints
+91a6b4d	2026-03-26	Restore scroll handler and fix sticky
+bd780e0	2026-03-26	Styling: Make Navbar and ActionBar use solid color on internal pages
+b35178f	2026-03-26	Styling: Remove remaining borders and shadows from Navbar and ActionBar containers for seamless integration
+7c0ac51	2026-03-26	Styling: Make Plan and Admin page layouts fully responsive on mobile screens (Flex traps, relative sidebars, manual zoom restoration)
+c2feaeb	2026-03-26	Feature: Refactor Version History UI UX
+b4bd8bc	2026-03-26	Fix: Missing RotateCcw import in PlanEditor
+304a9d8	2026-03-26	chore: apply latest UI and export updates
+28f017a	2026-03-26	fix: sync admin nav mobile and desktop behaviors
+3c44c0d	2026-03-27	feat: design overhaul - remove borders to elevate flat areas and rely on shadows for depth
+9a0dee7	2026-03-27	feat: settings timeline redesign - implement pill-shaped inputs and correct text
+41eca22	2026-03-27	fix: redesign timeline inputs to pill-shaped style (single and range)
+cc76890	2026-03-27	fix: replace timeline card grid with clean list layout and fix input box sizes
+601cdf1	2026-03-27	fix: refactor group management from cards to explicit list view with shared headers
+05e9d1e	2026-03-31	Update
+e77f37b	2026-04-03	fix: surface real firebase errors and sync dev changes
+fdab629	2026-04-04	feat: optimize plan editor for script mode and add remarks field
+cd6f269	2026-04-04	fix: mobile PWA theme color, keyboard issues, and loading states
+08f02ab	2026-04-04	fix: perfect mobile keyboard toolbar alignment via visual viewport resizing
+429ae4d	2026-04-04	fix: prevent entering read-only history mode when sidebar opens without selection
+5792e26	2026-04-04	feat: persist named current version until it gets modified further
+fff6e84	2026-04-05	fix(MarkdownToolbar): resolve text formatting size logic & add clean unformatted text logic
+5963fda	2026-04-05	feat: implement ResponsiveActivitySelectV3 with absolute positioning and mobile bottom sheet
+201c016	2026-04-05	style: apply UX enhancements (touch targets, typography hierarchy, save states, floating toolbars)
+20fde3a	2026-04-06	fix: sanitize plan overview text and improve sorting
+cd011d2	2026-04-06	Refine action bars and fix admin props grouping
