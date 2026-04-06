@@ -381,9 +381,9 @@ export function AdminSection({
                     const isFirstInPlan = iIndex === 0;
 
                     return (
-                      <tr key={`${item.plan.id}-${item.prop.id}`} className={cn(
+                      <tr key={`${item.plan.id}-${item.prop?.id ?? 'no-prop'}`} className={cn(
                         "group hover:bg-[#FBF9F6] dark:hover:bg-[#FBF9F6]/[0.04] transition-colors duration-200 border-b border-stone-200 dark:border-slate-800 last:border-0",
-                        item.prop.isFromClub && item.prop.isToPurchase ? "bg-emerald-50/30 dark:bg-emerald-900/12" : "bg-white dark:bg-transparent"
+                        item.prop?.isFromClub && item.prop?.isToPurchase ? "bg-emerald-50/30 dark:bg-emerald-900/12" : "bg-white dark:bg-transparent"
                       )}>
                         {isFirstInGroup && (
                           <td className="px-4 py-3 font-fira-code font-black text-xs sm:text-sm text-slate-800 dark:text-slate-400 align-top border-r border-stone-200 dark:border-slate-800" rowSpan={items.length}>
