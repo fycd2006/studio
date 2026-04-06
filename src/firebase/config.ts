@@ -1,7 +1,5 @@
 import type { FirebaseOptions } from 'firebase/app';
 
-const jsonFirebaseConfig = parseFirebaseJsonConfig();
-
 const parseFirebaseJsonConfig = (): Partial<FirebaseOptions> => {
   const raw = process.env.NEXT_PUBLIC_FIREBASE_CONFIG || process.env.FIREBASE_WEBAPP_CONFIG || process.env.FIREBASE_CONFIG;
   if (!raw) return {};
@@ -14,6 +12,8 @@ const parseFirebaseJsonConfig = (): Partial<FirebaseOptions> => {
     return {};
   }
 };
+
+const jsonFirebaseConfig = parseFirebaseJsonConfig();
 
 const normalizeConfig = (config: Partial<FirebaseOptions>): Partial<FirebaseOptions> => {
   return Object.fromEntries(
