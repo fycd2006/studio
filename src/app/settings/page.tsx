@@ -25,6 +25,7 @@ import {
  Plus,
  List,
  Trash2,
+ X,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { exportProjectBackupZip } from "@/lib/export-excel";
@@ -33,6 +34,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { useSearchParams } from "next/navigation";
+import { VERSION_HISTORY } from "@/data/version-history";
 
 export default function SettingsPage() {
  const { role, logout } = useAuth();
@@ -51,6 +53,8 @@ export default function SettingsPage() {
  const [newActivityType, setNewActivityType] = useState("");
  const [newGroupNameZh, setNewGroupNameZh] = useState("");
  const [newGroupNameEn, setNewGroupNameEn] = useState("");
+ const [isVersionHistoryOpen, setIsVersionHistoryOpen] = useState(false);
+ const [currentVersion, setCurrentVersion] = useState(process.env.NEXT_PUBLIC_APP_VERSION || "dev");
 
  const activeCamp = camps.find(c => c.id === activeCampId);
  const isAdmin = role === 'admin';
@@ -60,6 +64,22 @@ export default function SettingsPage() {
 			setIsAddingProject(true);
 		}
 	}, [searchParams, isAdmin]);
+
+ useEffect(() => {
+ const readCurrentVersion = async () => {
+ try {
+ const res = await fetch('/api/version', { cache: 'no-store' });
+ if (!res.ok) return;
+ const data = await res.json();
+ const version = String(data?.version || '').trim();
+ if (version) setCurrentVersion(version);
+ } catch {
+ // Keep env fallback when version endpoint is unavailable.
+ }
+ };
+
+ readCurrentVersion();
+ }, []);
 
 
  const timelineFields = [
@@ -477,6 +497,28 @@ export default function SettingsPage() {
  </section>
  )}
 
+ <section className="space-y-6">
+ <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-500 dark:text-slate-400 flex items-center gap-3">
+ <Clock className="w-4 h-4 text-orange-500 dark:text-amber-400" /> 版本資訊
+ </h2>
+
+ <div className="bg-white dark:bg-slate-800 rounded-xl p-4 sm:p-6 transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ <div>
+ <p className="text-[10px] font-black uppercase tracking-widest text-stone-500 dark:text-slate-400 mb-1">當前版本</p>
+ <Badge className="bg-stone-100 dark:bg-slate-900 text-stone-700 dark:text-slate-300 font-black px-3 py-1 text-xs border-none">
+ v{currentVersion}
+ </Badge>
+ </div>
+ <Button
+ onClick={() => setIsVersionHistoryOpen(true)}
+ variant="outline"
+ className="h-9 px-4 rounded-lg font-bold text-xs tracking-widest uppercase border-none bg-[#FBF9F6] dark:bg-slate-900 text-stone-700 dark:text-slate-200 hover:bg-stone-100 dark:hover:bg-slate-800"
+ >
+ 查看版本歷程
+ </Button>
+ </div>
+ </section>
+
  {/* ── ADMIN DANGER ZONE ──────────── */}
  {isAdmin && (
  <section className="space-y-6 pt-12 dark:">
@@ -554,6 +596,57 @@ export default function SettingsPage() {
  </div>
  </section>
  )}
+
+ <AnimatePresence>
+ {isVersionHistoryOpen && (
+ <div className="fixed inset-0 z-[110] bg-black/40 backdrop-blur-sm p-4 sm:p-6 flex items-center justify-center">
+ <motion.div
+ initial={{ opacity: 0, y: 12, scale: 0.98 }}
+ animate={{ opacity: 1, y: 0, scale: 1 }}
+ exit={{ opacity: 0, y: 8, scale: 0.98 }}
+ transition={{ duration: 0.2, ease: "easeOut" }}
+ className="w-full max-w-3xl max-h-[80vh] overflow-hidden rounded-2xl bg-white dark:bg-slate-800 shadow-2xl"
+ >
+ <div className="px-5 py-4 border-b border-stone-100 dark:border-slate-700/70 flex items-center justify-between">
+ <div>
+ <p className="text-[10px] font-black uppercase tracking-widest text-stone-500 dark:text-slate-400">Release Timeline</p>
+ <h3 className="text-lg font-bold text-[#2C2A28] dark:text-white">版本歷程</h3>
+ </div>
+ <Button
+ variant="ghost"
+ size="icon"
+ className="h-8 w-8 text-stone-500 dark:text-slate-400 hover:bg-stone-100 dark:hover:bg-slate-700"
+ onClick={() => setIsVersionHistoryOpen(false)}
+ >
+ <X className="w-4 h-4" />
+ </Button>
+ </div>
+
+ <div className="px-5 py-4 overflow-y-auto max-h-[calc(80vh-76px)] space-y-3">
+ {VERSION_HISTORY.map((entry) => (
+ <div key={entry.id} className="rounded-xl border border-stone-100 dark:border-slate-700/70 p-4 bg-[#FBF9F6] dark:bg-slate-900/40">
+ <div className="flex items-start justify-between gap-3 mb-2">
+ <div>
+ <p className="text-[11px] font-black uppercase tracking-widest text-stone-500 dark:text-slate-400">{entry.date} • v{entry.version}</p>
+ <h4 className="text-sm sm:text-base font-bold text-[#2C2A28] dark:text-white">{entry.title}</h4>
+ </div>
+ <Badge className="bg-orange-100 dark:bg-amber-500/10 text-orange-700 dark:text-amber-300 border-none font-bold text-[10px]">{entry.label}</Badge>
+ </div>
+ <ul className="space-y-1.5">
+ {entry.highlights.map((item, idx) => (
+ <li key={`${entry.id}-${idx}`} className="text-sm text-stone-600 dark:text-slate-300 leading-relaxed flex items-start gap-2">
+ <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-orange-500 dark:bg-amber-400 shrink-0" />
+ <span>{item}</span>
+ </li>
+ ))}
+ </ul>
+ </div>
+ ))}
+ </div>
+ </motion.div>
+ </div>
+ )}
+ </AnimatePresence>
 
  </div>
  </div>

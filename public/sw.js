@@ -47,7 +47,8 @@ self.addEventListener('fetch', function(event) {
   if (url.hostname.includes('firestore') || 
       url.hostname.includes('firebase') ||
       url.hostname.includes('googleapis') ||
-      url.hostname.includes('google-analytics')) {
+      url.hostname.includes('google-analytics') ||
+      url.pathname.startsWith('/api/')) {
     return;
   }
 

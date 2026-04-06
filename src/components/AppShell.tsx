@@ -42,6 +42,7 @@ function AppShellInternal({ children }: { children: React.ReactNode }) {
  const pathname = usePathname();
  const { toast } = useToast();
  const router = useRouter();
+ const [hasVersionUpdate, setHasVersionUpdate] = React.useState(false);
 
   // RBAC Redirect: If crew attempts to access a locked camp
   React.useEffect(() => {
@@ -57,6 +58,67 @@ function AppShellInternal({ children }: { children: React.ReactNode }) {
   }
   }
   }, [role, planData.activeCampId, planData.camps, isAuthLoading, toast, router]);
+
+    React.useEffect(() => {
+        let isMounted = true;
+
+        const markUpdateAvailable = () => {
+            if (!isMounted) return;
+            setHasVersionUpdate(true);
+        };
+
+        const currentBuildId = process.env.NEXT_PUBLIC_BUILD_ID || 'dev';
+
+        const checkVersion = async () => {
+            try {
+                const res = await fetch('/api/version', { cache: 'no-store' });
+                if (!res.ok) return;
+                const data = await res.json();
+                const latestBuildId = String(data?.buildId || '');
+                if (latestBuildId && latestBuildId !== currentBuildId) {
+                    markUpdateAvailable();
+                }
+            } catch {
+                // Silent fail: version check should never block app usage.
+            }
+        };
+
+        checkVersion();
+        const intervalId = window.setInterval(checkVersion, 5 * 60 * 1000);
+
+        let removeControllerListener: (() => void) | undefined;
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistration().then((registration) => {
+                if (!registration) return;
+
+                if (registration.waiting) {
+                    markUpdateAvailable();
+                }
+
+                registration.addEventListener('updatefound', () => {
+                    const installing = registration.installing;
+                    if (!installing) return;
+
+                    installing.addEventListener('statechange', () => {
+                        if (installing.state === 'installed' && navigator.serviceWorker.controller) {
+                            markUpdateAvailable();
+                        }
+                    });
+                });
+            });
+
+            const onControllerChange = () => markUpdateAvailable();
+            navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
+            removeControllerListener = () => navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+        }
+
+        return () => {
+            isMounted = false;
+            window.clearInterval(intervalId);
+            if (removeControllerListener) removeControllerListener();
+        };
+    }, []);
 
   if (isAuthLoading || planData.isLoading) {
   return (
@@ -80,6 +142,22 @@ function AppShellInternal({ children }: { children: React.ReactNode }) {
  <div className={`w-full bg-[#FBF9F6] text-[#2C2A28] dark:text-slate-50 font-body transition-colors min-h-screen flex flex-col ${isAdminRoute ? "dark:bg-[hsl(var(--bar-theme))]" : "dark:bg-slate-950"}`}>
  {/* Transparent Navbar */}
  <TransparentNavbar groups={planData.groups} />
+
+ {hasVersionUpdate && (
+ <div className="sticky top-[72px] z-[70] px-3 sm:px-6 md:px-8">
+ <div className="mx-auto mt-2 max-w-[1200px] rounded-xl border border-amber-300/70 bg-amber-50 text-amber-900 px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm flex items-center justify-between gap-3">
+ <p className="text-xs sm:text-sm font-semibold">
+ 偵測到新版本已發布，請刷新頁面以載入最新功能。
+ </p>
+ <button
+ onClick={() => window.location.reload()}
+ className="shrink-0 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs sm:text-sm font-bold px-3 py-1.5 transition-colors"
+ >
+ 立即刷新
+ </button>
+ </div>
+ </div>
+ )}
  
  {/* Main Content Area */}
  <main className="flex-1 min-w-0 w-full overflow-x-clip relative animate-in fade-in slide-in-from-bottom-5 duration-300">
