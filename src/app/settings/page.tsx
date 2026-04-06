@@ -70,6 +70,8 @@ export default function SettingsPage() {
  try {
  const res = await fetch('/api/version', { cache: 'no-store' });
  if (!res.ok) return;
+ const contentLength = res.headers.get('content-length');
+ if (contentLength === '0') return;
  const data = await res.json();
  const version = String(data?.version || '').trim();
  if (version) setCurrentVersion(version);

@@ -9,6 +9,10 @@ function getFallbackImages() {
     const filePath = path.join(process.cwd(), 'src/data/fallback-images.json');
     if (fs.existsSync(filePath)) {
       const data = fs.readFileSync(filePath, 'utf-8');
+      if (!data || !data.trim()) {
+        console.warn('Fallback images file is empty');
+        return [];
+      }
       return JSON.parse(data).images || [];
     }
   } catch (err) {
@@ -42,6 +46,9 @@ export async function GET() {
       throw new Error(`Failed to fetch public album HTML: ${res.statusText}`);
     }
     const html = await res.text();
+    if (!html || !html.trim()) {
+      throw new Error('Empty response body from album URL');
+    }
 
     const regex = /\["(https:\/\/lh3\.googleusercontent\.com\/pw\/[a-zA-Z0-9\-_]+)"/g;
     let match;

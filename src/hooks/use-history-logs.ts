@@ -17,9 +17,19 @@ export function useHistoryLogs() {
     try {
       const stored = localStorage.getItem('app_history_logs');
       if (stored) {
+        if (!stored.trim()) {
+          console.warn('Stored history logs is empty string, resetting');
+          localStorage.removeItem('app_history_logs');
+          setLogs([]);
+          return;
+        }
         setLogs(JSON.parse(stored));
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error('Failed to load history logs:', e);
+      localStorage.removeItem('app_history_logs');
+      setLogs([]);
+    }
   }, []);
 
   useEffect(() => {
@@ -34,7 +44,15 @@ export function useHistoryLogs() {
   const addLog = useCallback((action: HistoryAction, target: string, userRole: string) => {
     try {
       const stored = localStorage.getItem('app_history_logs');
-      const currentLogs: HistoryLog[] = stored ? JSON.parse(stored) : [];
+      let currentLogs: HistoryLog[] = [];
+      if (stored) {
+        if (!stored.trim()) {
+          console.warn('Stored history logs is empty string, resetting');
+          localStorage.removeItem('app_history_logs');
+        } else {
+          currentLogs = JSON.parse(stored);
+        }
+      }
       const newLog: HistoryLog = {
         id: Math.random().toString(36).substring(2, 9),
         action,
@@ -49,7 +67,9 @@ export function useHistoryLogs() {
       
       // Manually dispatch storage event for same-tab updates if needed
       window.dispatchEvent(new Event('local-storage-update'));
-    } catch (e) {}
+    } catch (e) {
+      console.error('Failed to add history log:', e);
+    }
   }, []);
 
   useEffect(() => {

@@ -73,6 +73,8 @@ function AppShellInternal({ children }: { children: React.ReactNode }) {
             try {
                 const res = await fetch('/api/version', { cache: 'no-store' });
                 if (!res.ok) return;
+                const contentLength = res.headers.get('content-length');
+                if (contentLength === '0') return;
                 const data = await res.json();
                 const latestBuildId = String(data?.buildId || '');
                 if (latestBuildId && latestBuildId !== currentBuildId) {

@@ -107,12 +107,20 @@ export async function POST(request: NextRequest) {
 
     if (fs.existsSync(cachedPath)) {
       const cachedData = fs.readFileSync(cachedPath);
-      return new NextResponse(new Uint8Array(cachedData), {
-        headers: {
-          "Content-Type": "image/jpeg",
-          "Cache-Control": "public, max-age=2592000", // 30 天
-        },
-      });
+      if (cachedData && cachedData.length > 100) {  // Ensure cached data is not too small
+        return new NextResponse(new Uint8Array(cachedData), {
+          headers: {
+            "Content-Type": "image/jpeg",
+            "Cache-Control": "public, max-age=2592000", // 30 天
+          },
+        });
+      }
+      // If cached data is too small, delete it and reprocess
+      try {
+        fs.unlinkSync(cachedPath);
+      } catch (e) {
+        console.warn('Failed to delete corrupted cache file:', e);
+      }
     }
 
     // 下載原始圖片
@@ -137,6 +145,11 @@ export async function POST(request: NextRequest) {
     }
 
     const processedData = fs.readFileSync(outputPath);
+    
+    // Validate processed data is not too small (likely incomplete)
+    if (!processedData || processedData.length < 100) {
+      throw new Error("Python processing produced incomplete output");
+    }
 
     // 保存到 快取
     fs.writeFileSync(cachedPath, processedData);
