@@ -9,6 +9,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { HeroCarousel } from "@/components/HeroCarousel";
 import { RotatingText } from "@/components/RotatingText";
+import { useTranslation } from "@/lib/i18n-context";
 
 /* ── helpers ────────────────────────────────────── */
 function isPast(dateStr?: string) {
@@ -24,6 +25,7 @@ function isPast(dateStr?: string) {
 export default function Home() {
   const router = useRouter();
   const { camps, activeCampId, plans, isLoading } = usePlans();
+  const { t, language } = useTranslation();
   const activeCamp = camps?.find((c) => c.id === activeCampId);
 
   useEffect(() => {
@@ -33,24 +35,26 @@ export default function Home() {
     }
   }, [isLoading, camps, router]);
 
-  const heroQuotes = useMemo(() => [
-    "崇德人，崇德魂!",
-    "用生命影響生命，點燃每個孩子心中的無限可能。",
-    "歡迎回來！你今天的每一份用心，都在為孩子們的夢想打底。",
-    "熱情不是名詞，是我們現在進行式的行動……",
-    "正在載入孩子們的笑容與期待……",
-    "一點一滴的付出，正是在凝聚改變的力量。",
-    "探索未知，從心出發。",
-    "保持善良，保持好奇。",
-    "我們不只傳遞知識，更要在孩子心中種下一顆善良與探索的種子。",
-    "一個人可以走得快，但一群志同道合的夥伴，能帶著孩子們走得更深、更遠。",
-    "每一次的籌備與修正，都是為了讓世界更接近我們理想的模樣。",
-    "用無私的奉獻帶領團隊，用不斷的自我超越成就每一次營隊。",
-    "科技看見未來，品格決定高度；在這裡，我們陪伴孩子遇見更好的自己。",
-    "不要問世界需要什麼，問問自己做什麼能讓你充滿生機地活著。因為世界需要的，正是充滿生機的人。",
-    "人生的意義在於發掘你的天賦；人生的目的在於將它分享出去。",
-    "一個人可以走得很快，但一群人可以走得很遠。"
-  ], []);
+  const heroQuotes = useMemo(() =>
+    language === "zh"
+      ? [
+          "崇德人，崇德魂!",
+          "用生命影響生命，點燃每個孩子心中的無限可能。",
+          "歡迎回來！你今天的每一份用心，都在為孩子們的夢想打底。",
+          "熱情不是名詞，是我們現在進行式的行動……",
+          "正在載入孩子們的笑容與期待……",
+          "一點一滴的付出，正是在凝聚改變的力量。",
+        ]
+      : [
+          "Lead with passion, build with purpose.",
+          "Every detail you craft today becomes a child's memory tomorrow.",
+          "Welcome back. Your effort shapes meaningful learning moments.",
+          "Passion is not a noun, it's an ongoing action.",
+          "Loading smiles, curiosity, and courage...",
+          "Small efforts, repeated daily, create real impact.",
+        ],
+    [language]
+  );
 
   const planQuotes = useMemo(() => [
     "你的用心，孩子會懂",
@@ -62,13 +66,13 @@ export default function Home() {
   ], []);
 
   const timeline = useMemo(() => [
-    { label: "一收", start: activeCamp?.meeting1StartDate, end: activeCamp?.meeting1EndDate, icon: Clock },
-    { label: "二收", start: activeCamp?.meeting2StartDate, end: activeCamp?.meeting2EndDate, icon: Clock },
-    { label: "三收", start: activeCamp?.meeting3StartDate, end: activeCamp?.meeting3EndDate, icon: Clock },
-    { label: "集訓", start: activeCamp?.trainingStartDate, end: activeCamp?.trainingEndDate, icon: Clock },
-    { label: "駐站", start: activeCamp?.siteStartDate, end: activeCamp?.siteEndDate, icon: MapPin },
-    { label: "營期", start: activeCamp?.campStartDate, end: activeCamp?.campEndDate, icon: Tent },
-  ], [activeCamp]);
+    { label: t('MEETING_1'), start: activeCamp?.meeting1StartDate, end: activeCamp?.meeting1EndDate, icon: Clock },
+    { label: t('MEETING_2'), start: activeCamp?.meeting2StartDate, end: activeCamp?.meeting2EndDate, icon: Clock },
+    { label: t('MEETING_3'), start: activeCamp?.meeting3StartDate, end: activeCamp?.meeting3EndDate, icon: Clock },
+    { label: language === 'zh' ? '集訓' : 'Training' , start: activeCamp?.trainingStartDate, end: activeCamp?.trainingEndDate, icon: Clock },
+    { label: language === 'zh' ? '駐站' : 'On Site', start: activeCamp?.siteStartDate, end: activeCamp?.siteEndDate, icon: MapPin },
+    { label: language === 'zh' ? '營期' : 'Camp', start: activeCamp?.campStartDate, end: activeCamp?.campEndDate, icon: Tent },
+  ], [activeCamp, t, language]);
 
   const currentIdx = useMemo(() => {
     let lastValidIdx = -1;
@@ -138,7 +142,7 @@ export default function Home() {
             <div className="max-w-4xl">
               <div className="mb-4 sm:mb-6 md:mb-8">
                 <span className="text-[#f48c25] text-[11px] sm:text-xs md:text-sm font-black tracking-[0.2em] uppercase drop-shadow-md">
-                  {activeCamp ? `正在為 ${activeCamp.name} 創造內容` : '熱情、活力的核心'}
+                  {activeCamp ? t('HERO_CREATING_FOR', { name: activeCamp.name }) : t('HERO_CREATING_DEFAULT')}
                 </span>
               </div>
               <h1 className="flex flex-col text-[clamp(2.75rem,8vw,12rem)] sm:text-[clamp(4rem,9vw,12rem)] font-black leading-[0.85] tracking-tight mb-4 sm:mb-6 md:mb-8 text-[#2C2A28] dark:text-white drop-shadow-xl uppercase">
@@ -153,13 +157,13 @@ export default function Home() {
                   onClick={() => router.push("/admin")}
                   className="relative overflow-hidden bg-[#f48c25]/70 dark:bg-[#f48c25]/60 backdrop-blur-xl text-white px-6 sm:px-8 md:px-10 py-3 sm:py-4 md:py-5 rounded-xl sm:rounded-2xl md:rounded-[2rem] text-base sm:text-lg md:text-xl font-bold uppercase tracking-widest shadow-[0_8px_32px_rgba(244,140,37,0.3)] hover:shadow-[0_8px_40px_rgba(244,140,37,0.6)] hover:-translate-y-1.5 hover:bg-[#f48c25]/90 dark:hover:bg-[#f48c25]/80 transition-all duration-300 w-full sm:w-auto text-center"
                 >
-                  行政中心
+                  {t('HOME_BTN_ADMIN')}
                 </button>
                 <button 
                   onClick={() => router.push("/plans")}
                   className="relative overflow-hidden bg-white/20 dark:bg-slate-900/40 backdrop-blur-xl text-slate-800 dark:text-slate-200 px-6 sm:px-8 md:px-10 py-3 sm:py-4 md:py-5 rounded-xl sm:rounded-2xl md:rounded-[2rem] text-base sm:text-lg md:text-xl font-bold uppercase tracking-widest shadow-[0_8px_32px_rgba(0,0,0,0.05)] hover:bg-white/40 dark:hover:bg-slate-800/60 hover:shadow-[0_8px_40px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_8px_40px_rgba(0,0,0,0.3)] hover:-translate-y-1.5 transition-all duration-300 w-full sm:w-auto text-center"
                 >
-                  教案總覽
+                  {t('HOME_BTN_PLANS')}
                 </button>
               </div>
             </div>

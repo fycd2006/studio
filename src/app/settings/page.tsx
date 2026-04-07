@@ -22,6 +22,8 @@ import {
  Tent,
  Lock,
  Unlock,
+ Pencil,
+ Check,
  Plus,
  List,
  Trash2,
@@ -48,6 +50,8 @@ export default function SettingsPage() {
  const [isDeleting, setIsDeleting] = useState<boolean | "downloading">(false);
  const [isAddingProject, setIsAddingProject] = useState(false);
  const [newProjectName, setNewProjectName] = useState("");
+ const [editingCampId, setEditingCampId] = useState<string | null>(null);
+ const [editingCampName, setEditingCampName] = useState("");
  const [deleteInput, setDeleteInput] = useState("");
 
  const [newActivityType, setNewActivityType] = useState("");
@@ -55,6 +59,7 @@ export default function SettingsPage() {
  const [newGroupNameEn, setNewGroupNameEn] = useState("");
  const [isVersionHistoryOpen, setIsVersionHistoryOpen] = useState(false);
  const [currentVersion, setCurrentVersion] = useState(process.env.NEXT_PUBLIC_APP_VERSION || "dev");
+ const [activeTab, setActiveTab] = useState<"account" | "workspace" | "preferences" | "versions" | "danger">("account");
 
  const activeCamp = camps.find(c => c.id === activeCampId);
  const isAdmin = role === 'admin';
@@ -98,6 +103,48 @@ export default function SettingsPage() {
  updateCamp(activeCampId, updates as any);
  };
 
+ const handleCreateProject = () => {
+ const name = newProjectName.trim();
+ if (!name) {
+ toast({ title: t('ENTER_PROJECT_NAME_REQUIRED'), description: t('PROJECT_NAME_REQUIRED_DESC'), variant: "destructive" });
+ return;
+ }
+ addCamp(name);
+ setNewProjectName("");
+ setIsAddingProject(false);
+ toast({ title: t('PROJECT_CREATED'), description: t('PROJECT_CREATED_DESC', { name }) });
+ };
+
+ const beginRenameCamp = (id: string, currentName: string) => {
+ setEditingCampId(id);
+ setEditingCampName(currentName);
+ };
+
+ const cancelRenameCamp = () => {
+ setEditingCampId(null);
+ setEditingCampName("");
+ };
+
+ const submitRenameCamp = (id: string) => {
+ const name = editingCampName.trim();
+ if (!name) {
+ toast({ title: t('NAME_CANNOT_BE_EMPTY'), description: t('ENTER_NEW_PROJECT_NAME'), variant: "destructive" });
+ return;
+ }
+ updateCamp(id, { name });
+ setEditingCampId(null);
+ setEditingCampName("");
+ toast({ title: t('PROJECT_RENAMED'), description: t('PROJECT_RENAMED_DESC', { name }) });
+ };
+
+ const tabItems = [
+ { key: "account" as const, label: t('TAB_ACCOUNT'), icon: User },
+ { key: "workspace" as const, label: t('TAB_WORKSPACE'), icon: Layout },
+ { key: "preferences" as const, label: t('TAB_PREFERENCES'), icon: Globe },
+ { key: "versions" as const, label: t('TAB_VERSIONS'), icon: Clock },
+ ...(isAdmin ? [{ key: "danger" as const, label: t('TAB_DANGER'), icon: ShieldAlert }] : []),
+ ];
+
  return (
  <div className="bg-[#FBF9F6] dark:bg-slate-900 text-[#2C2A28] dark:text-slate-50 transition-colors font-sans selection:bg-orange-200 dark:selection:bg-amber-500/30">
  <div className="max-w-5xl mx-auto pt-28 sm:pt-24 pb-6 sm:pb-12 md:pb-16 px-4 sm:px-6 md:px-8">
@@ -114,7 +161,47 @@ export default function SettingsPage() {
  </Button>
  </div>
 
+ <div className="mb-8 sm:mb-10 rounded-2xl bg-white dark:bg-slate-800 p-2 shadow-[0_12px_36px_rgba(140,120,100,0.08)] border-none">
+ <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+ {tabItems.map((tab) => {
+ const Icon = tab.icon;
+ const isActive = activeTab === tab.key;
+ return (
+ <button
+ key={tab.key}
+ onClick={() => setActiveTab(tab.key)}
+ className={cn(
+ "group rounded-xl px-3 py-3 text-left transition-all cursor-pointer border-none",
+ isActive
+ ? "bg-[#F4EFE8] dark:bg-slate-700 shadow-sm"
+ : "hover:bg-stone-50 dark:hover:bg-slate-700/60"
+ )}
+ >
+ <div className="flex items-center gap-2.5">
+ <span
+ className={cn(
+ "inline-flex h-7 w-7 items-center justify-center rounded-lg transition-colors",
+ isActive
+ ? "bg-orange-100 text-orange-700 dark:bg-amber-500/20 dark:text-amber-300"
+ : "bg-stone-100 text-stone-500 dark:bg-slate-700 dark:text-slate-300"
+ )}
+ >
+ <Icon className="w-4 h-4" />
+ </span>
+ <div className="min-w-0">
+ <p className={cn("text-[11px] font-black uppercase tracking-widest", isActive ? "text-[#2C2A28] dark:text-white" : "text-stone-500 dark:text-slate-400")}>{tab.label}</p>
+ <p className="text-[10px] text-stone-400 dark:text-slate-500 truncate">{t('SETTINGS_PANEL')}</p>
+ </div>
+ </div>
+ </button>
+ );
+ })}
+ </div>
+ </div>
+
  <div className="grid grid-cols-1 gap-12">
+ {activeTab === "account" && (
+ <>
  {/* ── IDENTITY ──────────────────── */}
  <section className="space-y-6">
  <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-500 dark:text-slate-400 flex items-center gap-3">
@@ -139,7 +226,11 @@ export default function SettingsPage() {
  </div>
  </div>
  </section>
+ </>
+ )}
 
+ {activeTab === "workspace" && (
+ <>
  {/* ── PROJECT DIRECTORY ──────────── */}
  <section className="space-y-6">
  <div className="flex items-center justify-between">
@@ -147,73 +238,69 @@ export default function SettingsPage() {
  <Layout className="w-4 h-4 text-orange-500 dark:text-amber-400" /> {t('PROJECT_DIRECTORY')}
  </h2>
  {isAdmin && (
- <div className="flex items-center gap-2">
- {isAddingProject ? (
- <div className="flex items-center gap-2 bg-stone-100 dark:bg-slate-900 rounded-lg p-1 pr-2 animate-in fade-in slide-in-from-right-2 duration-200">
- <input 
- className="bg-transparent text-[11px] font-bold text-[#2C2A28] dark:text-white w-32 px-2 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
- placeholder="Project Name..."
- autoFocus
+ <Button
+ variant="outline"
+ size="sm"
+ className="h-8 px-4 rounded-lg bg-orange-600 dark:bg-amber-400 text-white dark:text-[#2C2A28] font-black text-[10px] uppercase tracking-widest hover:bg-orange-700 dark:hover:bg-amber-500 transition-all gap-2 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
+ onClick={() => {
+ setIsAddingProject((prev) => !prev);
+ if (isAddingProject) setNewProjectName("");
+ }}
+ >
+ <Plus className="w-3.5 h-3.5" /> {isAddingProject ? t('COLLAPSE') : t('NEW_PROJECT')}
+ </Button>
+ )}
+ </div>
+
+ {isAdmin && isAddingProject && (
+ <div className="rounded-xl bg-white dark:bg-slate-800 p-4 sm:p-5 shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
+ <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+ <Input
+ placeholder={t('CREATE_PROJECT_PLACEHOLDER')}
  value={newProjectName}
  onChange={(e) => setNewProjectName(e.target.value)}
  onKeyDown={(e) => {
- if (e.key === 'Enter' && newProjectName) {
- addCamp(newProjectName);
- setIsAddingProject(false);
- setNewProjectName("");
- } else if (e.key === 'Escape') {
+ if (e.key === "Enter") handleCreateProject();
+ if (e.key === "Escape") {
  setIsAddingProject(false);
  setNewProjectName("");
  }
  }}
+ className="h-10 bg-[#FBF9F6] dark:bg-slate-900 text-[#2C2A28] dark:text-white border-none"
+ autoFocus
  />
- <Button 
- size="sm" 
- variant="ghost" 
- className="h-6 w-6 p-0 rounded-md hover:bg-rose-500/10 hover:text-rose-500 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
+ <div className="flex items-center gap-2">
+ <Button className="h-10 px-4 font-bold bg-emerald-600 hover:bg-emerald-700 text-white border-none" onClick={handleCreateProject}>
+ <Check className="w-4 h-4 mr-1.5" /> {t('CREATE')}
+ </Button>
+ <Button
+ variant="ghost"
+ className="h-10 px-4 font-bold text-stone-600 dark:text-slate-300 hover:bg-stone-100 dark:hover:bg-slate-700 border-none"
  onClick={() => {
  setIsAddingProject(false);
  setNewProjectName("");
  }}
  >
- <LogOut className="w-3 h-3 rotate-180" />
- </Button>
- <Button 
- size="sm" 
- variant="ghost" 
- className="h-6 w-6 p-0 rounded-md hover:bg-emerald-500/10 hover:text-emerald-500 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
- onClick={() => {
- if (newProjectName) {
- addCamp(newProjectName);
- setIsAddingProject(false);
- setNewProjectName("");
- }
- }}
- >
- <ShieldCheck className="w-3 h-3" />
+ <X className="w-4 h-4 mr-1.5" /> {t('CANCEL')}
  </Button>
  </div>
- ) : (
- <Button 
- variant="outline" 
- size="sm" 
- className="h-8 px-4 rounded-lg bg-orange-600 dark:bg-amber-400 text-white dark:text-[#2C2A28] font-black text-[10px] uppercase tracking-widest hover:bg-orange-700 dark:hover:bg-amber-500 transition-all gap-2 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
- onClick={() => setIsAddingProject(true)}
- >
- <Plus className="w-3.5 h-3.5" /> {t('NEW_PROJECT')}
- </Button>
- )}
+ </div>
  </div>
  )}
- </div>
+
  <div className="bg-white dark:bg-slate-800 rounded-xl p-2 overflow-hidden transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
  <div className="divide-y divide-stone-100 dark:divide-slate-700/50">
  {camps.map((camp) => (
  <div key={camp.id}
  className={cn("p-6 flex items-center justify-between hover:bg-[#FBF9F6] dark:hover:bg-slate-700/50 transition-colors cursor-pointer group", activeCampId === camp.id && "bg-[#FBF9F6] dark:bg-slate-700/30")}
  onClick={() => {
+ if (editingCampId === camp.id) return;
+ if (activeCampId === camp.id) return;
  setActiveCampId(camp.id);
+ toast({ title: t('SWITCHING_PROJECT'), description: t('SWITCHING_PROJECT_DESC', { name: camp.name }) });
+ setTimeout(() => {
  window.location.reload();
+ }, 150);
  }}
  >
  <div className="flex items-center gap-6">
@@ -221,12 +308,68 @@ export default function SettingsPage() {
  <ShieldCheck className={cn("w-6 h-6", activeCampId === camp.id ? "text-orange-600 dark:text-amber-400" : "text-stone-400 dark:text-slate-500 group-hover:text-orange-500 dark:group-hover:text-amber-400 transition-colors")} />
  </div>
  <div>
+ {editingCampId === camp.id ? (
+ <Input
+ value={editingCampName}
+ onChange={(e) => setEditingCampName(e.target.value)}
+ onClick={(e) => e.stopPropagation()}
+ onKeyDown={(e) => {
+ if (e.key === "Enter") submitRenameCamp(camp.id);
+ if (e.key === "Escape") cancelRenameCamp();
+ }}
+ className="h-9 w-[220px] bg-white dark:bg-slate-900 text-[#2C2A28] dark:text-white border-none"
+ autoFocus
+ />
+ ) : (
  <h4 className="font-bold text-lg text-[#2C2A28] dark:text-white leading-tight">{camp.name}</h4>
- <p className="text-xs text-stone-500 dark:text-slate-400 font-medium mt-1">Established: {camp.campStartDate || "Continuous"}</p>
+ )}
+ <p className="text-xs text-stone-500 dark:text-slate-400 font-medium mt-1">{t('ESTABLISHED')}: {camp.campStartDate || t('CONTINUOUS')}</p>
  </div>
  </div>
  <div className="flex items-center gap-4">
  {isAdmin && (
+ <>
+ {editingCampId === camp.id ? (
+ <>
+ <Button
+ variant="ghost"
+ size="icon"
+ className="h-9 w-9 rounded-lg text-emerald-600 hover:bg-emerald-500/10 border-none"
+ onClick={(e) => {
+ e.stopPropagation();
+ submitRenameCamp(camp.id);
+ }}
+ title={t('SAVE_NAME')}
+ >
+ <Check className="w-4 h-4" />
+ </Button>
+ <Button
+ variant="ghost"
+ size="icon"
+ className="h-9 w-9 rounded-lg text-stone-500 hover:bg-stone-100 dark:hover:bg-slate-700 border-none"
+ onClick={(e) => {
+ e.stopPropagation();
+ cancelRenameCamp();
+ }}
+ title={t('CANCEL')}
+ >
+ <X className="w-4 h-4" />
+ </Button>
+ </>
+ ) : (
+ <Button
+ variant="ghost"
+ size="icon"
+ className="h-9 w-9 rounded-lg transition-colors text-stone-500 hover:bg-stone-100 dark:hover:bg-slate-700 border-none"
+ onClick={(e) => {
+ e.stopPropagation();
+ beginRenameCamp(camp.id, camp.name);
+ }}
+ title={t('EDIT_NAME')}
+ >
+ <Pencil className="w-4 h-4" />
+ </Button>
+ )}
  <Button
  variant="ghost"
  size="icon"
@@ -238,12 +381,13 @@ export default function SettingsPage() {
  e.stopPropagation();
  updateCamp(camp.id, { isLocked: !camp.isLocked });
  }}
- title={camp.isLocked ? "Unlock Project" : "Lock Project"}
+ title={camp.isLocked ? (language === 'zh' ? '解鎖專案' : 'Unlock Project') : (language === 'zh' ? '鎖定專案' : 'Lock Project')}
  >
  {camp.isLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
  </Button>
+ </>
  )}
- {activeCampId === camp.id && <Badge className="bg-orange-100 dark:bg-amber-400/10 text-orange-700 dark:text-amber-400 dark: font-bold px-3 py-0.5 rounded-sm text-[10px] uppercase tracking-widest">Active</Badge>}
+ {activeCampId === camp.id && <Badge className="bg-orange-100 dark:bg-amber-400/10 text-orange-700 dark:text-amber-400 dark: font-bold px-3 py-0.5 rounded-sm text-[10px] uppercase tracking-widest">{t('ACTIVE_CORE')}</Badge>}
  <ChevronRight className={cn("w-5 h-5 text-stone-300 dark:text-slate-600 group-hover:text-orange-500 dark:group-hover:text-amber-400 transition-colors", activeCampId === camp.id && "text-orange-500 dark:text-amber-400")} />
  </div>
  </div>
@@ -251,8 +395,11 @@ export default function SettingsPage() {
  </div>
  </div>
  </section>
+ </>
+ )}
 
  {/* ── PREFERENCES ───────────────── */}
+ {activeTab === "preferences" && (
  <section className="space-y-6">
  <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-500 dark:text-slate-400 flex items-center gap-3">
  <Globe className="w-4 h-4 text-orange-500 dark:text-amber-400" /> {t('PREFERENCES_TITLE')}
@@ -284,10 +431,11 @@ export default function SettingsPage() {
  </div>
  </div>
  </section>
+ )}
 
  {/* ── TIMELINE SETUP ─────────────── */}
 
- {isAdmin && activeCamp && (
+ {activeTab === "workspace" && isAdmin && activeCamp && (
  <section className="space-y-6">
  <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-500 dark:text-slate-400 flex items-center gap-3">
  <Calendar className="w-4 h-4 text-orange-500 dark:text-amber-400" /> {t('TIMELINE_SETUP')}
@@ -335,20 +483,21 @@ export default function SettingsPage() {
  </section>
  )}
 
+ {activeTab === "workspace" && isAdmin && (
+ <>
  {/* ── ACTIVITY TYPES (ADMIN ONLY) ── */}
- {isAdmin && (
  <section className="space-y-6">
  <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-500 dark:text-slate-400 flex items-center gap-3">
- <List className="w-4 h-4 text-orange-500 dark:text-amber-400" /> 組別管理
+ <List className="w-4 h-4 text-orange-500 dark:text-amber-400" /> {language === 'zh' ? '組別管理' : 'Group Management'}
  </h2>
  <div className="bg-white dark:bg-slate-800 rounded-xl p-4 md:p-8 transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
  <div className="flex flex-col">
  {/* Header - Desktop only */}
  <div className="hidden md:grid md:grid-cols-[1.2fr_1.5fr_1fr_auto] gap-4 pb-3 border-b border-stone-100 dark:border-slate-800/50 mb-3 px-2">
- <div className="text-xs font-bold tracking-wider text-stone-400 dark:text-slate-500 uppercase">中文名稱</div>
- <div className="text-xs font-bold tracking-wider text-stone-400 dark:text-slate-500 uppercase">英文名稱 (English)</div>
- <div className="text-xs font-bold tracking-wider text-stone-400 dark:text-slate-500 uppercase">路由/縮寫 (Slug)</div>
- <div className="text-xs font-bold tracking-wider text-stone-400 dark:text-slate-500 uppercase text-center w-10">操作</div>
+ <div className="text-xs font-bold tracking-wider text-stone-400 dark:text-slate-500 uppercase">{language === 'zh' ? '中文名稱' : 'Chinese Name'}</div>
+ <div className="text-xs font-bold tracking-wider text-stone-400 dark:text-slate-500 uppercase">{language === 'zh' ? '英文名稱' : 'English Name'}</div>
+ <div className="text-xs font-bold tracking-wider text-stone-400 dark:text-slate-500 uppercase">{language === 'zh' ? '路由/縮寫' : 'Route / Slug'}</div>
+ <div className="text-xs font-bold tracking-wider text-stone-400 dark:text-slate-500 uppercase text-center w-10">{language === 'zh' ? '操作' : 'Action'}</div>
  </div>
 
  {/* Map groups */}
@@ -358,7 +507,7 @@ export default function SettingsPage() {
  return (
  <div key={group.id} className="flex flex-col md:grid md:grid-cols-[1.2fr_1.5fr_1fr_auto] gap-3 md:gap-4 md:items-center p-3 md:p-2 rounded-lg bg-stone-50/50 md:bg-transparent hover:bg-stone-50/80 dark:hover:bg-slate-800/30 transition-colors group">
  <Input
- placeholder="中文名稱"
+ placeholder={language === 'zh' ? '中文名稱' : 'Chinese Name'}
  value={group.nameZh}
  onChange={(e) => updateGroup(group.id, { nameZh: e.target.value })}
  className="bg-stone-50/50 dark:bg-slate-900/50 hover:bg-white dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 focus:ring-1 focus:ring-orange-400 dark:focus:ring-amber-400 transition-colors border-none shadow-none px-3 py-2 h-9 w-full outline-none font-medium text-sm text-[#2C2A28] dark:text-white"
@@ -376,7 +525,7 @@ export default function SettingsPage() {
  </div>
  ) : (
  <Input
- placeholder="路由 (Slug)"
+ placeholder={language === 'zh' ? '路由 (Slug)' : 'Route (Slug)'}
  value={group.slug}
  onChange={(e) => updateGroup(group.id, { slug: e.target.value })}
  className="bg-stone-50/50 dark:bg-slate-900/50 hover:bg-white dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 focus:ring-1 focus:ring-orange-400 dark:focus:ring-amber-400 transition-colors border-none shadow-none px-3 py-2 h-9 w-full outline-none font-mono text-xs text-[#2C2A28] dark:text-white"
@@ -405,7 +554,7 @@ export default function SettingsPage() {
  {/* Add Row */}
  <div className="flex flex-col md:grid md:grid-cols-[1.2fr_1.5fr_1fr_auto] gap-3 md:gap-4 md:items-center p-3 md:p-2 rounded-lg bg-orange-50/30 dark:bg-amber-900/10 transition-colors mt-2 border-t border-stone-100 dark:border-slate-800/50 md:border-none md:mt-0">
  <Input
- placeholder="新增中文名稱"
+ placeholder={language === 'zh' ? '新增中文名稱' : 'New Chinese Name'}
  value={newGroupNameZh}
  onChange={(e) => setNewGroupNameZh(e.target.value)}
  className="bg-white dark:bg-slate-900 hover:bg-stone-50 dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 focus:ring-1 focus:ring-orange-400 transition-colors border-none shadow-none px-3 py-2 h-9 w-full outline-none font-bold text-sm text-[#2C2A28] dark:text-white"
@@ -425,7 +574,7 @@ export default function SettingsPage() {
  />
  
  <div className="flex items-center px-1 py-1 h-9 bg-transparent w-full">
- <span className="text-xs text-stone-400 dark:text-slate-500 font-medium italic">自動產生 Slug / Auto-generated</span>
+ <span className="text-xs text-stone-400 dark:text-slate-500 font-medium italic">{language === 'zh' ? '自動產生 Slug' : 'Slug is auto-generated'}</span>
  </div>
  
  <div className="flex justify-end w-full md:w-auto md:min-w-[40px]">
@@ -440,19 +589,17 @@ export default function SettingsPage() {
  size="sm"
  className="bg-orange-600 dark:bg-amber-500 text-white font-bold hover:bg-orange-700 dark:hover:bg-amber-600 transition-colors cursor-pointer border-none shadow-none w-full md:w-auto whitespace-nowrap h-8"
  >
- 新增 / Add
+ {language === 'zh' ? '新增' : 'Add'}
  </Button>
  </div>
  </div>
  </div>
  </div>
  </section>
- )}
 
- {isAdmin && (
  <section className="space-y-6">
  <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-500 dark:text-slate-400 flex items-center gap-3">
- <List className="w-4 h-4 text-orange-500 dark:text-amber-400" /> 活動類型設定
+ <List className="w-4 h-4 text-orange-500 dark:text-amber-400" /> {language === 'zh' ? '活動類型設定' : 'Activity Type Settings'}
  </h2>
  <div className="bg-white dark:bg-slate-800 rounded-xl p-8 transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
  <div className="flex flex-col gap-6">
@@ -471,7 +618,7 @@ export default function SettingsPage() {
  </div>
  <div className="flex items-center gap-4">
  <Input
- placeholder="新增活動類型 (例如: 晚會活動)"
+ placeholder={language === 'zh' ? '新增活動類型 (例如: 晚會活動)' : 'Add activity type (e.g. Evening Event)'}
  value={newActivityType}
  onChange={(e) => setNewActivityType(e.target.value)}
  className="max-w-xs font-bold bg-[#FBF9F6] dark:bg-slate-900  dark: text-[#2C2A28] dark:text-white"
@@ -491,22 +638,24 @@ export default function SettingsPage() {
  }}
  className="bg-stone-900 dark:bg-white text-white dark:text-[#2C2A28] font-bold hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors cursor-pointer shadow-[0_8px_30px_rgba(140,120,100,0.05)]"
  >
- 新增 / Add
+ {language === 'zh' ? '新增' : 'Add'}
  </Button>
  </div>
  </div>
  </div>
  </section>
+ </>
  )}
 
+ {activeTab === "versions" && (
  <section className="space-y-6">
  <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-500 dark:text-slate-400 flex items-center gap-3">
- <Clock className="w-4 h-4 text-orange-500 dark:text-amber-400" /> 版本資訊
+ <Clock className="w-4 h-4 text-orange-500 dark:text-amber-400" /> {language === 'zh' ? '版本資訊' : 'Version Info'}
  </h2>
 
  <div className="bg-white dark:bg-slate-800 rounded-xl p-4 sm:p-6 transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
  <div>
- <p className="text-[10px] font-black uppercase tracking-widest text-stone-500 dark:text-slate-400 mb-1">當前版本</p>
+ <p className="text-[10px] font-black uppercase tracking-widest text-stone-500 dark:text-slate-400 mb-1">{language === 'zh' ? '當前版本' : 'Current Version'}</p>
  <Badge className="bg-stone-100 dark:bg-slate-900 text-stone-700 dark:text-slate-300 font-black px-3 py-1 text-xs border-none">
  v{currentVersion}
  </Badge>
@@ -516,13 +665,14 @@ export default function SettingsPage() {
  variant="outline"
  className="h-9 px-4 rounded-lg font-bold text-xs tracking-widest uppercase border-none bg-[#FBF9F6] dark:bg-slate-900 text-stone-700 dark:text-slate-200 hover:bg-stone-100 dark:hover:bg-slate-800"
  >
- 查看版本歷程
+ {language === 'zh' ? '查看版本歷程' : 'View Version History'}
  </Button>
  </div>
  </section>
+ )}
 
  {/* ── ADMIN DANGER ZONE ──────────── */}
- {isAdmin && (
+ {activeTab === "danger" && isAdmin && (
  <section className="space-y-6 pt-12 dark:">
  <h2 className="text-sm font-semibold uppercase tracking-widest text-rose-500 flex items-center gap-3">
  <ShieldAlert className="w-4 h-4" /> {t('DANGER_ZONE')}
@@ -530,9 +680,9 @@ export default function SettingsPage() {
  <div className="bg-rose-50 dark:bg-rose-500/5 dark: rounded-xl p-8 shadow-sm border-none">
  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
  <div className="space-y-2">
- <h4 className="font-bold text-lg text-rose-700 dark:text-rose-400">刪除當前專案目錄</h4>
+ <h4 className="font-bold text-lg text-rose-700 dark:text-rose-400">{language === 'zh' ? '刪除當前專案目錄' : 'Delete Current Project Directory'}</h4>
  <p className="text-sm font-medium text-rose-600/80 dark:text-rose-400/80 max-w-lg">
- 此操作將永久刪除 <strong className="font-black">"{activeCamp?.name || "未知"}"</strong> 所有教案及資料。
+ {language === 'zh' ? '此操作將永久刪除' : 'This action will permanently delete all plans and data for'} <strong className="font-black">"{activeCamp?.name || (language === 'zh' ? '未知' : 'Unknown')}"</strong>{language === 'zh' ? ' 的所有教案及資料。' : '.'}
  </p>
  </div>
  <Button
@@ -570,13 +720,13 @@ export default function SettingsPage() {
  onClick={async () => {
  if (activeCampId) {
  setIsDeleting("downloading");
- toast({ title: "備份中 / Backing up", description: "正在打包所有教案 (Word) 與清單 (Excel) 為 ZIP..." });
+ toast({ title: language === 'zh' ? '備份中' : 'Backing up', description: language === 'zh' ? '正在打包所有教案 (Word) 與清單 (Excel) 為 ZIP...' : 'Packaging all plans (Word) and lists (Excel) into a ZIP...' });
  try {
- await exportProjectBackupZip(activeCampId, activeCamp?.name || "專案", camps, plans, tables);
- toast({ title: "備份完成", description: "ZIP 備份已下載，即將刪除專案。" });
+ await exportProjectBackupZip(activeCampId, activeCamp?.name || (language === 'zh' ? '專案' : 'Project'), camps, plans, tables);
+ toast({ title: language === 'zh' ? '備份完成' : 'Backup completed', description: language === 'zh' ? 'ZIP 備份已下載，即將刪除專案。' : 'ZIP backup downloaded. Project will now be deleted.' });
  } catch (e) {
  console.error("Backup failed", e);
- toast({ title: "備份失敗", description: "無法產生備份檔案，但仍將繼續刪除。", variant: "destructive" });
+ toast({ title: language === 'zh' ? '備份失敗' : 'Backup failed', description: language === 'zh' ? '無法產生備份檔案，但仍將繼續刪除。' : 'Could not generate backup, but deletion will continue.', variant: "destructive" });
  }
  deleteCamp(activeCampId);
  setIsDeleting(false);
@@ -612,7 +762,7 @@ export default function SettingsPage() {
  <div className="px-5 py-4 border-b border-stone-100 dark:border-slate-700/70 flex items-center justify-between">
  <div>
  <p className="text-[10px] font-black uppercase tracking-widest text-stone-500 dark:text-slate-400">Release Timeline</p>
- <h3 className="text-lg font-bold text-[#2C2A28] dark:text-white">版本歷程</h3>
+ <h3 className="text-lg font-bold text-[#2C2A28] dark:text-white">{language === 'zh' ? '版本歷程' : 'Version History'}</h3>
  </div>
  <Button
  variant="ghost"

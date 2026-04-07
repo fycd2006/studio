@@ -9,6 +9,7 @@ import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { TransparentNavbar } from "@/components/TransparentNavbar";
+import { useTranslation } from "@/lib/i18n-context";
 
 /** Routes that should NOT render the navbar */
 const AUTH_ROUTES = ["/login", "/signup"];
@@ -41,6 +42,7 @@ function AppShellInternal({ children }: { children: React.ReactNode }) {
  const planData = usePlans();
  const pathname = usePathname();
  const { toast } = useToast();
+ const { t } = useTranslation();
  const router = useRouter();
  const [hasVersionUpdate, setHasVersionUpdate] = React.useState(false);
 
@@ -50,14 +52,14 @@ function AppShellInternal({ children }: { children: React.ReactNode }) {
   const activeCamp = planData.camps.find(c => c.id === planData.activeCampId);
   if (activeCamp?.isLocked) {
   toast({
-  title: "🔒 專案已鎖定 / Project Locked",
-  description: "該專案目前處於鎖定狀態，僅管理員可存取。",
+    title: t('PROJECT_LOCKED_TITLE'),
+    description: t('PROJECT_LOCKED_DESC'),
   variant: "destructive"
   });
   router.push("/");
   }
   }
-  }, [role, planData.activeCampId, planData.camps, isAuthLoading, toast, router]);
+    }, [role, planData.activeCampId, planData.camps, isAuthLoading, toast, router, t]);
 
     React.useEffect(() => {
         let isMounted = true;
@@ -146,16 +148,16 @@ function AppShellInternal({ children }: { children: React.ReactNode }) {
  <TransparentNavbar groups={planData.groups} />
 
  {hasVersionUpdate && (
- <div className="sticky top-[72px] z-[70] px-3 sm:px-6 md:px-8">
- <div className="mx-auto mt-2 max-w-[1200px] rounded-xl border border-amber-300/70 bg-amber-50 text-amber-900 px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm flex items-center justify-between gap-3">
+ <div className="fixed top-[72px] inset-x-0 z-[70] px-3 sm:px-6 md:px-8 pointer-events-none">
+ <div className="mx-auto mt-2 max-w-[1200px] rounded-xl border border-amber-300/70 bg-amber-50 text-amber-900 px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm flex items-center justify-between gap-3 pointer-events-auto">
  <p className="text-xs sm:text-sm font-semibold">
- 偵測到新版本已發布，請刷新頁面以載入最新功能。
+ {t('UPDATE_AVAILABLE_DESC')}
  </p>
  <button
  onClick={() => window.location.reload()}
  className="shrink-0 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs sm:text-sm font-bold px-3 py-1.5 transition-colors"
  >
- 立即刷新
+ {t('REFRESH_NOW')}
  </button>
  </div>
  </div>

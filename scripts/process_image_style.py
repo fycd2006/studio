@@ -97,8 +97,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     if process_image(args.input, args.output, k=args.k):
-        print(f"✓ 成功轉換: {args.output}")
         sys.exit(0)
     else:
-        print(f"✗ 轉換失敗", file=sys.stderr)
         sys.exit(1)

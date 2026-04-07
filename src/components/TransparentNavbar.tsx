@@ -28,6 +28,7 @@ import {
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth-context";
+import { useTranslation } from "@/lib/i18n-context";
 
 const NAV_ITEMS = [
   { label: "Home", href: "/", icon: Home },
@@ -54,6 +55,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { toast } = useToast();
+  const { t, language } = useTranslation();
   const { role } = useAuth();
   const { camps, activeCampId, groups: allGroups, addPlan } = usePlans();
   const isHome = pathname === "/";
@@ -94,9 +96,9 @@ export function TransparentNavbar({ groups }: NavbarProps) {
 
   const planDropdownGroups = safeGroups.slice(0, 10);
   const adminDropdownItems = [
-    { label: "計時控制", href: "/admin?tab=timer" },
-    { label: "輪替表", href: "/admin?tab=tables" },
-    { label: "道具清單", href: "/admin?tab=props" },
+    { label: "timer", href: "/admin?tab=timer" },
+    { label: "tables", href: "/admin?tab=tables" },
+    { label: "props", href: "/admin?tab=props" },
   ];
 
   const toggleAudioUnlock = async () => {
@@ -104,7 +106,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
       localStorage.setItem("camp-audio-unlocked", "false");
       window.dispatchEvent(new Event("camp-audio-sync"));
       setAudioUnlocked(false);
-      toast({ title: "音效已關閉", description: "已同步到 Timer 音效狀態。" });
+      toast({ title: t('AUDIO_DISABLED_TITLE'), description: t('NAV_TIMER_AUDIO_SYNCED') });
       return;
     }
 
@@ -121,9 +123,9 @@ export function TransparentNavbar({ groups }: NavbarProps) {
       localStorage.setItem("camp-audio-unlocked", "true");
       window.dispatchEvent(new Event("camp-audio-sync"));
       setAudioUnlocked(true);
-      toast({ title: "音效已解鎖", description: "已同步到 Timer 音效狀態。" });
+      toast({ title: t('AUDIO_LOCKED_TITLE'), description: t('NAV_TIMER_AUDIO_SYNCED') });
     } catch {
-      toast({ title: "音效解鎖失敗", description: "請再點一次或確認瀏覽器權限。", variant: "destructive" });
+      toast({ title: t('AUDIO_UNLOCK_FAILED_TITLE'), description: t('AUDIO_UNLOCK_FAILED_DESC'), variant: "destructive" });
     }
   };
 
@@ -133,17 +135,17 @@ export function TransparentNavbar({ groups }: NavbarProps) {
 
   const handleQuickAddPlan = (groupSlug: string, groupName: string) => {
     if (role !== "admin") {
-      toast({ title: "🔒 唯讀模式", description: "僅管理員可快速新增教案。" });
+      toast({ title: t('READONLY_TITLE'), description: t('READONLY_QUICK_ADD_DESC') });
       return;
     }
 
     const newId = addPlan(groupSlug);
     if (!newId) {
-      toast({ title: "建立失敗", description: "目前無法新增教案，請稍後再試。", variant: "destructive" });
+      toast({ title: t('FAILED'), description: t('PLAN_CREATE_FAILED_DESC'), variant: "destructive" });
       return;
     }
 
-    toast({ title: "已快速新增", description: `已新增「${groupName}」教案。` });
+    toast({ title: t('PLAN_CREATED_QUICK'), description: t('PLAN_CREATED_QUICK_DESC', { name: groupName }) });
     router.push("/plans");
   };
 
@@ -214,12 +216,12 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                     priority
                   />
                 </div>
-                <div className="flex flex-col leading-tight text-[#2C2A28] dark:text-white min-w-0">
-                  <span className="text-[1.02rem] font-black tracking-[0.02em] truncate">
-                    NTUT Chong De Camp
-                  </span>
-                  <span className="text-[0.68rem] font-semibold tracking-[0.08em] text-slate-700 dark:text-white/95">
+                <div className="flex flex-col leading-tight text-[#2C2A28] dark:text-white min-w-0 w-[188px]">
+                  <span className="block w-[170px] text-[0.68rem] font-bold tracking-[0.08em] text-slate-700 dark:text-white/95 whitespace-nowrap [font-family:'Noto_Sans_TC','PingFang_TC','Microsoft_JhengHei',sans-serif]">
                     北科崇德青年社
+                  </span>
+                  <span className="block w-[170px] text-[0.64rem] font-semibold tracking-[0.01em] text-slate-800 dark:text-white/90 whitespace-nowrap [font-family:'Avenir_Next','Segoe_UI','Arial_Narrow',sans-serif]">
+                    NTUT Chong De Young Club
                   </span>
                 </div>
               </Link>
@@ -319,7 +321,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                       >
                         <span className="inline-flex items-center gap-2">
                           <Plus className="w-5 h-5" />
-                          <span className="font-semibold">快速新增教案</span>
+                          <span className="font-semibold">{t('QUICK_ADD_PLAN')}</span>
                         </span>
                         <ChevronDown
                           className={cn(
@@ -336,15 +338,15 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                               <button
                                 type="button"
                                 key={group.id}
-                                onClick={() => handleQuickAddPlan(group.slug, group.nameZh)}
+                                onClick={() => handleQuickAddPlan(group.slug, language === 'zh' ? group.nameZh : group.nameEn)}
                                 className="rounded-lg px-3 py-2 text-sm font-semibold text-left text-[#2C2A28] bg-white/80 hover:bg-white dark:bg-white/10 dark:text-white dark:hover:bg-white/20 transition-colors duration-300"
                               >
-                                {group.nameZh}
+                                {language === 'zh' ? group.nameZh : group.nameEn}
                               </button>
                             ))}
                           </div>
                         ) : (
-                          <div className="px-1 py-2 text-sm text-stone-500 dark:text-slate-300">目前沒有可新增的類群</div>
+                          <div className="px-1 py-2 text-sm text-stone-500 dark:text-slate-300">{t('NO_GROUP_AVAILABLE')}</div>
                         ))}
                     </div>
 
@@ -355,10 +357,10 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                     >
                       <span className="inline-flex items-center gap-3">
                         <Volume2 className="w-5 h-5 text-[#2C2A28] dark:text-white" />
-                        {audioUnlocked ? "關閉音效" : "音效解鎖"}
+                        {audioUnlocked ? t('AUDIO_DISABLE') : t('AUDIO_ENABLE')}
                       </span>
                       <span className="text-xs font-bold text-stone-500 dark:text-slate-300">
-                        {audioUnlocked ? "已開啟" : "已關閉"}
+                        {audioUnlocked ? t('AUDIO_STATUS_ON') : t('AUDIO_STATUS_OFF')}
                       </span>
                     </button>
 
@@ -368,17 +370,17 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                       className="flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-all duration-300 text-[#2C2A28] hover:bg-stone-100 dark:text-white dark:hover:bg-white/15 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
                     >
                       <Monitor className="w-5 h-5 text-[#2C2A28] dark:text-white" />
-                      進入省電模式
+                      {t('ENTER_SAVER_MODE')}
                     </button>
 
                     <div className="pt-2">
                       <div className="flex items-center justify-between rounded-xl bg-stone-100/70 dark:bg-white/10 px-3 py-2">
-                        <span className="text-sm font-semibold text-[#2C2A28] dark:text-white">Theme</span>
+                        <span className="text-sm font-semibold text-[#2C2A28] dark:text-white">{t('THEME_LABEL')}</span>
                         <ThemeToggle className="h-9 w-9 rounded-lg bg-white dark:bg-slate-900" />
                       </div>
                       {activeCamp && (
                         <div className="pt-3">
-                          <p className="text-xs text-stone-600 dark:text-white/80 mb-1">Current Camp</p>
+                          <p className="text-xs text-stone-600 dark:text-white/80 mb-1">{t('CURRENT_CAMP')}</p>
                           <p className="font-semibold text-[#2C2A28] dark:text-white">{activeCamp.name}</p>
                         </div>
                       )}
@@ -434,7 +436,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                         href={item.href}
                         className="block rounded-lg px-4 py-3 bg-transparent text-[#2C2A28] dark:text-white font-semibold"
                       >
-                        {item.label}
+                        {item.href.includes('timer') ? t('TIMER_CONTROL') : item.href.includes('tables') ? t('ROTATION_TABLE') : t('PROPS_LIST')}
                       </Link>
                     ))}
                   </div>
@@ -455,12 +457,12 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                     className="object-cover"
                   />
                 </div>
-                <div className="flex flex-col leading-tight text-[#2C2A28] dark:text-white">
-                  <span className="text-[0.82rem] font-extrabold tracking-[0.01em]">
-                    NTUT Chong De Camp
-                  </span>
-                  <span className="text-[0.61rem] font-semibold tracking-[0.04em] text-slate-700 dark:text-white/95">
+                <div className="flex flex-col leading-tight text-[#2C2A28] dark:text-white w-[132px]">
+                  <span className="block w-[118px] text-[0.58rem] font-bold tracking-[0.04em] text-slate-700 dark:text-white/95 whitespace-nowrap [font-family:'Noto_Sans_TC','PingFang_TC','Microsoft_JhengHei',sans-serif]">
                     北科崇德青年社
+                  </span>
+                  <span className="block w-[118px] text-[0.48rem] font-semibold tracking-[-0.01em] text-slate-800 dark:text-white/90 whitespace-nowrap [font-family:'Avenir_Next','Segoe_UI','Arial_Narrow',sans-serif]">
+                    NTUT Chong De Young Club
                   </span>
                 </div>
               </Link>
@@ -489,7 +491,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                       >
                         <span className="inline-flex items-center gap-2">
                           <Plus className="w-5 h-5" />
-                          <span className="font-semibold">快速新增教案</span>
+                          <span className="font-semibold">{t('QUICK_ADD_PLAN')}</span>
                         </span>
                         <ChevronDown
                           className={cn(
@@ -506,15 +508,15 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                               <button
                                 type="button"
                                 key={group.id}
-                                onClick={() => handleQuickAddPlan(group.slug, group.nameZh)}
+                                onClick={() => handleQuickAddPlan(group.slug, language === 'zh' ? group.nameZh : group.nameEn)}
                                 className="rounded-lg px-3 py-2 text-sm font-semibold text-left text-[#2C2A28] bg-white/80 hover:bg-white dark:bg-white/10 dark:text-white dark:hover:bg-white/20 transition-colors duration-300"
                               >
-                                {group.nameZh}
+                                {language === 'zh' ? group.nameZh : group.nameEn}
                               </button>
                             ))}
                           </div>
                         ) : (
-                          <div className="px-1 py-2 text-sm text-stone-500 dark:text-slate-300">目前沒有可新增的類群</div>
+                          <div className="px-1 py-2 text-sm text-stone-500 dark:text-slate-300">{t('NO_GROUP_AVAILABLE')}</div>
                         ))}
                     </div>
 
@@ -525,10 +527,10 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                     >
                       <span className="inline-flex items-center gap-3">
                         <Volume2 className="w-5 h-5 text-[#2C2A28] dark:text-white" />
-                        {audioUnlocked ? "關閉音效" : "音效解鎖"}
+                        {audioUnlocked ? t('AUDIO_DISABLE') : t('AUDIO_ENABLE')}
                       </span>
                       <span className="text-xs font-bold text-stone-500 dark:text-slate-300">
-                        {audioUnlocked ? "已開啟" : "已關閉"}
+                        {audioUnlocked ? t('AUDIO_STATUS_ON') : t('AUDIO_STATUS_OFF')}
                       </span>
                     </button>
 
@@ -538,17 +540,17 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                       className="flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-all duration-300 text-[#2C2A28] hover:bg-stone-100 dark:text-white dark:hover:bg-white/15 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
                     >
                       <Monitor className="w-5 h-5 text-[#2C2A28] dark:text-white" />
-                      進入省電模式
+                      {t('ENTER_SAVER_MODE')}
                     </button>
 
                     <div className="pt-2">
                       <div className="flex items-center justify-between rounded-xl bg-stone-100/70 dark:bg-white/10 px-3 py-2">
-                        <span className="text-sm font-semibold text-[#2C2A28] dark:text-white">Theme</span>
+                        <span className="text-sm font-semibold text-[#2C2A28] dark:text-white">{t('THEME_LABEL')}</span>
                         <ThemeToggle className="h-9 w-9 rounded-lg bg-white dark:bg-slate-900" />
                       </div>
                       {activeCamp && (
                         <div className="pt-3">
-                          <p className="text-xs text-stone-600 dark:text-white/80 mb-1">Current Camp</p>
+                          <p className="text-xs text-stone-600 dark:text-white/80 mb-1">{t('CURRENT_CAMP')}</p>
                           <p className="font-semibold text-[#2C2A28] dark:text-white">{activeCamp.name}</p>
                         </div>
                       )}
@@ -571,7 +573,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                         : "text-[#2C2A28] dark:text-white hover:text-orange-600 dark:hover:text-orange-200"
                     )}
                   >
-                    {item.label}
+                    {item.href === "/" ? "Home" : item.href === "/plans" ? "Plans" : item.href === "/admin" ? "Admin" : "Settings"}
                   </Link>
                 ))}
               </div>
