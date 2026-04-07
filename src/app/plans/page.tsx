@@ -134,9 +134,9 @@ export default function PlansOverview() {
  };
 
  const handleSwipeStart = (e: React.TouchEvent<HTMLDivElement>) => {
- // Don't track swipe if touch started on ActionBar
+ // Don't track swipe if touch started on ActionBar or mobile bottom bar
  const target = e.target as HTMLElement;
- if (target.closest('.action-bar-container')) {
+ if (target.closest('.action-bar-container') || target.closest('.plans-mobile-bar')) {
  swipeStartRef.current = null;
  return;
  }
@@ -145,10 +145,14 @@ export default function PlansOverview() {
  };
 
  const handleSwipeEnd = (e: React.TouchEvent<HTMLDivElement>) => {
- if (viewType === "board") return;
- // Don't switch if swipe ended on ActionBar
+ // Disable swipe-to-switch in board and list modes (list has horizontal scroll)
+ if (viewType === "board" || viewType === "list") {
+ swipeStartRef.current = null;
+ return;
+ }
+ // Don't switch if swipe ended on ActionBar or mobile bottom bar
  const target = e.target as HTMLElement;
- if (target.closest('.action-bar-container')) {
+ if (target.closest('.action-bar-container') || target.closest('.plans-mobile-bar')) {
  swipeStartRef.current = null;
  return;
  }
@@ -428,9 +432,9 @@ export default function PlansOverview() {
  onTouchEnd={handleSwipeEnd}
  >
 
- <div className="max-w-[1400px] mx-auto pt-24 sm:pt-32 pb-12 sm:pb-24 px-4 sm:px-6 md:px-8 xl:px-12 touch-auto relative z-10 w-full flex flex-col sm:block overflow-y-auto sm:overflow-y-visible flex-1 sm:flex-none">
+ <div className="max-w-[1400px] mx-auto pt-28 sm:pt-32 pb-28 sm:pb-24 px-4 sm:px-6 md:px-8 xl:px-12 touch-auto relative z-10 w-full flex flex-col sm:block overflow-y-auto sm:overflow-y-visible flex-1 sm:flex-none">
  {/* ── HEADER ─────────────── */}
- <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6 mb-8 sm:mb-12 pb-6 sm:pb-8 relative z-10 shrink-0">
+ <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-6 mb-0 sm:mb-12 pb-0 sm:pb-8 relative z-10 shrink-0">
  <div className="flex-1 min-w-0">
  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-[#2C2A28] dark:text-white mb-1.5 sm:mb-2">
  {language === 'zh' ? '教案總覽' : 'Plans Overview'}
@@ -441,7 +445,7 @@ export default function PlansOverview() {
  </div>
  </div>
 
- <ActionBar title="PLANS ACTIONS" className="action-bar-container !flex-nowrap !justify-start md:!justify-between overflow-x-auto scrollbar-hide gap-2 md:gap-3 mb-4 p-0 !w-full">
+ <ActionBar title="PLANS ACTIONS" className="action-bar-container hidden md:!flex !flex-nowrap !justify-start md:!justify-between overflow-x-auto scrollbar-hide gap-2 md:gap-3 mb-4 p-0 !w-full">
             <div className={cn("flex flex-nowrap items-center gap-1 shrink-0", actionBarTheme.clusterInset)}>
               <DropdownMenu open={isAdding} onOpenChange={handleAddMenuOpenChange}>
                 <DropdownMenuTrigger asChild>
@@ -608,6 +612,127 @@ export default function PlansOverview() {
  </div>
  </div>
  </ActionBar>
+
+ {/* ── MOBILE FIXED BOTTOM BAR ─────────── */}
+ <div className="md:hidden fixed bottom-0 left-0 right-0 z-[65] pb-[env(safe-area-inset-bottom)] pointer-events-none plans-mobile-bar">
+ <div className="pointer-events-auto bg-background/95 backdrop-blur-md border-t border-stone-200/70 dark:border-slate-700/70 px-3 py-2">
+ <div className="w-full overflow-x-auto scrollbar-hide">
+ <div className="flex min-w-max items-center gap-1.5 pr-2">
+ {/* Add + Download */}
+ <div className={cn("flex items-center gap-1 shrink-0", actionBarTheme.clusterInset)}>
+ <DropdownMenu open={isAdding} onOpenChange={handleAddMenuOpenChange}>
+ <DropdownMenuTrigger asChild>
+ <Button className={cn(actionBarTheme.controlPrimary, "h-9 px-3 font-bold text-xs cursor-pointer", !isAdmin && "opacity-60")}>
+ <Plus className="w-3.5 h-3.5" />
+ </Button>
+ </DropdownMenuTrigger>
+ <DropdownMenuContent align="start" side="top" sideOffset={10} className="w-56 bg-background dark:bg-slate-800 shadow-[0_8px_30px_rgba(140,120,100,0.05)] dark:shadow-none border-none">
+ {groups.map((group) => (
+ <DropdownMenuItem key={`m-add-${group.id}`} onSelect={() => handleCreatePlan(group.slug)} className="cursor-pointer font-bold">
+ {language === 'zh' ? group.nameZh : group.nameEn}
+ </DropdownMenuItem>
+ ))}
+ </DropdownMenuContent>
+ </DropdownMenu>
+
+ <DropdownMenu open={isDownloadMenuOpen} onOpenChange={setIsDownloadMenuOpen}>
+ <DropdownMenuTrigger asChild>
+ <Button
+ variant="ghost"
+ disabled={isBatchDownloading || plans.length === 0}
+ className={cn(actionBarTheme.controlAccent, "h-9 px-3 font-bold text-xs cursor-pointer", (isBatchDownloading || plans.length === 0) && "opacity-60 cursor-not-allowed")}
+ >
+ <Download className="w-3.5 h-3.5" />
+ </Button>
+ </DropdownMenuTrigger>
+ <DropdownMenuContent align="center" side="top" sideOffset={10} className="w-56 bg-background dark:bg-slate-800/95 shadow-[0_16px_40px_rgba(140,120,100,0.06)] border-none rounded-2xl overflow-hidden p-2">
+ <DropdownMenuItem onSelect={(e) => { e.preventDefault(); void handleBatchDownload("word", "all"); }} className="cursor-pointer rounded-lg px-3 py-2.5 font-medium">
+ <FileText className="w-4 h-4 mr-2.5 text-stone-400" /> 所有的 Word
+ </DropdownMenuItem>
+ <DropdownMenuItem onSelect={(e) => { e.preventDefault(); void handleBatchDownload("pdf", "all"); }} className="cursor-pointer rounded-lg px-3 py-2.5 font-medium">
+ <FileText className="w-4 h-4 mr-2.5 text-rose-400" /> 所有的 PDF
+ </DropdownMenuItem>
+ <div className="h-px bg-stone-100 dark:bg-slate-700/50 my-1 mx-2"></div>
+ <DropdownMenuItem onSelect={(e) => { e.preventDefault(); void handleBatchDownload("word", "filtered"); }} className="cursor-pointer rounded-lg px-3 py-2.5 font-medium text-stone-500">
+ 僅限篩選 (Word)
+ </DropdownMenuItem>
+ <DropdownMenuItem onSelect={(e) => { e.preventDefault(); void handleBatchDownload("pdf", "filtered"); }} className="cursor-pointer rounded-lg px-3 py-2.5 font-medium text-stone-500">
+ 僅限篩選 (PDF)
+ </DropdownMenuItem>
+ </DropdownMenuContent>
+ </DropdownMenu>
+ </div>
+
+ <div className={cn(actionBarTheme.separator, "mx-0.5 shrink-0")} />
+
+ {/* View type dropdown */}
+ <DropdownMenu>
+ <DropdownMenuTrigger asChild>
+ <button className={cn("p-2 rounded-lg transition-all shrink-0", actionBarTheme.segmentedActive)}>
+ {viewType === "grid" ? <LayoutGrid className="w-4 h-4" /> : viewType === "board" ? <Kanban className="w-4 h-4" /> : <List className="w-4 h-4" />}
+ </button>
+ </DropdownMenuTrigger>
+ <DropdownMenuContent align="center" side="top" sideOffset={10} className="w-36 bg-background dark:bg-slate-800 border-none rounded-xl p-1">
+ <DropdownMenuItem onSelect={() => setViewType("grid")} className={cn("cursor-pointer rounded-lg px-3 py-2 font-bold text-xs gap-2", viewType === "grid" && "bg-stone-100 dark:bg-slate-700")}>
+ <LayoutGrid className="w-4 h-4" /> Grid
+ </DropdownMenuItem>
+ <DropdownMenuItem onSelect={() => setViewType("board")} className={cn("cursor-pointer rounded-lg px-3 py-2 font-bold text-xs gap-2", viewType === "board" && "bg-stone-100 dark:bg-slate-700")}>
+ <Kanban className="w-4 h-4" /> Board
+ </DropdownMenuItem>
+ <DropdownMenuItem onSelect={() => setViewType("list")} className={cn("cursor-pointer rounded-lg px-3 py-2 font-bold text-xs gap-2", viewType === "list" && "bg-stone-100 dark:bg-slate-700")}>
+ <List className="w-4 h-4" /> List
+ </DropdownMenuItem>
+ </DropdownMenuContent>
+ </DropdownMenu>
+
+ <div className={cn(actionBarTheme.separator, "mx-0.5 shrink-0")} />
+
+ {/* Group filter */}
+ <div className={cn("flex items-center shrink-0 gap-1", actionBarTheme.clusterInset)}>
+ <button onClick={() => { setSwipeDirection(-1); setFilterGroup('all'); }} className={cn(actionBarTheme.segmented, filterGroup === 'all' ? actionBarTheme.segmentedActive : actionBarTheme.segmentedIdle)}>
+ 全部
+ </button>
+ {groups.map((group) => {
+ const params = getUnifiedGroupBadgeParams(group.slug, group.nameZh);
+ const isActive = filterGroup === group.slug;
+ return (
+ <button
+ key={`mobile-${group.id}`}
+ onClick={() => { setSwipeDirection(1); setFilterGroup(group.slug); }}
+ style={isActive ? { backgroundColor: params.uiBg, color: params.uiText } : undefined}
+ className={cn(actionBarTheme.segmented, isActive ? "shadow-sm" : actionBarTheme.segmentedIdle)}
+ >
+ {(language === 'zh' ? group.nameZh : group.nameEn).slice(0, 2)}
+ </button>
+ );
+ })}
+ </div>
+
+ <div className={cn(actionBarTheme.separator, "mx-0.5 shrink-0")} />
+
+ {/* Sort */}
+ <div className={cn("flex items-center shrink-0 gap-1", actionBarTheme.clusterInset)}>
+ <button onClick={() => handleSortClick('updatedAt')} className={cn(actionBarTheme.segmented, sortBy === 'updatedAt' ? actionBarTheme.segmentedActive : actionBarTheme.segmentedIdle)}>
+ <Clock className="w-3.5 h-3.5" />
+ {sortBy === 'updatedAt' && (
+ <span className="text-orange-500 dark:text-amber-500">
+ {sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />}
+ </span>
+ )}
+ </button>
+ <button onClick={() => handleSortClick('name')} className={cn(actionBarTheme.segmented, sortBy === 'name' ? actionBarTheme.segmentedActive : actionBarTheme.segmentedIdle)}>
+ <FileText className="w-3.5 h-3.5" />
+ {sortBy === 'name' && (
+ <span className="text-orange-500 dark:text-amber-500">
+ {sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />}
+ </span>
+ )}
+ </button>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
 
  {/* ── TOOLBAR (Filter & Search) ─────────── */}
  <div className="flex flex-col gap-4 mb-4 sm:mb-8 max-w-2xl shrink-0">

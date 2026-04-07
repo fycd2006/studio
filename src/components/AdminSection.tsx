@@ -743,8 +743,8 @@ export function AdminSection({
     <div className="flex flex-col bg-[#FBF9F6] dark:bg-[hsl(var(--bar-theme))] animate-in fade-in duration-500 relative transition-colors font-fira-sans min-h-screen">
       <main className="flex-1 min-w-0 w-full relative">
         <div className="w-full pt-28 sm:pt-24 px-4 sm:px-6 md:px-8 lg:px-10 pb-8 md:pb-12">
-          <Tabs value={activeMainTab} onValueChange={handleMainTabChange} className="w-full flex flex-col items-stretch space-y-6">
-            <header className="relative z-20 no-print w-full mb-8 sm:mb-16 dark:/[0.06] pb-6 sm:pb-8">
+          <Tabs value={activeMainTab} onValueChange={handleMainTabChange} className="w-full flex flex-col items-stretch space-y-2 sm:space-y-6">
+            <header className="relative z-20 no-print w-full mb-2 sm:mb-16 dark:/[0.06] pb-2 sm:pb-8">
               <div className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6 transition-colors">
                 <div className="flex-1 min-w-0">
                   <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-[#2C2A28] dark:text-white mb-1.5 sm:mb-2">

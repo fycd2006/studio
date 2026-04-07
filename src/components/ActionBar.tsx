@@ -39,8 +39,8 @@ export function ActionBar({ children, title, className, tone = "warm" }: ActionB
         tone === "plain"
           ? "bg-transparent"
           : actionBarTheme.shell,
-        "py-2",
-        "-mx-4 md:-mx-8 lg:-mx-10 px-4 md:px-8 lg:px-10 mb-4 md:mb-5"
+        "py-1",
+        "-mx-4 md:-mx-8 lg:-mx-10 px-4 md:px-8 lg:px-10 mb-1 md:mb-5"
       )}
     >
       <div className="flex items-center justify-between gap-3 max-w-none w-full min-h-[38px]">

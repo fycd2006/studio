@@ -443,7 +443,7 @@ export function PlanEditor({
           isPrintMode ? "pt-28 md:pt-24 px-4 md:px-0" : "pt-28 md:pt-20 pb-0 px-4"
         )}>
           <div className="w-full md:max-w-[816px] flex flex-col">
-            <header className="relative z-20 flex-none w-full mb-4 md:mb-6 dark:pb-6 transition-all">
+            <header className="relative z-20 flex-none w-full mb-0 md:mb-6 dark:pb-6 transition-all">
               <div className="w-full max-w-full flex justify-between items-start gap-4">
                 <div className="flex flex-col w-full text-left">
                   <div className="flex items-center gap-2 mb-2">
@@ -471,7 +471,7 @@ export function PlanEditor({
           </div>
         </div>
 
-        <ActionBar title="" tone="warm" className="justify-center gap-1.5 md:gap-2">
+        <ActionBar title="" tone="plain" className="justify-center gap-1.5 md:gap-2 !bg-white dark:!bg-slate-800 !mb-0 !py-0.5">
           <div className={cn("hidden md:flex flex-row items-center px-1", actionBarTheme.cluster)}>
             <MarkdownToolbar className="bg-transparent border-none sm:border-none px-0" />
           </div>
@@ -838,7 +838,7 @@ export function PlanEditor({
       <div
         ref={toolbarRef}
         className="md:hidden fixed bottom-0 left-0 right-0 z-[60] pb-[env(safe-area-inset-bottom)] pointer-events-none will-change-[bottom]">
-        <div className="pointer-events-auto bg-background w-full">
+        <div className="pointer-events-auto bg-white dark:bg-slate-800 w-full">
           <MarkdownToolbar className="justify-start pb-2 pt-1 shadow-none border-none border-t-0" />
         </div>
       </div>
