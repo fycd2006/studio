@@ -35,9 +35,10 @@ interface MarkdownAreaProps {
     onBlur?: () => void;
     placeholder?: string;
     minHeight?: string;
+    readOnly?: boolean;
 }
 
-export function MarkdownArea({ label, value, onChange, onFocus: onFocusProp, onBlur: onBlurProp, placeholder, minHeight = '500px' }: MarkdownAreaProps) {
+export function MarkdownArea({ label, value, onChange, onFocus: onFocusProp, onBlur: onBlurProp, placeholder, minHeight = '500px', readOnly = false }: MarkdownAreaProps) {
     const editorRef = useRef<HTMLDivElement>(null);
     const [isFocused, setIsFocused] = useState(false);
     const [selectedImage, setSelectedImage] = useState<HTMLImageElement | null>(null);
@@ -52,10 +53,11 @@ export function MarkdownArea({ label, value, onChange, onFocus: onFocusProp, onB
     }, [value]);
 
     const handleInput = useCallback(() => {
+        if (readOnly) return;
         if (editorRef.current) {
             onChange(editorRef.current.innerHTML);
         }
-    }, [onChange]);
+    }, [onChange, readOnly]);
 
     const updateMenuPosition = useCallback(() => {
         if (selectedImage) {
@@ -119,6 +121,10 @@ export function MarkdownArea({ label, value, onChange, onFocus: onFocusProp, onB
 
 
     const handleEditorClick = (e: React.MouseEvent) => {
+        if (readOnly) {
+            setSelectedImage(null);
+            return;
+        }
         const target = e.target as HTMLElement;
         if (target.tagName === 'IMG') {
             const img = target as HTMLImageElement;
@@ -170,6 +176,10 @@ export function MarkdownArea({ label, value, onChange, onFocus: onFocusProp, onB
     };
 
     const handlePaste = (e: React.ClipboardEvent) => {
+        if (readOnly) {
+            e.preventDefault();
+            return;
+        }
         const items = e.clipboardData.items;
         let imageFound = false;
         for (let i = 0; i < items.length; i++) {
@@ -203,7 +213,7 @@ export function MarkdownArea({ label, value, onChange, onFocus: onFocusProp, onB
                 "border-none rounded-none bg-transparent overflow-visible transition-all duration-300 relative group",
                 isFocused ? " ring-1 ring-stone-200 dark:ring-slate-700" : ""
             )}>
-                {selectedImage && (
+                {selectedImage && !readOnly && (
                     <div
                         className="fixed z-[9999] flex flex-col gap-2 p-2 bg-slate-900/95 backdrop-blur-md rounded-2xl shadow-2xl shadow-sm animate-in fade-in zoom-in-95 duration-200"
                         style={{
@@ -305,16 +315,17 @@ export function MarkdownArea({ label, value, onChange, onFocus: onFocusProp, onB
                     )}
                     <div
                         ref={editorRef}
-                        contentEditable
+                        contentEditable={!readOnly}
                         onInput={handleInput}
                         onClick={handleEditorClick}
-                        onFocus={() => { setIsFocused(true); onFocusProp?.(); }}
-                        onBlur={() => { setIsFocused(false); onBlurProp?.(); }}
+                        onFocus={() => { if (!readOnly) { setIsFocused(true); onFocusProp?.(); } }}
+                        onBlur={() => { if (!readOnly) { setIsFocused(false); onBlurProp?.(); } }}
                         onPaste={handlePaste}
                         style={{ minHeight }}
                         className={cn(
                             "relative w-full max-w-full h-auto p-1 md:p-2 bg-transparent text-foreground outline-none prose prose-p:bg-transparent prose-li:bg-transparent prose-sm text-[14px] transition-all duration-[300ms]",
                             "dark:prose-invert break-words whitespace-pre-wrap",
+                            readOnly && "cursor-default",
                             "focus:ring-0",
                             "[&_ul]:list-disc [&_ol]:list-decimal [&_ul,&_ol]:ml-6 [&_ol]:my-3",
                             "[&_p]:leading-[1.7] [&_p]:mb-3 [&_p:last-child]:mb-0 [&_p]:text-foreground",

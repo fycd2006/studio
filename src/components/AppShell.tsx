@@ -62,6 +62,10 @@ function AppShellInternal({ children }: { children: React.ReactNode }) {
     }, [role, planData.activeCampId, planData.camps, isAuthLoading, toast, router, t]);
 
     React.useEffect(() => {
+        if (process.env.NODE_ENV !== 'production') {
+            return;
+        }
+
         let isMounted = true;
 
         const markUpdateAvailable = () => {

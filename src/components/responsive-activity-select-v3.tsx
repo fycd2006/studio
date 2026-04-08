@@ -9,15 +9,21 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 export function ResponsiveActivitySelectV3({ 
   value, 
   onValueChange, 
-  options 
+  options,
+  disabled = false,
 }: { 
   value: string, 
   onValueChange: (val: string) => void,
-  options: string[]
+  options: string[],
+  disabled?: boolean,
 }) {
   const [open, setOpen] = React.useState(false)
   const isDesktop = useMediaQuery("(min-width: 768px)")
   const containerRef = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    if (disabled) setOpen(false)
+  }, [disabled])
 
   // 點擊外面時自動關閉 (處理桌面版的 absolute 下拉)
   React.useEffect(() => {
@@ -42,10 +48,12 @@ export function ResponsiveActivitySelectV3({
             role="option"
             aria-selected={isSelected}
             onClick={() => {
+              if (disabled) return
               onValueChange(type)
               setOpen(false)
             }}
             onKeyDown={(e) => {
+              if (disabled) return
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault()
                 onValueChange(type)
@@ -77,8 +85,9 @@ export function ResponsiveActivitySelectV3({
         <Button 
           variant="ghost" 
           role="combobox"
-          onClick={() => setOpen(!open)}
+          onClick={() => !disabled && setOpen(!open)}
           aria-expanded={open}
+          disabled={disabled}
           className="w-full h-12 justify-between rounded-xl px-4 font-bold text-base bg-transparent dark:bg-transparent shadow-none hover:bg-stone-50 dark:hover:bg-slate-700 border-none transition-colors"
         >
           {value || <span className="text-muted-foreground font-normal">-- 請選擇活動類型 --</span>}
@@ -102,7 +111,8 @@ export function ResponsiveActivitySelectV3({
     <>
       <Button 
         variant="ghost" 
-        onClick={() => setOpen(true)}
+        onClick={() => !disabled && setOpen(true)}
+        disabled={disabled}
         className="w-full h-14 justify-between rounded-xl px-4 font-bold text-base bg-stone-50/50 dark:bg-slate-800/50 shadow-sm active:scale-[0.98] transition-transform"
       >
         {value || <span className="text-muted-foreground font-normal">-- 請選擇活動類型 --</span>}

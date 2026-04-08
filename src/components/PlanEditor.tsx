@@ -31,7 +31,9 @@ import {
   Maximize,
   MoreHorizontal,
   RotateCcw,
-  Smartphone
+  Smartphone,
+  Check,
+  Pencil
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -133,6 +135,9 @@ export function PlanEditor({
   // Global Editor Zoom
   const [pageZoom, setPageZoom] = useState(1);
   const [windowWidth, setWindowWidth] = useState(0);
+  const PRINT_PAGE_WIDTH = 816;
+  const MOBILE_PRINT_SIDE_PADDING = 24;
+  const SCROLL_DELTA_THRESHOLD = 6;
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -143,7 +148,69 @@ export function PlanEditor({
 
   const isMobile = windowWidth > 0 && windowWidth < 768;
   const [isMobilePrintView, setIsMobilePrintView] = useState(false);
+  const [isEditingMode, setIsEditingMode] = useState(false);
+  const [isFabVisible, setIsFabVisible] = useState(true);
   const isPrintMode = !isMobile || isMobilePrintView;
+  const isReadOnlyMode = !isEditingMode;
+  const isInteractionLocked = isHistoryMode || isReadOnlyMode;
+
+  const lastScrollYRef = useRef(0);
+  const scrollTickingRef = useRef(false);
+
+  const getClampedScrollY = useCallback(() => {
+    if (typeof window === 'undefined') return 0;
+    const maxScrollable = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    return Math.min(Math.max(window.scrollY || 0, 0), maxScrollable);
+  }, []);
+
+  useEffect(() => {
+    if (isEditingMode) {
+      setIsFabVisible(false);
+      return;
+    }
+
+    lastScrollYRef.current = getClampedScrollY();
+    setIsFabVisible(true);
+
+    const updateFabVisibility = () => {
+      scrollTickingRef.current = false;
+      const currentY = getClampedScrollY();
+      const previousY = lastScrollYRef.current;
+      const delta = currentY - previousY;
+
+      if (currentY <= 8) {
+        setIsFabVisible(true);
+        lastScrollYRef.current = currentY;
+        return;
+      }
+
+      if (Math.abs(delta) >= SCROLL_DELTA_THRESHOLD) {
+        setIsFabVisible(delta < 0);
+        lastScrollYRef.current = currentY;
+      }
+    };
+
+    const handleScroll = () => {
+      if (scrollTickingRef.current) return;
+      scrollTickingRef.current = true;
+      window.requestAnimationFrame(updateFabVisibility);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [getClampedScrollY, isEditingMode, SCROLL_DELTA_THRESHOLD]);
+
+  const mobilePrintFitZoom = useMemo(() => {
+    if (!isMobile || !isMobilePrintView || windowWidth <= 0) return 1;
+    const availableWidth = Math.max(0, windowWidth - MOBILE_PRINT_SIDE_PADDING);
+    return Math.min(1, availableWidth / PRINT_PAGE_WIDTH);
+  }, [isMobile, isMobilePrintView, windowWidth]);
+
+  useEffect(() => {
+    if (isMobile && isMobilePrintView) {
+      setPageZoom(mobilePrintFitZoom);
+    }
+  }, [isMobile, isMobilePrintView, mobilePrintFitZoom]);
 
   const handleZoomIn = () => setPageZoom(prev => Math.min(2, prev + 0.1));
   const handleZoomOut = () => setPageZoom(prev => Math.max(0.3, prev - 0.1));
@@ -463,7 +530,7 @@ export function PlanEditor({
                     onChange={(e) => handlePlanUpdate({ activityName: e.target.value })}
                     className="text-3xl md:text-4xl font-extrabold tracking-tight bg-transparent  focus:ring-0 focus:outline-none text-[#2C2A28] dark:text-white w-full px-0"
                     placeholder={t('ENTER_TITLE')}
-                    readOnly={isHistoryMode}
+                    readOnly={isInteractionLocked}
                   />
                 </div>
               </div>
@@ -471,7 +538,25 @@ export function PlanEditor({
           </div>
         </div>
 
-        <ActionBar title="" tone="plain" className="justify-center gap-1.5 md:gap-2 !bg-white dark:!bg-slate-800 !mb-0 !py-0.5">
+        <ActionBar title="" tone="plain" className={cn(
+          "justify-center gap-1.5 md:gap-2 !bg-white dark:!bg-slate-800 !mb-0 !py-0.5 transition-all duration-300 ease-out",
+          isEditingMode ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0 pointer-events-none"
+        )}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsEditingMode(false)}
+            className={cn(
+              actionBarTheme.control,
+              actionBarTheme.controlIcon,
+              actionBarTheme.controlElevated,
+              "bg-orange-600/10 text-orange-600 hover:bg-orange-600/20 dark:bg-amber-400/15 dark:text-amber-400 dark:hover:bg-amber-400/25"
+            )}
+            title="完成編輯"
+          >
+            <Check className="h-4 w-4" />
+          </Button>
+
           <div className={cn("hidden md:flex flex-row items-center px-1", actionBarTheme.cluster)}>
             <MarkdownToolbar className="bg-transparent border-none sm:border-none px-0" />
           </div>
@@ -555,14 +640,14 @@ export function PlanEditor({
               <div
                 className="relative"
                 style={{
-                  width: isPrintMode ? `${816 * pageZoom}px` : '100%',
+                  width: isPrintMode ? `${PRINT_PAGE_WIDTH * pageZoom}px` : '100%',
                   maxWidth: isPrintMode ? 'none' : '100%',
                 }}
               >
                 <div
                   style={isPrintMode ? {
                     zoom: pageZoom,
-                    width: '816px',
+                    width: `${PRINT_PAGE_WIDTH}px`,
                     transformOrigin: 'top left',
                   } as any : {
                     width: '100%',
@@ -634,6 +719,7 @@ export function PlanEditor({
                                 value={currentPlan.scheduledName || ""}
                                 onValueChange={(val) => handlePlanUpdate({ scheduledName: val })}
                                 options={activityTypes}
+                                disabled={isInteractionLocked}
                               />
                             )}
                           </section>
@@ -652,6 +738,7 @@ export function PlanEditor({
                                     onBlur={() => handleBlur('activityName')}
                                     placeholder="輸入教案名稱 / Enter subject title"
                                     minHeight="38px"
+                                    readOnly={isInteractionLocked}
                                   />
                                 </FieldContainer>
                               )}
@@ -672,6 +759,7 @@ export function PlanEditor({
                                     onBlur={() => handleBlur('members')}
                                     placeholder="列出相關人員... / List members..."
                                     minHeight="38px"
+                                    readOnly={isInteractionLocked}
                                   />
                                 </FieldContainer>
                               )}
@@ -691,6 +779,7 @@ export function PlanEditor({
                                   onBlur={() => handleBlur('purpose')}
                                   placeholder="描述活動目標與宗旨... / Describe mission objectives..."
                                   minHeight="120px"
+                                  readOnly={isInteractionLocked}
                                 />
                               </FieldContainer>
                             )}
@@ -711,6 +800,7 @@ export function PlanEditor({
                                       onBlur={() => handleBlur('time')}
                                       placeholder="20min"
                                       minHeight="38px"
+                                      readOnly={isInteractionLocked}
                                     />
                                   </FieldContainer>
                                 )}
@@ -728,6 +818,7 @@ export function PlanEditor({
                                       onBlur={() => handleBlur('location')}
                                       placeholder="3F Main Hall"
                                       minHeight="38px"
+                                      readOnly={isInteractionLocked}
                                     />
                                   </FieldContainer>
                                 )}
@@ -748,6 +839,7 @@ export function PlanEditor({
                                     onFocus={() => handleFocus('process')}
                                     onBlur={() => handleBlur('process')}
                                     placeholder="詳細描述活動流程... / Describe the procedures..."
+                                    readOnly={isInteractionLocked}
                                   />
                                 </FieldContainer>
                               )}
@@ -763,6 +855,7 @@ export function PlanEditor({
                                 onFocus={() => handleFocus('content')}
                                 onBlur={() => handleBlur('content')}
                                 placeholder="撰寫教案內容... (支援貼上圖片) / Write lesson content here..."
+                                readOnly={isInteractionLocked}
                               />
                             </FieldContainer>
                           </section>
@@ -780,6 +873,7 @@ export function PlanEditor({
                                       onChange={(val) => handlePlanUpdate({ props: val })}
                                       onFocus={() => handleFocus('props')}
                                       onBlur={() => handleBlur('props')}
+                                      readOnly={isInteractionLocked}
                                     />
                                   </div>
                                 </FieldContainer>
@@ -801,6 +895,7 @@ export function PlanEditor({
                                     onBlur={() => handleBlur('openingClosingRemarks')}
                                     placeholder="開場與結語... / Opening & closing..."
                                     minHeight="120px"
+                                    readOnly={isInteractionLocked}
                                   />
                                 </FieldContainer>
                               )}
@@ -820,6 +915,7 @@ export function PlanEditor({
                                   onBlur={() => handleBlur('remarks')}
                                   placeholder="加入備註 (選填)... / Add remarks (Optional)..."
                                   minHeight="120px"
+                                  readOnly={isInteractionLocked}
                                 />
                               </FieldContainer>
                             )}
@@ -837,11 +933,28 @@ export function PlanEditor({
 
       <div
         ref={toolbarRef}
-        className="md:hidden fixed bottom-0 left-0 right-0 z-[60] pb-[env(safe-area-inset-bottom)] pointer-events-none will-change-[bottom]">
+        className={cn(
+          "md:hidden fixed bottom-0 left-0 right-0 z-[60] pb-[env(safe-area-inset-bottom)] pointer-events-none will-change-[bottom] transition-transform duration-300 ease-out",
+          isEditingMode ? "translate-y-0" : "translate-y-full"
+        )}>
         <div className="pointer-events-auto bg-white dark:bg-slate-800 w-full">
           <MarkdownToolbar className="justify-start pb-2 pt-1 shadow-none border-none border-t-0" />
         </div>
       </div>
+
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        onClick={() => setIsEditingMode(true)}
+        title="進入編輯模式"
+        className={cn(
+          "md:hidden fixed right-4 bottom-[calc(env(safe-area-inset-bottom)+20px)] z-[70] h-14 w-14 rounded-2xl bg-orange-600 text-white dark:bg-amber-400 dark:text-[#2C2A28] shadow-[0_10px_28px_rgba(234,88,12,0.32)] dark:shadow-[0_10px_28px_rgba(251,191,36,0.28)] border-none transition-all duration-300 ease-out",
+          !isEditingMode && isFabVisible ? "translate-y-0 opacity-100 pointer-events-auto" : "translate-y-8 opacity-0 pointer-events-none"
+        )}
+      >
+        <Pencil className="h-5 w-5" />
+      </Button>
 
       {isSidebarOpen && (
         <button

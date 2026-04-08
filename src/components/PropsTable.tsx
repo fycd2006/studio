@@ -20,12 +20,14 @@ function AutoExpandingTextarea({
  value, 
  onChange, 
  placeholder, 
- className 
+ className,
+ readOnly = false,
 }: { 
  value: string; 
  onChange: (val: string) => void; 
  placeholder?: string;
  className?: string;
+ readOnly?: boolean;
 }) {
  const [localValue, setLocalValue] = useState(value || "");
  const [isFocused, setIsFocused] = useState(false);
@@ -59,6 +61,8 @@ function AutoExpandingTextarea({
  onChange(localValue);
  }}
  onChange={(e) => setLocalValue(e.target.value)}
+ readOnly={readOnly}
+ disabled={readOnly}
  onInput={adjustHeight}
  className={cn("w-full resize-none  shadow-none focus:outline-none bg-transparent py-3 text-[13px] font-bold text-[#2C2A28] dark:text-white placeholder:text-stone-300 dark:placeholder:text-slate-600 min-h-[44px] overflow-hidden leading-relaxed transition-colors", className)}
  />
@@ -69,12 +73,14 @@ function LocalInput({
  value, 
  onChange, 
  placeholder, 
- className 
+ className,
+ readOnly = false,
 }: { 
  value: string; 
  onChange: (val: string) => void; 
  placeholder?: string;
  className?: string;
+ readOnly?: boolean;
 }) {
  const [localValue, setLocalValue] = useState(value || "");
  const [isFocused, setIsFocused] = useState(false);
@@ -90,6 +96,8 @@ function LocalInput({
  value={localValue}
  onFocus={() => setIsFocused(true)}
  onChange={(e) => setLocalValue(e.target.value)}
+ readOnly={readOnly}
+ disabled={readOnly}
  onBlur={() => {
  setIsFocused(false);
  onChange(localValue);
@@ -111,12 +119,14 @@ interface PropsTableProps {
  onChange: (value: PropItem[]) => void;
  onFocus?: () => void;
  onBlur?: () => void;
+ readOnly?: boolean;
 }
 
-export function PropsTable({ label, value = [], onChange, onFocus, onBlur }: PropsTableProps) {
+export function PropsTable({ label, value = [], onChange, onFocus, onBlur, readOnly = false }: PropsTableProps) {
  const { t, language } = useTranslation();
 
  const handleAddRow = () => {
+ if (readOnly) return;
  const newRow: PropItem = {
  id: Math.random().toString(36).substr(2, 9),
  name: "",
@@ -128,11 +138,13 @@ export function PropsTable({ label, value = [], onChange, onFocus, onBlur }: Pro
  };
 
  const handleUpdateRow = (id: string, field: keyof PropItem, val: string) => {
+ if (readOnly) return;
  const newData = value.map(row => row.id === id ? { ...row, [field]: val } : row);
  onChange(newData);
  };
 
  const handleRemoveRow = (id: string) => {
+ if (readOnly) return;
  onChange(value.filter(row => row.id !== id));
  };
 
@@ -145,7 +157,7 @@ export function PropsTable({ label, value = [], onChange, onFocus, onBlur }: Pro
  )}
 
  <div 
-    className="w-full rounded-xl overflow-hidden bg-white dark:bg-slate-900/50 shadow-stone-200/20 dark:shadow-none transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none"
+   className={cn("w-full rounded-xl overflow-hidden bg-white dark:bg-slate-900/50 shadow-stone-200/20 dark:shadow-none transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none", readOnly && "opacity-90")}
     onFocus={onFocus}
     onBlur={(e) => {
       if (!e.currentTarget.contains(e.relatedTarget as Node)) {
@@ -173,6 +185,7 @@ export function PropsTable({ label, value = [], onChange, onFocus, onBlur }: Pro
  value={row.name} 
  onChange={(val) => handleUpdateRow(row.id, 'name', val)} 
  placeholder={t('PROP_NAME')} 
+ readOnly={readOnly}
  className="px-4"
  />
  </TableCell>
@@ -181,6 +194,7 @@ export function PropsTable({ label, value = [], onChange, onFocus, onBlur }: Pro
  value={row.quantity} 
  onChange={(val) => handleUpdateRow(row.id, 'quantity', val)} 
  placeholder="1" 
+ readOnly={readOnly}
  />
  </TableCell>
  <TableCell className="text-center align-top p-0 border-r border-stone-200 dark:border-slate-800">
@@ -188,6 +202,7 @@ export function PropsTable({ label, value = [], onChange, onFocus, onBlur }: Pro
  value={row.unit} 
  onChange={(val) => handleUpdateRow(row.id, 'unit', val)} 
  placeholder="Unit" 
+ readOnly={readOnly}
  />
  </TableCell>
  <TableCell className="align-top p-0 border-r border-stone-200 dark:border-slate-800">
@@ -195,12 +210,13 @@ export function PropsTable({ label, value = [], onChange, onFocus, onBlur }: Pro
  value={row.remarks || ""} 
  onChange={(val) => handleUpdateRow(row.id, 'remarks', val)} 
  placeholder={t('OP_REMARKS')} 
+ readOnly={readOnly}
  className="px-4"
  />
  </TableCell>
  <TableCell className="text-center align-middle p-0">
  <div className="flex justify-center items-center h-full w-full py-2">
- <Button variant="ghost" size="icon" className="h-9 w-9 text-stone-400 dark:text-slate-600 hover:text-rose-600 dark:hover:text-rose-400" onClick={() => handleRemoveRow(row.id)}>
+ <Button variant="ghost" size="icon" disabled={readOnly} className="h-9 w-9 text-stone-400 dark:text-slate-600 hover:text-rose-600 dark:hover:text-rose-400" onClick={() => handleRemoveRow(row.id)}>
  <Trash2 className="h-4 w-4" />
  </Button>
  </div>
@@ -221,6 +237,7 @@ export function PropsTable({ label, value = [], onChange, onFocus, onBlur }: Pro
  <div className="flex justify-center p-3">
  <Button 
  variant="outline" 
+ disabled={readOnly}
  onClick={handleAddRow}
  className="h-10 px-8 rounded-xl text-orange-600 dark:text-amber-400 dark:hover:bg-orange-50 dark:hover:bg-amber-400/5 gap-3 font-bold uppercase tracking-widest text-[12px] transition-all shadow-sm border-none"
  >
