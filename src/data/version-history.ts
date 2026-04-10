@@ -13,10 +13,10 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     version: "1.0.10",
     label: "更新項目",
     date: "2026-04-10",
-    title: "介面顯示優化",
+    title: "教案編輯頁工具列置中與滿版顯示",
     highlights: [
-      "優化版面配置",
-      "改善按鈕顯示"
+      "教案編輯頁的工具列按鈕現在會置中對齊。",
+      "工具列背景延伸至螢幕滿版，不再有左右空隙。"
     ],
   },
   {
@@ -24,10 +24,10 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     version: "1.0.9",
     label: "更新項目",
     date: "2026-04-10",
-    title: "介面顯示優化",
+    title: "修正工具列背景透明問題",
     highlights: [
-      "優化排版呈現",
-      "提升畫面穩定"
+      "教案編輯頁捲動時，工具列背後不再透出文字內容。",
+      "工具列底部新增分隔線，視覺更清晰。"
     ],
   },
   {
@@ -35,10 +35,10 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     version: "1.0.8",
     label: "更新項目",
     date: "2026-04-10",
-    title: "介面優化更新",
+    title: "修正工具列吸附與滿版問題",
     highlights: [
-      "優化操作列顯示",
-      "提升介面清晰度"
+      "教案編輯頁工具列改為滿版寬度，消除兩側縫隙。",
+      "捲動時工具列能正確吸附在頂端。"
     ],
   },
   {
@@ -46,11 +46,11 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     version: "1.0.7",
     label: "更新項目",
     date: "2026-04-10",
-    title: "優化編輯流程與介面顯示",
+    title: "電腦版教案編輯預設為可編輯狀態",
     highlights: [
-      "行動版預設為閱讀模式",
-      "優化桌面版編輯體驗",
-      "修正頂部介面顯示問題"
+      "電腦版打開教案後可直接編輯，不需再點擊解鎖按鈕。",
+      "手機版維持先閱讀、點鉛筆按鈕後才能編輯的操作方式。",
+      "修正工具列與導覽列之間的間距問題。"
     ],
   },
   {
@@ -58,10 +58,10 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     version: "1.0.6",
     label: "更新項目",
     date: "2026-04-10",
-    title: "優化版本紀錄說明方式",
+    title: "新增版本更新通知彈窗",
     highlights: [
-      "現在更新日誌的內容將更精簡明確，協助您快速掌握最新的平台改進與修復。",
-      "排除不必要的技術名詞，提升閱讀體驗。"
+      "開啟網頁時，若有錯過的版本更新會自動彈出通知視窗。",
+      "設定頁的版本歷程改為時間軸樣式呈現。"
     ],
   },
   {
@@ -69,10 +69,10 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     version: "1.0.5",
     label: "更新項目",
     date: "2026-04-06",
-    title: "優化操作列與管理員介面",
+    title: "教案列表頁操作列整合",
     highlights: [
-      "改善教案編輯器上方操作列的顯示效果。",
-      "修正管理員設定區的分類，提升後台管理效率。"
+      "教案列表頁上方的操作按鈕重新整理分組。",
+      "管理員設定區的分類標籤更加清楚。"
     ],
   },
   {
@@ -80,10 +80,10 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     version: "1.0.5",
     label: "更新項目",
     date: "2026-04-06",
-    title: "改善計畫總覽顯示與排序",
+    title: "修復教案總覽文字與排序",
     highlights: [
-      "修復總覽文字的顯示異常問題。",
-      "優化清單的預設排序邏輯，讓您更快找到所需教案。"
+      "教案總覽中的文字不再出現異常符號。",
+      "教案清單的排序改為依更新時間由新到舊。"
     ],
   },
   {
@@ -91,11 +91,11 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     version: "1.0.4",
     label: "更新項目",
     date: "2026-04-05",
-    title: "提升整體介面操作體驗",
+    title: "手機版按鈕放大與字體調整",
     highlights: [
-      "放大手機按鈕以利觸控操作。",
-      "優化整體字體大小與排版層次。",
-      "改善浮動工具列的視覺體驗。"
+      "手機版各頁面的按鈕更大、更容易點擊。",
+      "全站字體大小與標題層次重新調整。",
+      "教案編輯頁的浮動工具列視覺更新。"
     ],
   },
   {
@@ -103,197 +103,192 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     version: "1.0.4",
     label: "更新項目",
     date: "2026-04-05",
-    title: "優化活動選擇元件",
+    title: "手機版活動選單改為底部彈出",
     highlights: [
-      "手機版活動選單全面改為從底部彈出，單手操作更順暢。",
-      "修復電腦版選單的顯示位置異常。"
+      "手機版選擇活動時，選單從畫面底部滑出，方便單手操作。",
+      "修復電腦版活動選單偶爾偏移的問題。"
     ],
   },
   {
     id: "build-fff6e84",
     version: "1.0.4",
-    label: "更新 #5",
+    label: "更新項目",
     date: "2026-04-05",
-    title: "fix(MarkdownToolbar): resolve text formatting size logic & add clean unformatted text logic",
+    title: "修正文字格式工具的大小切換",
     highlights: [
-      "提交代號: fff6e84",
-      "發布日期: 2026-04-05",
+      "教案編輯頁的粗體、斜體等格式按鈕現在能正確切換文字大小。",
+      "新增一鍵清除所有格式的功能。"
     ],
   },
   {
     id: "build-5792e26",
     version: "1.0.3",
-    label: "更新 #6",
+    label: "更新項目",
     date: "2026-04-04",
-    title: "feat: persist named current version until it gets modified further",
+    title: "版本紀錄保留命名功能",
     highlights: [
-      "提交代號: 5792e26",
-      "發布日期: 2026-04-04",
+      "儲存版本時輸入的名稱會一直保留，直到內容再次被修改。",
+      "版本歷程側邊欄可更方便地辨識各個存檔點。"
     ],
   },
   {
     id: "build-429ae4d",
     version: "1.0.3",
-    label: "更新 #7",
+    label: "更新項目",
     date: "2026-04-04",
-    title: "fix: prevent entering read-only history mode when sidebar opens without selection",
+    title: "修復版本歷程誤觸唯讀問題",
     highlights: [
-      "提交代號: 429ae4d",
-      "發布日期: 2026-04-04",
+      "打開版本歷程側欄時，若未選擇任何版本，編輯區不再被鎖定。"
     ],
   },
   {
     id: "build-08f02ab",
     version: "1.0.3",
-    label: "更新 #8",
+    label: "更新項目",
     date: "2026-04-04",
-    title: "fix: perfect mobile keyboard toolbar alignment via visual viewport resizing",
+    title: "手機版鍵盤彈起時工具列對齊修正",
     highlights: [
-      "提交代號: 08f02ab",
-      "發布日期: 2026-04-04",
+      "手機編輯教案時，螢幕鍵盤彈出後工具列會正確貼齊鍵盤上方。"
     ],
   },
   {
     id: "build-cd6f269",
     version: "1.0.3",
-    label: "更新 #9",
+    label: "更新項目",
     date: "2026-04-04",
-    title: "fix: mobile PWA theme color, keyboard issues, and loading states",
+    title: "手機版載入速度與主題色修正",
     highlights: [
-      "提交代號: cd6f269",
-      "發布日期: 2026-04-04",
+      "修正手機版瀏覽器顯示的主題顏色。",
+      "改善鍵盤相關的操作問題。",
+      "頁面載入動畫更加流暢。"
     ],
   },
   {
     id: "build-fdab629",
     version: "1.0.3",
-    label: "更新 #10",
+    label: "更新項目",
     date: "2026-04-04",
-    title: "feat: optimize plan editor for script mode and add remarks field",
+    title: "新增教案備註欄位與劇本模式",
     highlights: [
-      "提交代號: fdab629",
-      "發布日期: 2026-04-04",
+      "教案編輯頁新增「備註」欄位，可紀錄額外提醒事項。",
+      "新增劇本排版模式，方便撰寫活動流程腳本。"
     ],
   },
   {
     id: "build-e77f37b",
     version: "1.0.3",
-    label: "更新 #11",
+    label: "更新項目",
     date: "2026-04-03",
-    title: "fix: surface real firebase errors and sync dev changes",
+    title: "改善錯誤提示與資料同步",
     highlights: [
-      "提交代號: e77f37b",
-      "發布日期: 2026-04-03",
+      "操作失敗時會顯示更清楚的錯誤原因說明。",
+      "修正部分資料未即時同步的問題。"
     ],
   },
   {
     id: "build-05e9d1e",
     version: "1.0.2",
-    label: "更新 #12",
+    label: "更新項目",
     date: "2026-03-31",
-    title: "Update",
+    title: "一般性修正與穩定性提升",
     highlights: [
-      "提交代號: 05e9d1e",
-      "發布日期: 2026-03-31",
+      "修復數項小問題，提升整體使用穩定度。"
     ],
   },
   {
     id: "build-601cdf1",
     version: "1.0.2",
-    label: "更新 #13",
+    label: "更新項目",
     date: "2026-03-27",
-    title: "fix: refactor group management from cards to explicit list view with shared headers",
+    title: "小組管理改為清單檢視",
     highlights: [
-      "提交代號: 601cdf1",
-      "發布日期: 2026-03-27",
+      "設定頁中的小組管理從卡片式改為清單式排列，一目了然。",
+      "各小組共用統一的標題列，操作更一致。"
     ],
   },
   {
     id: "build-cc76890",
     version: "1.0.2",
-    label: "更新 #14",
+    label: "更新項目",
     date: "2026-03-27",
-    title: "fix: replace timeline card grid with clean list layout and fix input box sizes",
+    title: "時間軸改為清單排版",
     highlights: [
-      "提交代號: cc76890",
-      "發布日期: 2026-03-27",
+      "設定頁的時間軸從卡片格狀改為簡潔的清單排列。",
+      "修正時間輸入框大小不一致的問題。"
     ],
   },
   {
     id: "build-41eca22",
     version: "1.0.2",
-    label: "更新 #15",
+    label: "更新項目",
     date: "2026-03-27",
-    title: "fix: redesign timeline inputs to pill-shaped style (single and range)",
+    title: "時間輸入框改為膠囊樣式",
     highlights: [
-      "提交代號: 41eca22",
-      "發布日期: 2026-03-27",
+      "設定頁中單一時間與時間範圍的輸入框改為圓角膠囊造型。"
     ],
   },
   {
     id: "build-9a0dee7",
     version: "1.0.2",
-    label: "更新 #16",
+    label: "更新項目",
     date: "2026-03-27",
-    title: "feat: settings timeline redesign - implement pill-shaped inputs and correct text",
+    title: "設定頁時間軸介面重新設計",
     highlights: [
-      "提交代號: 9a0dee7",
-      "發布日期: 2026-03-27",
+      "設定頁的營隊時間軸全面翻新為膠囊式輸入框。",
+      "文字標籤與說明更正為正確用語。"
     ],
   },
   {
     id: "build-3c44c0d",
     version: "1.0.2",
-    label: "更新 #17",
+    label: "更新項目",
     date: "2026-03-27",
-    title: "feat: design overhaul - remove borders to elevate flat areas and rely on shadows for depth",
+    title: "全站視覺升級：移除邊框、改用陰影",
     highlights: [
-      "提交代號: 3c44c0d",
-      "發布日期: 2026-03-27",
+      "全站各區塊移除多餘邊框線條，改以陰影呈現層次感。",
+      "整體畫面更加乾淨簡潔。"
     ],
   },
   {
     id: "build-28f017a",
     version: "1.0.1",
-    label: "更新 #18",
+    label: "更新項目",
     date: "2026-03-26",
-    title: "fix: sync admin nav mobile and desktop behaviors",
+    title: "修正管理頁手機與電腦版導覽不同步",
     highlights: [
-      "提交代號: 28f017a",
-      "發布日期: 2026-03-26",
+      "管理頁的導覽列在手機版與電腦版之間的切換行為已統一。"
     ],
   },
   {
     id: "build-304a9d8",
     version: "1.0.1",
-    label: "更新 #19",
+    label: "更新項目",
     date: "2026-03-26",
-    title: "chore: apply latest UI and export updates",
+    title: "介面微調與匯出功能更新",
     highlights: [
-      "提交代號: 304a9d8",
-      "發布日期: 2026-03-26",
+      "多處介面細節調整。",
+      "教案匯出功能更新。"
     ],
   },
   {
     id: "build-b4bd8bc",
     version: "1.0.1",
-    label: "更新 #20",
+    label: "更新項目",
     date: "2026-03-26",
-    title: "Fix: Missing RotateCcw import in PlanEditor",
+    title: "修復教案編輯頁的還原按鈕",
     highlights: [
-      "提交代號: b4bd8bc",
-      "發布日期: 2026-03-26",
+      "修正教案編輯頁中「還原上一步」按鈕無法正常顯示的問題。"
     ],
   },
   {
     id: "build-c2feaeb",
     version: "1.0.1",
-    label: "更新 #21",
+    label: "更新項目",
     date: "2026-03-26",
-    title: "Feature: Refactor Version History UI UX",
+    title: "版本歷程介面全面翻新",
     highlights: [
-      "提交代號: c2feaeb",
-      "發布日期: 2026-03-26",
+      "版本歷程側邊欄重新設計，瀏覽更直覺。",
+      "可直接在歷程中查看各版本的差異對比。"
     ],
   },
   {
