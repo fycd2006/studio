@@ -106,7 +106,7 @@ export function WhatsNewDialog() {
             </div>
 
             {/* Content List */}
-            <ScrollArea className="flex-1 px-8">
+            <div className="flex-1 px-8 overflow-y-auto max-h-[50vh] min-h-[200px] scrollbar-thin scrollbar-thumb-stone-200 dark:scrollbar-thumb-slate-700">
               <div className="py-2 pb-8 space-y-8">
                 {missedVersions.map((entry) => (
                   <div key={entry.id} className="relative pl-6">
@@ -135,7 +135,7 @@ export function WhatsNewDialog() {
                   </div>
                 ))}
               </div>
-            </ScrollArea>
+            </div>
 
             {/* Footer */}
             <div className="p-6 pt-4 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border-t border-stone-100/50 dark:border-white/5">

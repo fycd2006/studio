@@ -13,55 +13,55 @@ export const VERSION_HISTORY: VersionHistoryEntry[] = [
     version: "1.0.6",
     label: "更新項目",
     date: "2026-04-10",
-    title: "AI 智慧更新日誌，讓您輕鬆掌握最新功能！",
+    title: "優化版本紀錄說明方式",
     highlights: [
-      "🚀 智能更新日誌，亮點一目瞭然！我們導入了業界領先的 AI 智能系統，未來每次版本更新，都會自動為您生成最精準、最易懂的亮點摘要，讓您輕鬆掌握所有新功能與優化！",
-      "⚡️ 加速功能迭代，體驗不斷升級！透過自動化更新日誌流程，我們的開發團隊能更專注於核心功能的創新與優化，意味著您將能更快體驗到最新、最棒的產品改進！",
-      "✨ 資訊透明化，每一次更新都充滿驚喜！我們致力於提供卓越的使用體驗，這項升級確保您每次都能收到清晰、專業的更新資訊，不錯過任何讓工作更高效的精彩細節！"
+      "現在更新日誌的內容將更精簡明確，協助您快速掌握最新的平台改進與修復。",
+      "排除不必要的技術名詞，提升閱讀體驗。"
     ],
   },
   {
     id: "build-cd011d2",
     version: "1.0.5",
-    label: "最新穩定版",
+    label: "更新項目",
     date: "2026-04-06",
-    title: "Refine action bars and fix admin props grouping",
+    title: "優化操作列與管理員介面",
     highlights: [
-      "提交代號: cd011d2",
-      "發布日期: 2026-04-06",
+      "改善教案編輯器上方操作列的顯示效果。",
+      "修正管理員設定區的分類，提升後台管理效率。"
     ],
   },
   {
     id: "build-20fde3a",
     version: "1.0.5",
-    label: "更新 #2",
+    label: "更新項目",
     date: "2026-04-06",
-    title: "fix: sanitize plan overview text and improve sorting",
+    title: "改善計畫總覽顯示與排序",
     highlights: [
-      "提交代號: 20fde3a",
-      "發布日期: 2026-04-06",
+      "修復總覽文字的顯示異常問題。",
+      "優化清單的預設排序邏輯，讓您更快找到所需教案。"
     ],
   },
   {
     id: "build-201c016",
     version: "1.0.4",
-    label: "更新 #3",
+    label: "更新項目",
     date: "2026-04-05",
-    title: "style: apply UX enhancements (touch targets, typography hierarchy, save states, floating toolbars)",
+    title: "提升整體介面操作體驗",
     highlights: [
-      "提交代號: 201c016",
-      "發布日期: 2026-04-05",
+      "放大手機按鈕以利觸控操作。",
+      "優化整體字體大小與排版層次。",
+      "改善浮動工具列的視覺體驗。"
     ],
   },
   {
     id: "build-5963fda",
     version: "1.0.4",
-    label: "更新 #4",
+    label: "更新項目",
     date: "2026-04-05",
-    title: "feat: implement ResponsiveActivitySelectV3 with absolute positioning and mobile bottom sheet",
+    title: "優化活動選擇元件",
     highlights: [
-      "提交代號: 5963fda",
-      "發布日期: 2026-04-05",
+      "手機版活動選單全面改為從底部彈出，單手操作更順暢。",
+      "修復電腦版選單的顯示位置異常。"
     ],
   },
   {

@@ -50,9 +50,9 @@ try {
   ]
 }
 
-- 語氣：具有活力、專業且鼓勵性 (像是 UIUXPRO MAX 的風格)。
-- 內容：請從 diff 中的變更推測對使用者的實際幫助（如「版面設計升級」、「修復無法操作的問題」等）。
-- 重點事項：最多提煉出 3 到 4 點最重要的改變即可。不能出現任何技術名詞。
+- 語氣：客觀、精簡、務實，不要過度誇大或推銷。使用平實且簡潔的短句描述。
+- 內容：請直接講述對使用者的實際幫助（如「修復 OOO 無法操作的問題」、「優化版面配置」等）。不要提到底層實作細節，絕對不要提到「導入 AI」或「自動生成版本紀錄」等字眼，使用者不需要知道這些。若有 AI 生成相關的變更，請一律改寫為「優化版本紀錄說明方式」。
+- 重點事項：最多提煉出 2 到 3 點最重要的改變即可，每一點的字數盡量少於 15 字，絕不要長篇大論。絕不能出現技術名詞或誇飾語氣。
 
 此為即將儲存的改動：
 ${gitDiff}
@@ -85,7 +85,7 @@ ${gitDiff}
       
     } catch (err) {
       console.error("⚠️ AI 產生紀錄失敗，將略過此步驟以避免阻擋上傳：", err.message || err);
-      process.exit(0); // 即使失敗也不能阻擋使用者的原始 Commit
+      // Let it exit naturally
     }
   }
 
@@ -126,10 +126,9 @@ ${highlightsArrayStr}
     fs.writeFileSync(filePath, content);
   }
 
-  // NodeJS 直執行會有 await 的問題，所以包裹用 IIFE，而在 git hook 又需要同步等待，於是巧妙透過同步的 execSync 調用自己或使用簡單的轉化。
-  // 注意，這裡使用的是 fetch (內建)，所以 NodeJS 18 以上可用
-  generateChangelog().then(() => { process.exit(0); });
+  // NodeJS 直執行會有 await 的問題，所以包裹用 IIFE
+  generateChangelog();
 
 } catch (err) {
-  process.exit(0);
+  // Let it exit naturally
 }
