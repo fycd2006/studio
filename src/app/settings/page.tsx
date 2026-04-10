@@ -750,55 +750,74 @@ export default function SettingsPage() {
  )}
 
  <AnimatePresence>
- {isVersionHistoryOpen && (
- <div className="fixed inset-0 z-[110] bg-black/40 backdrop-blur-sm p-4 sm:p-6 flex items-center justify-center">
- <motion.div
- initial={{ opacity: 0, y: 12, scale: 0.98 }}
- animate={{ opacity: 1, y: 0, scale: 1 }}
- exit={{ opacity: 0, y: 8, scale: 0.98 }}
- transition={{ duration: 0.2, ease: "easeOut" }}
- className="w-full max-w-3xl max-h-[80vh] overflow-hidden rounded-2xl bg-white dark:bg-slate-800 shadow-2xl"
- >
- <div className="px-5 py-4 border-b border-stone-100 dark:border-slate-700/70 flex items-center justify-between">
- <div>
- <p className="text-[10px] font-black uppercase tracking-widest text-stone-500 dark:text-slate-400">Release Timeline</p>
- <h3 className="text-lg font-bold text-[#2C2A28] dark:text-white">{language === 'zh' ? '版本歷程' : 'Version History'}</h3>
- </div>
- <Button
- variant="ghost"
- size="icon"
- className="h-8 w-8 text-stone-500 dark:text-slate-400 hover:bg-stone-100 dark:hover:bg-slate-700"
- onClick={() => setIsVersionHistoryOpen(false)}
- >
- <X className="w-4 h-4" />
- </Button>
- </div>
+				{isVersionHistoryOpen && (
+					<div className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6">
+						<motion.div
+							initial={{ opacity: 0 }}
+							animate={{ opacity: 1 }}
+							exit={{ opacity: 0 }}
+							className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+							onClick={() => setIsVersionHistoryOpen(false)}
+						/>
+						<motion.div
+							initial={{ opacity: 0, y: 20, scale: 0.95 }}
+							animate={{ opacity: 1, y: 0, scale: 1 }}
+							exit={{ opacity: 0, y: 10, scale: 0.95 }}
+							transition={{ type: "spring", damping: 25, stiffness: 300 }}
+							className="relative w-full max-w-3xl flex flex-col max-h-[85vh] overflow-hidden rounded-[32px] bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl shadow-2xl border border-white/50 dark:border-white/10"
+						>
+							<div className="px-8 py-6 border-b border-stone-100/50 dark:border-white/5 flex items-center justify-between bg-white/50 dark:bg-slate-900/50 backdrop-blur-md">
+								<div>
+									<p className="text-[10px] font-black uppercase tracking-widest text-stone-500 dark:text-slate-400">Release Timeline</p>
+									<h3 className="text-xl font-bold text-[#2C2A28] dark:text-white flex items-center gap-2">
+										<Clock className="w-5 h-5 text-orange-500 dark:text-amber-400" />
+										{language === 'zh' ? '版本歷程' : 'Version History'}
+									</h3>
+								</div>
+								<Button
+									variant="ghost"
+									size="icon"
+									className="h-8 w-8 rounded-full text-stone-400 hover:bg-stone-200/50 dark:hover:bg-white/10 transition-colors"
+									onClick={() => setIsVersionHistoryOpen(false)}
+								>
+									<X className="w-4 h-4" />
+								</Button>
+							</div>
 
- <div className="px-5 py-4 overflow-y-auto max-h-[calc(80vh-76px)] space-y-3">
- {VERSION_HISTORY.map((entry) => (
- <div key={entry.id} className="rounded-xl border border-stone-100 dark:border-slate-700/70 p-4 bg-[#FBF9F6] dark:bg-slate-900/40">
- <div className="flex items-start justify-between gap-3 mb-2">
- <div>
- <p className="text-[11px] font-black uppercase tracking-widest text-stone-500 dark:text-slate-400">{entry.date} • v{entry.version}</p>
- <h4 className="text-sm sm:text-base font-bold text-[#2C2A28] dark:text-white">{entry.title}</h4>
- </div>
- <Badge className="bg-orange-100 dark:bg-amber-500/10 text-orange-700 dark:text-amber-300 border-none font-bold text-[10px]">{entry.label}</Badge>
- </div>
- <ul className="space-y-1.5">
- {entry.highlights.map((item, idx) => (
- <li key={`${entry.id}-${idx}`} className="text-sm text-stone-600 dark:text-slate-300 leading-relaxed flex items-start gap-2">
- <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-orange-500 dark:bg-amber-400 shrink-0" />
- <span>{item}</span>
- </li>
- ))}
- </ul>
- </div>
- ))}
- </div>
- </motion.div>
- </div>
- )}
- </AnimatePresence>
+							<div className="px-8 py-6 overflow-y-auto max-h-[calc(85vh-90px)]">
+								<div className="space-y-8 pb-4">
+									{VERSION_HISTORY.map((entry) => (
+										<div key={entry.id} className="relative pl-6">
+											{/* Timeline Line & Dot */}
+											<div className="absolute left-0 top-1.5 w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
+											<div className="absolute left-[3px] top-4 bottom-[-32px] w-0.5 bg-stone-100 dark:bg-slate-800/50" />
+
+											<div className="flex items-center justify-between gap-3 mb-2">
+												<div>
+													<p className="text-[11px] font-black uppercase tracking-widest text-stone-400 dark:text-slate-500">{entry.date}</p>
+													<h4 className="text-lg font-bold text-[#2C2A28] dark:text-white leading-tight mt-1">{entry.title}</h4>
+												</div>
+												<Badge className="bg-orange-100/80 dark:bg-amber-500/10 text-orange-700 dark:text-amber-400 text-[10px] font-black uppercase tracking-widest border-none px-2 py-0.5 whitespace-nowrap">
+													v{entry.version}
+												</Badge>
+											</div>
+
+											<ul className="space-y-2.5 mt-4">
+												{entry.highlights.map((item, idx) => (
+													<li key={`${entry.id}-${idx}`} className="flex items-start gap-2.5 text-sm font-medium text-stone-600 dark:text-slate-300">
+														<div className="w-1.5 h-1.5 rounded-full bg-orange-500 dark:bg-amber-400 shrink-0 mt-1.5 opacity-80" />
+														<span className="leading-relaxed">{item}</span>
+													</li>
+												))}
+											</ul>
+										</div>
+									))}
+								</div>
+							</div>
+						</motion.div>
+					</div>
+				)}
+			</AnimatePresence>
 
  </div>
  </div>

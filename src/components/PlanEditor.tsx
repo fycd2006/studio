@@ -673,11 +673,11 @@ export function PlanEditor({
                         isPrintMode ? "px-6 md:px-10 py-10 space-y-6 md:space-y-8" : "px-2 py-6 space-y-5"
                       )}>
                         {isHistoryMode && (
-                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 bg-orange-50/50 dark:bg-amber-400/5 rounded-2xl dark:mb-8 gap-4 border-none">
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 bg-orange-50/80 backdrop-blur-xl dark:bg-amber-900/10 border border-orange-200/50 dark:border-amber-700/30 rounded-2xl mb-8 gap-4 shadow-[0_4px_24px_-8px_rgba(249,115,22,0.15)]">
                             <div className="flex items-center gap-3">
-                              <div className="w-1.5 h-6 bg-orange-500 rounded-full" />
+                              <div className="w-2 h-8 bg-gradient-to-b from-orange-400 to-orange-600 rounded-full shadow-inner" />
                               <div>
-                                <span className="text-sm font-black text-[#2C2A28] dark:text-white uppercase tracking-tight block">歷史紀錄 / History View</span>
+                                <span className="text-[14px] font-black tracking-widest text-[#2C2A28] dark:text-white uppercase block">歷史紀錄 / History View</span>
                                 {selectedVersion && (
                                   <span className="text-[9px] font-bold text-stone-500 uppercase tracking-widest">
                                     Showing: {selectedVersion.versionName || selectedVersion.name} ({format(new Date(selectedVersion.createdAt), "MM/dd HH:mm")})
@@ -694,13 +694,13 @@ export function PlanEditor({
                                     setIsHistoryMode(false);
                                     setIsSidebarOpen(false);
                                   }}
-                                  className="h-10 px-4 rounded-xl font-bold text-xs flex-1 sm:flex-none"
+                                  className="h-10 px-5 rounded-full font-bold text-[11px] uppercase tracking-widest text-stone-500 hover:bg-stone-200 hover:text-stone-700 dark:hover:bg-slate-800 transition-all flex-1 sm:flex-none"
                                 >
                                   取消 / Cancel
                                 </Button>
                                 <Button
                                   onClick={() => handleRestoreVersion(selectedVersion.id)}
-                                  className="h-10 px-6 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-orange-500/20 flex-1 sm:flex-none"
+                                  className="h-10 px-7 rounded-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-black text-[11px] uppercase tracking-[0.2em] shadow-lg shadow-orange-500/25 border-none flex-1 sm:flex-none transition-all hover:scale-105 active:scale-95"
                                 >
                                   <RotateCcw className="h-4 w-4 mr-2" /> 還原 / Restore
                                 </Button>

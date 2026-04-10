@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/components/ThemeProvider';
 import { AuthProvider } from '@/lib/auth-context';
 import { I18nProvider } from '@/lib/i18n-context';
 import { AppShell } from '@/components/AppShell';
+import { WhatsNewDialog } from '@/components/WhatsNewDialog';
 import Script from 'next/script';
 
 export const metadata: Metadata = {
@@ -50,6 +51,7 @@ export default function RootLayout({
  <AuthProvider>
  <I18nProvider>
  <AppShell>
+ <WhatsNewDialog />
  {children}
  </AppShell>
  </I18nProvider>

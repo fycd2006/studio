@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "release": "node scripts/generate-changelog.js"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",

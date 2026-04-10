@@ -91,10 +91,10 @@ export function VersionHistorySidebar({
  }, [versions]);
 
  return (
- <div className={cn("fixed top-0 right-0 h-[100dvh] w-full sm:w-96 z-[100] flex flex-col bg-white dark:bg-slate-900 dark:shadow-2xl", className)}>
- <div className="px-6 pb-4 pt-[calc(env(safe-area-inset-top,1.5rem))] dark:">
+ <div className={cn("fixed top-0 right-0 h-[100dvh] w-full sm:w-96 z-[100] flex flex-col bg-white/95 backdrop-blur-xl dark:bg-slate-900/95 border-l border-stone-200/50 dark:border-white/10 shadow-2xl transition-all duration-300", className)}>
+ <div className="px-6 pb-4 pt-[calc(env(safe-area-inset-top,1.5rem))]">
  <div className="flex items-center justify-between mb-4">
- <h2 className="text-lg font-black tracking-tight text-[#2C2A28] dark:text-white uppercase flex items-center gap-2">
+ <h2 className="text-[15px] font-black tracking-widest text-[#2C2A28] dark:text-white uppercase flex items-center gap-2.5">
  <History className="h-5 w-5 text-orange-600 dark:text-amber-400" />
  版本紀錄 / History
  </h2>
@@ -103,7 +103,7 @@ export function VersionHistorySidebar({
  size="icon"
  onClick={onClose}
  title="關閉版本紀錄"
- className="h-9 w-9 rounded-lg text-stone-500 hover:text-stone-700 hover:bg-stone-100 dark:hover:bg-slate-800 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
+ className="h-8 w-8 rounded-full text-stone-500 hover:text-stone-700 hover:bg-stone-100 dark:hover:bg-slate-800 border-none transition-all"
  >
  <X className="h-4 w-4" />
  </Button>
@@ -114,9 +114,9 @@ export function VersionHistorySidebar({
  size="sm"
  onClick={onToggleFilter}
  className={cn(
- "h-8 px-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
- showNamedOnly ? "bg-orange-50 text-orange-600" : "text-stone-400 hover:text-stone-600"
- )}
+							"h-7 px-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
+							showNamedOnly ? "bg-orange-100 text-orange-700 dark:bg-amber-400/20 dark:text-amber-400" : "bg-stone-100 text-stone-500 hover:bg-stone-200 dark:bg-slate-800 dark:text-stone-400 dark:hover:bg-slate-700"
+						)}
  >
  <Filter className="h-3.5 w-3.5 mr-1.5" />
  {showNamedOnly ? "Named Only" : "Show All"}
@@ -132,16 +132,16 @@ export function VersionHistorySidebar({
  </h3>
  <div 
  className={cn(
- "p-4 rounded-2xl border-none transition-all cursor-pointer relative group",
- selectedVersionId === null
- ? "bg-orange-50/50 dark:bg-amber-400/5 dark:shadow-sm" 
- : "bg-white dark:bg-white/5"
- )}
+									"p-4 rounded-2xl transition-all cursor-pointer relative group border",
+									selectedVersionId === null
+										? "bg-orange-50/80 dark:bg-amber-400/10 border-orange-200/50 dark:border-amber-400/20 shadow-[0_2px_12px_rgba(249,115,22,0.08)] dark:shadow-none" 
+										: "bg-white/40 dark:bg-slate-800/40 border-transparent hover:border-stone-200/60 dark:hover:border-white/10 hover:bg-white/80 dark:hover:bg-slate-800/80 hover:shadow-sm"
+								)}
  onClick={onBackToCurrent}
  >
  <div className="flex items-start gap-3">
- <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white bg-orange-500 shadow-inner">
- <span className="text-xs font-black uppercase">LIVE</span>
+ <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white bg-gradient-to-br from-orange-400 to-orange-600 shadow-md ring-2 ring-white dark:ring-slate-900">
+ <span className="text-[10px] font-black uppercase tracking-wider">LIVE</span>
  </div>
  <div className="flex-1 min-w-0">
  <div className="flex items-center justify-between gap-2 h-8">
@@ -163,7 +163,7 @@ export function VersionHistorySidebar({
  if (e.key === 'Escape') setEditingId(null);
  }}
  />
- <Button size="icon" variant="ghost" className="h-6 w-6 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 shrink-0 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={(e) => {
+ <Button size="icon" variant="ghost" className="h-6 w-6 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 shrink-0 border-none rounded-full" onClick={(e) => {
  e.stopPropagation();
  if (editName.trim() && onSaveVersion) {
  onSaveVersion(editName.trim());
@@ -172,7 +172,7 @@ export function VersionHistorySidebar({
  }}>
  <Check className="h-3.5 w-3.5" />
  </Button>
- <Button size="icon" variant="ghost" className="h-6 w-6 text-stone-400 hover:text-stone-600 hover:bg-stone-100 shrink-0 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={(e) => {
+ <Button size="icon" variant="ghost" className="h-6 w-6 text-stone-400 hover:text-stone-600 hover:bg-stone-200 shrink-0 border-none rounded-full" onClick={(e) => {
  e.stopPropagation();
  setEditingId(null);
  }}>
@@ -193,7 +193,7 @@ export function VersionHistorySidebar({
  <Button 
  variant="ghost" 
  size="icon" 
- className="h-7 w-7 text-stone-400 hover:text-stone-600 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
+ className="h-7 w-7 text-stone-400 hover:text-orange-600 hover:bg-orange-100 dark:hover:bg-amber-400/20 dark:hover:text-amber-400 rounded-full transition-colors"
  onClick={(e) => {
  e.stopPropagation();
  setEditingId('current');
@@ -217,11 +217,11 @@ export function VersionHistorySidebar({
  <div 
  key={version.id}
  className={cn(
- "p-4 rounded-2xl border-none transition-all cursor-pointer relative group",
- selectedVersionId === version.id 
- ? "bg-orange-50/50 dark:bg-amber-400/5 dark:shadow-sm" 
- : "bg-white dark:bg-white/5"
- )}
+								"p-4 rounded-2xl transition-all cursor-pointer relative group border",
+								selectedVersionId === version.id 
+									? "bg-orange-50/80 dark:bg-amber-400/10 border-orange-200/50 dark:border-amber-400/20 shadow-[0_2px_12px_rgba(249,115,22,0.08)] dark:shadow-none" 
+									: "bg-white/40 dark:bg-slate-800/40 border-transparent hover:border-stone-200/60 dark:hover:border-white/10 hover:bg-white/80 dark:hover:bg-slate-800/80 hover:shadow-sm"
+							)}
  onClick={() => onSelectVersion(version)}
  >
  <div className="flex items-start gap-3">
@@ -229,7 +229,7 @@ export function VersionHistorySidebar({
  className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white overflow-hidden shadow-inner"
  style={{ backgroundColor: version.authorColor || '#cbd5e1' }}
  >
- <span className="text-xs font-black uppercase">{(version.authorName || 'A').charAt(0)}</span>
+ <span className="text-sm font-black uppercase text-white/90">{(version.authorName || 'A').charAt(0)}</span>
  </div>
  <div className="flex-1 min-w-0">
  <div className="flex items-center justify-between gap-2">
@@ -245,10 +245,10 @@ export function VersionHistorySidebar({
  if (e.key === 'Escape') handleCancelEdit(e);
  }}
  />
- <Button size="icon" variant="ghost" className="h-6 w-6 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 shrink-0 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={(e) => handleSaveEdit(e, version.id)}>
+ <Button size="icon" variant="ghost" className="h-6 w-6 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 shrink-0 border-none rounded-full" onClick={(e) => handleSaveEdit(e, version.id)}>
  <Check className="h-3.5 w-3.5" />
  </Button>
- <Button size="icon" variant="ghost" className="h-6 w-6 text-stone-400 hover:text-stone-600 hover:bg-stone-100 shrink-0 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={handleCancelEdit}>
+ <Button size="icon" variant="ghost" className="h-6 w-6 text-stone-400 hover:text-stone-600 hover:bg-stone-200 shrink-0 border-none rounded-full" onClick={handleCancelEdit}>
  <X className="h-3.5 w-3.5" />
  </Button>
  </div>
@@ -278,7 +278,7 @@ export function VersionHistorySidebar({
  <Button 
  variant="ghost" 
  size="icon" 
- className="h-7 w-7 text-stone-400 hover:text-stone-600 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
+ className="h-7 w-7 text-stone-400 hover:text-orange-600 hover:bg-orange-100 dark:hover:bg-amber-400/20 dark:hover:text-amber-400 rounded-full transition-colors"
  onClick={(e) => handleStartEdit(e, version)}
  >
  <Pencil className="h-3.5 w-3.5" />
@@ -288,7 +288,7 @@ export function VersionHistorySidebar({
  <Button 
  variant="ghost" 
  size="icon" 
- className="h-7 w-7 text-stone-300 hover:text-rose-500 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
+ className="h-7 w-7 text-stone-400 hover:text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-900/40 dark:hover:text-rose-400 rounded-full transition-colors"
  onClick={(e) => {
  e.stopPropagation();
  onDelete(version.id);
