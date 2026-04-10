@@ -9,6 +9,18 @@
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
   {
+    id: "build-5padcyz",
+    version: "1.0.7",
+    label: "更新項目",
+    date: "2026-04-10",
+    title: "優化編輯流程與介面顯示",
+    highlights: [
+      "行動版預設為閱讀模式",
+      "優化桌面版編輯體驗",
+      "修正頂部介面顯示問題"
+    ],
+  },
+  {
     id: "build-nhgkxar",
     version: "1.0.6",
     label: "更新項目",

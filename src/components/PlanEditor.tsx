@@ -148,10 +148,15 @@ export function PlanEditor({
 
   const isMobile = windowWidth > 0 && windowWidth < 768;
   const [isMobilePrintView, setIsMobilePrintView] = useState(false);
-  const [isEditingMode, setIsEditingMode] = useState(false);
+  const [isEditingMode, setIsEditingMode] = useState(true);
+
+  // Mobile defaults to read-only; desktop stays unlocked
+  useEffect(() => {
+    if (isMobile) setIsEditingMode(false);
+  }, [isMobile]);
   const [isFabVisible, setIsFabVisible] = useState(true);
   const isPrintMode = !isMobile || isMobilePrintView;
-  const isReadOnlyMode = !isEditingMode;
+  const isReadOnlyMode = isMobile && !isEditingMode;
   const isInteractionLocked = isHistoryMode || isReadOnlyMode;
 
   const lastScrollYRef = useRef(0);
@@ -540,7 +545,7 @@ export function PlanEditor({
 
         <ActionBar title="" tone="plain" className={cn(
           "justify-center gap-1.5 md:gap-2 !bg-white dark:!bg-slate-800 !mb-0 !py-0.5 transition-all duration-300 ease-out",
-          isEditingMode ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0 pointer-events-none"
+          isEditingMode ? "translate-y-0 opacity-100" : "max-md:-translate-y-4 max-md:opacity-0 max-md:pointer-events-none"
         )}>
           <Button
             variant="ghost"
@@ -550,7 +555,7 @@ export function PlanEditor({
               actionBarTheme.control,
               actionBarTheme.controlIcon,
               actionBarTheme.controlElevated,
-              "bg-orange-600/10 text-orange-600 hover:bg-orange-600/20 dark:bg-amber-400/15 dark:text-amber-400 dark:hover:bg-amber-400/25"
+              "bg-orange-600/10 text-orange-600 hover:bg-orange-600/20 dark:bg-amber-400/15 dark:text-amber-400 dark:hover:bg-amber-400/25 md:hidden"
             )}
             title="完成編輯"
           >
@@ -949,7 +954,7 @@ export function PlanEditor({
         onClick={() => setIsEditingMode(true)}
         title="進入編輯模式"
         className={cn(
-          "fixed right-4 md:right-6 bottom-[calc(env(safe-area-inset-bottom)+20px)] md:bottom-6 z-[70] h-14 w-14 rounded-2xl bg-orange-600 text-white dark:bg-amber-400 dark:text-[#2C2A28] shadow-[0_10px_28px_rgba(234,88,12,0.32)] dark:shadow-[0_10px_28px_rgba(251,191,36,0.28)] border-none transition-all duration-300 ease-out",
+          "fixed right-4 bottom-[calc(env(safe-area-inset-bottom)+20px)] z-[70] h-14 w-14 rounded-2xl bg-orange-600 text-white dark:bg-amber-400 dark:text-[#2C2A28] shadow-[0_10px_28px_rgba(234,88,12,0.32)] dark:shadow-[0_10px_28px_rgba(251,191,36,0.28)] border-none transition-all duration-300 ease-out md:hidden",
           !isEditingMode && isFabVisible ? "translate-y-0 opacity-100 pointer-events-auto" : "translate-y-8 opacity-0 pointer-events-none"
         )}
       >

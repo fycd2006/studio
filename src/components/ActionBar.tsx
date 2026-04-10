@@ -34,8 +34,7 @@ export function ActionBar({ children, title, className, tone = "warm" }: ActionB
     <div
       ref={ref}
       className={cn(
-        "sticky z-[45] md:top-16 transition-all duration-300",
-        isNavbarVisible ? "top-[104px]" : "top-0",
+        "sticky z-[45] top-0 md:top-16 transition-all duration-300",
         tone === "plain"
           ? "bg-transparent"
           : actionBarTheme.shell,
