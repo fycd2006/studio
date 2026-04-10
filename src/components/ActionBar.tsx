@@ -52,7 +52,7 @@ export function ActionBar({ children, title, className, tone = "warm" }: ActionB
         )}
 
         {/* Action Buttons - Responsive */}
-        <div className="flex items-center gap-2 flex-nowrap overflow-x-auto scrollbar-hide justify-start flex-1">
+        <div className="flex items-center gap-2 flex-nowrap overflow-x-auto scrollbar-hide justify-center flex-1">
           {children}
         </div>
       </div>
