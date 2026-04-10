@@ -9,6 +9,17 @@
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
   {
+    id: "build-jzqen3i",
+    version: "1.0.10",
+    label: "更新項目",
+    date: "2026-04-10",
+    title: "介面顯示優化",
+    highlights: [
+      "優化版面配置",
+      "改善按鈕顯示"
+    ],
+  },
+  {
     id: "build-ni8mhkn",
     version: "1.0.9",
     label: "更新項目",
