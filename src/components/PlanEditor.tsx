@@ -544,7 +544,7 @@ export function PlanEditor({
         </div>
 
         <ActionBar title="" tone="plain" className={cn(
-          "justify-center gap-1.5 md:gap-2 !bg-white dark:!bg-slate-800 !mb-0 !py-0.5 transition-all duration-300 ease-out",
+          "justify-center gap-1.5 md:gap-2 !bg-white dark:!bg-slate-800 !mb-0 !py-0.5 transition-all duration-300 ease-out border-b border-stone-100 dark:border-slate-700/50",
           isEditingMode ? "translate-y-0 opacity-100" : "max-md:-translate-y-4 max-md:opacity-0 max-md:pointer-events-none"
         )}>
           <Button
