@@ -9,6 +9,7 @@ import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { TransparentNavbar } from "@/components/TransparentNavbar";
+import { MobileTabBar } from "@/components/MobileTabBar";
 import { useTranslation } from "@/lib/i18n-context";
 
 /** Routes that should NOT render the navbar */
@@ -167,11 +168,14 @@ function AppShellInternal({ children }: { children: React.ReactNode }) {
  </div>
  )}
  
- {/* Main Content Area */}
- <main className="flex-1 min-w-0 w-full overflow-x-clip relative animate-in fade-in slide-in-from-bottom-5 duration-300">
+ {/* Main Content Area — pb-16 on mobile for tab bar clearance */}
+ <main className="flex-1 min-w-0 w-full overflow-x-clip relative animate-in fade-in slide-in-from-bottom-5 duration-300 pb-16 md:pb-0">
  {children}
  </main>
  
+ {/* Mobile Bottom Tab Bar */}
+ <MobileTabBar />
+
  <Toaster />
  </div>
  );

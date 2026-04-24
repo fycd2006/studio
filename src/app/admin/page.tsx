@@ -2,9 +2,18 @@
 
 import { usePlans } from "@/hooks/use-plans";
 import { useAuth } from "@/lib/auth-context";
-import { AdminSection } from "@/components/AdminSection";
-import { Lock } from "lucide-react";
+import { Lock, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import dynamic from "next/dynamic";
+
+const AdminSection = dynamic(() => import("@/components/AdminSection").then(mod => ({ default: mod.AdminSection })), {
+ loading: () => (
+  <div className="h-[60vh] flex items-center justify-center">
+   <Loader2 className="w-8 h-8 animate-spin text-[#f48c25]" />
+  </div>
+ ),
+ ssr: false,
+});
 
 export default function AdminPage() {
  const { role } = useAuth();

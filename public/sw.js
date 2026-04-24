@@ -1,5 +1,6 @@
-const CACHE_NAME = 'ntut-cd-camp-v2';
+const CACHE_NAME = 'ntut-cd-camp-v3';
 const STATIC_ASSETS = [
+  '/offline.html',
   '/beep.wav',
   '/logo.png',
   '/favicon.ico',
@@ -84,7 +85,8 @@ self.addEventListener('fetch', function(event) {
         return networkResponse;
       }).catch(function() {
         return caches.match(event.request).then(function(cachedResponse) {
-          return cachedResponse || caches.match('/');
+          // Serve cached page if available, otherwise show branded offline page
+          return cachedResponse || caches.match('/offline.html');
         });
       })
     );

@@ -1,24 +1,15 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import fallbackImagesData from '@/data/fallback-images.json';
 
 export const revalidate = 2700; // Cache for 45 minutes
 
-function getFallbackImages() {
+function getFallbackImages(): string[] {
   try {
-    const filePath = path.join(process.cwd(), 'src/data/fallback-images.json');
-    if (fs.existsSync(filePath)) {
-      const data = fs.readFileSync(filePath, 'utf-8');
-      if (!data || !data.trim()) {
-        console.warn('Fallback images file is empty');
-        return [];
-      }
-      return JSON.parse(data).images || [];
-    }
+    return fallbackImagesData?.images || [];
   } catch (err) {
     console.error('Failed to load fallback images:', err);
+    return [];
   }
-  return [];
 }
 
 export async function GET() {

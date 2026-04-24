@@ -147,7 +147,7 @@ export default function SettingsPage() {
 
  return (
  <div className="bg-[#FBF9F6] dark:bg-slate-900 text-[#2C2A28] dark:text-slate-50 transition-colors font-sans selection:bg-orange-200 dark:selection:bg-amber-500/30">
- <div className="max-w-5xl mx-auto pt-28 sm:pt-24 pb-6 sm:pb-12 md:pb-16 px-4 sm:px-6 md:px-8">
+ <div className="max-w-5xl mx-auto pt-20 sm:pt-24 pb-6 sm:pb-12 md:pb-16 px-4 sm:px-6 md:px-8">
  {/* ── PAGE TITLE ──────────────────── */}
  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6 mb-8 sm:mb-16 dark: pb-6 sm:pb-8">
  <div className="flex-1">

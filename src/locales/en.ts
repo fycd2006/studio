@@ -83,6 +83,7 @@ const en = {
   VISUAL_BLUEPRINT: "Visual Blueprint",
   REMOVE_CANVAS: "Remove Canvas",
   ADD_CANVAS: "Add Visual Canvas",
+  OPENING_CLOSING: "Opening & Closing",
   GUIDELINES: "Detailed Guidelines",
   MATERIALS: "Material Requirements",
   STIPULATIONS: "Stipulations",

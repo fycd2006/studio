@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f48c25" />
+  <title>離線模式 — NTUT CD Camp</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #FBF9F6;
+      color: #2C2A28;
+      padding: 2rem;
+      text-align: center;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background: #020617; color: #f1f5f9; }
+      .card { background: rgba(30, 41, 59, 0.8); border-color: rgba(51, 65, 85, 0.5); }
+      .retry-btn { background: #f48c25; color: #020617; }
+      .retry-btn:hover { background: #fba94c; }
+    }
+    .card {
+      max-width: 420px;
+      width: 100%;
+      padding: 3rem 2rem;
+      border-radius: 1.5rem;
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      box-shadow: 0 8px 30px rgba(140, 120, 100, 0.08);
+    }
+    .icon {
+      width: 64px; height: 64px;
+      margin: 0 auto 1.5rem;
+      border-radius: 50%;
+      background: rgba(244, 140, 37, 0.1);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .icon svg { width: 28px; height: 28px; color: #f48c25; }
+    h1 {
+      font-size: 1.5rem; font-weight: 800;
+      margin-bottom: 0.75rem; letter-spacing: -0.02em;
+    }
+    p {
+      font-size: 0.875rem; color: #78716c;
+      line-height: 1.6; margin-bottom: 2rem;
+    }
+    .retry-btn {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.75rem 2rem;
+      border: none; border-radius: 0.75rem;
+      background: #f48c25; color: white;
+      font-size: 0.875rem; font-weight: 700;
+      cursor: pointer; transition: all 0.2s;
+      letter-spacing: 0.05em; text-transform: uppercase;
+    }
+    .retry-btn:hover { background: #e67e1a; transform: translateY(-1px); }
+    .retry-btn:active { transform: scale(0.97); }
+    .brand {
+      margin-top: 2rem; font-size: 0.65rem;
+      color: #a8a29e; font-weight: 600;
+      letter-spacing: 0.15em; text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 5.636a9 9 0 11-12.728 0M12 9v4m0 4h.01" />
+      </svg>
+    </div>
+    <h1>目前離線中</h1>
+    <p>
+      您的裝置目前無法連線到網路。<br/>
+      部分功能可能暫時無法使用，請確認網路連線後重試。
+    </p>
+    <button class="retry-btn" onclick="window.location.reload()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M20.49 9A9 9 0 005.64 5.64L4 4m16 16l-1.64-1.64A9 9 0 014.51 15" />
+      </svg>
+      重新連線
+    </button>
+  </div>
+  <div class="brand">NTUT CHONG DE CAMP SYSTEM</div>
+</body>
+</html>

@@ -29,6 +29,7 @@ import { Input } from "@/components/ui/input";
 import { ActionBar } from "@/components/ActionBar";
 import { actionBarTheme } from "@/lib/actionbar-theme";
 import { cn, getUnifiedGroupBadgeParams } from "@/lib/utils";
+import { FabStagger } from "@/components/FabStagger";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/lib/i18n-context";
@@ -65,6 +66,7 @@ export default function PlansOverview() {
  const [sortBy, setSortBy] = useState<"updatedAt" | "name">("updatedAt");
  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
  const [swipeDirection, setSwipeDirection] = useState<1 | -1>(1);
+  const [activeFab, setActiveFab] = useState<string | null>(null);
  const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null);
  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
 
@@ -432,7 +434,7 @@ export default function PlansOverview() {
  onTouchEnd={handleSwipeEnd}
  >
 
- <div className="max-w-[1400px] mx-auto pt-28 sm:pt-32 pb-28 sm:pb-24 px-4 sm:px-6 md:px-8 xl:px-12 touch-auto relative z-10 w-full flex flex-col sm:block overflow-y-auto sm:overflow-y-visible flex-1 sm:flex-none">
+ <div className="max-w-[1400px] mx-auto pt-20 sm:pt-32 pb-28 sm:pb-24 px-4 sm:px-6 md:px-8 xl:px-12 touch-auto relative z-10 w-full flex flex-col sm:block overflow-y-auto sm:overflow-y-visible flex-1 sm:flex-none">
  {/* ── HEADER ─────────────── */}
  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-6 mb-0 sm:mb-12 pb-0 sm:pb-8 relative z-10 shrink-0">
  <div className="flex-1 min-w-0">
@@ -613,128 +615,224 @@ export default function PlansOverview() {
  </div>
  </ActionBar>
 
- {/* ── MOBILE FIXED BOTTOM BAR ─────────── */}
- <div className="md:hidden fixed bottom-0 left-0 right-0 z-[65] pb-[env(safe-area-inset-bottom)] pointer-events-none plans-mobile-bar">
- <div className="pointer-events-auto bg-background/95 backdrop-blur-md border-t border-stone-200/70 dark:border-slate-700/70 px-3 py-2">
- <div className="w-full overflow-x-auto scrollbar-hide">
- <div className="flex min-w-max items-center gap-1.5 pr-2">
- {/* Add + Download */}
- <div className={cn("flex items-center gap-1 shrink-0", actionBarTheme.clusterInset)}>
- <DropdownMenu open={isAdding} onOpenChange={handleAddMenuOpenChange}>
- <DropdownMenuTrigger asChild>
- <Button className={cn(actionBarTheme.controlPrimary, "h-9 px-3 font-bold text-xs cursor-pointer", !isAdmin && "opacity-60")}>
- <Plus className="w-3.5 h-3.5" />
- </Button>
- </DropdownMenuTrigger>
- <DropdownMenuContent align="start" side="top" sideOffset={10} className="w-56 bg-background dark:bg-slate-800 shadow-[0_8px_30px_rgba(140,120,100,0.05)] dark:shadow-none border-none">
- {groups.map((group) => (
- <DropdownMenuItem key={`m-add-${group.id}`} onSelect={() => handleCreatePlan(group.slug)} className="cursor-pointer font-bold">
- {language === 'zh' ? group.nameZh : group.nameEn}
- </DropdownMenuItem>
- ))}
- </DropdownMenuContent>
- </DropdownMenu>
+  {/* ── MOBILE FIXED SIDE BAR (Vertical FABs) ─────────── */}
+  <div className="md:hidden">
+    <AnimatePresence>
+      {activeFab && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 z-[60]"
+          onClick={() => setActiveFab(null)}
+        />
+      )}
+    </AnimatePresence>
 
- <DropdownMenu open={isDownloadMenuOpen} onOpenChange={setIsDownloadMenuOpen}>
- <DropdownMenuTrigger asChild>
- <Button
- variant="ghost"
- disabled={isBatchDownloading || plans.length === 0}
- className={cn(actionBarTheme.controlAccent, "h-9 px-3 font-bold text-xs cursor-pointer", (isBatchDownloading || plans.length === 0) && "opacity-60 cursor-not-allowed")}
- >
- <Download className="w-3.5 h-3.5" />
- </Button>
- </DropdownMenuTrigger>
- <DropdownMenuContent align="center" side="top" sideOffset={10} className="w-56 bg-background dark:bg-slate-800/95 shadow-[0_16px_40px_rgba(140,120,100,0.06)] border-none rounded-2xl overflow-hidden p-2">
- <DropdownMenuItem onSelect={(e) => { e.preventDefault(); void handleBatchDownload("word", "all"); }} className="cursor-pointer rounded-lg px-3 py-2.5 font-medium">
- <FileText className="w-4 h-4 mr-2.5 text-stone-400" /> 所有的 Word
- </DropdownMenuItem>
- <DropdownMenuItem onSelect={(e) => { e.preventDefault(); void handleBatchDownload("pdf", "all"); }} className="cursor-pointer rounded-lg px-3 py-2.5 font-medium">
- <FileText className="w-4 h-4 mr-2.5 text-rose-400" /> 所有的 PDF
- </DropdownMenuItem>
- <div className="h-px bg-stone-100 dark:bg-slate-700/50 my-1 mx-2"></div>
- <DropdownMenuItem onSelect={(e) => { e.preventDefault(); void handleBatchDownload("word", "filtered"); }} className="cursor-pointer rounded-lg px-3 py-2.5 font-medium text-stone-500">
- 僅限篩選 (Word)
- </DropdownMenuItem>
- <DropdownMenuItem onSelect={(e) => { e.preventDefault(); void handleBatchDownload("pdf", "filtered"); }} className="cursor-pointer rounded-lg px-3 py-2.5 font-medium text-stone-500">
- 僅限篩選 (PDF)
- </DropdownMenuItem>
- </DropdownMenuContent>
- </DropdownMenu>
- </div>
+    <FabStagger className="fixed bottom-20 right-2 z-[65] flex flex-col items-end gap-3 pointer-events-none [&>*]:pointer-events-auto">
+      
+      {/* Batch Download FAB */}
+      <div className="relative flex items-center justify-end">
+        <AnimatePresence>
+          {activeFab === 'download' && (
+            <motion.div
+              initial={{ opacity: 0, x: 20, scale: 0.95 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 10, scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              className="absolute right-14 bg-background/95 backdrop-blur-xl border border-stone-200/60 dark:border-slate-700/60 rounded-xl shadow-xl p-1 flex flex-col w-48"
+            >
+              <button onClick={() => { handleBatchDownload("word", "all"); setActiveFab(null); }} className="flex items-center px-4 py-3 text-left font-semibold text-[13px] rounded-lg hover:bg-stone-100 dark:hover:bg-slate-800 transition-colors text-stone-700 dark:text-slate-200">
+                <FileText className="w-4 h-4 mr-2.5 text-stone-400" /> 所有的 Word
+              </button>
+              <button onClick={() => { handleBatchDownload("pdf", "all"); setActiveFab(null); }} className="flex items-center px-4 py-3 text-left font-semibold text-[13px] rounded-lg hover:bg-stone-100 dark:hover:bg-slate-800 transition-colors text-stone-700 dark:text-slate-200">
+                <FileText className="w-4 h-4 mr-2.5 text-rose-400" /> 所有的 PDF
+              </button>
+              <div className="h-px w-full bg-stone-200 dark:bg-slate-700 my-1" />
+              <button onClick={() => { handleBatchDownload("word", "filtered"); setActiveFab(null); }} className="flex items-center px-4 py-3 text-left font-semibold text-[13px] rounded-lg hover:bg-stone-100 dark:hover:bg-slate-800 transition-colors text-stone-500">
+                僅限篩選 (Word)
+              </button>
+              <button onClick={() => { handleBatchDownload("pdf", "filtered"); setActiveFab(null); }} className="flex items-center px-4 py-3 text-left font-semibold text-[13px] rounded-lg hover:bg-stone-100 dark:hover:bg-slate-800 transition-colors text-stone-500">
+                僅限篩選 (PDF)
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <motion.button
+          whileTap={{ scale: 0.9 }}
+          disabled={isBatchDownloading || plans.length === 0}
+          onClick={() => setActiveFab(activeFab === 'download' ? null : 'download')}
+          className={cn(
+            "h-11 w-11 rounded-full shadow-lg border backdrop-blur-md flex items-center justify-center transition-colors relative z-10 focus:outline-none",
+            (isBatchDownloading || plans.length === 0) && "opacity-60 cursor-not-allowed",
+            activeFab === 'download' ? "bg-stone-200/90 dark:bg-slate-700/90 border-transparent ring-2 ring-orange-500/50" : "bg-white/90 dark:bg-slate-800/90 border-stone-200/50 dark:border-slate-700/50"
+          )}
+          title="批量下載"
+        >
+          <Download className="w-5 h-5 text-stone-700 dark:text-slate-300" />
+        </motion.button>
+      </div>
 
- <div className={cn(actionBarTheme.separator, "mx-0.5 shrink-0")} />
+      {/* View Type FAB */}
+      <div className="relative flex items-center justify-end">
+        <AnimatePresence>
+          {activeFab === 'view' && (
+            <motion.div
+              initial={{ opacity: 0, x: 20, scale: 0.95 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 10, scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              className="absolute right-14 bg-background/95 backdrop-blur-xl border border-stone-200/60 dark:border-slate-700/60 rounded-xl shadow-xl p-1 flex flex-col w-36"
+            >
+              <button onClick={() => { setViewType("grid"); setActiveFab(null); }} className={cn("flex items-center px-4 py-3 text-left font-bold text-xs rounded-lg transition-colors gap-2", viewType === "grid" ? "bg-stone-100 dark:bg-slate-700 text-stone-900 dark:text-white" : "text-stone-700 dark:text-slate-200 hover:bg-stone-50 dark:hover:bg-slate-800")}>
+                <LayoutGrid className="w-4 h-4" /> Grid
+              </button>
+              <button onClick={() => { setViewType("board"); setActiveFab(null); }} className={cn("flex items-center px-4 py-3 text-left font-bold text-xs rounded-lg transition-colors gap-2", viewType === "board" ? "bg-stone-100 dark:bg-slate-700 text-stone-900 dark:text-white" : "text-stone-700 dark:text-slate-200 hover:bg-stone-50 dark:hover:bg-slate-800")}>
+                <Kanban className="w-4 h-4" /> Board
+              </button>
+              <button onClick={() => { setViewType("list"); setActiveFab(null); }} className={cn("flex items-center px-4 py-3 text-left font-bold text-xs rounded-lg transition-colors gap-2", viewType === "list" ? "bg-stone-100 dark:bg-slate-700 text-stone-900 dark:text-white" : "text-stone-700 dark:text-slate-200 hover:bg-stone-50 dark:hover:bg-slate-800")}>
+                <List className="w-4 h-4" /> List
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <motion.button
+          whileTap={{ scale: 0.9 }}
+          onClick={() => setActiveFab(activeFab === 'view' ? null : 'view')}
+          className={cn(
+            "h-11 w-11 rounded-full shadow-lg border backdrop-blur-md flex items-center justify-center transition-colors relative z-10 focus:outline-none",
+            activeFab === 'view' ? "bg-stone-200/90 dark:bg-slate-700/90 border-transparent ring-2 ring-orange-500/50" : "bg-white/90 dark:bg-slate-800/90 border-stone-200/50 dark:border-slate-700/50"
+          )}
+          title="顯示模式"
+        >
+          {viewType === "grid" ? <LayoutGrid className="w-5 h-5 text-stone-700 dark:text-slate-300" /> : viewType === "board" ? <Kanban className="w-5 h-5 text-stone-700 dark:text-slate-300" /> : <List className="w-5 h-5 text-stone-700 dark:text-slate-300" />}
+        </motion.button>
+      </div>
 
- {/* View type dropdown */}
- <DropdownMenu>
- <DropdownMenuTrigger asChild>
- <button className={cn("p-2 rounded-lg transition-all shrink-0", actionBarTheme.segmentedActive)}>
- {viewType === "grid" ? <LayoutGrid className="w-4 h-4" /> : viewType === "board" ? <Kanban className="w-4 h-4" /> : <List className="w-4 h-4" />}
- </button>
- </DropdownMenuTrigger>
- <DropdownMenuContent align="center" side="top" sideOffset={10} className="w-36 bg-background dark:bg-slate-800 border-none rounded-xl p-1">
- <DropdownMenuItem onSelect={() => setViewType("grid")} className={cn("cursor-pointer rounded-lg px-3 py-2 font-bold text-xs gap-2", viewType === "grid" && "bg-stone-100 dark:bg-slate-700")}>
- <LayoutGrid className="w-4 h-4" /> Grid
- </DropdownMenuItem>
- <DropdownMenuItem onSelect={() => setViewType("board")} className={cn("cursor-pointer rounded-lg px-3 py-2 font-bold text-xs gap-2", viewType === "board" && "bg-stone-100 dark:bg-slate-700")}>
- <Kanban className="w-4 h-4" /> Board
- </DropdownMenuItem>
- <DropdownMenuItem onSelect={() => setViewType("list")} className={cn("cursor-pointer rounded-lg px-3 py-2 font-bold text-xs gap-2", viewType === "list" && "bg-stone-100 dark:bg-slate-700")}>
- <List className="w-4 h-4" /> List
- </DropdownMenuItem>
- </DropdownMenuContent>
- </DropdownMenu>
+      {/* Filter FAB */}
+      <div className="relative flex items-center justify-end">
+        <AnimatePresence>
+          {activeFab === 'filter' && (
+            <motion.div
+              initial={{ opacity: 0, x: 20, scale: 0.95 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 10, scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              className="absolute right-14 bg-background/95 backdrop-blur-xl border border-stone-200/60 dark:border-slate-700/60 rounded-xl shadow-xl p-1 flex flex-col w-40"
+            >
+              <button onClick={() => { setFilterGroup('all'); setActiveFab(null); }} className={cn("px-4 py-3 text-left font-bold text-[13px] rounded-lg transition-colors", filterGroup === 'all' ? "bg-stone-100 dark:bg-slate-700 text-stone-900 dark:text-white" : "text-stone-700 dark:text-slate-200 hover:bg-stone-50 dark:hover:bg-slate-800")}>
+                全部
+              </button>
+              {groups.map((group) => {
+                const params = getUnifiedGroupBadgeParams(group.slug, group.nameZh);
+                const isActive = filterGroup === group.slug;
+                return (
+                  <button 
+                    key={`m-filter-${group.id}`} 
+                    onClick={() => { setFilterGroup(group.slug); setActiveFab(null); }}
+                    className={cn("px-4 py-3 text-left font-bold text-[13px] rounded-lg transition-colors flex items-center gap-2", isActive && "shadow-sm")}
+                    style={isActive ? { backgroundColor: params.uiBg, color: params.uiText } : undefined}
+                  >
+                    {language === 'zh' ? group.nameZh : group.nameEn}
+                  </button>
+                );
+              })}
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <motion.button
+          whileTap={{ scale: 0.9 }}
+          onClick={() => setActiveFab(activeFab === 'filter' ? null : 'filter')}
+          className={cn(
+            "h-11 w-11 rounded-full shadow-lg border backdrop-blur-md flex items-center justify-center transition-colors relative z-10 focus:outline-none",
+            filterGroup !== 'all' ? "ring-2 ring-orange-500 bg-white/90 dark:bg-slate-800/90" : (activeFab === 'filter' ? "bg-stone-200/90 dark:bg-slate-700/90 border-transparent ring-2 ring-orange-500/50" : "bg-white/90 dark:bg-slate-800/90 border-stone-200/50 dark:border-slate-700/50")
+          )}
+          title="篩選分類"
+        >
+          <Filter className="w-5 h-5 text-stone-700 dark:text-slate-300" />
+          {filterGroup !== 'all' && <span className="absolute top-0 right-0 w-3 h-3 bg-orange-500 rounded-full border-2 border-white dark:border-slate-800" />}
+        </motion.button>
+      </div>
 
- <div className={cn(actionBarTheme.separator, "mx-0.5 shrink-0")} />
+      {/* Sort FAB */}
+      <div className="relative flex items-center justify-end">
+        <AnimatePresence>
+          {activeFab === 'sort' && (
+            <motion.div
+              initial={{ opacity: 0, x: 20, scale: 0.95 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 10, scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              className="absolute right-14 bg-background/95 backdrop-blur-xl border border-stone-200/60 dark:border-slate-700/60 rounded-xl shadow-xl p-1 flex flex-col w-40"
+            >
+              <button onClick={() => { handleSortClick('updatedAt'); setActiveFab(null); }} className={cn("flex items-center justify-between px-4 py-3 text-left font-bold text-[13px] rounded-lg transition-colors gap-2", sortBy === 'updatedAt' ? "bg-stone-100 dark:bg-slate-700 text-stone-900 dark:text-white" : "text-stone-700 dark:text-slate-200 hover:bg-stone-50 dark:hover:bg-slate-800")}>
+                <div className="flex items-center gap-2"><Clock className="w-4 h-4" /> 時間</div>
+                {sortBy === 'updatedAt' && (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3 text-orange-500" /> : <ArrowDown className="w-3 h-3 text-orange-500" />)}
+              </button>
+              <button onClick={() => { handleSortClick('name'); setActiveFab(null); }} className={cn("flex items-center justify-between px-4 py-3 text-left font-bold text-[13px] rounded-lg transition-colors gap-2", sortBy === 'name' ? "bg-stone-100 dark:bg-slate-700 text-stone-900 dark:text-white" : "text-stone-700 dark:text-slate-200 hover:bg-stone-50 dark:hover:bg-slate-800")}>
+                <div className="flex items-center gap-2"><FileText className="w-4 h-4" /> 名稱</div>
+                {sortBy === 'name' && (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3 text-orange-500" /> : <ArrowDown className="w-3 h-3 text-orange-500" />)}
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <motion.button
+          whileTap={{ scale: 0.9 }}
+          onClick={() => setActiveFab(activeFab === 'sort' ? null : 'sort')}
+          className={cn(
+            "h-11 w-11 rounded-full shadow-lg border backdrop-blur-md flex items-center justify-center transition-colors relative z-10 focus:outline-none",
+            activeFab === 'sort' ? "bg-stone-200/90 dark:bg-slate-700/90 border-transparent ring-2 ring-orange-500/50" : "bg-white/90 dark:bg-slate-800/90 border-stone-200/50 dark:border-slate-700/50"
+          )}
+          title="排序"
+        >
+          {sortBy === 'updatedAt' ? <Clock className="w-5 h-5 text-stone-700 dark:text-slate-300" /> : <FileText className="w-5 h-5 text-stone-700 dark:text-slate-300" />}
+        </motion.button>
+      </div>
 
- {/* Group filter */}
- <div className={cn("flex items-center shrink-0 gap-1", actionBarTheme.clusterInset)}>
- <button onClick={() => { setSwipeDirection(-1); setFilterGroup('all'); }} className={cn(actionBarTheme.segmented, filterGroup === 'all' ? actionBarTheme.segmentedActive : actionBarTheme.segmentedIdle)}>
- 全部
- </button>
- {groups.map((group) => {
- const params = getUnifiedGroupBadgeParams(group.slug, group.nameZh);
- const isActive = filterGroup === group.slug;
- return (
- <button
- key={`mobile-${group.id}`}
- onClick={() => { setSwipeDirection(1); setFilterGroup(group.slug); }}
- style={isActive ? { backgroundColor: params.uiBg, color: params.uiText } : undefined}
- className={cn(actionBarTheme.segmented, isActive ? "shadow-sm" : actionBarTheme.segmentedIdle)}
- >
- {(language === 'zh' ? group.nameZh : group.nameEn).slice(0, 2)}
- </button>
- );
- })}
- </div>
+      <div className="h-px w-6 bg-stone-200 dark:bg-slate-700 my-1 mr-2.5" />
 
- <div className={cn(actionBarTheme.separator, "mx-0.5 shrink-0")} />
+      {/* Add Plan FAB */}
+      <div className="relative flex items-center justify-end">
+        <AnimatePresence>
+          {activeFab === 'add' && (
+            <motion.div
+              initial={{ opacity: 0, x: 20, scale: 0.95 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 10, scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              className="absolute right-16 bg-background/95 backdrop-blur-xl border border-stone-200/60 dark:border-slate-700/60 rounded-xl shadow-xl p-1 flex flex-col w-56"
+            >
+              {groups.map((group) => (
+                <button key={`m-add-${group.id}`} onClick={() => { handleCreatePlan(group.slug); setActiveFab(null); }} className="px-4 py-3.5 text-left font-bold text-sm rounded-lg hover:bg-stone-100 dark:hover:bg-slate-800 transition-colors text-stone-800 dark:text-slate-100">
+                  {language === 'zh' ? group.nameZh : group.nameEn}
+                </button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <motion.button
+          whileTap={{ scale: 0.9 }}
+          onClick={() => {
+            if (!isAdmin) return;
+            setActiveFab(activeFab === 'add' ? null : 'add');
+          }}
+          className={cn(
+            "h-14 w-14 rounded-full shadow-lg border-none flex items-center justify-center transition-all relative z-10 focus:outline-none",
+            !isAdmin ? "opacity-60 bg-stone-400 dark:bg-slate-600" : "bg-[#f48c25] hover:bg-[#e67e1a] text-white"
+          )}
+          title="新增教案"
+        >
+          <motion.div animate={{ rotate: activeFab === 'add' ? 45 : 0 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
+            <Plus className="w-6 h-6" />
+          </motion.div>
+        </motion.button>
+      </div>
 
- {/* Sort */}
- <div className={cn("flex items-center shrink-0 gap-1", actionBarTheme.clusterInset)}>
- <button onClick={() => handleSortClick('updatedAt')} className={cn(actionBarTheme.segmented, sortBy === 'updatedAt' ? actionBarTheme.segmentedActive : actionBarTheme.segmentedIdle)}>
- <Clock className="w-3.5 h-3.5" />
- {sortBy === 'updatedAt' && (
- <span className="text-orange-500 dark:text-amber-500">
- {sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />}
- </span>
- )}
- </button>
- <button onClick={() => handleSortClick('name')} className={cn(actionBarTheme.segmented, sortBy === 'name' ? actionBarTheme.segmentedActive : actionBarTheme.segmentedIdle)}>
- <FileText className="w-3.5 h-3.5" />
- {sortBy === 'name' && (
- <span className="text-orange-500 dark:text-amber-500">
- {sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />}
- </span>
- )}
- </button>
- </div>
- </div>
- </div>
- </div>
- </div>
-
- {/* ── TOOLBAR (Filter & Search) ─────────── */}
+    </FabStagger>
+  </div>
+  
+{/* ── TOOLBAR (Filter & Search) ─────────── */}
  <div className="flex flex-col gap-4 mb-4 sm:mb-8 max-w-2xl shrink-0">
  <div className="relative group">
  <Search className="w-4 h-4 sm:w-5 sm:h-5 absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 dark:text-slate-500 group-focus-within:text-orange-500 dark:group-focus-within:text-amber-500 transition-colors" />

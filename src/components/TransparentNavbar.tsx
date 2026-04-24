@@ -51,6 +51,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
   const isNavbarVisible = useActionBarStore((s) => s.isNavbarVisible);
   const setIsNavbarVisible = useActionBarStore((s) => s.setIsNavbarVisible);
   const hasActionBar = useActionBarStore((s) => s.hasActionBar);
+  const isFullscreen = useActionBarStore((s) => s.isFullscreen);
 
   const pathname = usePathname();
   const router = useRouter();
@@ -191,7 +192,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
           isHome
             ? "bg-transparent border-none"
             : "bg-[#FBF9F6] dark:bg-[hsl(var(--bar-theme))] border-none shadow-none",
-          !isNavbarVisible && hasActionBar
+          !isNavbarVisible && (hasActionBar || isFullscreen)
             ? "max-md:-translate-y-full"
             : "max-md:translate-y-0"
         )}
@@ -560,7 +561,8 @@ export function TransparentNavbar({ groups }: NavbarProps) {
               </DropdownMenu>
             </div>
 
-            <div className="px-4 pb-3">
+            {/* Top Navigation Links - Hidden on Mobile because of MobileTabBar */}
+            <div className="hidden">
               <div className="grid grid-cols-4 items-center text-center gap-2 w-full max-w-md mx-auto">
                 {NAV_ITEMS.map((item) => (
                   <Link

@@ -24,12 +24,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { FabStagger } from "@/components/FabStagger";
 import { useTranslation } from "@/lib/i18n-context";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { ActionBar } from "@/components/ActionBar";
 import { actionBarTheme } from "@/lib/actionbar-theme";
 import { usePathname, useSearchParams } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { useActionBarStore } from "@/store/action-bar-store";
 import { exportAdminExcel } from "@/lib/export-excel";
 
 interface AdminSectionProps {
@@ -79,6 +82,7 @@ export function AdminSection({
   const [isLocked, setIsLocked] = useState(true);
   const [selectedDay, setSelectedDay] = useState<string>("Day 1");
   const [activeMainTab, setActiveMainTab] = useState<MainTab>('timer');
+  const [activeFab, setActiveFab] = useState<string | null>(null);
   const [activePropsTab, setActivePropsTab] = useState<'activity' | 'teaching' | 'all-props'>('activity');
 
   // Zoom state for tables and props list
@@ -178,6 +182,13 @@ export function AdminSection({
     const nextUrl = `${pathname}?${params.toString()}`;
     window.history.replaceState(null, '', nextUrl);
   }, [pathname, searchParams]);
+
+  // Toggle fullscreen mode for props spreadsheet
+  const setIsFullscreen = useActionBarStore((s) => s.setIsFullscreen);
+  useEffect(() => {
+    setIsFullscreen(activeMainTab === 'props');
+    return () => setIsFullscreen(false);
+  }, [activeMainTab, setIsFullscreen]);
 
   // Unlock feature removed as everything is open by default
 
@@ -342,14 +353,12 @@ export function AdminSection({
     }, {} as Record<string, PropTableRow[]>);
 
     return (
-      <div className="w-full bg-white dark:bg-[hsl(var(--bar-theme-))] rounded-2xl dark:/[0.08] overflow-hidden mb-8 transition-colors shadow-sm dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)] border-none">
-        <div className="py-3 px-4 flex justify-between items-center dark:/[0.08] bg-[#FBF9F6] dark:bg-black/20">
-          <h2 className="font-fira-code font-black text-[#2C2A28] dark:text-slate-100 tracking-[0.1em] uppercase text-sm">{title}</h2>
-        </div>
+      <div className="w-full bg-white dark:bg-slate-900/40 overflow-hidden flex-1 flex flex-col">
 
-        <div className="w-full overflow-x-auto overflow-y-hidden touch-pan-x overscroll-x-contain border border-stone-200 dark:border-slate-800 rounded-b-2xl">
-          <table className="w-full min-w-[760px] md:min-w-[1000px] text-sm text-left table-fixed border-collapse">
-            <thead className="text-stone-500 dark:text-slate-200 text-[10px] font-fira-code font-black uppercase tracking-[0.2em] sticky top-0 bg-white/90 dark:bg-black/20 backdrop-blur-xl z-10 shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-b border-stone-200 dark:border-slate-800 text-center">
+
+        <div className="w-full overflow-auto flex-1 min-h-0">
+          <table className="w-full min-w-[760px] md:min-w-[1000px] text-sm text-left border-collapse">
+            <thead className="text-stone-500 dark:text-slate-200 text-[10px] font-fira-code font-black uppercase tracking-[0.2em] sticky top-0 bg-[#FBF9F6]/95 dark:bg-slate-900/95 backdrop-blur-xl z-10 border-b border-stone-200 dark:border-slate-800 text-center">
               <tr>
                 <th className="w-[12%] px-4 py-3 border-r border-stone-200 dark:border-slate-800">{t('CATEGORY')}</th>
                 <th className="w-[14%] px-4 py-3 border-r border-stone-200 dark:border-slate-800">{t('SUBJECT')}</th>
@@ -480,6 +489,21 @@ export function AdminSection({
                 ));
               })}
 
+
+              {/* Empty placeholder rows like Google Sheets */}
+              {Array.from({ length: 25 }).map((_, i) => (
+                <tr key={`empty-${i}`} className="h-[46px] border-b border-stone-100 dark:border-slate-800/50 bg-white dark:bg-slate-900/10 hover:bg-[#FBF9F6] dark:hover:bg-slate-800/20">
+                  <td className="border-r border-stone-100 dark:border-slate-800/50 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
+                  <td className="border-r border-stone-100 dark:border-slate-800/50 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
+                  <td className="border-r border-stone-100 dark:border-slate-800/50 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
+                  <td className="border-r border-stone-100 dark:border-slate-800/50 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
+                  <td className="border-r border-stone-100 dark:border-slate-800/50 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
+                  <td className="border-r border-stone-100 dark:border-slate-800/50 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
+                  <td className="border-r border-stone-100 dark:border-slate-800/50 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
+                  <td className="border-r border-stone-100 dark:border-slate-800/50 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
+                  <td className="h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
+                </tr>
+              ))}
             </tbody>
             <tfoot>
               <tr>
@@ -513,13 +537,12 @@ export function AdminSection({
     }, {} as Record<string, CampItem[]>);
 
     return (
-      <div className="w-full bg-white dark:bg-[hsl(var(--bar-theme-))] rounded-2xl dark:/[0.08] overflow-hidden mb-8 transition-colors shadow-sm dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)] border-none">
-        <div className="py-3 px-4 flex justify-between items-center dark:/[0.08] bg-[#FBF9F6] dark:bg-black/20">
-          <h2 className="text-center font-fira-code font-black text-[#2C2A28] dark:text-slate-100 tracking-[0.1em] uppercase text-sm">{t('PROPS_LIST')}</h2></div>
+      <div className="w-full bg-white dark:bg-slate-900/40 overflow-hidden flex-1 flex flex-col">
 
-        <div className="w-full overflow-x-auto overflow-y-hidden touch-pan-x overscroll-x-contain border border-stone-200 dark:border-slate-800 rounded-b-2xl">
-          <table className="w-full min-w-[760px] md:min-w-[1000px] text-sm text-left table-fixed border-collapse">
-            <thead className="text-stone-500 dark:text-slate-200 text-[10px] font-fira-code font-black uppercase tracking-[0.2em] sticky top-0 z-10 bg-white/90 dark:bg-black/20 backdrop-blur-xl shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-b border-stone-200 dark:border-slate-800 text-center">
+
+        <div className="w-full overflow-auto flex-1 min-h-0">
+          <table className="w-full min-w-[760px] md:min-w-[1000px] text-sm text-left border-collapse">
+            <thead className="text-stone-500 dark:text-slate-200 text-[10px] font-fira-code font-black uppercase tracking-[0.2em] sticky top-0 z-10 bg-[#FBF9F6]/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-stone-200 dark:border-slate-800 text-center">
               <tr>
                 <th className="w-[16%] px-4 py-3 border-r border-stone-200 dark:border-slate-800">{t('PROP_USAGE')}</th>
                 <th className="w-[16%] px-4 py-3 min-w-[100px] border-r border-stone-200 dark:border-slate-800">{t('PROP_NAME')}</th>
@@ -716,6 +739,19 @@ export function AdminSection({
                 ))
               ))}
 
+
+              {/* Empty placeholder rows like Google Sheets */}
+              {Array.from({ length: 25 }).map((_, i) => (
+                <tr key={`empty-combined-${i}`} className="h-[46px] border-b border-stone-100 dark:border-slate-800/50 bg-white dark:bg-slate-900/10 hover:bg-[#FBF9F6] dark:hover:bg-slate-800/20">
+                  <td className="border-r border-stone-100 dark:border-slate-800/50 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
+                  <td className="border-r border-stone-100 dark:border-slate-800/50 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
+                  <td className="border-r border-stone-100 dark:border-slate-800/50 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
+                  <td className="border-r border-stone-100 dark:border-slate-800/50 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
+                  <td className="border-r border-stone-100 dark:border-slate-800/50 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
+                  <td className="border-r border-stone-100 dark:border-slate-800/50 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
+                  {!isLocked && <td className="h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>}
+                </tr>
+              ))}
             </tbody>
             <tfoot>
               <tr>
@@ -741,10 +777,10 @@ export function AdminSection({
 
   return (
     <div className="flex flex-col bg-[#FBF9F6] dark:bg-[hsl(var(--bar-theme))] animate-in fade-in duration-500 relative transition-colors font-fira-sans min-h-screen">
-      <main className="flex-1 min-w-0 w-full relative">
-        <div className="w-full pt-28 sm:pt-24 px-4 sm:px-6 md:px-8 lg:px-10 pb-8 md:pb-12">
-          <Tabs value={activeMainTab} onValueChange={handleMainTabChange} className="w-full flex flex-col items-stretch space-y-2 sm:space-y-6">
-            <header className="relative z-20 no-print w-full mb-2 sm:mb-16 dark:/[0.06] pb-2 sm:pb-8">
+      <main className="flex-1 min-w-0 w-full relative flex flex-col">
+        <div className={cn("w-full pt-20 sm:pt-24 pb-8 md:pb-12 transition-all duration-300 flex-1 flex flex-col", activeMainTab === 'props' ? "px-0 pt-16 sm:pt-20 pb-0" : "px-4 sm:px-6 md:px-8 lg:px-10")}>
+          <Tabs value={activeMainTab} onValueChange={handleMainTabChange} className={cn("w-full flex flex-col items-stretch flex-1", activeMainTab === 'props' ? "space-y-0" : "space-y-2 sm:space-y-6")}>
+            <header className={cn("relative z-20 no-print w-full dark:/[0.06] transition-all duration-300", activeMainTab === 'props' ? "mb-0 pb-2 px-4 sm:px-6 md:px-8 lg:px-10" : "mb-2 sm:mb-16 pb-2 sm:pb-8")}>
               <div className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6 transition-colors">
                 <div className="flex-1 min-w-0">
                   <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-[#2C2A28] dark:text-white mb-1.5 sm:mb-2">
@@ -764,7 +800,7 @@ export function AdminSection({
                     }
                   }}
                   className={cn(
-                    "fixed right-3 top-[calc(env(safe-area-inset-top)+104px)] z-[70] h-9 px-3 rounded-lg font-bold text-[10px] tracking-widest uppercase transition-colors bg-[#FBF9F6]/95 backdrop-blur-sm shadow-[0_8px_30px_rgba(140,120,100,0.08)] sm:static sm:top-auto sm:right-auto sm:z-auto sm:bg-transparent sm:backdrop-blur-none sm:shadow-none",
+                    "hidden md:flex h-9 px-3 rounded-lg font-bold text-[10px] tracking-widest uppercase transition-colors sm:bg-transparent sm:backdrop-blur-none sm:shadow-none",
                     isLocked
                       ? "text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10"
                       : "text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10"
@@ -776,7 +812,7 @@ export function AdminSection({
               </div>
             </header>
 
-            <ActionBar title="Admin Actions" className="hidden md:!flex !flex-nowrap md:justify-center !items-center gap-2 overflow-x-auto scrollbar-hide">
+            <ActionBar title="Admin Actions" className={cn("hidden md:!flex !flex-nowrap md:justify-center !items-center gap-2 overflow-x-auto scrollbar-hide", activeMainTab === 'props' && "px-4 sm:px-6 md:px-8")}>
               <div className="order-1 flex w-full items-center gap-2 md:gap-3 md:w-auto md:flex-row md:items-center md:flex-nowrap min-w-max">
                 <TabsList className={cn("flex items-center p-1.5 rounded-xl shrink-0 h-9 w-auto max-w-full overflow-x-auto scrollbar-hide gap-1.5", actionBarTheme.clusterInset)}>
                   <TabsTrigger value="timer" className={actionBarTheme.tabTrigger}>
@@ -851,91 +887,190 @@ export function AdminSection({
               </div>
             </ActionBar>
 
-            <div className="md:hidden fixed bottom-0 left-0 right-0 z-[65] pb-[env(safe-area-inset-bottom)] pointer-events-none">
-              <div className="pointer-events-auto bg-background/95 backdrop-blur-md border-t border-stone-200/70 dark:border-slate-700/70 px-3 py-2">
-                <div className="w-full overflow-x-auto scrollbar-hide">
-                  <div className="flex min-w-max items-center gap-1.5 pr-2">
-                  <TabsList className={cn("flex items-center p-1 rounded-full shrink-0 h-10", actionBarTheme.clusterInset)}>
-                    <TabsTrigger value="timer" className={cn(actionBarTheme.tabTrigger, "h-8 px-3")}> 
-                      <Clock className="h-3.5 w-3.5" />
-                    </TabsTrigger>
-                    <TabsTrigger value="tables" className={cn(actionBarTheme.tabTrigger, "h-8 px-3")}> 
-                      <TableIcon className="h-3.5 w-3.5" />
-                    </TabsTrigger>
-                    <TabsTrigger value="props" className={cn(actionBarTheme.tabTrigger, "h-8 px-3")}> 
-                      <Package2 className="h-3.5 w-3.5" />
-                    </TabsTrigger>
-                  </TabsList>
+            {/* Mobile Floating Controls (Vertical Side Alignment) */}
+            <div className="md:hidden">
+              <AnimatePresence>
+                {activeFab && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="fixed inset-0 z-[60]"
+                    onClick={() => setActiveFab(null)}
+                  />
+                )}
+              </AnimatePresence>
 
-                  <div className={cn(actionBarTheme.separator, "mx-0.5 shrink-0")} />
-
-                  {activeMainTab === 'props' && (
-                    <div className={cn("flex items-center gap-1 p-1 rounded-full", actionBarTheme.clusterInset)}>
-                      {['activity', 'teaching', 'all-props'].map((tab) => (
-                        <button
-                          key={`mobile-${tab}`}
-                          onClick={() => setActivePropsTab(tab as typeof activePropsTab)}
-                          className={cn(
-                            "px-3 h-8 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
-                            activePropsTab === tab
-                              ? 'bg-stone-300/80 dark:bg-slate-700/80 text-stone-950 dark:text-white'
-                              : 'text-stone-500 dark:text-slate-400 hover:text-stone-700 dark:hover:text-slate-200'
-                          )}
-                        >
-                          {tab === 'activity' ? '活動' : tab === 'teaching' ? '教學' : '營期'}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {activeMainTab === 'props' && (
-                    <div className={cn(actionBarTheme.separator, "mx-0.5 shrink-0")} />
-                  )}
-
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={cn(actionBarTheme.control, actionBarTheme.controlIcon, "rounded-full bg-stone-200/70 dark:bg-slate-800/70")}
-                        title="匯出"
+              <FabStagger className="fixed bottom-20 right-2 z-[65] flex flex-col items-end gap-3 pointer-events-none [&>*]:pointer-events-auto">
+                
+                {/* Export FAB */}
+                <div className="relative flex items-center justify-end">
+                  <AnimatePresence>
+                    {activeFab === 'export' && (
+                      <motion.div
+                        initial={{ opacity: 0, x: 20, scale: 0.95 }}
+                        animate={{ opacity: 1, x: 0, scale: 1 }}
+                        exit={{ opacity: 0, x: 10, scale: 0.95 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                        className="absolute right-14 bg-background/95 backdrop-blur-xl border border-stone-200/60 dark:border-slate-700/60 rounded-xl shadow-xl p-1 flex flex-col w-44"
                       >
-                        <FileDown className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="center" side="top" sideOffset={10} className="w-44 bg-background dark:bg-slate-800 border-none rounded-xl p-1">
-                      <DropdownMenuItem onSelect={handleExportExcel} className="cursor-pointer font-semibold">
-                        匯出 Excel (.xlsx)
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={handlePrint} className="cursor-pointer font-semibold">
-                        列印 / Print
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-
-                  <div className={cn(actionBarTheme.separator, "mx-0.5 shrink-0")} />
-
-                  <Button variant="ghost" size="icon" onClick={onUndoTable} disabled={!canUndoTable || isLocked} className={cn(actionBarTheme.control, actionBarTheme.controlIcon)}>
-                    <Undo2 className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={onRedoTable} disabled={!canRedoTable || isLocked} className={cn(actionBarTheme.control, actionBarTheme.controlIcon)}>
-                    <Redo2 className="h-4 w-4" />
-                  </Button>
-
-                  <div className={cn(actionBarTheme.separator, "mx-0.5 shrink-0")} />
-
-                  <Button variant="ghost" size="icon" onClick={handleZoomOut} disabled={zoom <= 0.3 || activeMainTab === 'timer'} className={cn(actionBarTheme.control, actionBarTheme.controlIcon)}>
-                    <ZoomOut className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={handleFitAll} disabled={activeMainTab === 'timer'} className={cn(actionBarTheme.control, actionBarTheme.controlIcon)}>
-                    <Maximize className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={handleZoomIn} disabled={zoom >= 2 || activeMainTab === 'timer'} className={cn(actionBarTheme.control, actionBarTheme.controlIcon)}>
-                    <ZoomIn className="h-4 w-4" />
-                  </Button>
-                  </div>
+                        <button onClick={() => { handleExportExcel(); setActiveFab(null); }} className="px-4 py-3 text-left font-semibold text-sm rounded-lg hover:bg-stone-100 dark:hover:bg-slate-800 transition-colors text-stone-700 dark:text-slate-200">
+                          匯出 Excel (.xlsx)
+                        </button>
+                        <button onClick={() => { handlePrint(); setActiveFab(null); }} className="px-4 py-3 text-left font-semibold text-sm rounded-lg hover:bg-stone-100 dark:hover:bg-slate-800 transition-colors text-stone-700 dark:text-slate-200">
+                          列印 / Print
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setActiveFab(activeFab === 'export' ? null : 'export')}
+                    className={cn(
+                      "h-11 w-11 rounded-full shadow-lg border backdrop-blur-md flex items-center justify-center transition-colors relative z-10 focus:outline-none",
+                      activeFab === 'export' ? "bg-stone-200/90 dark:bg-slate-700/90 border-transparent ring-2 ring-orange-500/50" : "bg-white/90 dark:bg-slate-800/90 border-stone-200/50 dark:border-slate-700/50"
+                    )}
+                    title="匯出"
+                  >
+                    <FileDown className="h-5 w-5 text-stone-700 dark:text-slate-300" />
+                  </motion.button>
                 </div>
-              </div>
+
+                {/* Tools FAB */}
+                {activeMainTab !== 'timer' && (
+                  <div className="relative flex items-center justify-end">
+                    <AnimatePresence>
+                      {activeFab === 'tools' && (
+                        <motion.div
+                          initial={{ opacity: 0, x: 20, scale: 0.95 }}
+                          animate={{ opacity: 1, x: 0, scale: 1 }}
+                          exit={{ opacity: 0, x: 10, scale: 0.95 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                          className="absolute right-14 bg-background/95 backdrop-blur-xl border border-stone-200/60 dark:border-slate-700/60 rounded-xl shadow-xl p-2 flex flex-col gap-2"
+                        >
+                          <div className="flex items-center justify-between gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => { onUndoTable?.(); setActiveFab(null); }} disabled={!canUndoTable || isLocked} className="h-10 w-10 rounded-full">
+                              <Undo2 className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => { onRedoTable?.(); setActiveFab(null); }} disabled={!canRedoTable || isLocked} className="h-10 w-10 rounded-full">
+                              <Redo2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <div className="h-px w-full bg-stone-200 dark:bg-slate-700 my-1" />
+                          <div className="flex items-center justify-between gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => { handleZoomOut(); setActiveFab(null); }} disabled={zoom <= 0.3} className="h-10 w-10 rounded-full">
+                              <ZoomOut className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => { handleFitAll(); setActiveFab(null); }} className="h-10 w-10 rounded-full">
+                              <Maximize className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => { handleZoomIn(); setActiveFab(null); }} disabled={zoom >= 2} className="h-10 w-10 rounded-full">
+                              <ZoomIn className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => setActiveFab(activeFab === 'tools' ? null : 'tools')}
+                      className={cn(
+                        "h-11 w-11 rounded-full shadow-lg border backdrop-blur-md flex items-center justify-center transition-colors relative z-10 focus:outline-none",
+                        activeFab === 'tools' ? "bg-stone-200/90 dark:bg-slate-700/90 border-transparent ring-2 ring-orange-500/50" : "bg-white/90 dark:bg-slate-800/90 border-stone-200/50 dark:border-slate-700/50"
+                      )}
+                      title="工具"
+                    >
+                      <MoreHorizontal className="h-5 w-5 text-stone-700 dark:text-slate-300" />
+                    </motion.button>
+                  </div>
+                )}
+
+                <div className="h-px w-6 bg-stone-200 dark:bg-slate-700 my-1 mr-2.5" />
+
+                {/* Main Tabs as vertical FABs */}
+                <div className="relative flex items-center justify-end w-full">
+                  <AnimatePresence>
+                    {activeMainTab === 'props' && activeFab === 'props' && (
+                      <motion.div
+                        initial={{ opacity: 0, x: 20, scale: 0.95 }}
+                        animate={{ opacity: 1, x: 0, scale: 1 }}
+                        exit={{ opacity: 0, x: 10, scale: 0.95 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                        className="absolute right-14 bg-background/95 backdrop-blur-xl border border-stone-200/60 dark:border-slate-700/60 rounded-full shadow-lg p-1 flex items-center gap-1"
+                      >
+                        {['activity', 'teaching', 'all-props'].map((tab) => (
+                          <button
+                            key={`mobile-${tab}`}
+                            onClick={() => { setActivePropsTab(tab as typeof activePropsTab); setActiveFab(null); }}
+                            className={cn(
+                              "px-4 h-9 rounded-full text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap focus:outline-none",
+                              activePropsTab === tab
+                                ? 'bg-stone-300/80 dark:bg-slate-700/80 text-stone-950 dark:text-white'
+                                : 'text-stone-500 dark:text-slate-400 hover:text-stone-700 dark:hover:text-slate-200'
+                            )}
+                          >
+                            {tab === 'activity' ? '活動' : tab === 'teaching' ? '教學' : '營期'}
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  <motion.button 
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => { handleMainTabChange('props'); setActiveFab(activeFab === 'props' ? null : 'props'); }} 
+                    className={cn("h-11 w-11 rounded-full shadow-lg border backdrop-blur-md flex items-center justify-center transition-colors relative z-10 focus:outline-none", 
+                      activeMainTab === 'props' 
+                        ? 'bg-stone-300/90 dark:bg-slate-700/90 border-transparent text-stone-900 dark:text-white ring-2 ring-stone-400 dark:ring-slate-500 ring-offset-1 ring-offset-background' 
+                        : 'bg-white/90 dark:bg-slate-800/90 border-stone-200/50 dark:border-slate-700/50 text-stone-500 dark:text-slate-400')}
+                  >
+                    <Package2 className="h-5 w-5" />
+                  </motion.button>
+                </div>
+
+                <motion.button 
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => { handleMainTabChange('tables'); setActiveFab(null); }} 
+                  className={cn("h-11 w-11 rounded-full shadow-lg border backdrop-blur-md flex items-center justify-center transition-colors relative z-10 focus:outline-none", 
+                    activeMainTab === 'tables' 
+                      ? 'bg-stone-300/90 dark:bg-slate-700/90 border-transparent text-stone-900 dark:text-white ring-2 ring-stone-400 dark:ring-slate-500 ring-offset-1 ring-offset-background' 
+                      : 'bg-white/90 dark:bg-slate-800/90 border-stone-200/50 dark:border-slate-700/50 text-stone-500 dark:text-slate-400')}
+                >
+                  <TableIcon className="h-5 w-5" />
+                </motion.button>
+
+                {/* Lock FAB */}
+                <motion.button 
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => {
+                    if (isLocked) {
+                      if (role === 'admin') setIsLocked(false);
+                      else toast({ title: "權限不足", description: "僅管理員能解鎖", variant: "destructive" });
+                    } else {
+                      setIsLocked(true);
+                    }
+                    setActiveFab(null);
+                  }} 
+                  className={cn("h-11 w-11 rounded-full shadow-lg border backdrop-blur-md flex items-center justify-center transition-colors relative z-10 focus:outline-none", 
+                    isLocked 
+                      ? 'bg-rose-50/90 dark:bg-rose-950/90 border-rose-200/50 dark:border-rose-800/50 text-rose-600 dark:text-rose-400' 
+                      : 'bg-emerald-50/90 dark:bg-emerald-950/90 border-emerald-200/50 dark:border-emerald-800/50 text-emerald-600 dark:text-emerald-400')}
+                >
+                  {isLocked ? <Lock className="h-5 w-5" /> : <Unlock className="h-5 w-5" />}
+                </motion.button>
+
+                <motion.button 
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => { handleMainTabChange('timer'); setActiveFab(null); }} 
+                  className={cn("h-11 w-11 rounded-full shadow-lg border backdrop-blur-md flex items-center justify-center transition-colors relative z-10 focus:outline-none", 
+                    activeMainTab === 'timer' 
+                      ? 'bg-stone-300/90 dark:bg-slate-700/90 border-transparent text-stone-900 dark:text-white ring-2 ring-stone-400 dark:ring-slate-500 ring-offset-1 ring-offset-background' 
+                      : 'bg-white/90 dark:bg-slate-800/90 border-stone-200/50 dark:border-slate-700/50 text-stone-500 dark:text-slate-400')}
+                >
+                  <Clock className="h-5 w-5" />
+                </motion.button>
+
+              </FabStagger>
             </div>
 
             <div className="w-full flex-1 relative">
@@ -1005,18 +1140,18 @@ export function AdminSection({
                 </div>
               </TabsContent>
 
-              <TabsContent value="props" className="m-0 data-[state=active]:flex flex-col pb-32">
+              <TabsContent value="props" className="m-0 data-[state=active]:flex flex-col flex-1 min-h-0 pb-0">
                 <div
-                  className="w-full"
+                  className="w-full flex-1 flex flex-col"
                   onTouchStart={handleTouchStart}
                   onTouchMove={handleTouchMove}
                   onTouchEnd={handleTouchEnd}
                 >
                   <div
-                    className="w-full space-y-8"
+                    className="w-full flex-1 flex flex-col"
                     style={{ zoom }}
                   >
-                    <div className={cn("transition-opacity duration-300", isLocked ? "opacity-90" : "opacity-100")}>
+                    <div className={cn("transition-opacity duration-300 flex-1 flex flex-col", isLocked ? "opacity-90" : "opacity-100")}>
                       {activePropsTab === 'activity' && renderPropTable('活動組', activityPropsFlattened)}
                       {activePropsTab === 'teaching' && renderPropTable('教學組', teachingPropsFlattened)}
                       {activePropsTab === 'all-props' && renderCombinedTable()}
