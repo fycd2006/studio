@@ -1,4 +1,4 @@
-﻿export type VersionHistoryEntry = {
+export type VersionHistoryEntry = {
   id: string;
   version: string;
   label: string;
@@ -8,6 +8,21 @@
 };
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
+  {
+    id: "build-uiux-pro",
+    version: "1.0.11",
+    label: "重大更新",
+    date: "2026-04-24",
+    title: "UIUX PRO MAX：全站視覺大改版與體驗升級",
+    highlights: [
+      "【行政中樞：試算表級進化】道具清單全面升級為全滿版無邊界表格，帶來類似 Google Sheets 的專業檢視體驗。",
+      "【行政中樞：視野最大化】新增底部無限網格模擬，並在右下角加入「懸浮按鈕收合箭頭」，滑動時頂部導覽列會自動收合，釋放最大閱讀空間。",
+      "【教案總覽：玻璃擬物化】全面套用 UIUX PRO MAX 標準，將散落的操作介面整合為高質感的「分段式膠囊按鈕」，統一版面間距。",
+      "【教案編輯：無縫操作列】修正工具列的透明度縫隙，實現滿版無縫吸附，並移除少用的字體大小功能，讓介面更純粹。",
+      "【行動版：A4 完美縮放】在手機版開啟「電腦模式」時，A4 稿紙會自動等比縮放以適應手機螢幕，徹底解決畫面溢出問題。",
+      "【系統優化與說明】修復多處底層 TypeScript 型別錯誤以提升 PWA 效能，並全面將艱澀的系統更新日誌改寫為白話文說明。"
+    ],
+  },
   {
     id: "build-jzqen3i",
     version: "1.0.10",
