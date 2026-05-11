@@ -9,6 +9,18 @@ export type VersionHistoryEntry = {
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
   {
+    id: "build-g4gdead",
+    version: "1.0.12",
+    label: "更新項目",
+    date: "2026-05-11",
+    title: "優化編輯器文字顯示與管理區塊介面",
+    highlights: [
+      "在深色模式下編輯文字時，文字顏色現在會自動調整，確保清晰可見。",
+      "管理區塊的輸入欄位點擊後，會以淡藍色背景標示。",
+      "管理區塊的表格標題文字略微放大，並調整背景顏色。"
+    ],
+  },
+  {
     id: "build-uiux-pro",
     version: "1.0.11",
     label: "重大更新",

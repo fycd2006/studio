@@ -115,6 +115,12 @@
   }
 }
 
+/* Inside contentEditable, always inherit parent color to avoid theme conflicts */
+[contenteditable] p,
+[contenteditable] li {
+  color: inherit;
+}
+
 /* Mobile zoom: force editor text to inherit container font-size */
 @media (max-width: 767px) {
   .prose.prose-sm {
@@ -311,4 +317,35 @@
     padding: 0 !important;
     margin: 0 !important;
   }
+}
+
+/* ═══════════════════════════════════════════════
+   ContentEditable Dark Mode Text Fix
+   Prevents inline foreColor (#0f172a, #000, etc.)
+   from becoming invisible on dark backgrounds
+   ═══════════════════════════════════════════════ */
+.dark [contenteditable] font[color] {
+  color: inherit !important;
+}
+.dark [contenteditable] span[style*="color"] {
+  color: inherit !important;
+}
+/* Preserve intentionally-bright accent colors in dark mode */
+.dark [contenteditable] font[color="#ef4444"] { color: #ef4444 !important; }
+.dark [contenteditable] font[color="#3b82f6"] { color: #60a5fa !important; }
+.dark [contenteditable] font[color="#22c55e"] { color: #4ade80 !important; }
+.dark [contenteditable] font[color="#f97316"] { color: #fb923c !important; }
+.dark [contenteditable] font[color="#a855f7"] { color: #c084fc !important; }
+.dark [contenteditable] font[color="#06b6d4"] { color: #22d3ee !important; }
+/* Lighten dark colors that would be invisible on dark bg */
+.dark [contenteditable] font[color="#0f172a"] { color: #e2e8f0 !important; }
+.dark [contenteditable] font[color="#64748b"] { color: #94a3b8 !important; }
+
+/* Ensure contentEditable children transition smoothly */
+[contenteditable] div,
+[contenteditable] p,
+[contenteditable] span,
+[contenteditable] li {
+  color: inherit;
+  transition: color 0.2s ease;
 }

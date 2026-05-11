@@ -309,7 +309,7 @@ export function MarkdownArea({ label, value, onChange, onFocus: onFocusProp, onB
 
                 <div style={{ minHeight }} className="h-auto relative">
                     {isEditorEmpty && (
-                        <div className="absolute top-1 left-1 md:top-2 md:left-2 p-0 m-0 pointer-events-none text-muted-foreground font-medium text-[14px] select-none z-10 w-full whitespace-pre-wrap break-words">
+                        <div className="absolute top-1 left-1 md:top-2 md:left-2 p-0 m-0 pointer-events-none text-muted-foreground font-medium text-[14px] select-none z-10 w-full whitespace-pre-wrap break-words transition-colors">
                             {placeholder || `撰寫教案內容... (支援貼上圖片) / Write content here... (Supports pasting images)`}
                         </div>
                     )}
@@ -329,6 +329,7 @@ export function MarkdownArea({ label, value, onChange, onFocus: onFocusProp, onB
                             "focus:ring-0",
                             "[&_ul]:list-disc [&_ol]:list-decimal [&_ul,&_ol]:ml-6 [&_ol]:my-3",
                             "[&_p]:leading-[1.7] [&_p]:mb-3 [&_p:last-child]:mb-0 [&_p]:text-foreground",
+                            "[&_div]:text-inherit [&_span]:text-inherit",
                             "[&_img]:cursor-pointer [&_img]:transition-all [&_img]:duration-300 [&_img]:shadow-md [&_img:hover]:shadow-lg [&_img]:rounded-xl [&_img]:inline-block [&_img]:max-w-full [&_img]:h-auto [&_img]:object-contain [&_img]:align-top",
                             "[&_table]:block [&_table]:overflow-x-auto [&_table]:w-full [&_table]:max-w-full"
                         )}

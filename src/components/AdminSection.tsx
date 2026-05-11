@@ -338,7 +338,7 @@ export function AdminSection({
           }
         }}
         disabled={disabled}
-        className={cn("h-8 md:h-10 px-2 text-xs sm:text-sm bg-transparent hover:bg-[#FBF9F6] dark:hover:bg-white/[0.06] focus:bg-[#FBF9F6] dark:focus:bg-white/[0.08] transition-all shadow-none focus:shadow-sm font-fira-sans font-medium", disabled ? " text-slate-800 dark:text-slate-200 opacity-100 placeholder:text-transparent" : "", className)}
+        className={cn("h-8 md:h-10 px-2 text-xs sm:text-sm bg-transparent border-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 focus:bg-blue-50/60 dark:focus:bg-blue-500/5 transition-all font-fira-sans font-medium rounded-none", disabled ? " text-slate-800 dark:text-slate-200 opacity-100 placeholder:text-transparent" : "", className)}
       />
     );
   };
@@ -356,18 +356,18 @@ export function AdminSection({
       <div className="w-full bg-white dark:bg-slate-900/40 overflow-hidden flex-1 flex flex-col">
 
 
-        <div className="w-full overflow-auto flex-1 min-h-0">
+        <div className="w-full overflow-auto flex-1 min-h-0 pr-12 sm:pr-0">
           <table className="w-full min-w-[760px] md:min-w-[1000px] text-sm text-left border-collapse">
-            <thead className="text-stone-500 dark:text-slate-200 text-[10px] font-fira-code font-black uppercase tracking-[0.2em] sticky top-0 bg-[#FBF9F6]/95 dark:bg-slate-900/95 backdrop-blur-xl z-10 border-b border-stone-200 dark:border-slate-800 text-center">
+            <thead className="text-stone-500 dark:text-slate-200 text-[11px] font-fira-code font-extrabold uppercase tracking-[0.2em] sticky top-0 bg-stone-50 dark:bg-slate-800/60 backdrop-blur-xl z-10 border-b border-stone-200 dark:border-slate-700 text-center">
               <tr>
-                <th className="w-[12%] px-4 py-3 border-r border-stone-200 dark:border-slate-800">{t('CATEGORY')}</th>
-                <th className="w-[14%] px-4 py-3 border-r border-stone-200 dark:border-slate-800">{t('SUBJECT')}</th>
-                <th className="w-[12%] px-4 py-3 border-r border-stone-200 dark:border-slate-800">{t('ASSIGNED_PERSONNEL')}</th>
-                <th className="w-[16%] px-4 py-3 min-w-[100px] border-r border-stone-200 dark:border-slate-800">{t('PROP_NAME')}</th>
-                <th className="w-[8%] px-4 py-3 whitespace-nowrap border-r border-stone-200 dark:border-slate-800">Qty</th>
-                <th className="w-[8%] px-4 py-3 whitespace-nowrap border-r border-stone-200 dark:border-slate-800">Unit</th>
-                <th className="w-[16%] px-4 py-3 min-w-[100px] border-r border-stone-200 dark:border-slate-800">{t('OP_REMARKS')}</th>
-                <th className="w-[7%] px-4 py-3 whitespace-nowrap border-r border-stone-200 dark:border-slate-800">{t('PACKED')}</th>
+                <th className="w-[12%] px-4 py-3 border-r border-stone-200 dark:border-slate-700">{t('CATEGORY')}</th>
+                <th className="w-[14%] px-4 py-3 border-r border-stone-200 dark:border-slate-700">{t('SUBJECT')}</th>
+                <th className="w-[12%] px-4 py-3 border-r border-stone-200 dark:border-slate-700">{t('ASSIGNED_PERSONNEL')}</th>
+                <th className="w-[16%] px-4 py-3 min-w-[100px] border-r border-stone-200 dark:border-slate-700">{t('PROP_NAME')}</th>
+                <th className="w-[8%] px-4 py-3 whitespace-nowrap border-r border-stone-200 dark:border-slate-700">Qty</th>
+                <th className="w-[8%] px-4 py-3 whitespace-nowrap border-r border-stone-200 dark:border-slate-700">Unit</th>
+                <th className="w-[16%] px-4 py-3 min-w-[100px] border-r border-stone-200 dark:border-slate-700">{t('OP_REMARKS')}</th>
+                <th className="w-[7%] px-4 py-3 whitespace-nowrap border-r border-stone-200 dark:border-slate-700">{t('PACKED')}</th>
                 <th className="w-[7%] px-4 py-3 whitespace-nowrap">{t('CHECKED')}</th>
               </tr>
             </thead>
@@ -395,21 +395,21 @@ export function AdminSection({
                         item.prop?.isFromClub && item.prop?.isToPurchase ? "bg-emerald-50/30 dark:bg-emerald-900/12" : "bg-white dark:bg-transparent"
                       )}>
                         {isFirstInGroup && (
-                          <td className="px-4 py-3 font-fira-code font-black text-xs sm:text-sm text-slate-800 dark:text-slate-400 align-top border-r border-stone-200 dark:border-slate-800" rowSpan={items.length}>
+                          <td className="px-4 py-3 font-fira-code font-black text-xs sm:text-sm text-slate-800 dark:text-slate-400 align-top border-r border-stone-200 dark:border-slate-700" rowSpan={items.length}>
                             {categoryName}
                           </td>
                         )}
                         {isFirstInPlan && (
-                          <td className="px-4 py-3 font-bold text-xs sm:text-sm text-slate-700 dark:text-slate-300 align-top border-r border-stone-200 dark:border-slate-800" rowSpan={planItems.length}>
+                          <td className="px-4 py-3 font-bold text-xs sm:text-sm text-slate-700 dark:text-slate-300 align-top border-r border-stone-200 dark:border-slate-700" rowSpan={planItems.length}>
                             {item.plan.activityName || '-'}
                           </td>
                         )}
                         {isFirstInPlan && (
-                          <td className="px-4 py-3 text-xs sm:text-sm text-slate-600 dark:text-slate-400 align-top border-r border-stone-200 dark:border-slate-800" rowSpan={planItems.length}>
+                          <td className="px-4 py-3 text-xs sm:text-sm text-slate-600 dark:text-slate-400 align-top border-r border-stone-200 dark:border-slate-700" rowSpan={planItems.length}>
                             {item.plan.members || '-'}
                           </td>
                         )}
-                        <td className="px-2 py-2 align-middle border-r border-stone-200 dark:border-slate-800">
+                        <td className="px-2 py-2 align-middle border-r border-stone-200 dark:border-slate-700">
                           {item.prop ? (
                             <PropInput
                               value={item.prop.name}
@@ -421,7 +421,7 @@ export function AdminSection({
                             <div className="h-8 md:h-10 px-2 flex items-center justify-center text-xs sm:text-sm text-slate-400 dark:text-slate-500 italic">無所需物品</div>
                           )}
                         </td>
-                        <td className="px-2 py-2 align-middle border-r border-stone-200 dark:border-slate-800">
+                        <td className="px-2 py-2 align-middle border-r border-stone-200 dark:border-slate-700">
                           {item.prop ? (
                             <PropInput
                               value={item.prop.quantity}
@@ -433,7 +433,7 @@ export function AdminSection({
                             <div className="h-8 md:h-10 px-2 flex items-center justify-center text-slate-300 dark:text-slate-600">-</div>
                           )}
                         </td>
-                        <td className="px-2 py-2 align-middle border-r border-stone-200 dark:border-slate-800">
+                        <td className="px-2 py-2 align-middle border-r border-stone-200 dark:border-slate-700">
                           {item.prop ? (
                             <PropInput
                               value={item.prop.unit === 'custom' ? '' : item.prop.unit}
@@ -445,7 +445,7 @@ export function AdminSection({
                             <div className="h-8 md:h-10 px-2 flex items-center justify-center text-slate-300 dark:text-slate-600">-</div>
                           )}
                         </td>
-                        <td className="px-2 py-2 align-middle border-r border-stone-200 dark:border-slate-800">
+                        <td className="px-2 py-2 align-middle border-r border-stone-200 dark:border-slate-700">
                           {item.prop ? (
                             <PropInput
                               value={item.prop.remarks || ''}
@@ -457,7 +457,7 @@ export function AdminSection({
                             <div className="h-8 md:h-10 px-2 flex items-center justify-center text-slate-300 dark:text-slate-600">-</div>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-center align-middle border-r border-stone-200 dark:border-slate-800">
+                        <td className="px-4 py-3 text-center align-middle border-r border-stone-200 dark:border-slate-700">
                           <div className="flex justify-center items-center h-full">
                             <Checkbox
                               checked={item.prop?.isFromClub || false}
@@ -492,28 +492,28 @@ export function AdminSection({
 
               {/* Empty placeholder rows like Google Sheets */}
               {Array.from({ length: 25 }).map((_, i) => (
-                <tr key={`empty-${i}`} className="h-[46px] border-b border-stone-100 dark:border-slate-800/50 bg-white dark:bg-slate-900/10 hover:bg-[#FBF9F6] dark:hover:bg-slate-800/20">
-                  <td className="border-r border-stone-100 dark:border-slate-800/50 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
-                  <td className="border-r border-stone-100 dark:border-slate-800/50 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
-                  <td className="border-r border-stone-100 dark:border-slate-800/50 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
-                  <td className="border-r border-stone-100 dark:border-slate-800/50 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
-                  <td className="border-r border-stone-100 dark:border-slate-800/50 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
-                  <td className="border-r border-stone-100 dark:border-slate-800/50 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
-                  <td className="border-r border-stone-100 dark:border-slate-800/50 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
-                  <td className="border-r border-stone-100 dark:border-slate-800/50 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
+                <tr key={`empty-${i}`} className="h-[46px] border-b border-stone-200/40 dark:border-slate-800/30 bg-white dark:bg-slate-900/10 hover:bg-[#FBF9F6] dark:hover:bg-slate-800/20">
+                  <td className="border-r border-stone-200/40 dark:border-slate-800/30 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
+                  <td className="border-r border-stone-200/40 dark:border-slate-800/30 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
+                  <td className="border-r border-stone-200/40 dark:border-slate-800/30 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
+                  <td className="border-r border-stone-200/40 dark:border-slate-800/30 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
+                  <td className="border-r border-stone-200/40 dark:border-slate-800/30 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
+                  <td className="border-r border-stone-200/40 dark:border-slate-800/30 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
+                  <td className="border-r border-stone-200/40 dark:border-slate-800/30 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
+                  <td className="border-r border-stone-200/40 dark:border-slate-800/30 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
                   <td className="h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
               <tr>
-                <td colSpan={isLocked ? 6 : 7} className="px-4 py-3 bg-[#FBF9F6] dark:bg-white/[0.02] dark:/[0.06] shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+                <td colSpan={isLocked ? 6 : 7} className="px-4 py-3 bg-[#FBF9F6] dark:bg-white/[0.02]">
                   {!isLocked && (
                     <Button
                       onClick={handleAddCampItem}
                       size="sm"
                       variant="ghost"
-                      className="w-full h-10 dark:/[0.1] text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.05] transition-all gap-2 font-bold tracking-widest shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none"
+                      className="w-full h-10 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800/40 transition-all gap-2 font-bold tracking-widest border-none"
                     >
                       <Plus className="h-4 w-4" /> 新增道具
                     </Button>
@@ -540,50 +540,50 @@ export function AdminSection({
       <div className="w-full bg-white dark:bg-slate-900/40 overflow-hidden flex-1 flex flex-col">
 
 
-        <div className="w-full overflow-auto flex-1 min-h-0">
+        <div className="w-full overflow-auto flex-1 min-h-0 pr-12 sm:pr-0">
           <table className="w-full min-w-[760px] md:min-w-[1000px] text-sm text-left border-collapse">
-            <thead className="text-stone-500 dark:text-slate-200 text-[10px] font-fira-code font-black uppercase tracking-[0.2em] sticky top-0 z-10 bg-[#FBF9F6]/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-stone-200 dark:border-slate-800 text-center">
+            <thead className="text-stone-500 dark:text-slate-200 text-[11px] font-fira-code font-extrabold uppercase tracking-[0.2em] sticky top-0 z-10 bg-stone-50 dark:bg-slate-800/60 backdrop-blur-xl border-b border-stone-200 dark:border-slate-700 text-center">
               <tr>
-                <th className="w-[16%] px-4 py-3 border-r border-stone-200 dark:border-slate-800">{t('PROP_USAGE')}</th>
-                <th className="w-[16%] px-4 py-3 min-w-[100px] border-r border-stone-200 dark:border-slate-800">{t('PROP_NAME')}</th>
-                <th className="w-[16%] px-4 py-3 border-r border-stone-200 dark:border-slate-800">{t('ASSIGNED_PERSONNEL')}</th>
-                <th className="w-[28%] px-4 py-3 border-r border-stone-200 dark:border-slate-800">{t('MATERIALS')}</th>
-                <th className="w-[12%] px-4 py-3 whitespace-nowrap border-r border-stone-200 dark:border-slate-800">{t('PACKED')}</th>
-                <th className="w-[12%] px-4 py-3 whitespace-nowrap border-r border-stone-200 dark:border-slate-800">{t('CHECKED')}</th>
+                <th className="w-[16%] px-4 py-3 border-r border-stone-200 dark:border-slate-700">{t('PROP_USAGE')}</th>
+                <th className="w-[16%] px-4 py-3 min-w-[100px] border-r border-stone-200 dark:border-slate-700">{t('PROP_NAME')}</th>
+                <th className="w-[16%] px-4 py-3 border-r border-stone-200 dark:border-slate-700">{t('ASSIGNED_PERSONNEL')}</th>
+                <th className="w-[28%] px-4 py-3 border-r border-stone-200 dark:border-slate-700">{t('MATERIALS')}</th>
+                <th className="w-[12%] px-4 py-3 whitespace-nowrap border-r border-stone-200 dark:border-slate-700">{t('PACKED')}</th>
+                <th className="w-[12%] px-4 py-3 whitespace-nowrap border-r border-stone-200 dark:border-slate-700">{t('CHECKED')}</th>
                 {!isLocked && <th className="w-[10%] px-4 py-3 text-center">操作</th>}
               </tr>
             </thead>
 
             {/* 1. 活動組 */}
             <tbody>
-              <tr><td colSpan={isLocked ? 6 : 7} className="px-4 py-4 font-fira-code font-black text-orange-600 dark:text-amber-500 text-xs sm:text-sm uppercase tracking-widest bg-transparent  dark:/[0.06]">活動組 - 教案道具確認</td></tr>
+              <tr><td colSpan={isLocked ? 6 : 7} className="px-4 py-4 font-fira-code font-black text-orange-600 dark:text-amber-500 text-xs sm:text-sm uppercase tracking-widest bg-stone-50/50 dark:bg-slate-800/40">活動組 - 教案道具確認</td></tr>
               {Object.keys(activityGroups).length === 0 ? (
-                <tr><td colSpan={isLocked ? 6 : 7} className="text-center py-6 text-slate-400 dark:text-slate-500 font-bold border-b border-stone-200 dark:border-slate-800">目前沒有活動組資料</td></tr>
+                <tr><td colSpan={isLocked ? 6 : 7} className="text-center py-6 text-slate-400 dark:text-slate-500 font-bold border-b border-stone-200 dark:border-slate-700">目前沒有活動組資料</td></tr>
               ) : Object.entries(activityGroups).map(([categoryName, catePlans]) => (
                 catePlans.map((plan, pIndex) => (
                   <tr key={`act-${plan.id}`} className={cn(
-                    "group hover:bg-[#FBF9F6] dark:hover:bg-[#FBF9F6]/[0.04] transition-colors duration-200 border-b border-stone-200 dark:border-slate-800 last:border-0",
+                    "group hover:bg-[#FBF9F6] dark:hover:bg-[#FBF9F6]/[0.04] transition-colors duration-200 border-b border-stone-200 dark:border-slate-700 last:border-0",
                     plan.isPreDepartureChecked && plan.isPropsPacked ? "bg-emerald-50/30 dark:bg-emerald-900/12" : "bg-white dark:bg-transparent"
                   )}>
                     {pIndex === 0 && (
-                      <td className="px-4 py-3 font-fira-code font-black text-xs sm:text-sm text-slate-800 dark:text-slate-400 align-top border-r border-stone-200 dark:border-slate-800" rowSpan={catePlans.length}>
+                      <td className="px-4 py-3 font-fira-code font-black text-xs sm:text-sm text-slate-800 dark:text-slate-400 align-top border-r border-stone-200 dark:border-slate-700" rowSpan={catePlans.length}>
                         {categoryName}
                       </td>
                     )}
-                    <td className="px-4 py-3 font-bold text-xs sm:text-sm text-slate-700 dark:text-slate-300 align-top border-r border-stone-200 dark:border-slate-800 text-center">
+                    <td className="px-4 py-3 font-bold text-xs sm:text-sm text-slate-700 dark:text-slate-300 align-top border-r border-stone-200 dark:border-slate-700 text-center">
                       {plan.activityName || '-'}
                     </td>
-                    <td className="px-4 py-3 text-xs sm:text-sm text-slate-600 dark:text-slate-400 align-top border-r border-stone-200 dark:border-slate-800 text-center">
+                    <td className="px-4 py-3 text-xs sm:text-sm text-slate-600 dark:text-slate-400 align-top border-r border-stone-200 dark:border-slate-700 text-center">
                       {plan.members || '-'}
                     </td>
-                    <td className="px-4 py-3 text-slate-600 dark:text-slate-300 text-xs sm:text-sm border-r border-stone-200 dark:border-slate-800">
+                    <td className="px-4 py-3 text-slate-600 dark:text-slate-300 text-xs sm:text-sm border-r border-stone-200 dark:border-slate-700">
                       {plan.props.length > 0 ? (
                         <ul className="space-y-1.5 list-none">
                           {plan.props.map(prop => (
                             <li key={prop.id} className="flex items-center gap-1.5 flex-wrap">
                               <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600 shrink-0" />
                               <span className="font-bold text-slate-800 dark:text-slate-200">{prop.name}</span>
-                              <span className="text-orange-500 dark:text-amber-400 font-fira-code px-1.5 py-0.5 bg-orange-50 dark:bg-amber-400/10 rounded-md text-[10px] font-bold">× {prop.quantity} {prop.unit === 'custom' ? '' : prop.unit}</span>
+                              <span className="text-orange-600 dark:text-amber-400 font-fira-code px-1 font-bold text-[11px]">× {prop.quantity} {prop.unit === 'custom' ? '' : prop.unit}</span>
                               {prop.remarks && <span className="text-slate-400 dark:text-slate-500 ml-1 text-[11px]">({prop.remarks})</span>}
                             </li>
                           ))}
@@ -592,12 +592,12 @@ export function AdminSection({
                         <span className="text-slate-400 dark:text-slate-500 italic font-medium">無所需物品</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-center align-middle border-r border-stone-200 dark:border-slate-800">
+                    <td className="px-4 py-3 text-center align-middle border-r border-stone-200 dark:border-slate-700">
                       <div className="flex justify-center items-center h-full">
                         <Checkbox checked={plan.isPropsPacked || false} disabled={isLocked} onCheckedChange={(c) => onUpdatePlan(plan.id, { isPropsPacked: c === true })} className="h-5 w-5 dark:data-[state=checked]:bg-emerald-500" />
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-center align-middle border-r border-stone-200 dark:border-slate-800">
+                    <td className="px-4 py-3 text-center align-middle border-r border-stone-200 dark:border-slate-700">
                       <div className="flex justify-center flex-col items-center h-full">
                         <Checkbox checked={plan.isPreDepartureChecked || false} disabled={isLocked} onCheckedChange={(c) => onUpdatePlan(plan.id, { isPreDepartureChecked: c === true })} className="h-5 w-5 dark:data-[state=checked]:bg-emerald-500" />
                       </div>
@@ -610,34 +610,34 @@ export function AdminSection({
 
             {/* 2. 教學組 */}
             <tbody>
-              <tr><td colSpan={isLocked ? 6 : 7} className="px-4 py-4 font-fira-code font-black text-blue-600 dark:text-blue-400 text-xs sm:text-sm uppercase tracking-widest bg-transparent  dark:/[0.06]">教學組 - 教案道具確認</td></tr>
+              <tr><td colSpan={isLocked ? 6 : 7} className="px-4 py-4 font-fira-code font-black text-blue-600 dark:text-blue-400 text-xs sm:text-sm uppercase tracking-widest bg-stone-50/50 dark:bg-slate-800/40">教學組 - 教案道具確認</td></tr>
               {Object.keys(teachingGroups).length === 0 ? (
-                <tr><td colSpan={isLocked ? 6 : 7} className="text-center py-6 text-slate-400 dark:text-slate-500 font-bold border-b border-stone-200 dark:border-slate-800">目前沒有教學組資料</td></tr>
+                <tr><td colSpan={isLocked ? 6 : 7} className="text-center py-6 text-slate-400 dark:text-slate-500 font-bold border-b border-stone-200 dark:border-slate-700">目前沒有教學組資料</td></tr>
               ) : Object.entries(teachingGroups).map(([categoryName, catePlans]) => (
                 catePlans.map((plan, pIndex) => (
                   <tr key={`tch-${plan.id}`} className={cn(
-                    "group hover:bg-[#FBF9F6] dark:hover:bg-[#FBF9F6]/[0.04] transition-colors duration-200 border-b border-stone-200 dark:border-slate-800 last:border-0",
+                    "group hover:bg-[#FBF9F6] dark:hover:bg-[#FBF9F6]/[0.04] transition-colors duration-200 border-b border-stone-200 dark:border-slate-700 last:border-0",
                     plan.isPreDepartureChecked && plan.isPropsPacked ? "bg-emerald-50/30 dark:bg-emerald-900/10" : "bg-white dark:bg-slate-900/20"
                   )}>
                     {pIndex === 0 && (
-                      <td className="px-4 py-3 font-fira-code font-black text-xs sm:text-sm text-slate-800 dark:text-slate-400 align-top border-r border-stone-200 dark:border-slate-800" rowSpan={catePlans.length}>
+                      <td className="px-4 py-3 font-fira-code font-black text-xs sm:text-sm text-slate-800 dark:text-slate-400 align-top border-r border-stone-200 dark:border-slate-700" rowSpan={catePlans.length}>
                         {categoryName}
                       </td>
                     )}
-                    <td className="px-4 py-3 font-bold text-xs sm:text-sm text-slate-700 dark:text-slate-300 align-top border-r border-stone-200 dark:border-slate-800 text-center">
+                    <td className="px-4 py-3 font-bold text-xs sm:text-sm text-slate-700 dark:text-slate-300 align-top border-r border-stone-200 dark:border-slate-700 text-center">
                       {plan.activityName || '-'}
                     </td>
-                    <td className="px-4 py-3 text-xs sm:text-sm text-slate-600 dark:text-slate-400 align-top border-r border-stone-200 dark:border-slate-800 text-center">
+                    <td className="px-4 py-3 text-xs sm:text-sm text-slate-600 dark:text-slate-400 align-top border-r border-stone-200 dark:border-slate-700 text-center">
                       {plan.members || '-'}
                     </td>
-                    <td className="px-4 py-3 text-slate-600 dark:text-slate-300 text-xs sm:text-sm border-r border-stone-200 dark:border-slate-800">
+                    <td className="px-4 py-3 text-slate-600 dark:text-slate-300 text-xs sm:text-sm border-r border-stone-200 dark:border-slate-700">
                       {plan.props.length > 0 ? (
                         <ul className="space-y-1.5 list-none">
                           {plan.props.map(prop => (
                             <li key={prop.id} className="flex items-center gap-1.5 flex-wrap">
                               <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600 shrink-0" />
                               <span className="font-bold text-slate-800 dark:text-slate-200">{prop.name}</span>
-                              <span className="text-blue-500 dark:text-blue-400 font-fira-code px-1.5 py-0.5 bg-blue-50 dark:bg-blue-400/10 rounded-md text-[10px] font-bold">× {prop.quantity} {prop.unit === 'custom' ? '' : prop.unit}</span>
+                              <span className="text-blue-600 dark:text-blue-400 font-fira-code px-1 font-bold text-[11px]">× {prop.quantity} {prop.unit === 'custom' ? '' : prop.unit}</span>
                               {prop.remarks && <span className="text-slate-400 dark:text-slate-500 ml-1 text-[11px]">({prop.remarks})</span>}
                             </li>
                           ))}
@@ -646,12 +646,12 @@ export function AdminSection({
                         <span className="text-slate-400 dark:text-slate-500 italic font-medium">無所需物品</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-center align-middle border-r border-stone-200 dark:border-slate-800">
+                    <td className="px-4 py-3 text-center align-middle border-r border-stone-200 dark:border-slate-700">
                       <div className="flex justify-center items-center h-full">
                         <Checkbox checked={plan.isPropsPacked || false} disabled={isLocked} onCheckedChange={(c) => onUpdatePlan(plan.id, { isPropsPacked: c === true })} className="h-5 w-5 dark:data-[state=checked]:bg-emerald-500" />
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-center align-middle border-r border-stone-200 dark:border-slate-800">
+                    <td className="px-4 py-3 text-center align-middle border-r border-stone-200 dark:border-slate-700">
                       <div className="flex justify-center flex-col items-center h-full">
                         <Checkbox checked={plan.isPreDepartureChecked || false} disabled={isLocked} onCheckedChange={(c) => onUpdatePlan(plan.id, { isPreDepartureChecked: c === true })} className="h-5 w-5 dark:data-[state=checked]:bg-emerald-500" />
                       </div>
@@ -664,17 +664,17 @@ export function AdminSection({
 
             {/* 3. 營期物品 */}
             <tbody>
-              <tr><td colSpan={isLocked ? 6 : 7} className="px-4 py-4 font-fira-code font-black text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm uppercase tracking-widest bg-transparent  dark:/[0.06]">營期其他物品確認</td></tr>
+              <tr><td colSpan={isLocked ? 6 : 7} className="px-4 py-4 font-fira-code font-black text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm uppercase tracking-widest bg-stone-50/50 dark:bg-slate-800/40">營期其他物品確認</td></tr>
               {Object.keys(usageGroups).length === 0 ? (
-                <tr><td colSpan={isLocked ? 6 : 7} className="text-center py-4 text-slate-400 dark:text-slate-600 font-bold border-b border-stone-200 dark:border-slate-800">目前沒有營期物品資料</td></tr>
+                <tr><td colSpan={isLocked ? 6 : 7} className="text-center py-4 text-slate-400 dark:text-slate-600 font-bold border-b border-stone-200 dark:border-slate-700">目前沒有營期物品資料</td></tr>
               ) : Object.entries(usageGroups).map(([usageName, items]) => (
                 items.map((item, pIndex) => (
                   <tr key={`cmp-${item.id}`} className={cn(
-                    "group hover:bg-[#FBF9F6] dark:hover:bg-[#FBF9F6]/[0.04] transition-colors duration-200 border-b border-stone-200 dark:border-slate-800 last:border-0",
+                    "group hover:bg-[#FBF9F6] dark:hover:bg-[#FBF9F6]/[0.04] transition-colors duration-200 border-b border-stone-200 dark:border-slate-700 last:border-0",
                     item.isChecked && item.isPacked ? "bg-emerald-50/30 dark:bg-emerald-900/10" : "bg-white dark:bg-slate-900/20"
                   )}>
                     {pIndex === 0 && (
-                      <td className="px-4 py-3 font-fira-code font-black text-xs sm:text-sm text-slate-800 dark:text-slate-400 align-top border-r border-stone-200 dark:border-slate-800" rowSpan={items.length}>
+                      <td className="px-4 py-3 font-fira-code font-black text-xs sm:text-sm text-slate-800 dark:text-slate-400 align-top border-r border-stone-200 dark:border-slate-700" rowSpan={items.length}>
                         {isLocked ? (
                           usageName
                         ) : (
@@ -689,7 +689,7 @@ export function AdminSection({
                         )}
                       </td>
                     )}
-                    <td className="px-4 py-3 align-middle border-r border-stone-200 dark:border-slate-800">
+                    <td className="px-4 py-3 align-middle border-r border-stone-200 dark:border-slate-700">
                       <PropInput
                         value={item.name}
                         onChange={(v) => handleUpdateCampItem(item.id, { name: v })}
@@ -697,13 +697,13 @@ export function AdminSection({
                         className="font-bold text-slate-700 dark:text-slate-300 text-center"
                       />
                     </td>
-                    <td className="px-4 py-3 text-xs sm:text-sm text-slate-400 dark:text-slate-600 align-middle border-r border-stone-200 dark:border-slate-800 text-center">
+                    <td className="px-4 py-3 text-xs sm:text-sm text-slate-400 dark:text-slate-600 align-middle border-r border-stone-200 dark:border-slate-700 text-center">
                       -
                     </td>
-                    <td className="px-4 py-3 text-xs sm:text-sm text-slate-400 dark:text-slate-600 align-middle border-r border-stone-200 dark:border-slate-800 text-center">
+                    <td className="px-4 py-3 text-xs sm:text-sm text-slate-400 dark:text-slate-600 align-middle border-r border-stone-200 dark:border-slate-700 text-center">
                       -
                     </td>
-                    <td className="px-4 py-3 text-center align-middle border-r border-stone-200 dark:border-slate-800">
+                    <td className="px-4 py-3 text-center align-middle border-r border-stone-200 dark:border-slate-700">
                       <div className="flex justify-center items-center h-full">
                         <Checkbox
                           checked={item.isPacked || false}
@@ -742,26 +742,26 @@ export function AdminSection({
 
               {/* Empty placeholder rows like Google Sheets */}
               {Array.from({ length: 25 }).map((_, i) => (
-                <tr key={`empty-combined-${i}`} className="h-[46px] border-b border-stone-100 dark:border-slate-800/50 bg-white dark:bg-slate-900/10 hover:bg-[#FBF9F6] dark:hover:bg-slate-800/20">
-                  <td className="border-r border-stone-100 dark:border-slate-800/50 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
-                  <td className="border-r border-stone-100 dark:border-slate-800/50 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
-                  <td className="border-r border-stone-100 dark:border-slate-800/50 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
-                  <td className="border-r border-stone-100 dark:border-slate-800/50 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
-                  <td className="border-r border-stone-100 dark:border-slate-800/50 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
-                  <td className="border-r border-stone-100 dark:border-slate-800/50 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
+                <tr key={`empty-combined-${i}`} className="h-[46px] border-b border-stone-200/40 dark:border-slate-800/30 bg-white dark:bg-slate-900/10 hover:bg-[#FBF9F6] dark:hover:bg-slate-800/20">
+                  <td className="border-r border-stone-200/40 dark:border-slate-800/30 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
+                  <td className="border-r border-stone-200/40 dark:border-slate-800/30 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
+                  <td className="border-r border-stone-200/40 dark:border-slate-800/30 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
+                  <td className="border-r border-stone-200/40 dark:border-slate-800/30 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
+                  <td className="border-r border-stone-200/40 dark:border-slate-800/30 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
+                  <td className="border-r border-stone-200/40 dark:border-slate-800/30 h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
                   {!isLocked && <td className="h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>}
                 </tr>
               ))}
             </tbody>
             <tfoot>
               <tr>
-                <td colSpan={isLocked ? 6 : 7} className="px-4 py-3 bg-[#FBF9F6] dark:bg-white/[0.02] dark:/[0.06] shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+                <td colSpan={isLocked ? 6 : 7} className="px-4 py-3 bg-[#FBF9F6] dark:bg-white/[0.02]">
                   {!isLocked && (
                     <Button
                       onClick={handleAddCampItem}
                       size="sm"
                       variant="ghost"
-                      className="w-full h-10 dark:/[0.1] text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.05] transition-all gap-2 font-bold tracking-widest shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none"
+                      className="w-full h-10 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800/40 transition-all gap-2 font-bold tracking-widest border-none"
                     >
                       <Plus className="h-4 w-4" /> 新增道具
                     </Button>
@@ -902,7 +902,10 @@ export function AdminSection({
                 )}
               </AnimatePresence>
 
-              <FabStagger className="fixed bottom-20 right-2 z-[65] flex flex-col items-end gap-3 pointer-events-none [&>*]:pointer-events-auto">
+              <FabStagger className={cn(
+                "fixed z-[65] flex flex-col items-end gap-3 pointer-events-none [&>*]:pointer-events-auto transition-all duration-300",
+                activeMainTab === 'props' ? "bottom-4 right-4 sm:bottom-6 sm:right-6 opacity-60 hover:opacity-100 scale-90 sm:scale-100" : "bottom-20 right-2"
+              )}>
                 
                 {/* Export FAB */}
                 <div className="relative flex items-center justify-end">
@@ -1110,12 +1113,13 @@ export function AdminSection({
 
                 <div
                   className="w-full flex flex-col space-y-12"
+                  style={{ touchAction: 'pan-x pan-y' }}
                   onTouchStart={handleTouchStart}
                   onTouchMove={handleTouchMove}
                   onTouchEnd={handleTouchEnd}
                 >
                   <div
-                    className="w-full space-y-12"
+                    className="w-full space-y-12 origin-top-left"
                     style={{ zoom }}
                   >
                     {filteredTables.length > 0 ? (
@@ -1143,12 +1147,13 @@ export function AdminSection({
               <TabsContent value="props" className="m-0 data-[state=active]:flex flex-col flex-1 min-h-0 pb-0">
                 <div
                   className="w-full flex-1 flex flex-col"
+                  style={{ touchAction: 'pan-x pan-y' }}
                   onTouchStart={handleTouchStart}
                   onTouchMove={handleTouchMove}
                   onTouchEnd={handleTouchEnd}
                 >
                   <div
-                    className="w-full flex-1 flex flex-col"
+                    className="w-full flex-1 flex flex-col origin-top-left"
                     style={{ zoom }}
                   >
                     <div className={cn("transition-opacity duration-300 flex-1 flex flex-col", isLocked ? "opacity-90" : "opacity-100")}>

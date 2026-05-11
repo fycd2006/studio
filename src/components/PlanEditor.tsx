@@ -85,9 +85,9 @@ const FieldContainer = ({
 
 
 const SectionHeader = ({ title, icon: Icon }: { title: string; icon?: any }) => (
-  <div className="flex items-center gap-3 mb-4 pt-6 first:pt-0 border-b border-stone-100 dark:border-white/10 pb-3">
-    {Icon && <Icon className="h-5 w-5 text-stone-400 dark:text-stone-400 opacity-90" />}
-    <h3 className="text-lg font-headline font-bold text-stone-800 dark:text-slate-100 tracking-wide">
+  <div className="flex items-center gap-3 mb-4 pt-6 first:pt-0 border-b border-stone-100 dark:border-white/10 pb-3 transition-colors">
+    {Icon && <Icon className="h-5 w-5 text-stone-400 dark:text-slate-500 opacity-90 transition-colors" />}
+    <h3 className="text-lg font-headline font-bold text-stone-800 dark:text-slate-100 tracking-wide transition-colors">
       {title}
     </h3>
   </div>
@@ -529,11 +529,11 @@ export function PlanEditor({
                       {currentGroupLabel}
                     </span>
                   </div>
-                  <p className="text-xs tracking-[0.18em] text-stone-500 dark:text-slate-400 uppercase font-medium mb-1.5">Lesson Plan Editor // New Draft</p>
+                  <p className="text-xs tracking-[0.18em] text-stone-500 dark:text-slate-400 uppercase font-medium mb-1.5 transition-colors">Lesson Plan Editor // New Draft</p>
                   <input
                     value={(currentPlan.activityName || "").replace(/<[^>]*>?/gm, '')}
                     onChange={(e) => handlePlanUpdate({ activityName: e.target.value })}
-                    className="text-3xl md:text-4xl font-extrabold tracking-tight bg-transparent  focus:ring-0 focus:outline-none text-[#2C2A28] dark:text-white w-full px-0"
+                    className="text-3xl md:text-4xl font-extrabold tracking-tight bg-transparent focus:ring-0 focus:outline-none text-[#2C2A28] dark:text-white w-full px-0 transition-colors placeholder:transition-colors"
                     placeholder={t('ENTER_TITLE')}
                     readOnly={isInteractionLocked}
                   />
@@ -664,7 +664,7 @@ export function PlanEditor({
                   )}
                 >
                   {isLoadingPreview ? (
-                    <div className="h-full min-h-[260px] w-full md:w-[816px] flex flex-col items-center justify-center gap-2 text-stone-500 dark:text-slate-400">
+                    <div className="h-full min-h-[260px] w-full md:w-[816px] flex flex-col items-center justify-center gap-2 text-stone-500 dark:text-slate-400 transition-colors">
                       <Loader2 className="h-5 w-5 animate-spin" />
                       <p className="text-xs font-bold uppercase tracking-widest">Reconstructing History...</p>
                     </div>
@@ -872,15 +872,13 @@ export function PlanEditor({
                             ) : (
                               <div className="w-full">
                                 <FieldContainer field="props" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
-                                  <div className="w-full overflow-x-auto pb-2">
-                                    <PropsTable
-                                      value={currentPlan.props}
-                                      onChange={(val) => handlePlanUpdate({ props: val })}
-                                      onFocus={() => handleFocus('props')}
-                                      onBlur={() => handleBlur('props')}
-                                      readOnly={isInteractionLocked}
-                                    />
-                                  </div>
+                                  <PropsTable
+                                    value={currentPlan.props}
+                                    onChange={(val) => handlePlanUpdate({ props: val })}
+                                    onFocus={() => handleFocus('props')}
+                                    onBlur={() => handleBlur('props')}
+                                    readOnly={isInteractionLocked}
+                                  />
                                 </FieldContainer>
                               </div>
                             )}
