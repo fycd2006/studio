@@ -26,7 +26,7 @@ import { useTranslation } from "@/lib/i18n-context";
 import { LessonPlan, PlanCategory, Camp, Group } from "@/types/plan";
 import { Button } from "@/components/ui/button";
 import { AdminDialog } from "@/components/AdminDialog";
-import { cn } from "@/lib/utils";
+import { cn, stripHtml } from "@/lib/utils";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -312,8 +312,8 @@ export function PlanSidebar({
  <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-0.5">
  {catPlans.map((plan, index) => {
  const planTitle = plan.scheduledName
- ? `${plan.scheduledName} - ${plan.activityName || "..."}`
- : (plan.activityName || "...");
+ ? `${plan.scheduledName} - ${stripHtml(plan.activityName) || "..."}`
+ : (stripHtml(plan.activityName) || "...");
  const isActive = pathname === `/plans/${plan.id}`;
 
  return (
@@ -350,7 +350,7 @@ export function PlanSidebar({
  toast({ title: "權限不足", description: "僅管理員能刪除教案", variant: "destructive" });
  return;
  }
- setDeletePlanTarget({ id: plan.id, name: plan.activityName || "未命名教案" });
+ setDeletePlanTarget({ id: plan.id, name: stripHtml(plan.activityName) || "未命名教案" });
  setDeleteInput("");
  }}>
  <Trash2 className="h-3.5 w-3.5" />

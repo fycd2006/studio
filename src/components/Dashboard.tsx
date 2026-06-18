@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { differenceInDays, parseISO, isValid } from "date-fns";
-import { cn } from "@/lib/utils";
+import { cn, stripHtml } from "@/lib/utils";
 
 interface DashboardProps {
  camps: Camp[];
@@ -205,7 +205,7 @@ export function Dashboard({ camps, activeCampId, plans, onSelectPlan, onSetViewM
  </div>
  <div>
  <h4 className="text-[12px] font-bold text-foreground uppercase tracking-tight">
- {plan.scheduledName ? `${plan.scheduledName} - ${plan.activityName}` : plan.activityName || "未命名教案"}
+ {plan.scheduledName ? `${plan.scheduledName} - ${stripHtml(plan.activityName)}` : stripHtml(plan.activityName) || "未命名教案"}
  </h4>
  <p className="text-[10px] font-medium text-muted-foreground mt-1 font-comic">
  最後修改：{new Date(plan.updatedAt).toLocaleString('zh-TW')}

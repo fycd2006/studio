@@ -4,7 +4,7 @@ import { usePlans } from "@/hooks/use-plans";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo } from "react";
 import { ShieldCheck, Tent, Clock, MapPin, ChevronRight, Settings, Layers, ArrowRight } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, stripHtml } from "@/lib/utils";
 import Link from "next/link";
 import { format } from "date-fns";
 import { HeroCarousel } from "@/components/HeroCarousel";
@@ -266,7 +266,7 @@ export default function Home() {
                                 {plan.category}
                               </span>
                            ) : null}
-                           <span className="truncate">{plan.activityName || "未命名教案"}</span>
+                           <span className="truncate">{stripHtml(plan.activityName) || "未命名教案"}</span>
                          </div>
                        </li>
                      ))}

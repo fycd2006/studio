@@ -9,6 +9,17 @@ export type VersionHistoryEntry = {
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
   {
+    id: "build-umdcm1y",
+    version: "1.0.13",
+    label: "更新項目",
+    date: "2026-06-18",
+    title: "「歷史紀錄」頁面顯示文字更清晰整潔。",
+    highlights: [
+      "在「歷史紀錄」頁面，活動名稱顯示將更清晰。",
+      "在「歷史紀錄」頁面，成員清單顯示將更清晰。"
+    ],
+  },
+  {
     id: "build-g4gdead",
     version: "1.0.12",
     label: "更新項目",

@@ -6,17 +6,17 @@ import { useAuth } from "@/lib/auth-context";
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import {
- FileText,
- LayoutGrid,
- List,
- Clock,
- ChevronRight,
- Users,
- History,
- ArrowLeft
+  FileText,
+  LayoutGrid,
+  List,
+  Clock,
+  ChevronRight,
+  Users,
+  History,
+  ArrowLeft
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { cn, stripHtml } from "@/lib/utils";
 import { motion } from "framer-motion";
 
 export default function HistoryOverview() {
@@ -110,7 +110,7 @@ export default function HistoryOverview() {
  </div>
  </div>
  
- <h3 className="font-bold text-lg md:text-xl text-[#2C2A28] dark:text-slate-100 mb-2 line-clamp-2 leading-snug group-hover:text-[#f48c25] dark:group-hover:text-[#f48c25] transition-colors">{plan.activityName || "未命名文件"}</h3>
+ <h3 className="font-bold text-lg md:text-xl text-[#2C2A28] dark:text-slate-100 mb-2 line-clamp-2 leading-snug group-hover:text-[#f48c25] dark:group-hover:text-[#f48c25] transition-colors">{stripHtml(plan.activityName) || "未命名文件"}</h3>
  <p className="text-xs text-stone-500 dark:text-slate-400 font-semibold mb-6 flex-1 flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" />{plan.scheduledName || "未分類"}</p>
  
  <div className="flex items-center gap-4 pt-4 dark: mt-auto">
@@ -121,7 +121,7 @@ export default function HistoryOverview() {
  {plan.members && (
  <div className="flex items-center gap-1.5 text-[11px] text-stone-500 dark:text-slate-400 font-medium ml-auto">
  <Users className="w-3.5 h-3.5" />
- <span className="line-clamp-1 max-w-[80px]">{plan.members}</span>
+ <span className="line-clamp-1 max-w-[80px]">{stripHtml(plan.members)}</span>
  </div>
  )}
  </div>
@@ -144,7 +144,7 @@ export default function HistoryOverview() {
  <tbody className="divide-y divide-stone-100 dark:divide-slate-800">
  {recentPlans.map((plan) => (
  <tr key={plan.id} onClick={() => handleOpenPlan(plan.id)} className="hover:bg-[#FBF9F6]/80 dark:hover:bg-slate-800/50 transition-colors cursor-pointer group">
- <td className="px-8 py-5 font-bold text-[#2C2A28] dark:text-slate-200 group-hover:text-[#f48c25] dark:group-hover:text-[#f48c25] transition-colors">{plan.activityName || "未命名文件"}</td>
+ <td className="px-8 py-5 font-bold text-[#2C2A28] dark:text-slate-200 group-hover:text-[#f48c25] dark:group-hover:text-[#f48c25] transition-colors">{stripHtml(plan.activityName) || "未命名文件"}</td>
  <td className="px-6 py-5">
  <Badge className={cn("px-2.5 py-1 text-[10px] font-bold uppercase border-none", plan.category === "activity" ? "bg-blue-50/80 text-blue-600  dark:bg-blue-900/20 dark:text-blue-400 dark:" : "bg-emerald-50/80 text-emerald-600  dark:bg-emerald-900/20 dark:text-emerald-400 dark:")}>
  {plan.category === "activity" ? "活動" : "教學"}
@@ -154,7 +154,7 @@ export default function HistoryOverview() {
  <td className="px-6 py-5 text-stone-500 dark:text-slate-400 font-medium">
  <div className="flex items-center gap-1.5">
  <Users className="w-3.5 h-3.5 text-stone-300 dark:text-slate-600" />
- {plan.members || "—"}
+ {stripHtml(plan.members) || "—"}
  </div>
  </td>
  <td className="px-8 py-5 text-stone-600 dark:text-slate-300 text-sm font-semibold text-right">{plan.updatedAt ? format(new Date(plan.updatedAt), "yyyy/MM/dd HH:mm") : "—"}</td>
