@@ -44,6 +44,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LessonPlan } from "@/types/plan";
 import { exportPlansAsZip, exportToDocx, exportToPdf } from "@/lib/export-utils";
+import fallbackImagesData from "@/data/fallback-images.json";
+
+function getDeterministicIndex(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return Math.abs(hash);
+}
 
 export default function PlansOverview() {
  const { role } = useAuth();
@@ -55,7 +64,7 @@ export default function PlansOverview() {
  const activeCamp = camps.find(c => c.id === activeCampId);
  const isAdmin = role === 'admin';
 
- const [viewType, setViewType] = useState<"grid" | "list" | "board">("grid");
+ const [viewType, setViewType] = useState<"grid" | "list" | "board">("list");
  const [isAdding, setIsAdding] = useState(false);
  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
  const [deleteInput, setDeleteInput] = useState("");
@@ -976,52 +985,68 @@ export default function PlansOverview() {
  })}
  </div>
  ) : (
- <div className="w-full overflow-x-auto pb-6">
- <table className="w-full text-left border-collapse min-w-[800px] bg-transparent transform-gpu" style={{ borderSpacing: '0 8px', borderCollapse: 'separate' }}>
- <thead className="bg-[#FBF9F6]/50 dark:bg-slate-900/50 backdrop-blur-md sticky top-0 z-20">
- <tr className="text-[11px] font-extrabold uppercase tracking-[0.15em] text-stone-500/80 dark:text-slate-400">
- <th className="px-6 py-5 font-semibold rounded-l-[16px]">檔案名稱</th>
- <th className="px-6 py-5 font-semibold">所屬模組 / 群組</th>
- <th className="px-6 py-5 font-semibold">自訂分類</th>
- <th className="px-6 py-5 font-semibold">協作者列表</th>
- <th className="px-6 py-5 font-semibold">最後修改時間</th>
- <th className="px-6 py-5 font-semibold text-right rounded-r-[16px]">快速操作</th>
- </tr>
- </thead>
- <tbody className="space-y-2">
- {filteredPlans.map((plan, i) => (
- <motion.tr initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }} key={plan.id} onClick={() => handleOpenPlan(plan.id)} className="bg-white dark:bg-slate-800 hover:bg-white dark:hover:bg-slate-700 transition-all duration-300 cursor-pointer group shadow-[0_6px_18px_rgba(140,120,100,0.08)] hover:shadow-[0_10px_28px_rgba(140,120,100,0.1)] dark:shadow-[0_10px_28px_rgba(0,0,0,0.35)] hover:-translate-y-0.5 outline-none relative overflow-hidden">
- <td className="px-6 py-5 font-bold text-[14px] sm:text-[15px] text-[#2C2A28] dark:text-slate-100 group-hover:text-stone-900 dark:group-hover:text-white transition-colors rounded-l-[20px] max-w-[280px] relative z-10">
- <div className="truncate pr-4">{getPlanDisplayName(plan)}</div>
- </td>
- <td className="px-6 py-5">
- <Badge className={cn("px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-widest border-0 inline-flex items-center gap-1.5 shadow-none", (() => { const g = getPlanGroup(plan); const params = getUnifiedGroupBadgeParams(g?.slug || plan.category, g?.nameZh || ''); return `${params.lightBg} ${params.lightText}`; })())}>
- <div className={cn("w-1.5 h-1.5 rounded-full", (() => { const g = getPlanGroup(plan); const params = getUnifiedGroupBadgeParams(g?.slug || plan.category, g?.nameZh || ''); return params.dot; })())} />
- {(() => {
- const group = getPlanGroup(plan);
- return group ? (language === 'zh' ? group.nameZh : group.nameEn) : (language === 'zh' ? '未分類' : 'Unknown');
- })()}
- </Badge>
- </td>
- <td className="px-6 py-5 text-stone-500/90 dark:text-slate-400 font-medium text-[13px] max-w-[150px] truncate">{getPlanDisplayCategory(plan) || "—"}</td>
- <td className="px-6 py-5 text-stone-500/90 dark:text-slate-400 font-medium text-[13px] max-w-[150px]">
- <div className="truncate px-2 py-1 bg-stone-50 dark:bg-slate-900 rounded-md w-fit">
- {getPlanDisplayMembers(plan) || "—"}
- </div>
- </td>
- <td className="px-6 py-5 text-stone-400 dark:text-slate-500/80 text-[12px] font-bold uppercase tracking-wide gap-1.5 flex items-center h-full min-h-[72px]">
- <Clock className="w-3.5 h-3.5" />
- {plan.updatedAt ? format(new Date(plan.updatedAt), "yyyy/MM/dd HH:mm") : "—"}
- </td>
- <td className="px-6 py-5 rounded-r-[20px]" onClick={(e) => e.stopPropagation()}>
- <div className="flex justify-end opacity-60 group-hover:opacity-100 transition-opacity">
- {renderPlanActions(plan)}
- </div>
- </td>
- </motion.tr>
- ))}
- </tbody>
- </table>
+ <div className="w-full flex flex-col gap-3 pb-6">
+   {filteredPlans.map((plan, i) => {
+     const group = getPlanGroup(plan);
+     const groupBadge = getUnifiedGroupBadgeParams(group?.slug || plan.category, group?.nameZh || '');
+     const deterministicIndex = getDeterministicIndex(plan.id);
+     const fallbackImages = fallbackImagesData?.images || [];
+     const imageUrl = plan.canvasImage || (fallbackImages.length > 0 ? fallbackImages[deterministicIndex % fallbackImages.length] : null);
+
+     return (
+       <motion.div
+         key={plan.id}
+         initial={{ opacity: 0, y: 8 }}
+         animate={{ opacity: 1, y: 0 }}
+         transition={{ delay: i * 0.02 }}
+         onClick={() => handleOpenPlan(plan.id)}
+         className="bg-white dark:bg-slate-800 hover:bg-white dark:hover:bg-slate-700 transition-all duration-300 cursor-pointer group shadow-[0_6px_18px_rgba(140,120,100,0.06)] hover:shadow-[0_10px_28px_rgba(140,120,100,0.1)] dark:shadow-[0_10px_28px_rgba(0,0,0,0.35)] hover:-translate-y-0.5 outline-none rounded-2xl p-3 sm:p-4 flex items-center justify-between border border-stone-100 dark:border-slate-700/50 w-full overflow-hidden"
+       >
+         {/* Left: Info */}
+         <div className="flex-1 min-w-0 pr-4 flex flex-col justify-center">
+           {/* Title */}
+           <h3 className="font-bold text-[14px] sm:text-[15px] text-[#2C2A28] dark:text-slate-100 group-hover:text-stone-900 dark:group-hover:text-white transition-colors truncate flex items-center gap-2">
+             {/* Group Dot indicator */}
+             <div 
+               className={cn("w-2 h-2 rounded-full shrink-0", groupBadge.bg)} 
+               title={group ? (language === 'zh' ? group.nameZh : group.nameEn) : (language === 'zh' ? '未分類' : 'Unknown')}
+             />
+             <span>{getPlanDisplayName(plan)}</span>
+             {getPlanDisplayCategory(plan) && (
+               <span className="text-xs font-semibold text-stone-400 dark:text-slate-400">
+                 {getPlanDisplayCategory(plan)}
+               </span>
+             )}
+           </h3>
+
+           {/* Metadata Row */}
+           <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-1.5 text-xs text-stone-500 pl-4">
+             {/* Collaborators */}
+             {getPlanDisplayMembers(plan) && (
+               <div className="flex items-center gap-1 text-stone-600 dark:text-slate-300 font-semibold truncate max-w-[150px]">
+                 <Users className="w-3 h-3 text-stone-400 dark:text-slate-500 shrink-0" />
+                 <span className="truncate">{getPlanDisplayMembers(plan)}</span>
+               </div>
+             )}
+
+             {/* Updated Time */}
+             <div className="flex items-center gap-1 text-stone-500 dark:text-slate-400 font-bold">
+               <Clock className="w-3.5 h-3.5 text-stone-400 dark:text-slate-500" />
+               {plan.updatedAt ? format(new Date(plan.updatedAt), "yyyy/MM/dd HH:mm") : "—"}
+             </div>
+           </div>
+         </div>
+
+         {/* Right: Actions */}
+         <div className="flex items-center shrink-0" onClick={(e) => e.stopPropagation()}>
+           {/* Quick Actions */}
+           <div className="flex items-center opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+             {renderPlanActions(plan)}
+           </div>
+         </div>
+       </motion.div>
+     );
+   })}
  </div>
  )}
  </motion.div>

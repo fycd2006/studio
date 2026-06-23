@@ -9,6 +9,17 @@ export type VersionHistoryEntry = {
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
   {
+    id: "build-ua18w4i",
+    version: "1.0.14",
+    label: "更新項目",
+    date: "2026-06-23",
+    title: "教案總覽頁面預設改為列表顯示，並新增視覺識別",
+    highlights: [
+      "教案總覽頁面，預設顯示模式現在改為「列表」檢視，讓您更快速瀏覽資訊。",
+      "在列表檢視中，每個教案項目會顯示更清晰的預設圖示，幫助您快速辨識。"
+    ],
+  },
+  {
     id: "build-umdcm1y",
     version: "1.0.13",
     label: "更新項目",
