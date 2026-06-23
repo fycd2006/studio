@@ -9,6 +9,18 @@ export type VersionHistoryEntry = {
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
   {
+    id: "build-lezk4r3",
+    version: "1.0.15",
+    label: "更新項目",
+    date: "2026-06-23",
+    title: "營隊列表新增「類別」排序功能，查找更方便。",
+    highlights: [
+      "在「營隊列表」頁面，您可以依照營隊「類別」來排序所有營隊了。",
+      "營隊列表上方的排序按鈕中，新增了「類別排序」選項。",
+      "點擊「排序」選單，現在也提供「類別」選項可供選擇。"
+    ],
+  },
+  {
     id: "build-ua18w4i",
     version: "1.0.14",
     label: "更新項目",

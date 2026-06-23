@@ -72,14 +72,14 @@ export default function PlansOverview() {
  const [isDownloadMenuOpen, setIsDownloadMenuOpen] = useState(false);
  const [searchQuery, setSearchQuery] = useState("");
  const [filterGroup, setFilterGroup] = useState<string>("all");
- const [sortBy, setSortBy] = useState<"updatedAt" | "name">("updatedAt");
+ const [sortBy, setSortBy] = useState<"updatedAt" | "name" | "category">("updatedAt");
  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
  const [swipeDirection, setSwipeDirection] = useState<1 | -1>(1);
   const [activeFab, setActiveFab] = useState<string | null>(null);
  const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null);
  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
 
- const handleSortClick = (nextSortBy: "updatedAt" | "name") => {
+ const handleSortClick = (nextSortBy: "updatedAt" | "name" | "category") => {
  if (sortBy === nextSortBy) {
  setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
  return;
@@ -202,13 +202,18 @@ export default function PlansOverview() {
  );
  }
  result = [...result].sort((a, b) => {
- if (sortBy === "updatedAt") {
- const timeCompare = (a.updatedAt || 0) - (b.updatedAt || 0);
- return sortDirection === "asc" ? timeCompare : -timeCompare;
- } else {
- const nameCompare = toPlainText(a.activityName).localeCompare(toPlainText(b.activityName));
- return sortDirection === "asc" ? nameCompare : -nameCompare;
- }
+  if (sortBy === "updatedAt") {
+    const timeCompare = (a.updatedAt || 0) - (b.updatedAt || 0);
+    return sortDirection === "asc" ? timeCompare : -timeCompare;
+  } else if (sortBy === "category") {
+    const catA = getPlanDisplayCategory(a) || "";
+    const catB = getPlanDisplayCategory(b) || "";
+    const catCompare = catA.localeCompare(catB, "zh-Hant-TW");
+    return sortDirection === "asc" ? catCompare : -catCompare;
+  } else {
+    const nameCompare = toPlainText(a.activityName).localeCompare(toPlainText(b.activityName), "zh-Hant-TW");
+    return sortDirection === "asc" ? nameCompare : -nameCompare;
+  }
  });
  return result;
  }, [plans, filterGroup, searchQuery, sortBy, sortDirection, groups]);
@@ -620,6 +625,15 @@ export default function PlansOverview() {
  </span>
  )}
  </button>
+  <button onClick={() => handleSortClick('category')} className={cn(actionBarTheme.segmented, sortBy === 'category' ? actionBarTheme.segmentedActive : actionBarTheme.segmentedIdle)}> 
+  <Filter className="w-3.5 h-3.5" />
+  <span className="hidden md:inline">類別排序</span>
+  {sortBy === 'category' && (
+  <span className="inline-flex items-center text-orange-500 dark:text-amber-500">
+  {sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />}
+  </span>
+  )}
+  </button>
  </div>
  </div>
  </ActionBar>
@@ -783,6 +797,10 @@ export default function PlansOverview() {
                 <div className="flex items-center gap-2"><FileText className="w-4 h-4" /> 名稱</div>
                 {sortBy === 'name' && (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3 text-orange-500" /> : <ArrowDown className="w-3 h-3 text-orange-500" />)}
               </button>
+              <button onClick={() => { handleSortClick('category'); setActiveFab(null); }} className={cn("flex items-center justify-between px-4 py-3 text-left font-bold text-[13px] rounded-lg transition-colors gap-2", sortBy === 'category' ? "bg-stone-100 dark:bg-slate-700 text-stone-900 dark:text-white" : "text-stone-700 dark:text-slate-200 hover:bg-stone-50 dark:hover:bg-slate-800")}>
+                <div className="flex items-center gap-2"><Filter className="w-4 h-4" /> 類別</div>
+                {sortBy === 'category' && (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3 text-orange-500" /> : <ArrowDown className="w-3 h-3 text-orange-500" />)}
+              </button>
             </motion.div>
           )}
         </AnimatePresence>
@@ -795,7 +813,7 @@ export default function PlansOverview() {
           )}
           title="排序"
         >
-          {sortBy === 'updatedAt' ? <Clock className="w-5 h-5 text-stone-700 dark:text-slate-300" /> : <FileText className="w-5 h-5 text-stone-700 dark:text-slate-300" />}
+          {sortBy === 'updatedAt' ? <Clock className="w-5 h-5 text-stone-700 dark:text-slate-300" /> : sortBy === 'category' ? <Filter className="w-5 h-5 text-stone-700 dark:text-slate-300" /> : <FileText className="w-5 h-5 text-stone-700 dark:text-slate-300" />}
         </motion.button>
       </div>
 
@@ -1005,7 +1023,7 @@ export default function PlansOverview() {
          {/* Left: Info */}
          <div className="flex-1 min-w-0 pr-4 flex flex-col justify-center">
            {/* Title */}
-           <h3 className="font-bold text-[14px] sm:text-[15px] text-[#2C2A28] dark:text-slate-100 group-hover:text-stone-900 dark:group-hover:text-white transition-colors truncate flex items-center gap-2">
+           <h3 className="font-bold text-[16px] sm:text-[18px] text-[#2C2A28] dark:text-slate-100 group-hover:text-stone-900 dark:group-hover:text-white transition-colors truncate flex items-center gap-2">
              {/* Group Dot indicator */}
              <div 
                className={cn("w-2 h-2 rounded-full shrink-0", groupBadge.bg)} 
@@ -1013,7 +1031,7 @@ export default function PlansOverview() {
              />
              <span>{getPlanDisplayName(plan)}</span>
              {getPlanDisplayCategory(plan) && (
-               <span className="text-xs font-semibold text-stone-400 dark:text-slate-400">
+               <span className="text-xs sm:text-sm font-semibold text-stone-400 dark:text-slate-400">
                  {getPlanDisplayCategory(plan)}
                </span>
              )}
