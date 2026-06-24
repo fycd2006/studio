@@ -9,6 +9,17 @@ export type VersionHistoryEntry = {
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
   {
+    id: "build-prop-defaults",
+    version: "1.0.16",
+    label: "更新項目",
+    date: "2026-06-24",
+    title: "新增固定營隊用品預設載入功能",
+    highlights: [
+      "在「行政中樞 - 道具清單」的「營期其他物品確認」中，新增了 23 項固定的常用營隊用品（包含巧拼、延長線、垃圾袋、Slido 等）。",
+      "現有營隊專案皆已同步補齊這些固定用品，未來新建的營隊專案也將自動預設載入此清單，無須手動逐一新增。"
+    ],
+  },
+  {
     id: "build-lezk4r3",
     version: "1.0.15",
     label: "更新項目",
