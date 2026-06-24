@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { LessonPlan, PlanCategory, Camp, RotationTableData, UserSettings, PlanVersion, Group } from '@/types/plan';
+import { LessonPlan, PlanCategory, Camp, RotationTableData, UserSettings, PlanVersion, Group, CampItem } from '@/types/plan';
 import { 
   useUser, 
   useFirestore, 
@@ -51,6 +51,32 @@ const USER_COLORS = [
 const DEFAULT_GROUPS: Group[] = [
   { id: 'group-activity', slug: 'activity', nameZh: '活動組', nameEn: 'Activity', createdAt: 0 },
   { id: 'group-teaching', slug: 'teaching', nameZh: '教學組', nameEn: 'Teaching', createdAt: 0 },
+];
+
+const DEFAULT_CAMP_ITEMS: Omit<CampItem, 'id'>[] = [
+  { usage: "睡覺用", name: "巧拼" },
+  { usage: "糧食", name: "飲料" },
+  { usage: "電力", name: "延長線" },
+  { usage: "辨識", name: "名牌" },
+  { usage: "流程", name: "流程表" },
+  { usage: "回顧", name: "卡片" },
+  { usage: "3C", name: "筆電" },
+  { usage: "3C", name: "喇叭" },
+  { usage: "3C", name: "隨身碟" },
+  { usage: "運送", name: "推車" },
+  { usage: "紅布條", name: "紅布條" },
+  { usage: "丟垃圾", name: "垃圾袋" },
+  { usage: "裝道具", name: "塑膠袋" },
+  { usage: "未分類", name: "地膠" },
+  { usage: "未分類", name: "膠帶" },
+  { usage: "未分類", name: "名牌套" },
+  { usage: "未分類", name: "點數" },
+  { usage: "未分類", name: "卡片" },
+  { usage: "未分類", name: "文件平板夾" },
+  { usage: "未分類", name: "便利貼" },
+  { usage: "未分類", name: "slido(總召要用)" },
+  { usage: "未分類", name: "衣架" },
+  { usage: "未分類", name: "任務單" }
 ];
 
 const normalizeSlug = (raw: string) =>
@@ -416,10 +442,20 @@ export function usePlans() {
   const addCamp = useCallback((name: string, fields?: Partial<Camp>) => {
     if (!db || !user) return;
     const campId = Math.random().toString(36).substr(2, 9);
+    
+    const initialCampItems: CampItem[] = DEFAULT_CAMP_ITEMS.map(item => ({
+      id: Math.random().toString(36).substr(2, 9),
+      usage: item.usage,
+      name: item.name,
+      isPacked: false,
+      isChecked: false
+    }));
+
     const newCamp: Camp = { 
       id: campId, 
       name, 
       ...fields,
+      campItems: initialCampItems,
       ownerId: user.uid, 
       createdAt: Date.now() 
     };
