@@ -9,6 +9,17 @@ export type VersionHistoryEntry = {
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
   {
+    id: "build-g6zva6y",
+    version: "1.0.21",
+    label: "更新項目",
+    date: "2026-06-28",
+    title: "優化教案編輯器文字顯示與格式清除功能",
+    highlights: [
+      "編輯區不同字體大小文字行距更舒適。",
+      "教案編輯區「清除格式」功能更有效。"
+    ],
+  },
+  {
     id: "build-ojddtkx",
     version: "1.0.20",
     label: "更新項目",

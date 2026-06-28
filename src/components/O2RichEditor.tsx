@@ -770,34 +770,53 @@ export function O2RichEditor({
   };
 
   const handleClearFormat = () => {
-    execCommand("removeFormat");
-    // Clear custom element style attributes and unwrap empty wrappers
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return;
+
+    // Step 1: Use browser removeFormat for bold/italic/underline/strike
+    document.execCommand("removeFormat", false, undefined);
+
+    // Step 2: Walk the selected range and strip inline styles, font attributes, etc.
     try {
       const range = selection.getRangeAt(0);
-      const contents = range.extractContents();
-      const elements = contents.querySelectorAll("*");
-      elements.forEach((el) => {
-        if (el instanceof HTMLElement) {
-          el.removeAttribute("style");
-          el.removeAttribute("color");
-          el.removeAttribute("size");
-          el.removeAttribute("face");
+      const container = range.commonAncestorContainer;
+      const rootEl = container.nodeType === Node.ELEMENT_NODE
+        ? (container as HTMLElement)
+        : container.parentElement;
+      if (!rootEl) return;
+
+      // Collect all elements within selection range
+      const walker = document.createTreeWalker(rootEl, NodeFilter.SHOW_ELEMENT, null);
+      const elementsToClean: HTMLElement[] = [];
+      let node = walker.nextNode();
+      while (node) {
+        if (node instanceof HTMLElement && range.intersectsNode(node)) {
+          elementsToClean.push(node);
         }
-      });
-      // Unwrap empty <font> and style-only <span> wrappers
-      const wrappers = contents.querySelectorAll("font, span");
-      wrappers.forEach((wrapper) => {
-        if (wrapper instanceof HTMLElement && wrapper.attributes.length === 0) {
-          const parent = wrapper.parentNode;
-          while (wrapper.firstChild) {
-            parent?.insertBefore(wrapper.firstChild, wrapper);
+        node = walker.nextNode();
+      }
+
+      // Clean each element
+      elementsToClean.forEach((el) => {
+        el.removeAttribute("style");
+        el.removeAttribute("color");
+        el.removeAttribute("size");
+        el.removeAttribute("face");
+        el.removeAttribute("class");
+
+        // Unwrap <font> and pure-wrapper <span> tags into plain text
+        const tag = el.tagName.toLowerCase();
+        if (tag === "font" || (tag === "span" && el.attributes.length === 0)) {
+          const parent = el.parentNode;
+          while (el.firstChild) {
+            parent?.insertBefore(el.firstChild, el);
           }
-          wrapper.remove();
+          el.remove();
         }
       });
-      range.insertNode(contents);
+
+      // Step 3: Reset block-level to <p> if it's a heading within selection
+      document.execCommand("formatBlock", false, "<p>");
     } catch (err) {
       console.error("Clear format error: ", err);
     }
