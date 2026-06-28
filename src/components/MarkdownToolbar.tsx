@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 
 export function MarkdownToolbar({ className }: { className?: string }) {
-  const toolbarIconButtonClass = "h-9 w-9 rounded-lg text-stone-600 dark:text-slate-300 hover:bg-stone-200/70 dark:hover:bg-slate-800/70 active:bg-stone-300/70 dark:active:bg-slate-700/80 transition-colors";
+  const toolbarIconButtonClass = "h-9 w-9 rounded-lg text-stone-600 dark:text-slate-300 hover:bg-stone-200/70 dark:hover:bg-slate-800/70 active:bg-stone-300/70 dark:active:bg-slate-700/80 transition-colors shrink-0";
   
   // Selection range and active formatting states
   const [activeRange, setActiveRange] = useState<Range | null>(null);
@@ -212,7 +212,7 @@ export function MarkdownToolbar({ className }: { className?: string }) {
     <div 
       onMouseDown={(e) => e.preventDefault()}
       className={cn(
-        "flex flex-wrap items-center gap-1 p-1 bg-transparent rounded-lg transition-all w-full select-none",
+        "flex flex-nowrap items-center gap-1 p-1 bg-transparent rounded-lg transition-all w-full select-none overflow-x-auto no-scrollbar scroll-smooth",
         className
       )}
     >
@@ -220,7 +220,7 @@ export function MarkdownToolbar({ className }: { className?: string }) {
         {/* Headings Selector */}
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-8 gap-1 text-[11px] font-bold text-stone-700 dark:text-slate-200 rounded-lg hover:bg-stone-200/50 dark:hover:bg-slate-800">
+            <Button variant="ghost" size="sm" className="h-8 gap-1 text-[11px] font-bold text-stone-700 dark:text-slate-200 rounded-lg hover:bg-stone-200/50 dark:hover:bg-slate-800 shrink-0">
               <FontIcon className="h-3.5 w-3.5" />
               格式
               <ChevronDown className="h-3 w-3 opacity-60" />
@@ -250,7 +250,7 @@ export function MarkdownToolbar({ className }: { className?: string }) {
         {/* Font Size Selector */}
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-8 gap-1 text-[11px] font-bold text-stone-700 dark:text-slate-200 rounded-lg hover:bg-stone-200/50 dark:hover:bg-slate-800">
+            <Button variant="ghost" size="sm" className="h-8 gap-1 text-[11px] font-bold text-stone-700 dark:text-slate-200 rounded-lg hover:bg-stone-200/50 dark:hover:bg-slate-800 shrink-0">
               <ALargeSmall className="h-3.5 w-3.5" />
               大小
               <ChevronDown className="h-3 w-3 opacity-60" />
@@ -281,7 +281,7 @@ export function MarkdownToolbar({ className }: { className?: string }) {
           </PopoverContent>
         </Popover>
 
-        <div className="w-px h-4 bg-stone-300 dark:bg-slate-700 mx-1" />
+        <div className="w-px h-4 bg-stone-300 dark:bg-slate-700 mx-1 shrink-0" />
 
         {/* Standard Text Formatting */}
         {[
@@ -305,7 +305,7 @@ export function MarkdownToolbar({ className }: { className?: string }) {
           </Tooltip>
         ))}
 
-        <div className="w-px h-4 bg-stone-300 dark:bg-slate-700 mx-1" />
+        <div className="w-px h-4 bg-stone-300 dark:bg-slate-700 mx-1 shrink-0" />
 
         {/* Colors Popover */}
         <Tooltip>
@@ -368,7 +368,7 @@ export function MarkdownToolbar({ className }: { className?: string }) {
           <TooltipContent side="bottom" className="text-[9px] font-black uppercase z-[99]">調色盤 / Colors</TooltipContent>
         </Tooltip>
 
-        <div className="w-px h-4 bg-stone-300 dark:bg-slate-700 mx-1" />
+        <div className="w-px h-4 bg-stone-300 dark:bg-slate-700 mx-1 shrink-0" />
 
         {/* Alignment & Lists */}
         {[
@@ -396,7 +396,7 @@ export function MarkdownToolbar({ className }: { className?: string }) {
           </Tooltip>
         ))}
 
-        <div className="w-px h-4 bg-stone-300 dark:bg-slate-700 mx-1" />
+        <div className="w-px h-4 bg-stone-300 dark:bg-slate-700 mx-1 shrink-0" />
 
         {/* Insert Table */}
         <Tooltip>
@@ -497,7 +497,7 @@ export function MarkdownToolbar({ className }: { className?: string }) {
           <TooltipContent side="bottom" className="text-[9px] font-black uppercase z-[99]">插入圖片 URL / Image</TooltipContent>
         </Tooltip>
 
-        <div className="w-px h-4 bg-stone-300 dark:bg-slate-700 mx-1" />
+        <div className="w-px h-4 bg-stone-300 dark:bg-slate-700 mx-1 shrink-0" />
 
         {/* Clear Formatting */}
         <Tooltip>

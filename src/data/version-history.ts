@@ -9,6 +9,18 @@ export type VersionHistoryEntry = {
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
   {
+    id: "build-6v2m2i8",
+    version: "1.0.18",
+    label: "更新項目",
+    date: "2026-06-28",
+    title: "編輯工具列排版優化，橫向捲動查看更多功能",
+    highlights: [
+      "編輯頁面的工具列按鈕，現在會保持單行排列。",
+      "螢幕較窄時，工具列可橫向捲動，顯示所有功能。",
+      "橫向捲動時，工具列的捲軸將不再顯示，畫面更簡潔。"
+    ],
+  },
+  {
     id: "build-mq72b2l",
     version: "1.0.17",
     label: "更新項目",
