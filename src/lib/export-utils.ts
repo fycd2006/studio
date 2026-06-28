@@ -256,7 +256,7 @@ function parseHtmlToDocx(html: string) {
       const text = node.textContent || "";
       if (!text.trim() && node.nodeName !== 'BR' && node.nodeName !== 'UL' && node.nodeName !== 'OL') return;
 
-      let alignment = AlignmentType.LEFT;
+      let alignment: (typeof AlignmentType)[keyof typeof AlignmentType] = AlignmentType.LEFT;
       if (node.style?.textAlign === 'center') alignment = AlignmentType.CENTER;
       if (node.style?.textAlign === 'right') alignment = AlignmentType.RIGHT;
 
@@ -440,6 +440,7 @@ async function buildRichDocxBlob(plan: LessonPlan, canvasImageData?: string): Pr
         children: [
           new ImageRun({
             data: Uint8Array.from(atob(base64Data), c => c.charCodeAt(0)),
+            type: "png",
             transformation: {
               width: 580,
               height: 340,

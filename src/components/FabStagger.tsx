@@ -33,7 +33,7 @@ const itemVariants = {
     x: 0,
     scale: 1,
     transition: {
-      type: "spring",
+      type: "spring" as const,
       stiffness: 420,
       damping: 22,
     },
@@ -45,7 +45,7 @@ const itemVariants = {
     scale: 0.6,
     transition: {
       duration: 0.15,
-      ease: "easeIn",
+      ease: "easeIn" as const,
     },
   },
 };

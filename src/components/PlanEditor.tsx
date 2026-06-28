@@ -4,7 +4,7 @@ import { LessonPlan, SCHEDULE_OPTIONS, PlanVersion, Group } from "@/types/plan";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ResponsiveActivitySelectV3 } from "@/components/responsive-activity-select-v3";
-import { MarkdownArea } from "@/components/MarkdownArea";
+import { O2RichEditor } from "@/components/O2RichEditor";
 import { MarkdownToolbar } from "@/components/MarkdownToolbar";
 import { PropsTable } from "@/components/PropsTable";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,6 +22,8 @@ import {
   Clock,
   Target,
   Layout,
+  Layers,
+  BookOpen,
   Undo2,
   Redo2,
   History,
@@ -716,7 +718,7 @@ export function PlanEditor({
 
                         <div className="space-y-12">
                           <section>
-                            <SectionHeader title="活動類型" icon={Layout} />
+                            <SectionHeader title="活動類型" icon={Layers} />
                             {isHistoryMode ? (
                               <DiffHighlighter type="text" oldValue={previousPlan?.scheduledName} newValue={previewPlan?.scheduledName} />
                             ) : (
@@ -736,7 +738,7 @@ export function PlanEditor({
                                 <DiffHighlighter type="text" oldValue={previousPlan?.activityName} newValue={previewPlan?.activityName} />
                               ) : (
                                 <FieldContainer field="activityName" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
-                                  <MarkdownArea
+                                  <O2RichEditor
                                     value={currentPlan.activityName}
                                     onChange={(val) => handlePlanUpdate({ activityName: val })}
                                     onFocus={() => handleFocus('activityName')}
@@ -744,6 +746,7 @@ export function PlanEditor({
                                     placeholder="輸入教案名稱 / Enter subject title"
                                     minHeight="38px"
                                     readOnly={isInteractionLocked}
+                                    simplified={true}
                                   />
                                 </FieldContainer>
                               )}
@@ -757,7 +760,7 @@ export function PlanEditor({
                                 <DiffHighlighter type="text" oldValue={previousPlan?.members} newValue={previewPlan?.members} />
                               ) : (
                                 <FieldContainer field="members" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
-                                  <MarkdownArea
+                                  <O2RichEditor
                                     value={currentPlan.members}
                                     onChange={(val) => handlePlanUpdate({ members: val })}
                                     onFocus={() => handleFocus('members')}
@@ -765,6 +768,7 @@ export function PlanEditor({
                                     placeholder="列出相關人員... / List members..."
                                     minHeight="38px"
                                     readOnly={isInteractionLocked}
+                                    simplified={true}
                                   />
                                 </FieldContainer>
                               )}
@@ -777,7 +781,7 @@ export function PlanEditor({
                               <DiffHighlighter type="markdown" oldValue={previousPlan?.purpose} newValue={previewPlan?.purpose} />
                             ) : (
                               <FieldContainer field="purpose" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
-                                <MarkdownArea
+                                <O2RichEditor
                                   value={currentPlan.purpose || ""}
                                   onChange={(val) => handlePlanUpdate({ purpose: val })}
                                   onFocus={() => handleFocus('purpose')}
@@ -798,7 +802,7 @@ export function PlanEditor({
                                   <DiffHighlighter type="text" oldValue={previousPlan?.time} newValue={previewPlan?.time} />
                                 ) : (
                                   <FieldContainer field="time" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
-                                    <MarkdownArea
+                                    <O2RichEditor
                                       value={currentPlan.time}
                                       onChange={(val) => handlePlanUpdate({ time: val })}
                                       onFocus={() => handleFocus('time')}
@@ -806,6 +810,7 @@ export function PlanEditor({
                                       placeholder="20min"
                                       minHeight="38px"
                                       readOnly={isInteractionLocked}
+                                      simplified={true}
                                     />
                                   </FieldContainer>
                                 )}
@@ -816,7 +821,7 @@ export function PlanEditor({
                                   <DiffHighlighter type="text" oldValue={previousPlan?.location} newValue={previewPlan?.location} />
                                 ) : (
                                   <FieldContainer field="location" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
-                                    <MarkdownArea
+                                    <O2RichEditor
                                       value={currentPlan.location}
                                       onChange={(val) => handlePlanUpdate({ location: val })}
                                       onFocus={() => handleFocus('location')}
@@ -824,6 +829,7 @@ export function PlanEditor({
                                       placeholder="3F Main Hall"
                                       minHeight="38px"
                                       readOnly={isInteractionLocked}
+                                      simplified={true}
                                     />
                                   </FieldContainer>
                                 )}
@@ -838,7 +844,7 @@ export function PlanEditor({
                                 <DiffHighlighter type="markdown" oldValue={previousPlan?.process} newValue={previewPlan?.process} />
                               ) : (
                                 <FieldContainer field="process" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
-                                  <MarkdownArea
+                                  <O2RichEditor
                                     value={currentPlan.process}
                                     onChange={(val) => handlePlanUpdate({ process: val })}
                                     onFocus={() => handleFocus('process')}
@@ -852,9 +858,9 @@ export function PlanEditor({
                           )}
 
                           <section>
-                            <SectionHeader title={t('VISUAL_BLUEPRINT')} icon={FileText} />
+                            <SectionHeader title={t('VISUAL_BLUEPRINT')} icon={BookOpen} />
                             <FieldContainer field="content" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
-                              <MarkdownArea
+                              <O2RichEditor
                                 value={currentPlan.content}
                                 onChange={(val) => handlePlanUpdate({ content: val })}
                                 onFocus={() => handleFocus('content')}
@@ -891,7 +897,7 @@ export function PlanEditor({
                                 <DiffHighlighter type="markdown" oldValue={previousPlan?.openingClosingRemarks} newValue={previewPlan?.openingClosingRemarks} />
                               ) : (
                                 <FieldContainer field="openingClosingRemarks" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
-                                  <MarkdownArea
+                                  <O2RichEditor
                                     value={currentPlan.openingClosingRemarks || ""}
                                     onChange={(val) => handlePlanUpdate({ openingClosingRemarks: val })}
                                     onFocus={() => handleFocus('openingClosingRemarks')}
@@ -911,7 +917,7 @@ export function PlanEditor({
                               <DiffHighlighter type="markdown" oldValue={previousPlan?.remarks} newValue={previewPlan?.remarks} />
                             ) : (
                               <FieldContainer field="remarks" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
-                                <MarkdownArea
+                                <O2RichEditor
                                   value={currentPlan.remarks || ""}
                                   onChange={(val) => handlePlanUpdate({ remarks: val })}
                                   onFocus={() => handleFocus('remarks')}

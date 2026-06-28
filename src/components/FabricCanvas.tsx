@@ -162,9 +162,9 @@ export function FabricCanvas({ initialData, initialHeight = 500, onSave }: Fabri
  });
 
  // Prevent browser scroll/back gestures while drawing on touch devices.
- canvas.lowerCanvasEl.style.touchAction = "none";
- if (canvas.upperCanvasEl) {
- canvas.upperCanvasEl.style.touchAction = "none";
+ (canvas as any).lowerCanvasEl.style.touchAction = "none";
+ if ((canvas as any).upperCanvasEl) {
+ (canvas as any).upperCanvasEl.style.touchAction = "none";
  }
 
  (canvas as any).uniScaleTransform = true;

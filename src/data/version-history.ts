@@ -9,6 +9,18 @@ export type VersionHistoryEntry = {
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
   {
+    id: "build-mq72b2l",
+    version: "1.0.17",
+    label: "更新項目",
+    date: "2026-06-28",
+    title: "深色模式編輯文字時，顏色顯示更清晰",
+    highlights: [
+      "在文字編輯器深色模式中，深色字體將自動變亮。",
+      "在文字編輯器深色模式中，您選用的顏色會保持清晰可讀。",
+      "在文字編輯器深色模式中，反白背景色將自動調整。"
+    ],
+  },
+  {
     id: "build-prop-defaults",
     version: "1.0.16",
     label: "更新項目",

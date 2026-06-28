@@ -321,31 +321,112 @@
 
 /* ═══════════════════════════════════════════════
    ContentEditable Dark Mode Text Fix
-   Prevents inline foreColor (#0f172a, #000, etc.)
-   from becoming invisible on dark backgrounds
+   Only override near-black colors that would be invisible.
+   Preserve intentionally-chosen accent colors.
    ═══════════════════════════════════════════════ */
-.dark [contenteditable] font[color] {
-  color: inherit !important;
+/* Override known-dark colors that become invisible on dark backgrounds */
+.dark [contenteditable] font[color="#0f172a"],
+.dark [contenteditable] [style*="color"][style*="15, 23, 42"],
+.dark [contenteditable] [style*="color"][style*="#0f172a"],
+.dark [contenteditable] [style*="color"][style*="#0F172A"] {
+  color: #e2e8f0 !important;
 }
-.dark [contenteditable] span[style*="color"] {
-  color: inherit !important;
+.dark [contenteditable] font[color="#000000"],
+.dark [contenteditable] font[color="#000"],
+.dark [contenteditable] [style*="color"][style*="0, 0, 0"],
+.dark [contenteditable] [style*="color"][style*="#000000"],
+.dark [contenteditable] [style*="color"][style*="#000"] {
+  color: #e2e8f0 !important;
 }
-/* Preserve intentionally-bright accent colors in dark mode */
+.dark [contenteditable] font[color="#1e293b"],
+.dark [contenteditable] [style*="color"][style*="30, 41, 59"],
+.dark [contenteditable] [style*="color"][style*="#1e293b"] {
+  color: #cbd5e1 !important;
+}
+.dark [contenteditable] font[color="#334155"],
+.dark [contenteditable] [style*="color"][style*="51, 65, 85"],
+.dark [contenteditable] [style*="color"][style*="#334155"] {
+  color: #cbd5e1 !important;
+}
+.dark [contenteditable] font[color="#475569"],
+.dark [contenteditable] [style*="color"][style*="71, 85, 105"],
+.dark [contenteditable] [style*="color"][style*="#475569"] {
+  color: #94a3b8 !important;
+}
+.dark [contenteditable] font[color="#64748b"],
+.dark [contenteditable] [style*="color"][style*="100, 116, 139"],
+.dark [contenteditable] [style*="color"][style*="#64748b"] {
+  color: #94a3b8 !important;
+}
+
+/* Map toolbar palette colors to dark-mode-safe equivalents */
+.dark [contenteditable] font[color="#e11d48"],
+.dark [contenteditable] [style*="color"][style*="225, 29, 72"],
+.dark [contenteditable] [style*="color"][style*="#e11d48"],
+.dark [contenteditable] [style*="color"][style*="#E11D48"] {
+  color: #fb7185 !important;
+}
+.dark [contenteditable] font[color="#2563eb"],
+.dark [contenteditable] [style*="color"][style*="37, 99, 235"],
+.dark [contenteditable] [style*="color"][style*="#2563eb"],
+.dark [contenteditable] [style*="color"][style*="#2563EB"] {
+  color: #60a5fa !important;
+}
+.dark [contenteditable] font[color="#16a34a"],
+.dark [contenteditable] [style*="color"][style*="22, 163, 74"],
+.dark [contenteditable] [style*="color"][style*="#16a34a"],
+.dark [contenteditable] [style*="color"][style*="#16A34A"] {
+  color: #4ade80 !important;
+}
+.dark [contenteditable] font[color="#d97706"],
+.dark [contenteditable] [style*="color"][style*="217, 119, 6"],
+.dark [contenteditable] [style*="color"][style*="#d97706"],
+.dark [contenteditable] [style*="color"][style*="#D97706"] {
+  color: #fbbf24 !important;
+}
+
+/* Map highlight background colors to dark mode safe values */
+/* Yellow Highlight (#fef08a) -> dark amber bg */
+.dark [contenteditable] [style*="background-color"][style*="254, 240, 138"],
+.dark [contenteditable] [style*="background-color"][style*="#fef08a"],
+.dark [contenteditable] [style*="background-color"][style*="#FEF08A"] {
+  background-color: rgba(234, 179, 8, 0.25) !important;
+  color: #fef08a !important;
+}
+/* Green Highlight (#bbf7d0) -> dark green bg */
+.dark [contenteditable] [style*="background-color"][style*="187, 247, 208"],
+.dark [contenteditable] [style*="background-color"][style*="#bbf7d0"],
+.dark [contenteditable] [style*="background-color"][style*="#BBF7D0"] {
+  background-color: rgba(22, 163, 74, 0.25) !important;
+  color: #bbf7d0 !important;
+}
+/* Blue Highlight (#bfdbfe) -> dark blue bg */
+.dark [contenteditable] [style*="background-color"][style*="191, 219, 254"],
+.dark [contenteditable] [style*="background-color"][style*="#bfdbfe"],
+.dark [contenteditable] [style*="background-color"][style*="#BFDBFE"] {
+  background-color: rgba(37, 99, 235, 0.25) !important;
+  color: #bfdbfe !important;
+}
+/* Pink Highlight (#fecdd3) -> dark pink bg */
+.dark [contenteditable] [style*="background-color"][style*="254, 205, 211"],
+.dark [contenteditable] [style*="background-color"][style*="#fecdd3"],
+.dark [contenteditable] [style*="background-color"][style*="#FECDD3"] {
+  background-color: rgba(225, 29, 72, 0.25) !important;
+  color: #fecdd3 !important;
+}
+
+/* Legacy bright accent colors */
 .dark [contenteditable] font[color="#ef4444"] { color: #ef4444 !important; }
 .dark [contenteditable] font[color="#3b82f6"] { color: #60a5fa !important; }
 .dark [contenteditable] font[color="#22c55e"] { color: #4ade80 !important; }
 .dark [contenteditable] font[color="#f97316"] { color: #fb923c !important; }
 .dark [contenteditable] font[color="#a855f7"] { color: #c084fc !important; }
 .dark [contenteditable] font[color="#06b6d4"] { color: #22d3ee !important; }
-/* Lighten dark colors that would be invisible on dark bg */
-.dark [contenteditable] font[color="#0f172a"] { color: #e2e8f0 !important; }
-.dark [contenteditable] font[color="#64748b"] { color: #94a3b8 !important; }
 
 /* Ensure contentEditable children transition smoothly */
 [contenteditable] div,
 [contenteditable] p,
 [contenteditable] span,
 [contenteditable] li {
-  color: inherit;
-  transition: color 0.2s ease;
+  transition: color 0.2s ease, background-color 0.2s ease;
 }
