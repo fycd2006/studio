@@ -24,6 +24,7 @@ import {
   ChevronDown,
   Type as FontIcon,
   ALargeSmall,
+  CaseSensitive,
   Table as TableIcon,
   Link as LinkIcon,
   Image as ImageIcon,
@@ -46,6 +47,32 @@ export function MarkdownToolbar({ className }: { className?: string }) {
 
   const handleCustomHighlightColor = (e: React.ChangeEvent<HTMLInputElement>) => {
     execCommand("hiliteColor", e.target.value);
+  };
+
+  const applyCustomFontSize = (sizePx: number) => {
+    restoreSelection();
+    document.execCommand("fontSize", false, "7");
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+    const range = selection.getRangeAt(0);
+    const container = range.commonAncestorContainer;
+    const parentElement = container.nodeType === Node.ELEMENT_NODE ? (container as HTMLElement) : container.parentElement;
+    if (parentElement) {
+      const fontElements = parentElement.querySelectorAll('font[size="7"]');
+      fontElements.forEach((font) => {
+        if (font instanceof HTMLElement) {
+          font.removeAttribute("size");
+          font.style.fontSize = `${sizePx}px`;
+          font.style.lineHeight = "1.4";
+        }
+      });
+      if (parentElement.tagName.toLowerCase() === 'font' && parentElement.getAttribute('size') === '7') {
+        parentElement.removeAttribute("size");
+        parentElement.style.fontSize = `${sizePx}px`;
+        parentElement.style.lineHeight = "1.4";
+      }
+    }
+    handleInput();
   };
 
   // Dialog States
@@ -222,7 +249,7 @@ export function MarkdownToolbar({ className }: { className?: string }) {
           <PopoverTrigger asChild>
             <Button variant="ghost" size="sm" className="h-8 gap-1 text-[11px] font-bold text-stone-700 dark:text-slate-200 rounded-lg hover:bg-stone-200/50 dark:hover:bg-slate-800 shrink-0">
               <FontIcon className="h-3.5 w-3.5" />
-              格式
+              <span className="hidden sm:inline">格式</span>
               <ChevronDown className="h-3 w-3 opacity-60" />
             </Button>
           </PopoverTrigger>
@@ -247,17 +274,54 @@ export function MarkdownToolbar({ className }: { className?: string }) {
           </PopoverContent>
         </Popover>
 
+        {/* Font Family Selector */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-8 gap-1 text-[11px] font-bold text-stone-700 dark:text-slate-200 rounded-lg hover:bg-stone-200/50 dark:hover:bg-slate-800 shrink-0">
+              <CaseSensitive className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">字型</span>
+              <ChevronDown className="h-3 w-3 opacity-60" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-40 p-1.5 rounded-xl border border-stone-200 dark:border-slate-700 z-[99]" align="start">
+            <div className="flex flex-col gap-1 max-h-60 overflow-y-auto no-scrollbar">
+              {[
+                { label: "預設字型", value: "inherit" },
+                { label: "微軟正黑體", value: "'Microsoft JhengHei', sans-serif" },
+                { label: "新細明體", value: "PMingLiU, serif" },
+                { label: "標楷體", value: "DFKai-SB, serif" },
+                { label: "思源黑體", value: "'Noto Sans TC', sans-serif" },
+                { label: "思源宋體", value: "'Noto Serif TC', serif" },
+                { label: "Arial", value: "Arial, sans-serif" },
+                { label: "Georgia", value: "Georgia, serif" },
+                { label: "Courier New", value: "'Courier New', monospace" }
+              ].map((item) => (
+                <Button
+                  key={item.label}
+                  variant="ghost"
+                  size="sm"
+                  className="justify-start text-xs h-8 rounded-lg"
+                  style={{ fontFamily: item.value }}
+                  onClick={() => execCommand("fontName", item.value)}
+                >
+                  {item.label}
+                </Button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+
         {/* Font Size Selector */}
         <Popover>
           <PopoverTrigger asChild>
             <Button variant="ghost" size="sm" className="h-8 gap-1 text-[11px] font-bold text-stone-700 dark:text-slate-200 rounded-lg hover:bg-stone-200/50 dark:hover:bg-slate-800 shrink-0">
               <ALargeSmall className="h-3.5 w-3.5" />
-              大小
+              <span className="hidden sm:inline">大小</span>
               <ChevronDown className="h-3 w-3 opacity-60" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-32 p-1.5 rounded-xl border border-stone-200 dark:border-slate-700 z-[99]" align="start">
-            <div className="flex flex-col gap-1">
+          <PopoverContent className="w-40 p-1.5 rounded-xl border border-stone-200 dark:border-slate-700 z-[99]" align="start">
+            <div className="flex flex-col gap-1 max-h-56 overflow-y-auto no-scrollbar">
               {[
                 { size: "1", label: "12px" },
                 { size: "2", label: "14px" },
@@ -277,6 +341,40 @@ export function MarkdownToolbar({ className }: { className?: string }) {
                   {item.label}
                 </Button>
               ))}
+              
+              {/* Custom font size input */}
+              <div className="p-1 border-t border-stone-100 dark:border-slate-800 mt-1.5 pt-1.5 flex items-center gap-1.5 shrink-0">
+                <Input
+                  type="number"
+                  placeholder="px"
+                  min="8"
+                  max="120"
+                  className="h-7 text-xs rounded-lg w-16 px-1.5"
+                  id="toolbar-custom-font-size"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const val = parseInt((e.target as HTMLInputElement).value);
+                      if (val >= 8 && val <= 120) {
+                        applyCustomFontSize(val);
+                      }
+                    }
+                  }}
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-[10px] px-2 rounded-lg bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white shrink-0"
+                  onClick={() => {
+                    const input = document.getElementById('toolbar-custom-font-size') as HTMLInputElement;
+                    const val = parseInt(input?.value);
+                    if (val >= 8 && val <= 120) {
+                      applyCustomFontSize(val);
+                    }
+                  }}
+                >
+                  套用
+                </Button>
+              </div>
             </div>
           </PopoverContent>
         </Popover>

@@ -9,6 +9,18 @@ export type VersionHistoryEntry = {
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
   {
+    id: "build-g3nla5i",
+    version: "1.0.19",
+    label: "更新項目",
+    date: "2026-06-28",
+    title: "新增字型選擇功能，並優化編輯器文字排版",
+    highlights: [
+      "教案編輯頁工具列新增「字型」按鈕，可選擇多種字體。",
+      "教案編輯頁文字行距更舒適，讓內容閱讀起來更流暢。",
+      "教案編輯頁工具列「格式」按鈕，在小螢幕上文字會自動隱藏。"
+    ],
+  },
+  {
     id: "build-6v2m2i8",
     version: "1.0.18",
     label: "更新項目",

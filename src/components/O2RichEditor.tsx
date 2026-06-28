@@ -21,6 +21,7 @@ import {
   RotateCcw,
   Type as FontIcon,
   ALargeSmall,
+  CaseSensitive,
   Layout,
   Table as TableIcon,
   Plus,
@@ -147,6 +148,32 @@ export function O2RichEditor({
 
   const handleCustomHighlightColor = (e: React.ChangeEvent<HTMLInputElement>) => {
     execCommand("hiliteColor", e.target.value);
+  };
+
+  const applyCustomFontSize = (sizePx: number) => {
+    restoreSelection();
+    document.execCommand("fontSize", false, "7");
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+    const range = selection.getRangeAt(0);
+    const container = range.commonAncestorContainer;
+    const parentElement = container.nodeType === Node.ELEMENT_NODE ? (container as HTMLElement) : container.parentElement;
+    if (parentElement) {
+      const fontElements = parentElement.querySelectorAll('font[size="7"]');
+      fontElements.forEach((font) => {
+        if (font instanceof HTMLElement) {
+          font.removeAttribute("size");
+          font.style.fontSize = `${sizePx}px`;
+          font.style.lineHeight = "1.4";
+        }
+      });
+      if (parentElement.tagName.toLowerCase() === 'font' && parentElement.getAttribute('size') === '7') {
+        parentElement.removeAttribute("size");
+        parentElement.style.fontSize = `${sizePx}px`;
+        parentElement.style.lineHeight = "1.4";
+      }
+    }
+    handleInput();
   };
 
   const isEditorEmpty = !value || value.replace(/<(img|table|iframe|video)[^>]*>/gi, 'HAS_MEDIA').replace(/<[^>]*>|&nbsp;|\s/gi, '').length === 0;
@@ -809,15 +836,14 @@ export function O2RichEditor({
             onMouseDown={(e) => e.preventDefault()}
             className="flex flex-wrap items-center gap-1.5 p-2 border-b border-stone-200/60 dark:border-slate-700/60 bg-stone-50/50 dark:bg-slate-900/30 select-none"
           >
-            
-            {/* Headings Selector */}
+                     {/* Headings Selector */}
             {!simplified && (
               <>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-9 gap-1 text-[11px] font-bold text-stone-700 dark:text-slate-200 rounded-lg hover:bg-stone-200/50 dark:hover:bg-slate-800">
+                    <Button variant="ghost" size="sm" className="h-9 gap-1 text-[11px] font-bold text-stone-700 dark:text-slate-200 rounded-lg hover:bg-stone-200/50 dark:hover:bg-slate-800 shrink-0">
                       <FontIcon className="h-4 w-4" />
-                      格式
+                      <span className="hidden sm:inline">格式</span>
                       <ChevronDown className="h-3 w-3 opacity-60" />
                     </Button>
                   </PopoverTrigger>
@@ -842,16 +868,54 @@ export function O2RichEditor({
                   </PopoverContent>
                 </Popover>
 
+                {/* Font Family Selector */}
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-9 gap-1 text-[11px] font-bold text-stone-700 dark:text-slate-200 rounded-lg hover:bg-stone-200/50 dark:hover:bg-slate-800">
-                      <ALargeSmall className="h-4 w-4" />
-                      大小
+                    <Button variant="ghost" size="sm" className="h-9 gap-1 text-[11px] font-bold text-stone-700 dark:text-slate-200 rounded-lg hover:bg-stone-200/50 dark:hover:bg-slate-800 shrink-0">
+                      <CaseSensitive className="h-4 w-4" />
+                      <span className="hidden sm:inline">字型</span>
                       <ChevronDown className="h-3 w-3 opacity-60" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-32 p-1.5 rounded-xl border border-stone-200 dark:border-slate-700 z-[99]" align="start">
-                    <div className="flex flex-col gap-1">
+                  <PopoverContent className="w-40 p-1.5 rounded-xl border border-stone-200 dark:border-slate-700 z-[99]" align="start">
+                    <div className="flex flex-col gap-1 max-h-60 overflow-y-auto no-scrollbar">
+                      {[
+                        { label: "預設字型", value: "inherit" },
+                        { label: "微軟正黑體", value: "'Microsoft JhengHei', sans-serif" },
+                        { label: "新細明體", value: "PMingLiU, serif" },
+                        { label: "標楷體", value: "DFKai-SB, serif" },
+                        { label: "思源黑體", value: "'Noto Sans TC', sans-serif" },
+                        { label: "思源宋體", value: "'Noto Serif TC', serif" },
+                        { label: "Arial", value: "Arial, sans-serif" },
+                        { label: "Georgia", value: "Georgia, serif" },
+                        { label: "Courier New", value: "'Courier New', monospace" }
+                      ].map((item) => (
+                        <Button
+                          key={item.label}
+                          variant="ghost"
+                          size="sm"
+                          className="justify-start text-xs h-8 rounded-lg"
+                          style={{ fontFamily: item.value }}
+                          onClick={() => execCommand("fontName", item.value)}
+                        >
+                          {item.label}
+                        </Button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+
+                {/* Font Size Selector */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-9 gap-1 text-[11px] font-bold text-stone-700 dark:text-slate-200 rounded-lg hover:bg-stone-200/50 dark:hover:bg-slate-800 shrink-0">
+                      <ALargeSmall className="h-4 w-4" />
+                      <span className="hidden sm:inline">大小</span>
+                      <ChevronDown className="h-3 w-3 opacity-60" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-40 p-1.5 rounded-xl border border-stone-200 dark:border-slate-700 z-[99]" align="start">
+                    <div className="flex flex-col gap-1 max-h-56 overflow-y-auto no-scrollbar">
                       {[
                         { size: "1", label: "12px" },
                         { size: "2", label: "14px" },
@@ -871,11 +935,45 @@ export function O2RichEditor({
                           {item.label}
                         </Button>
                       ))}
+                      
+                      {/* Custom font size input */}
+                      <div className="p-1 border-t border-stone-100 dark:border-slate-800 mt-1.5 pt-1.5 flex items-center gap-1.5 shrink-0">
+                        <Input
+                          type="number"
+                          placeholder="px"
+                          min="8"
+                          max="120"
+                          className="h-7 text-xs rounded-lg w-16 px-1.5"
+                          id="editor-custom-font-size"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              const val = parseInt((e.target as HTMLInputElement).value);
+                              if (val >= 8 && val <= 120) {
+                                applyCustomFontSize(val);
+                              }
+                            }
+                          }}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-[10px] px-2 rounded-lg bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white shrink-0"
+                          onClick={() => {
+                            const input = document.getElementById('editor-custom-font-size') as HTMLInputElement;
+                            const val = parseInt(input?.value);
+                            if (val >= 8 && val <= 120) {
+                              applyCustomFontSize(val);
+                            }
+                          }}
+                        >
+                          套用
+                        </Button>
+                      </div>
                     </div>
                   </PopoverContent>
                 </Popover>
 
-                <div className="w-px h-4 bg-stone-300 dark:bg-slate-700 mx-1" />
+                <div className="w-px h-4 bg-stone-300 dark:bg-slate-700 mx-1 shrink-0" />
               </>
             )}
 
@@ -1351,11 +1449,11 @@ export function O2RichEditor({
               "[&_ul]:list-disc [&_ol]:list-decimal [&_ul]:list-inside [&_ol]:list-inside [&_ul]:!pl-4 [&_ol]:!pl-4 [&_ul]:!ml-0 [&_ol]:!ml-0 [&_ol]:my-3",
               "[&_font[size='1']]:text-[12px] [&_font[size='1']]:leading-[1.5] [&_font[size='2']]:text-[14px] [&_font[size='2']]:leading-[1.6] [&_font[size='3']]:text-[16px] [&_font[size='3']]:leading-[1.7] [&_font[size='4']]:text-[18px] [&_font[size='4']]:leading-[1.7] [&_font[size='5']]:text-[20px] [&_font[size='5']]:leading-[1.6] [&_font[size='6']]:text-[24px] [&_font[size='6']]:leading-[1.5] [&_font[size='7']]:text-[32px] [&_font[size='7']]:leading-[1.4]",
               "[&_font[size='5']]:block [&_font[size='6']]:block [&_font[size='7']]:block [&_font[size='5']]:my-1 [&_font[size='6']]:my-1.5 [&_font[size='7']]:my-2",
-              "[&_p]:leading-[1.7] [&_p]:mb-3 [&_p:last-child]:mb-0 [&_p]:text-inherit",
-              "[&_div]:text-inherit [&_span]:text-inherit",
-              "[&_h1]:text-2xl [&_h1]:font-black [&_h1]:mt-6 [&_h1]:mb-3 [&_h1]:text-stone-900 dark:[&_h1]:text-white",
-              "[&_h2]:text-xl [&_h2]:font-extrabold [&_h2]:mt-4 [&_h2]:mb-2.5 [&_h2]:text-stone-800 dark:[&_h2]:text-slate-100",
-              "[&_h3]:text-lg [&_h3]:font-bold [&_h3]:mt-3 [&_h3]:mb-2 [&_h3]:text-stone-700 dark:[&_h3]:text-slate-200",
+              "[&_p]:leading-[1.5] [&_p]:mb-3 [&_p:last-child]:mb-0 [&_p]:text-inherit",
+              "[&_div]:text-inherit [&_span]:text-inherit [&_div]:leading-[1.5]",
+              "[&_h1]:text-2xl [&_h1]:font-black [&_h1]:mt-6 [&_h1]:mb-3 [&_h1]:text-stone-900 dark:[&_h1]:text-white [&_h1]:leading-[1.25]",
+              "[&_h2]:text-xl [&_h2]:font-extrabold [&_h2]:mt-4 [&_h2]:mb-2.5 [&_h2]:text-stone-800 dark:[&_h2]:text-slate-100 [&_h2]:leading-[1.3]",
+              "[&_h3]:text-lg [&_h3]:font-bold [&_h3]:mt-3 [&_h3]:mb-2 [&_h3]:text-stone-700 dark:[&_h3]:text-slate-200 [&_h3]:leading-[1.4]",
               "[&_img]:cursor-pointer [&_img]:transition-all [&_img]:duration-300 [&_img]:shadow-md [&_img:hover]:shadow-lg [&_img]:rounded-xl [&_img]:inline-block [&_img]:max-w-full [&_img]:h-auto [&_img]:object-contain [&_img]:align-top",
               "[&_table]:w-full [&_table]:max-w-full [&_table]:my-4 [&_table]:border-collapse [&_table]:table-fixed [&_table_td]:border [&_table_td]:border-stone-300 dark:[&_table_td]:border-slate-600 [&_table_td]:p-2.5 [&_table_td]:min-w-[65px]"
             )}
