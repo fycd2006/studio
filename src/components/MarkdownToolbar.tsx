@@ -237,7 +237,13 @@ export function MarkdownToolbar({ className }: { className?: string }) {
 
   return (
     <div 
-      onMouseDown={(e) => e.preventDefault()}
+      onMouseDown={(e) => {
+        const target = e.target as HTMLElement;
+        if (target.tagName.toLowerCase() === 'input' || target.closest('input')) {
+          return;
+        }
+        e.preventDefault();
+      }}
       className={cn(
         "flex flex-nowrap items-center gap-1 p-1 bg-transparent rounded-lg transition-all w-full select-none overflow-x-auto no-scrollbar scroll-smooth",
         className

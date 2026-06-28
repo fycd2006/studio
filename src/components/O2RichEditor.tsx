@@ -833,7 +833,13 @@ export function O2RichEditor({
         {/* Toolbar - Always visible when not readOnly (#7) */}
         {!readOnly && !hideToolbar && (
           <div
-            onMouseDown={(e) => e.preventDefault()}
+            onMouseDown={(e) => {
+              const target = e.target as HTMLElement;
+              if (target.tagName.toLowerCase() === 'input' || target.closest('input')) {
+                return;
+              }
+              e.preventDefault();
+            }}
             className="flex flex-wrap items-center gap-1.5 p-2 border-b border-stone-200/60 dark:border-slate-700/60 bg-stone-50/50 dark:bg-slate-900/30 select-none"
           >
                      {/* Headings Selector */}

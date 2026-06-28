@@ -9,6 +9,17 @@ export type VersionHistoryEntry = {
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
   {
+    id: "build-ojddtkx",
+    version: "1.0.20",
+    label: "更新項目",
+    date: "2026-06-28",
+    title: "優化內容編輯器工具列輸入框操作",
+    highlights: [
+      "在內容編輯器的工具列上，點擊連結或圖片輸入框後能直接輸入。",
+      "Markdown 編輯工具列的輸入框，現在點擊即可直接輸入文字。"
+    ],
+  },
+  {
     id: "build-g3nla5i",
     version: "1.0.19",
     label: "更新項目",
