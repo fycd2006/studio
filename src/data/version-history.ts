@@ -9,6 +9,16 @@ export type VersionHistoryEntry = {
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
   {
+    id: "build-mzodgpa",
+    version: "1.0.22",
+    label: "更新項目",
+    date: "2026-06-28",
+    title: "提升編輯器貼上文字的顯示流暢度",
+    highlights: [
+      "活動內容編輯頁：在編輯區貼上文字時，內容顯示會更即時順暢。"
+    ],
+  },
+  {
     id: "build-g6zva6y",
     version: "1.0.21",
     label: "更新項目",

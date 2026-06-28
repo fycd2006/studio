@@ -72,7 +72,6 @@ export function MarkdownToolbar({ className }: { className?: string }) {
         parentElement.style.lineHeight = "1.4";
       }
     }
-    handleInput();
   };
 
   // Dialog States
