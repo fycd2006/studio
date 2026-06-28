@@ -463,17 +463,15 @@
 [contenteditable] font[size="2"] { line-height: 1.6; }
 [contenteditable] font[size="3"] { line-height: 1.55; }
 [contenteditable] font[size="4"] { line-height: 1.5; }
-[contenteditable] font[size="5"] { line-height: 1.45; display: inline-block; margin: 2px 0; }
-[contenteditable] font[size="6"] { line-height: 1.4; display: inline-block; margin: 4px 0; }
-[contenteditable] font[size="7"] { line-height: 1.35; display: inline-block; margin: 6px 0; }
+[contenteditable] font[size="5"] { line-height: 1.45; margin: 2px 0; }
+[contenteditable] font[size="6"] { line-height: 1.4; margin: 4px 0; }
+[contenteditable] font[size="7"] { line-height: 1.35; margin: 6px 0; }
 /* font tags with inline style font-size (custom px sizes) inherit unitless line-height */
 [contenteditable] font[style*="font-size"] {
   line-height: 1.45;
-  display: inline-block;
 }
 /* Ensure span with inline font-size also gets adaptive line-height */
 [contenteditable] span[style*="font-size"] {
   line-height: 1.45;
-  display: inline-block;
 }
 

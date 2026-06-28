@@ -51,27 +51,30 @@ export function MarkdownToolbar({ className }: { className?: string }) {
 
   const applyCustomFontSize = (sizePx: number) => {
     restoreSelection();
-    document.execCommand("fontSize", false, "7");
     const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return;
-    const range = selection.getRangeAt(0);
-    const container = range.commonAncestorContainer;
-    const parentElement = container.nodeType === Node.ELEMENT_NODE ? (container as HTMLElement) : container.parentElement;
-    if (parentElement) {
-      const fontElements = parentElement.querySelectorAll('font[size="7"]');
-      fontElements.forEach((font) => {
-        if (font instanceof HTMLElement) {
-          font.removeAttribute("size");
-          font.style.fontSize = `${sizePx}px`;
-          font.style.lineHeight = "1.4";
-        }
-      });
-      if (parentElement.tagName.toLowerCase() === 'font' && parentElement.getAttribute('size') === '7') {
-        parentElement.removeAttribute("size");
-        parentElement.style.fontSize = `${sizePx}px`;
-        parentElement.style.lineHeight = "1.4";
+    if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return;
+
+    // Use fontSize 7 as a marker, then replace with custom px
+    document.execCommand("fontSize", false, "7");
+
+    // Find the closest editable container to search within
+    const anchor = selection.anchorNode;
+    const editable = anchor instanceof HTMLElement
+      ? anchor.closest("[contenteditable]")
+      : anchor?.parentElement?.closest("[contenteditable]");
+    if (!editable) return;
+
+    const fontElements = editable.querySelectorAll('font[size="7"]');
+    fontElements.forEach((font) => {
+      if (font instanceof HTMLElement) {
+        font.removeAttribute("size");
+        font.style.fontSize = `${sizePx}px`;
+        font.style.lineHeight = "1.45";
       }
-    }
+    });
+
+    // Fire input event so React editors update their state
+    editable.dispatchEvent(new Event("input", { bubbles: true, cancelable: true }));
   };
 
   // Dialog States
@@ -86,6 +89,15 @@ export function MarkdownToolbar({ className }: { className?: string }) {
   const restoreSelection = useCallback(() => {
     const selection = window.getSelection();
     if (activeRange && selection) {
+      // Find the contenteditable element and focus it first
+      const container = activeRange.commonAncestorContainer;
+      const editable = container.nodeType === Node.ELEMENT_NODE
+        ? (container as HTMLElement).closest("[contenteditable]")
+        : container.parentElement?.closest("[contenteditable]");
+      if (editable && editable instanceof HTMLElement) {
+        editable.focus();
+      }
+      
       selection.removeAllRanges();
       selection.addRange(activeRange);
     }
@@ -95,6 +107,17 @@ export function MarkdownToolbar({ className }: { className?: string }) {
     restoreSelection();
     try {
       document.execCommand(command, false, val);
+
+      // Force React state sync by dispatching input event on the editor
+      if (activeRange) {
+        const container = activeRange.commonAncestorContainer;
+        const editable = container.nodeType === Node.ELEMENT_NODE
+          ? (container as HTMLElement).closest("[contenteditable]")
+          : container.parentElement?.closest("[contenteditable]");
+        if (editable) {
+          editable.dispatchEvent(new Event("input", { bubbles: true, cancelable: true }));
+        }
+      }
     } catch (err) {
       console.error("Execute command error:", err);
     }
@@ -200,6 +223,14 @@ export function MarkdownToolbar({ className }: { className?: string }) {
 
       // Step 3: Reset block-level to <p> if it's a heading within selection
       document.execCommand("formatBlock", false, "<p>");
+
+      // Force React state sync
+      if (rootEl) {
+        const editable = rootEl.closest("[contenteditable]");
+        if (editable) {
+          editable.dispatchEvent(new Event("input", { bubbles: true, cancelable: true }));
+        }
+      }
     } catch (err) {
       console.error("Clear format error: ", err);
     }
@@ -378,6 +409,7 @@ export function MarkdownToolbar({ className }: { className?: string }) {
                   id="toolbar-custom-font-size"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
+                      e.preventDefault();
                       const val = parseInt((e.target as HTMLInputElement).value);
                       if (val >= 8 && val <= 120) {
                         applyCustomFontSize(val);

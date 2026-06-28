@@ -117,6 +117,7 @@ export function O2RichEditor({
 }: O2RichEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const isInternalChange = useRef(false);
+  const savedRangeRef = useRef<Range | null>(null);
   const [isFocused, setIsFocused] = useState(false);
   const [selectedImage, setSelectedImage] = useState<HTMLImageElement | null>(null);
   const [imageMenuPos, setImageMenuPos] = useState({ top: 0, left: 0 });
@@ -151,28 +152,27 @@ export function O2RichEditor({
   };
 
   const applyCustomFontSize = (sizePx: number) => {
-    restoreSelection();
-    document.execCommand("fontSize", false, "7");
+    // Restore saved selection into the editor
+    const editor = editorRef.current;
+    if (!editor) return;
+    editor.focus();
     const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return;
-    const range = selection.getRangeAt(0);
-    const container = range.commonAncestorContainer;
-    const parentElement = container.nodeType === Node.ELEMENT_NODE ? (container as HTMLElement) : container.parentElement;
-    if (parentElement) {
-      const fontElements = parentElement.querySelectorAll('font[size="7"]');
-      fontElements.forEach((font) => {
-        if (font instanceof HTMLElement) {
-          font.removeAttribute("size");
-          font.style.fontSize = `${sizePx}px`;
-          font.style.lineHeight = "1.4";
-        }
-      });
-      if (parentElement.tagName.toLowerCase() === 'font' && parentElement.getAttribute('size') === '7') {
-        parentElement.removeAttribute("size");
-        parentElement.style.fontSize = `${sizePx}px`;
-        parentElement.style.lineHeight = "1.4";
-      }
+    if (selection && savedRangeRef.current) {
+      selection.removeAllRanges();
+      selection.addRange(savedRangeRef.current);
     }
+    if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return;
+
+    // Use fontSize 7 as a marker, then replace with custom px
+    document.execCommand("fontSize", false, "7");
+    const fontElements = editor.querySelectorAll('font[size="7"]');
+    fontElements.forEach((font) => {
+      if (font instanceof HTMLElement) {
+        font.removeAttribute("size");
+        font.style.fontSize = `${sizePx}px`;
+        font.style.lineHeight = "1.45";
+      }
+    });
     handleInput();
   };
 
@@ -225,6 +225,14 @@ export function O2RichEditor({
   useEffect(() => {
     return () => { if (debounceTimer.current) clearTimeout(debounceTimer.current); };
   }, []);
+
+  // Listen to native input events (crucial for detached toolbars that dispatch native events)
+  useEffect(() => {
+    const el = editorRef.current;
+    if (!el) return;
+    el.addEventListener('input', handleInput);
+    return () => el.removeEventListener('input', handleInput);
+  }, [handleInput]);
 
   // Helper: check selection parent element type
   const getSelectedTableCell = () => {
@@ -292,6 +300,10 @@ export function O2RichEditor({
       const table = getSelectedTable();
       setActiveTable(table);
       updateActiveFormats();
+      // Save the current selection range so toolbar actions can restore it
+      if (sel.rangeCount > 0) {
+        savedRangeRef.current = sel.getRangeAt(0).cloneRange();
+      }
     };
 
     document.addEventListener("selectionchange", handleSelectionChange);
@@ -972,6 +984,7 @@ export function O2RichEditor({
                           id="editor-custom-font-size"
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
+                              e.preventDefault();
                               const val = parseInt((e.target as HTMLInputElement).value);
                               if (val >= 8 && val <= 120) {
                                 applyCustomFontSize(val);

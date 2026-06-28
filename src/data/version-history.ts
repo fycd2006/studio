@@ -9,6 +9,18 @@ export type VersionHistoryEntry = {
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
   {
+    id: "build-ntfsaqx",
+    version: "1.0.23",
+    label: "更新項目",
+    date: "2026-06-29",
+    title: "文字編輯器更新：字體顯示與操作更穩定",
+    highlights: [
+      "編輯器中較大字體排版更自然流暢。",
+      "自訂字體大小後，編輯器會立即更新顯示。",
+      "使用字體工具後，編輯區會自動聚焦方便繼續編輯。"
+    ],
+  },
+  {
     id: "build-mzodgpa",
     version: "1.0.22",
     label: "更新項目",
