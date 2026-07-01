@@ -20,6 +20,13 @@ export function getCorrectedNow(): number {
 }
 
 /**
+ * Returns the current client-to-server time offset in milliseconds.
+ */
+export function getServerTimeOffset(): number {
+  return globalTimeOffset;
+}
+
+/**
  * Hook that calculates the time offset between the client and Firebase server.
  * Uses a technique similar to NTP:
  *   1. Record `sendTime` (local)

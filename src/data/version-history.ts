@@ -9,6 +9,18 @@ export type VersionHistoryEntry = {
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
   {
+    id: "build-2l3v3ay",
+    version: "1.0.25",
+    label: "更新項目",
+    date: "2026-07-01",
+    title: "營隊活動計時功能更精準，時間顯示更一致",
+    highlights: [
+      "活動計時器現在顯示時間更準確，減少不同裝置差異。",
+      "啟動或結束活動時，時間紀錄將更穩定可靠。",
+      "設定活動時長或重設計時，時間紀錄會更精確。"
+    ],
+  },
+  {
     id: "build-epdi45k",
     version: "1.0.24",
     label: "更新項目",

@@ -15,7 +15,7 @@ import {
   useAuth as useFirebaseAuth
 } from '@/firebase';
 import { collection, query, doc, orderBy, where, limit, getDocs } from 'firebase/firestore';
-import { getCorrectedNow } from '@/hooks/use-server-time';
+import { getCorrectedNow, getServerTimeOffset } from '@/hooks/use-server-time';
 import { format } from 'date-fns';
 import * as jsondiffpatch from 'jsondiffpatch';
 
@@ -425,7 +425,7 @@ export function PlansProvider({ children }: { children: ReactNode }) {
     if (settings.isRunning && settings.targetEndTime && workerRef.current) {
       workerRef.current.postMessage({
         type: 'start',
-        data: { targetEndTime: settings.targetEndTime, timeOffset: 0 }
+        data: { targetEndTime: settings.targetEndTime, timeOffset: getServerTimeOffset() }
       });
     } else if (!settings.isRunning && workerRef.current) {
       workerRef.current.postMessage({ type: 'stop' });
@@ -734,16 +734,20 @@ export function PlansProvider({ children }: { children: ReactNode }) {
       isRunning: settings?.isRunning || false,
       setIsRunning: (r: boolean) => {
         if (!db) return;
-        const target = r ? Date.now() + (localTimeLeft * 1000) : 0;
-        setDocumentNonBlocking(doc(db, 'userSettings', 'global'), { isRunning: r, timeLeft: localTimeLeft, targetEndTime: target, updatedAt: Date.now() }, { merge: true });
+        const nowTime = getCorrectedNow();
+        const target = r ? nowTime + (localTimeLeft * 1000) : 0;
+        setDocumentNonBlocking(doc(db, 'userSettings', 'global'), { isRunning: r, timeLeft: localTimeLeft, targetEndTime: target, updatedAt: nowTime }, { merge: true });
       },
       setDuration: (d: number) => {
         if (!db) return;
-        setDocumentNonBlocking(doc(db, 'userSettings', 'global'), { duration: d, timeLeft: d, targetEndTime: 0, isRunning: false, updatedAt: Date.now() }, { merge: true });
+        setLocalTimeLeft(d);
+        setDocumentNonBlocking(doc(db, 'userSettings', 'global'), { duration: d, timeLeft: d, targetEndTime: 0, isRunning: false, updatedAt: getCorrectedNow() }, { merge: true });
       },
       reset: () => {
         if (!db) return;
-        setDocumentNonBlocking(doc(db, 'userSettings', 'global'), { isRunning: false, timeLeft: settings?.duration || 40 * 60, targetEndTime: 0, updatedAt: Date.now() }, { merge: true });
+        const d = settings?.duration || 40 * 60;
+        setLocalTimeLeft(d);
+        setDocumentNonBlocking(doc(db, 'userSettings', 'global'), { isRunning: false, timeLeft: d, targetEndTime: 0, updatedAt: getCorrectedNow() }, { merge: true });
       }
     },
     activityTypes: settings?.activityTypes || ['劇本', '大地遊戲', '科學闖關', '科學實驗', '手作課程', '相見歡', '起床遊戲'],
