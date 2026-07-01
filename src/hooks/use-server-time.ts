@@ -1,15 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
-import { doc, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
-import { useFirestore } from "@/firebase";
 
 // Global time offset (shared across all components)
 let globalTimeOffset = 0;
 let lastSyncTime = 0;
 
 const SYNC_INTERVAL = 5 * 60 * 1000; // Re-sync every 5 minutes
-const SYNC_DOC_PATH = "_timeSync";
 
 /**
  * Returns the corrected current time using the NTP-like offset.
@@ -27,50 +24,45 @@ export function getServerTimeOffset(): number {
 }
 
 /**
- * Hook that calculates the time offset between the client and Firebase server.
- * Uses a technique similar to NTP:
- *   1. Record `sendTime` (local)
- *   2. Write `serverTimestamp()` to Firestore
- *   3. Read it back and record `receiveTime` (local)
- *   4. Latency = (receiveTime - sendTime) / 2
- *   5. TimeOffset = (serverTime + latency) - receiveTime
+ * Hook that calculates the time offset between the client and the web server.
+ * Uses a lightweight HTTP HEAD request to fetch the standard HTTP Date header.
  */
 export function useServerTime() {
-  const db = useFirestore();
   const syncingRef = useRef(false);
 
   const syncTime = useCallback(async () => {
-    if (!db || syncingRef.current) return;
+    if (syncingRef.current) return;
     syncingRef.current = true;
 
     try {
-      const syncDocRef = doc(db, SYNC_DOC_PATH, "ping");
       const sendTime = Date.now();
-
-      // Write server timestamp
-      await setDoc(syncDocRef, { ts: serverTimestamp(), client: sendTime });
-
-      // Read it back
-      const snap = await getDoc(syncDocRef);
+      
+      // Use cache: 'no-store' and a timestamp query parameter to bypass cache
+      const res = await fetch(`/?_ts=${sendTime}`, { 
+        method: "HEAD",
+        cache: "no-store"
+      });
+      
       const receiveTime = Date.now();
+      const serverDateStr = res.headers.get("Date");
 
-      if (snap.exists()) {
-        const serverTs = snap.data().ts?.toMillis?.();
-        if (serverTs) {
-          const latency = (receiveTime - sendTime) / 2;
-          globalTimeOffset = (serverTs + latency) - receiveTime;
-          lastSyncTime = receiveTime;
-          console.log(
-            `[ServerTime] offset: ${globalTimeOffset.toFixed(0)}ms, latency: ${latency.toFixed(0)}ms`
-          );
-        }
+      if (serverDateStr) {
+        const serverTs = new Date(serverDateStr).getTime();
+        const latency = (receiveTime - sendTime) / 2;
+        globalTimeOffset = (serverTs + latency) - receiveTime;
+        lastSyncTime = receiveTime;
+        console.log(
+          `[ServerTime] HTTP offset: ${globalTimeOffset.toFixed(0)}ms, latency: ${latency.toFixed(0)}ms`
+        );
+      } else {
+        console.warn("[ServerTime] Date header missing from response headers");
       }
     } catch (err) {
       console.warn("[ServerTime] Sync failed:", err);
     } finally {
       syncingRef.current = false;
     }
-  }, [db]);
+  }, []);
 
   useEffect(() => {
     // Initial sync

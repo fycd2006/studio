@@ -9,6 +9,18 @@ export type VersionHistoryEntry = {
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
   {
+    id: "build-pagj5yr",
+    version: "1.0.27",
+    label: "更新項目",
+    date: "2026-07-01",
+    title: "提升平台時間顯示的準確度與穩定性",
+    highlights: [
+      "平台上的時間顯示更精準，例如活動倒數、報名截止。",
+      "頁面載入後，時間相關資訊能更快更新。",
+      "確保活動時間、報名狀態等重要資訊，顯示更穩定。"
+    ],
+  },
+  {
     id: "build-z3q48dp",
     version: "1.0.26",
     label: "更新項目",
