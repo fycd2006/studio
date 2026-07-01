@@ -48,12 +48,16 @@ export function useServerTime() {
 
       if (serverDateStr) {
         const serverTs = new Date(serverDateStr).getTime();
-        const latency = (receiveTime - sendTime) / 2;
-        globalTimeOffset = (serverTs + latency) - receiveTime;
-        lastSyncTime = receiveTime;
-        console.log(
-          `[ServerTime] HTTP offset: ${globalTimeOffset.toFixed(0)}ms, latency: ${latency.toFixed(0)}ms`
-        );
+        if (!isNaN(serverTs)) {
+          const latency = (receiveTime - sendTime) / 2;
+          globalTimeOffset = (serverTs + latency) - receiveTime;
+          lastSyncTime = receiveTime;
+          console.log(
+            `[ServerTime] HTTP offset: ${globalTimeOffset.toFixed(0)}ms, latency: ${latency.toFixed(0)}ms`
+          );
+        } else {
+          console.warn("[ServerTime] Failed to parse Date header:", serverDateStr);
+        }
       } else {
         console.warn("[ServerTime] Date header missing from response headers");
       }

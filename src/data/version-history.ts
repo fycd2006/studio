@@ -9,6 +9,17 @@ export type VersionHistoryEntry = {
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
   {
+    id: "build-iis0rob",
+    version: "1.0.28",
+    label: "更新項目",
+    date: "2026-07-01",
+    title: "提升活動計時與狀態更新的穩定性",
+    highlights: [
+      "非管理員用戶的倒數計時結束時，不再影響活動進度。",
+      "頁面上的倒數計時與時間顯示，現在更穩定準確。"
+    ],
+  },
+  {
     id: "build-pagj5yr",
     version: "1.0.27",
     label: "更新項目",

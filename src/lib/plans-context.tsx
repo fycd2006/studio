@@ -18,6 +18,7 @@ import { collection, query, doc, orderBy, where, limit, getDocs, getDoc } from '
 import { getCorrectedNow, getServerTimeOffset } from '@/hooks/use-server-time';
 import { format } from 'date-fns';
 import * as jsondiffpatch from 'jsondiffpatch';
+import { useAuth } from '@/lib/auth-context';
 
 const sanitizeForFirestore = (obj: any): any => {
   if (obj === undefined) return null;
@@ -163,6 +164,7 @@ export function PlansProvider({ children }: { children: ReactNode }) {
   const { user, isUserLoading } = useUser();
   const auth = useFirebaseAuth();
   const db = useFirestore();
+  const { role } = useAuth();
   
   useEffect(() => {
     if (!isUserLoading && !user && auth) {
@@ -413,7 +415,7 @@ export function PlansProvider({ children }: { children: ReactNode }) {
         if (type === 'tick') {
           if (settings.isRunning) {
             setLocalTimeLeft(remaining);
-            if (remaining === 0) {
+            if (remaining === 0 && role === 'admin') {
               const targetRef = doc(db!, 'userSettings', 'global');
               const expectedTargetEndTime = settings.targetEndTime;
               getDoc(targetRef).then((snap) => {
@@ -450,7 +452,7 @@ export function PlansProvider({ children }: { children: ReactNode }) {
         const remaining = Math.max(0, Math.floor((settings.targetEndTime - currentTime) / 1000));
         setLocalTimeLeft(remaining);
         
-        if (remaining === 0 && settings.isRunning) {
+        if (remaining === 0 && settings.isRunning && role === 'admin') {
           const targetRef = doc(db!, 'userSettings', 'global');
           const expectedTargetEndTime = settings.targetEndTime;
           getDoc(targetRef).then((snap) => {
@@ -496,7 +498,7 @@ export function PlansProvider({ children }: { children: ReactNode }) {
       if (interval) clearInterval(interval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [settings, db]);
+  }, [settings, db, role]);
 
   useEffect(() => {
     if (campsData === null) return;
