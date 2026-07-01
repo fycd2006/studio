@@ -14,7 +14,7 @@ import {
   initiateAnonymousSignIn,
   useAuth as useFirebaseAuth
 } from '@/firebase';
-import { collection, query, doc, orderBy, where, limit, getDocs } from 'firebase/firestore';
+import { collection, query, doc, orderBy, where, limit, getDocs, getDoc } from 'firebase/firestore';
 import { getCorrectedNow, getServerTimeOffset } from '@/hooks/use-server-time';
 import { format } from 'date-fns';
 import * as jsondiffpatch from 'jsondiffpatch';
@@ -401,25 +401,37 @@ export function PlansProvider({ children }: { children: ReactNode }) {
     if (typeof Worker !== 'undefined' && !workerRef.current) {
       try {
         workerRef.current = new Worker('/timer-worker.js');
-        workerRef.current.onmessage = (e) => {
-          const { type, remaining } = e.data;
-          if (type === 'tick') {
-            if (settings.isRunning) {
-              setLocalTimeLeft(remaining);
-              if (remaining === 0) {
-                updateDocumentNonBlocking(doc(db!, 'userSettings', 'global'), { 
-                  isRunning: false, 
-                  timeLeft: 0,
-                  updatedAt: Date.now() 
-                });
-              }
-            }
-          }
-        };
         console.log('[TimerWorker] initialized');
       } catch (err) {
         console.warn('[TimerWorker] Failed to initialize, using fallback:', err);
       }
+    }
+
+    if (workerRef.current) {
+      workerRef.current.onmessage = (e) => {
+        const { type, remaining } = e.data;
+        if (type === 'tick') {
+          if (settings.isRunning) {
+            setLocalTimeLeft(remaining);
+            if (remaining === 0) {
+              const targetRef = doc(db!, 'userSettings', 'global');
+              const expectedTargetEndTime = settings.targetEndTime;
+              getDoc(targetRef).then((snap) => {
+                if (snap.exists()) {
+                  const latest = snap.data();
+                  if (latest.isRunning && latest.targetEndTime === expectedTargetEndTime) {
+                    updateDocumentNonBlocking(targetRef, { 
+                      isRunning: false, 
+                      timeLeft: 0,
+                      updatedAt: Date.now() 
+                    });
+                  }
+                }
+              });
+            }
+          }
+        }
+      };
     }
 
     if (settings.isRunning && settings.targetEndTime && workerRef.current) {
@@ -439,10 +451,19 @@ export function PlansProvider({ children }: { children: ReactNode }) {
         setLocalTimeLeft(remaining);
         
         if (remaining === 0 && settings.isRunning) {
-          updateDocumentNonBlocking(doc(db!, 'userSettings', 'global'), { 
-            isRunning: false, 
-            timeLeft: 0,
-            updatedAt: currentTime 
+          const targetRef = doc(db!, 'userSettings', 'global');
+          const expectedTargetEndTime = settings.targetEndTime;
+          getDoc(targetRef).then((snap) => {
+            if (snap.exists()) {
+              const latest = snap.data();
+              if (latest.isRunning && latest.targetEndTime === expectedTargetEndTime) {
+                updateDocumentNonBlocking(targetRef, { 
+                  isRunning: false, 
+                  timeLeft: 0,
+                  updatedAt: currentTime 
+                });
+              }
+            }
           });
         }
       } else {
@@ -464,7 +485,7 @@ export function PlansProvider({ children }: { children: ReactNode }) {
         if (workerRef.current && settings.isRunning && settings.targetEndTime) {
           workerRef.current.postMessage({
             type: 'start',
-            data: { targetEndTime: settings.targetEndTime, timeOffset: 0 }
+            data: { targetEndTime: settings.targetEndTime, timeOffset: getServerTimeOffset() }
           });
         }
       }

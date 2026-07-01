@@ -9,6 +9,17 @@ export type VersionHistoryEntry = {
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
   {
+    id: "build-z3q48dp",
+    version: "1.0.26",
+    label: "更新項目",
+    date: "2026-07-01",
+    title: "提升營隊計時器精準度，避免舊設定誤觸停止",
+    highlights: [
+      "「活動計時器」在時間到點時，會更精準地確認是否該停止。",
+      "這能避免多位管理者操作時，舊的計時設定誤觸停止。"
+    ],
+  },
+  {
     id: "build-2l3v3ay",
     version: "1.0.25",
     label: "更新項目",
