@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { useServerTime } from "@/hooks/use-server-time";
+import { useServerTime, getCorrectedNow } from "@/hooks/use-server-time";
 import { useTranslation } from "@/lib/i18n-context";
 import { RotationTableData, LessonPlan, Camp } from "@/types/plan";
 
@@ -179,9 +179,57 @@ export function AdminTimer({
  // 1-second silent audio base64 to keep JS alive in background (iOS/Android workaround)
  const SILENT_AUDIO_BASE64 = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
 
- // 使用真正的 HTMLAudioElement 綁定來突破 iOS 限制
- const alarmAudioHtmlRef = useRef<HTMLAudioElement | null>(null);
- const shortBeepHtmlRef = useRef<HTMLAudioElement | null>(null);
+  // 使用真正的 HTMLAudioElement 綁定來突破 iOS 限制
+  const alarmAudioHtmlRef = useRef<HTMLAudioElement | null>(null);
+  const shortBeepHtmlRef = useRef<HTMLAudioElement | null>(null);
+
+  // Global event listener to auto-unlock audio on the first user interaction
+  useEffect(() => {
+    if (audioUnlocked) return;
+
+    const unlock = () => {
+      // Play a tiny silent sound on the audio elements
+      if (alarmAudioHtmlRef.current) {
+        alarmAudioHtmlRef.current.play().then(() => {
+          alarmAudioHtmlRef.current?.pause();
+        }).catch(() => {});
+      }
+      if (shortBeepHtmlRef.current) {
+        shortBeepHtmlRef.current.play().then(() => {
+          shortBeepHtmlRef.current?.pause();
+        }).catch(() => {});
+      }
+
+      // Also try to unlock Web Audio API Context
+      try {
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioContextClass) {
+          const ctx = new AudioContextClass();
+          if (ctx.state === 'suspended') {
+            ctx.resume();
+          }
+        }
+      } catch (e) {}
+
+      setAudioUnlocked(true);
+      localStorage.setItem('camp-audio-unlocked', 'true');
+      
+      // Notify other tabs
+      window.dispatchEvent(new Event('camp-audio-sync'));
+      
+      cleanup();
+    };
+
+    const cleanup = () => {
+      document.removeEventListener('click', unlock);
+      document.removeEventListener('touchstart', unlock);
+    };
+
+    document.addEventListener('click', unlock);
+    document.addEventListener('touchstart', unlock);
+
+    return cleanup;
+  }, [audioUnlocked]);
 
  useEffect(() => {
  silentLoopRef.current = new Audio(SILENT_AUDIO_BASE64);
@@ -320,7 +368,7 @@ export function AdminTimer({
  const checkAlarms = useCallback(() => {
  if (!timer.isRunning || !timer.targetEndTime) return;
 
- const currentTime = Date.now();
+ const currentTime = getCorrectedNow();
  const remaining = Math.max(0, Math.floor((timer.targetEndTime - currentTime) / 1000));
 
  // Pre-wake notification ~5 seconds before 3-minute warning (190~181秒)

@@ -9,6 +9,17 @@ export type VersionHistoryEntry = {
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
   {
+    id: "build-9r0btbf",
+    version: "1.0.29",
+    label: "更新項目",
+    date: "2026-07-01",
+    title: "營隊計時器更準確，鬧鐘提示音效播放更穩定",
+    highlights: [
+      "營隊計時器頁面，鬧鐘提示音效在首次點擊後能正常播放。",
+      "營隊計時器頁面，倒數時間計算更精準，減少時間偏差。"
+    ],
+  },
+  {
     id: "build-iis0rob",
     version: "1.0.28",
     label: "更新項目",
