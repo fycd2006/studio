@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { usePlans } from "@/hooks/use-plans";
 import { useAuth } from "@/lib/auth-context";
 import { usePathname } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { TransparentNavbar } from "@/components/TransparentNavbar";
@@ -46,6 +46,38 @@ function AppShellInternal({ children }: { children: React.ReactNode }) {
  const { t } = useTranslation();
  const router = useRouter();
  const [hasVersionUpdate, setHasVersionUpdate] = React.useState(false);
+
+  // V2 Broadcast System States
+  const activeCamp = planData.camps.find(c => c.id === planData.activeCampId);
+  const broadcastText = activeCamp?.broadcastText || "";
+  const broadcastTime = activeCamp?.broadcastTime || 0;
+  const [isBroadcastDismissed, setIsBroadcastDismissed] = React.useState(true);
+
+  React.useEffect(() => {
+    if (!broadcastText) {
+      setIsBroadcastDismissed(true);
+      return;
+    }
+    try {
+      const key = `dismissed_broadcast_${planData.activeCampId}_${broadcastTime}`;
+      const dismissed = localStorage.getItem(key);
+      setIsBroadcastDismissed(dismissed === "1");
+    } catch {
+      setIsBroadcastDismissed(false);
+    }
+  }, [broadcastText, broadcastTime, planData.activeCampId]);
+
+  const handleDismissBroadcast = () => {
+    setIsBroadcastDismissed(true);
+    try {
+      const key = `dismissed_broadcast_${planData.activeCampId}_${broadcastTime}`;
+      localStorage.setItem(key, "1");
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const showBroadcast = !!(broadcastText && !isBroadcastDismissed);
 
   // RBAC Redirect: If crew attempts to access a locked camp
   React.useEffect(() => {
@@ -147,37 +179,60 @@ function AppShellInternal({ children }: { children: React.ReactNode }) {
 
  const isAdminRoute = pathname.startsWith('/admin');
 
- return (
- <div className={`w-full bg-[#FBF9F6] text-[#2C2A28] dark:text-slate-50 font-body transition-colors min-h-screen flex flex-col ${isAdminRoute ? "dark:bg-[hsl(var(--bar-theme))]" : "dark:bg-slate-950"}`}>
- {/* Transparent Navbar */}
- <TransparentNavbar groups={planData.groups} />
+  return (
+    <div className={`w-full bg-[#FBF9F6] text-[#2C2A28] dark:text-slate-50 font-body transition-colors min-h-screen flex flex-col ${isAdminRoute ? "dark:bg-[hsl(var(--bar-theme))]" : "dark:bg-slate-950"}`}>
+      {/* Transparent Navbar */}
+      <TransparentNavbar groups={planData.groups} />
 
- {hasVersionUpdate && (
- <div className="fixed top-[72px] inset-x-0 z-[70] px-3 sm:px-6 md:px-8 pointer-events-none">
- <div className="mx-auto mt-2 max-w-[1200px] rounded-xl border border-amber-300/70 bg-amber-50 text-amber-900 px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm flex items-center justify-between gap-3 pointer-events-auto">
- <p className="text-xs sm:text-sm font-semibold">
- {t('UPDATE_AVAILABLE_DESC')}
- </p>
- <button
- onClick={() => window.location.reload()}
- className="shrink-0 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs sm:text-sm font-bold px-3 py-1.5 transition-colors"
- >
- {t('REFRESH_NOW')}
- </button>
- </div>
- </div>
- )}
- 
- {/* Main Content Area — pb-16 on mobile for tab bar clearance */}
- <main className="flex-1 min-w-0 w-full overflow-x-clip relative animate-in fade-in slide-in-from-bottom-5 duration-300 pb-16 md:pb-0">
- {children}
- </main>
- 
- {/* Mobile Bottom Tab Bar */}
- <MobileTabBar />
+      {/* V2 Live Broadcast Marquee Banner */}
+      {showBroadcast && (
+        <div className="fixed top-[72px] inset-x-0 z-[69] h-9 bg-gradient-to-r from-orange-600 via-amber-500 to-orange-500 text-white flex items-center shadow-md select-none">
+          <div className="flex-1 overflow-hidden relative h-full flex items-center">
+            <div className="animate-marquee font-bold text-xs tracking-widest uppercase">
+              📢 【值星公告】 {broadcastText}
+            </div>
+          </div>
+          <button 
+            onClick={handleDismissBroadcast} 
+            className="h-9 w-9 shrink-0 flex items-center justify-center hover:bg-white/10 active:bg-white/20 transition-colors"
+            title="關閉公告"
+          >
+            <X className="w-4 h-4 text-white" />
+          </button>
+        </div>
+      )}
 
- <Toaster />
- </div>
- );
+      {hasVersionUpdate && (
+        <div 
+          className="fixed inset-x-0 z-[70] px-3 sm:px-6 md:px-8 pointer-events-none transition-all duration-300"
+          style={{ top: showBroadcast ? "108px" : "72px" }}
+        >
+          <div className="mx-auto mt-2 max-w-[1200px] rounded-xl border border-amber-300/70 bg-amber-50 text-amber-900 px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm flex items-center justify-between gap-3 pointer-events-auto">
+            <p className="text-xs sm:text-sm font-semibold">
+              {t('UPDATE_AVAILABLE_DESC')}
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="shrink-0 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs sm:text-sm font-bold px-3 py-1.5 transition-colors"
+            >
+              {t('REFRESH_NOW')}
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {/* Main Content Area — pb-16 on mobile for tab bar clearance */}
+      <main 
+        style={{ paddingTop: showBroadcast ? "36px" : "0px" }}
+        className="flex-1 min-w-0 w-full overflow-x-clip relative animate-in fade-in slide-in-from-bottom-5 duration-300 pb-16 md:pb-0 transition-all"
+      >
+        {children}
+      </main>
+      
+      {/* Mobile Bottom Tab Bar */}
+      <MobileTabBar />
+
+      <Toaster />
+    </div>
+  );
 }
-

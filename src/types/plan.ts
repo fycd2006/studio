@@ -48,6 +48,10 @@ export interface Camp {
   ownerId: string;
   createdAt: number;
   campItems?: CampItem[];
+  activeDay?: string;
+  activeRoundIndex?: number;
+  broadcastText?: string;
+  broadcastTime?: number;
 }
 
 export interface Station {

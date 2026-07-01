@@ -9,6 +9,17 @@ export type VersionHistoryEntry = {
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
   {
+    id: "build-epdi45k",
+    version: "1.0.24",
+    label: "更新項目",
+    date: "2026-07-01",
+    title: "營隊輪值表優化與管理區塊按鈕調整",
+    highlights: [
+      "營隊輪值表的表格區域，現在會顯示更簡潔的捲軸。",
+      "管理區塊中的縮放按鈕（放大、縮小、適應）已移除。"
+    ],
+  },
+  {
     id: "build-ntfsaqx",
     version: "1.0.23",
     label: "更新項目",

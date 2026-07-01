@@ -899,15 +899,31 @@ export function AdminSection({
                 <Button variant="ghost" size="icon" onClick={onRedoTable} disabled={!canRedoTable || isLocked} className={cn(actionBarTheme.control, actionBarTheme.controlIcon, actionBarTheme.controlElevated)}>
                   <Redo2 className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" onClick={handleZoomOut} disabled={zoom <= 0.3 || activeMainTab === 'timer'} className={cn(actionBarTheme.control, actionBarTheme.controlIcon, actionBarTheme.controlElevated)}>
-                  <ZoomOut className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" onClick={handleFitAll} disabled={activeMainTab === 'timer'} className={cn(actionBarTheme.control, actionBarTheme.controlIcon, actionBarTheme.controlElevated)}>
-                  <Maximize className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" onClick={handleZoomIn} disabled={zoom >= 2 || activeMainTab === 'timer'} className={cn(actionBarTheme.control, actionBarTheme.controlIcon, actionBarTheme.controlElevated)}>
-                  <ZoomIn className="h-4 w-4" />
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      disabled={activeMainTab === 'timer'}
+                      className={cn(actionBarTheme.control, "px-2.5 font-bold text-[10px] tracking-widest uppercase gap-1.5 h-10")}
+                      title="縮放表格 / Zoom Table"
+                    >
+                      <ZoomIn className="h-3.5 w-3.5 text-stone-600 dark:text-slate-300" />
+                      <span className="font-fira-code">{Math.round(zoom * 100)}%</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="center" className="w-32 rounded-xl p-1">
+                    <DropdownMenuItem onClick={handleZoomIn} disabled={zoom >= 2} className="text-xs font-bold gap-2 cursor-pointer">
+                      <ZoomIn className="h-3.5 w-3.5" /> 放大 (Zoom In)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleZoomOut} disabled={zoom <= 0.3} className="text-xs font-bold gap-2 cursor-pointer">
+                      <ZoomOut className="h-3.5 w-3.5" /> 縮小 (Zoom Out)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleFitAll} className="text-xs font-bold gap-2 cursor-pointer">
+                      <Maximize className="h-3.5 w-3.5" /> 重設 (100%)
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </ActionBar>
 
@@ -1106,6 +1122,12 @@ export function AdminSection({
                   timer={timer}
                   isLocked={isLocked}
                   autoEnterSaverMode={shouldAutoEnterSaver}
+                  tables={tables}
+                  plans={plans}
+                  selectedDay={selectedDay}
+                  camps={camps}
+                  activeCampId={activeCampId}
+                  onUpdateCamp={onUpdateCamp}
                 />
               </TabsContent>
 

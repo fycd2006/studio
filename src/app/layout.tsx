@@ -5,6 +5,7 @@ import { FirebaseClientProvider } from '@/firebase';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { AuthProvider } from '@/lib/auth-context';
 import { I18nProvider } from '@/lib/i18n-context';
+import { PlansProvider } from '@/lib/plans-context';
 import { AppShell } from '@/components/AppShell';
 import { WhatsNewDialog } from '@/components/WhatsNewDialog';
 import { MotionProvider } from '@/components/MotionProvider';
@@ -51,12 +52,14 @@ export default function RootLayout({
  <FirebaseClientProvider>
  <AuthProvider>
  <I18nProvider>
+ <PlansProvider>
  <MotionProvider>
  <AppShell>
  <WhatsNewDialog />
  {children}
  </AppShell>
  </MotionProvider>
+ </PlansProvider>
  </I18nProvider>
  </AuthProvider>
  </FirebaseClientProvider>

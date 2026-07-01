@@ -7,40 +7,119 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { 
- Play, 
- RotateCcw, 
- ShieldCheck,
- Volume2,
- VolumeX,
- Pause,
- BellRing,
- Moon,
- Wifi,
- WifiOff
+  Play, 
+  RotateCcw, 
+  ShieldCheck,
+  Volume2,
+  VolumeX,
+  Pause,
+  BellRing,
+  Moon,
+  Wifi,
+  WifiOff,
+  Megaphone,
+  ChevronLeft,
+  ChevronRight,
+  Tv,
+  LayoutGrid,
+  MapPin,
+  User,
+  Users,
+  Compass,
+  X
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useServerTime } from "@/hooks/use-server-time";
 import { useTranslation } from "@/lib/i18n-context";
+import { RotationTableData, LessonPlan, Camp } from "@/types/plan";
 
 interface AdminTimerProps {
- timer: {
- duration: number;
- timeLeft: number;
- isRunning: boolean;
- targetEndTime?: number;
- setDuration: (d: number) => void;
- setTimeLeft: (t: number) => void;
- setIsRunning: (r: boolean) => void;
- reset: () => void;
- };
- isLocked: boolean;
- autoEnterSaverMode?: boolean;
+  timer: {
+    duration: number;
+    timeLeft: number;
+    isRunning: boolean;
+    targetEndTime?: number;
+    setDuration: (d: number) => void;
+    setTimeLeft: (t: number) => void;
+    setIsRunning: (r: boolean) => void;
+    reset: () => void;
+  };
+  isLocked: boolean;
+  autoEnterSaverMode?: boolean;
+  tables?: RotationTableData[];
+  plans?: LessonPlan[];
+  selectedDay?: string;
+  camps?: Camp[];
+  activeCampId?: string | null;
+  onUpdateCamp?: (id: string, updates: Partial<Camp>) => void;
 }
 
-export function AdminTimer({ timer, isLocked, autoEnterSaverMode = false }: AdminTimerProps) {
- const { t } = useTranslation();
- const [now, setNow] = useState<Date | null>(null);
+function playSyntheticAlarm(duration = 2.0, frequency = 440) {
+  if (typeof window === 'undefined') return;
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(frequency, ctx.currentTime);
+    
+    gain.gain.setValueAtTime(0.5, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + duration);
+  } catch (e) {
+    console.warn("Web Audio API synthesis failed:", e);
+  }
+}
+
+export function AdminTimer({
+  timer,
+  isLocked,
+  autoEnterSaverMode = false,
+  tables = [],
+  plans = [],
+  selectedDay = "Day 1",
+  camps = [],
+  activeCampId = null,
+  onUpdateCamp
+}: AdminTimerProps) {
+  const { t } = useTranslation();
+  const [now, setNow] = useState<Date | null>(null);
+
+  // V2 Admin States & Variables
+  const [broadcastInput, setBroadcastInput] = useState("");
+  const [saverLayoutMode, setSaverLayoutMode] = useState<"clock" | "projector">("projector");
+
+  const activeCamp = camps.find(c => c.id === activeCampId);
+  const currentBroadcastText = activeCamp?.broadcastText || "";
+  const currentRoundIndex = activeCamp?.activeRoundIndex !== undefined ? activeCamp.activeRoundIndex : 0;
+  const activeTable = tables.find(tb => tb.day === selectedDay);
+
+  const handlePublishBroadcast = (text: string) => {
+    if (!activeCampId || !onUpdateCamp) return;
+    onUpdateCamp(activeCampId, {
+      broadcastText: text.trim(),
+      broadcastTime: Date.now()
+    });
+    toast({ title: text.trim() ? "已成功發布值星公告" : "已清除當前值星公告" });
+  };
+
+  const handleUpdateRound = (index: number) => {
+    if (!activeCampId || !onUpdateCamp || !activeTable) return;
+    const maxRounds = activeTable.rounds.length;
+    const nextIndex = Math.max(0, Math.min(index, maxRounds - 1));
+    onUpdateCamp(activeCampId, {
+      activeRoundIndex: nextIndex
+    });
+  };
  const { toast } = useToast();
  
  // Initialize NTP-like server time sync
@@ -175,55 +254,68 @@ export function AdminTimer({ timer, isLocked, autoEnterSaverMode = false }: Admi
  }, [timer.duration, timer.isRunning]);
 
  const triggerAlarm = useCallback((title: string, description: string, audioMode: 'short' | 'long' = 'long', isDestructive = false) => {
- toast({ 
- title, 
- description, 
- variant: isDestructive ? "destructive" : "default" 
- });
- 
- if (audioUnlocked) {
- if (audioMode === 'long' && alarmAudioHtmlRef.current) {
- const audio = alarmAudioHtmlRef.current;
- audio.currentTime = 0;
- audio.volume = 1.0;
- audio.play().catch(e => console.warn("Background audio blocked:", e));
- } else if (audioMode === 'short' && shortBeepHtmlRef.current) {
- // 短音連播 2 次（雙音）× 3 輪
- const audio = shortBeepHtmlRef.current;
- const schedule = [
- 0, // 第 1 輪第 1 聲
- 300, // 第 1 輪第 2 聲
- 1000, // 第 2 輪第 1 聲
- 1300, // 第 2 輪第 2 聲
- 2000, // 第 3 輪第 1 聲
- 2300, // 第 3 輪第 2 聲
- ];
- schedule.forEach(delay => {
- setTimeout(() => {
- audio.currentTime = 0;
- audio.volume = 1.0;
- audio.play().catch(e => console.warn("Beep blocked:", e));
- }, delay);
- });
- }
- 
- // Attempt to trigger system notification (works in background/lock screen if authorized)
- if ('Notification' in window && 'serviceWorker' in navigator && Notification.permission === 'granted') {
- navigator.serviceWorker.ready.then(registration => {
- registration.showNotification(title, {
- body: description,
- vibrate: isDestructive ? [500, 200, 500, 200, 500] : [200, 100, 200],
- requireInteraction: true,
- tag: isDestructive ? 'timer-end' : 'timer-warning',
- renotify: true,
- actions: isDestructive ? [
- { action: 'dismiss', title: '知道了 / Dismiss' }
- ] : [],
- } as any);
- });
- }
- }
- }, [audioUnlocked, toast]);
+    toast({ 
+      title, 
+      description, 
+      variant: isDestructive ? "destructive" : "default" 
+    });
+    
+    if (audioUnlocked) {
+      if (audioMode === 'long') {
+        if (alarmAudioHtmlRef.current && alarmAudioHtmlRef.current.readyState >= 2) {
+          const audio = alarmAudioHtmlRef.current;
+          audio.currentTime = 0;
+          audio.volume = 1.0;
+          audio.play().catch(e => {
+            console.warn("Background audio blocked, using synthetic fallback:", e);
+            playSyntheticAlarm(3.0, 520);
+          });
+        } else {
+          console.warn("Long audio not ready, using synthetic fallback");
+          playSyntheticAlarm(3.0, 520);
+        }
+      } else if (audioMode === 'short') {
+        if (shortBeepHtmlRef.current && shortBeepHtmlRef.current.readyState >= 2) {
+          const audio = shortBeepHtmlRef.current;
+          const schedule = [0, 300, 1000, 1300, 2000, 2300];
+          schedule.forEach(delay => {
+            setTimeout(() => {
+              audio.currentTime = 0;
+              audio.volume = 1.0;
+              audio.play().catch(e => {
+                console.warn("Short beep blocked, using synthetic fallback:", e);
+                playSyntheticAlarm(0.15, 880);
+              });
+            }, delay);
+          });
+        } else {
+          console.warn("Short audio not ready, using synthetic fallback");
+          const schedule = [0, 300, 1000, 1300, 2000, 2300];
+          schedule.forEach(delay => {
+            setTimeout(() => {
+              playSyntheticAlarm(0.15, 880);
+            }, delay);
+          });
+        }
+      }
+      
+      // Attempt to trigger system notification (works in background/lock screen if authorized)
+      if ('Notification' in window && 'serviceWorker' in navigator && Notification.permission === 'granted') {
+        navigator.serviceWorker.ready.then(registration => {
+          registration.showNotification(title, {
+            body: description,
+            vibrate: isDestructive ? [500, 200, 500, 200, 500] : [200, 100, 200],
+            requireInteraction: true,
+            tag: isDestructive ? 'timer-end' : 'timer-warning',
+            renotify: true,
+            actions: isDestructive ? [
+              { action: 'dismiss', title: '知道了 / Dismiss' }
+            ] : [],
+          } as any);
+        });
+      }
+    }
+  }, [audioUnlocked, toast]);
 
  const checkAlarms = useCallback(() => {
  if (!timer.isRunning || !timer.targetEndTime) return;
@@ -538,6 +630,156 @@ export function AdminTimer({ timer, isLocked, autoEnterSaverMode = false }: Admi
  </div>
  </Card>
  )}
+
+      {!isLocked && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full mt-6">
+          {/* Broadcast Console Card */}
+          <Card className="p-6 md:p-8 rounded-[2.5rem] bg-white dark:bg-slate-800/50 flex flex-col space-y-6 shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none text-left">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-orange-100/50 dark:bg-orange-500/10 text-orange-500 rounded-2xl shrink-0">
+                <Megaphone className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="font-headline font-bold text-[#2C2A28] dark:text-white text-base">值星公告廣播中樞</h3>
+                <p className="text-[10px] text-stone-400 dark:text-slate-500 font-bold uppercase tracking-widest mt-0.5">Live Broadcast Console</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-[10px] font-bold text-stone-400 dark:text-slate-500 uppercase tracking-widest px-1">自訂公告內容</label>
+              <div className="flex gap-2">
+                <Input
+                  value={broadcastInput}
+                  onChange={(e) => setBroadcastInput(e.target.value)}
+                  placeholder="輸入即時公告文字...（例如：全體到操場集合！）"
+                  className="rounded-xl bg-stone-50 dark:bg-slate-900 border-none h-11 text-xs font-bold font-sans flex-1"
+                />
+                {currentBroadcastText && (
+                  <Button 
+                    variant="outline"
+                    onClick={() => { handlePublishBroadcast(""); setBroadcastInput(""); }}
+                    className="h-11 rounded-xl text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 border-none font-bold text-xs px-4"
+                  >
+                    清除
+                  </Button>
+                )}
+                <Button 
+                  onClick={() => handlePublishBroadcast(broadcastInput)}
+                  className="h-11 rounded-xl bg-orange-500 hover:bg-orange-600 text-white dark:bg-amber-400 dark:text-slate-950 font-bold text-xs px-6"
+                >
+                  發布
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-stone-400 dark:text-slate-500 uppercase tracking-widest px-1">常用快捷廣播</label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { label: "📢 進行二收", text: "請全體工作人員與小隊，現在至大禮堂集合進行二次驗收！" },
+                  { label: "⏰ 準備進關", text: "本輪關卡時間即將結束，請各位值星、關主與小隊準備進下一關！" },
+                  { label: "🍽️ 用餐廣播", text: "用餐時間已到，請大廚組與各組小隊依序至餐廳洗手用餐！" },
+                  { label: "🌧️ 雨備啟動", text: "因目前雨勢較大，本活動即刻啟動雨天備案，請移至室內教室！" }
+                ].map((tpl, i) => (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      setBroadcastInput(tpl.text);
+                      handlePublishBroadcast(tpl.text);
+                    }}
+                    className="px-3 py-2 text-left rounded-xl text-[10px] font-bold border border-stone-100 dark:border-slate-800 bg-stone-50/50 dark:bg-slate-900/50 hover:bg-stone-100/50 dark:hover:bg-slate-800 transition-colors text-stone-600 dark:text-slate-300 leading-relaxed truncate"
+                    title={tpl.text}
+                  >
+                    {tpl.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {currentBroadcastText && (
+              <div className="p-3 bg-amber-50/80 dark:bg-amber-500/5 border border-amber-200/50 dark:border-amber-500/10 rounded-xl flex items-start gap-2 animate-in fade-in zoom-in-95 duration-200">
+                <span className="flex-1 text-[11px] font-bold text-amber-700 dark:text-amber-400 leading-relaxed">
+                  當前發布：{currentBroadcastText}
+                </span>
+              </div>
+            )}
+          </Card>
+
+          {/* Active Round Stepper Card */}
+          <Card className="p-6 md:p-8 rounded-[2.5rem] bg-white dark:bg-slate-800/50 flex flex-col space-y-6 shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none text-left">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-emerald-100/50 dark:bg-emerald-500/10 text-emerald-500 rounded-2xl shrink-0">
+                <Compass className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="font-headline font-bold text-[#2C2A28] dark:text-white text-base">關卡輪次控制器</h3>
+                <p className="text-[10px] text-stone-400 dark:text-slate-500 font-bold uppercase tracking-widest mt-0.5">Round Sync Controller</p>
+              </div>
+            </div>
+
+            {activeTable ? (
+              <div className="flex-1 flex flex-col justify-between space-y-4">
+                <div className="space-y-1">
+                  <div className="text-[10px] font-bold text-stone-400 dark:text-slate-500 uppercase tracking-widest px-1">行政輪替表名稱</div>
+                  <div className="text-sm font-black text-[#2C2A28] dark:text-white px-1">
+                    {activeTable.title || `${selectedDay} 輪替表`} ({activeTable.rounds.length} 個輪次)
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between bg-stone-50 dark:bg-slate-900 rounded-2xl p-4">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    disabled={currentRoundIndex <= 0}
+                    onClick={() => handleUpdateRound(currentRoundIndex - 1)}
+                    className="h-10 w-10 rounded-xl bg-white dark:bg-slate-800 text-stone-600 dark:text-slate-300 hover:shadow-sm"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </Button>
+                  <div className="text-center">
+                    <span className="text-[10px] font-bold text-stone-400 dark:text-slate-500 uppercase tracking-widest block">當前進度</span>
+                    <span className="text-2xl font-black text-orange-500 dark:text-amber-400 block mt-0.5">
+                      第 {currentRoundIndex + 1} 輪 / Round {currentRoundIndex + 1}
+                    </span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    disabled={currentRoundIndex >= activeTable.rounds.length - 1}
+                    onClick={() => handleUpdateRound(currentRoundIndex + 1)}
+                    className="h-10 w-10 rounded-xl bg-white dark:bg-slate-800 text-stone-600 dark:text-slate-300 hover:shadow-sm"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </Button>
+                </div>
+
+                {activeTable.rounds[currentRoundIndex] && (
+                  <div className="p-3 bg-emerald-50/50 dark:bg-emerald-500/5 border border-emerald-100 dark:border-emerald-500/10 rounded-xl">
+                    <div className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-widest mb-1.5">當前小隊分佈</div>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                      {activeTable.teamOrders.map((team) => {
+                        const stationId = team.stations[currentRoundIndex];
+                        const station = activeTable.stations.find(st => st.id === stationId);
+                        return (
+                          <div key={team.id} className="text-[11px] font-bold text-stone-600 dark:text-slate-300 flex items-center justify-between py-0.5 border-b border-stone-100/50 dark:border-slate-800/50">
+                            <span className="truncate">{team.name}</span>
+                            <span className="text-orange-500 dark:text-amber-400 font-extrabold truncate ml-2">→ {station?.name || "休息"}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center py-6 text-center text-stone-400 dark:text-slate-500">
+                <Compass className="h-8 w-8 opacity-40 mb-2" />
+                <p className="text-xs font-bold">請先於「行政輪替表」分頁新增當日輪替表格以啟用輪次控制。</p>
+              </div>
+            )}
+          </Card>
+        </div>
+      )}
 
  <Card className="w-full rounded-[2.5rem] md:rounded-[4rem] shadow-2xl bg-stone-950 text-white flex flex-col items-center justify-between p-6 md:p-12 lg:p-16 min-h-[450px] relative overflow-hidden transition-all duration-700">
  <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-stone-900 to-stone-950 opacity-100 pointer-events-none" />

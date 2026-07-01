@@ -35,7 +35,8 @@ import {
   RotateCcw,
   Smartphone,
   Check,
-  Pencil
+  Pencil,
+  Palette
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -57,6 +58,19 @@ import { exportToDocx, exportToPdf } from "@/lib/export-utils";
 import { ActionBar } from "@/components/ActionBar";
 import { usePresence } from "@/hooks/use-presence";
 
+const FabricCanvas = dynamic(
+  () => import("@/components/FabricCanvas").then((mod) => mod.FabricCanvas),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[500px] flex flex-col gap-2.5 items-center justify-center border border-dashed border-stone-200 dark:border-slate-800 rounded-2xl bg-stone-50/50 dark:bg-slate-900/50">
+        <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+        <span className="text-sm text-stone-500 dark:text-slate-400 font-bold">正在載入藍圖畫布...</span>
+      </div>
+    )
+  }
+);
+
 const FieldContainer = ({
   children,
   field,
@@ -75,12 +89,23 @@ const FieldContainer = ({
       <div className={cn("transition-opacity", locked && "opacity-50 pointer-events-none")}>
         {children}
       </div>
-      {locked && info && (
-        <div className="absolute -top-3 right-2 z-10 bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg pointer-events-none flex items-center gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-          {info.name} 編輯中...
-        </div>
-      )}
+      {locked && info && (() => {
+        let hash = 0;
+        const uid = info.uid || '';
+        for (let i = 0; i < uid.length; i++) {
+          hash = uid.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const hue = Math.abs(hash) % 360;
+        return (
+          <div 
+            style={{ backgroundColor: `hsl(${hue}, 72%, 42%)` }}
+            className="absolute -top-3 right-2 z-10 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md pointer-events-none flex items-center gap-1.5 animate-in fade-in-30 zoom-in-95 duration-200"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+            {info.name} 編輯中...
+          </div>
+        );
+      })()}
     </div>
   );
 };
@@ -124,6 +149,12 @@ export function PlanEditor({
 
   // History Mode State
   const [isHistoryMode, setIsHistoryMode] = useState(false);
+  const [blueprintMode, setBlueprintMode] = useState<'text' | 'canvas'>(plan.canvasData ? 'canvas' : 'text');
+
+  useEffect(() => {
+    setBlueprintMode(plan.canvasData ? 'canvas' : 'text');
+  }, [plan.id, plan.canvasData]);
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedVersion, setSelectedVersion] = useState<PlanVersion | null>(null);
   const [previewPlan, setPreviewPlan] = useState<LessonPlan | null>(null);
@@ -620,15 +651,30 @@ export function PlanEditor({
           <Button variant="ghost" size="icon" onClick={handleLocalRedo} disabled={localHistory.future.length === 0 || isHistoryMode} className={cn(actionBarTheme.controlGhost, actionBarTheme.controlIcon, "hover:shadow-sm")}>
             <Redo2 className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={handleZoomOut} disabled={pageZoom <= 0.3} className={cn(actionBarTheme.control, actionBarTheme.controlIcon, actionBarTheme.controlElevated)}>
-            <ZoomOut className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={handleFitAll} className={cn(actionBarTheme.control, actionBarTheme.controlIcon, actionBarTheme.controlElevated)}>
-            <Maximize className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={handleZoomIn} disabled={pageZoom >= 2} className={cn(actionBarTheme.control, actionBarTheme.controlIcon, actionBarTheme.controlElevated)}>
-            <ZoomIn className="h-4 w-4" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className={cn(actionBarTheme.controlGhost, "px-2.5 font-bold text-xs shadow-sm hover:shadow-md gap-1.5")}
+                title="縮放頁面 / Page Zoom"
+              >
+                <ZoomIn className="h-3.5 w-3.5 text-stone-600 dark:text-slate-300" />
+                <span className="font-fira-code">{Math.round(pageZoom * 100)}%</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" className="w-32 rounded-xl p-1">
+              <DropdownMenuItem onClick={handleZoomIn} disabled={pageZoom >= 2} className="text-xs font-bold gap-2 cursor-pointer">
+                <ZoomIn className="h-3.5 w-3.5" /> 放大 (Zoom In)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleZoomOut} disabled={pageZoom <= 0.3} className="text-xs font-bold gap-2 cursor-pointer">
+                <ZoomOut className="h-3.5 w-3.5" /> 縮小 (Zoom Out)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleFitAll} className="text-xs font-bold gap-2 cursor-pointer">
+                <Maximize className="h-3.5 w-3.5" /> 重設 (100%)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <div className={cn(actionBarTheme.separator, "hidden sm:block mx-1")} />
 
@@ -857,19 +903,92 @@ export function PlanEditor({
                             </section>
                           )}
 
-                          <section>
-                            <SectionHeader title={t('VISUAL_BLUEPRINT')} icon={BookOpen} />
-                            <FieldContainer field="content" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
-                              <O2RichEditor
-                                value={currentPlan.content}
-                                onChange={(val) => handlePlanUpdate({ content: val })}
-                                onFocus={() => handleFocus('content')}
-                                onBlur={() => handleBlur('content')}
-                                placeholder="撰寫教案內容... (支援貼上圖片) / Write lesson content here..."
-                                readOnly={isInteractionLocked}
-                              />
-                            </FieldContainer>
-                          </section>
+                           <section className="flex flex-col w-full">
+                             <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pt-6 first:pt-0 border-b border-stone-100 dark:border-white/10 pb-3 transition-colors">
+                               <div className="flex items-center gap-3">
+                                 <BookOpen className="h-5 w-5 text-stone-400 dark:text-slate-500 opacity-90 transition-colors" />
+                                 <h3 className="text-lg font-headline font-bold text-stone-800 dark:text-slate-100 tracking-wide transition-colors">
+                                   {t('VISUAL_BLUEPRINT')}
+                                 </h3>
+                               </div>
+                               <div className="flex items-center gap-1.5 bg-stone-100 dark:bg-slate-800 p-0.5 rounded-lg text-xs font-bold">
+                                 <button
+                                   onClick={() => setBlueprintMode('text')}
+                                   className={cn(
+                                     "px-3 py-1.5 rounded-md transition-all flex items-center gap-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500",
+                                     blueprintMode === 'text' 
+                                       ? "bg-white dark:bg-slate-700 shadow-sm text-stone-900 dark:text-white"
+                                       : "text-stone-500 dark:bg-slate-800 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white"
+                                   )}
+                                 >
+                                   <FileText className="h-3.5 w-3.5" />
+                                   <span>{language === 'zh' ? '文字描述' : 'Rich Text'}</span>
+                                 </button>
+                                 <button
+                                   onClick={() => setBlueprintMode('canvas')}
+                                   className={cn(
+                                     "px-3 py-1.5 rounded-md transition-all flex items-center gap-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500",
+                                     blueprintMode === 'canvas' 
+                                       ? "bg-white dark:bg-slate-700 shadow-sm text-stone-900 dark:text-white"
+                                       : "text-stone-500 dark:bg-slate-800 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white"
+                                   )}
+                                 >
+                                   <Palette className="h-3.5 w-3.5" />
+                                   <span>{language === 'zh' ? '手繪藍圖' : 'Canvas Drawing'}</span>
+                                 </button>
+                               </div>
+                             </div>
+
+                             {blueprintMode === 'text' ? (
+                               <FieldContainer field="content" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+                                 <O2RichEditor
+                                   value={currentPlan.content}
+                                   onChange={(val) => handlePlanUpdate({ content: val })}
+                                   onFocus={() => handleFocus('content')}
+                                   onBlur={() => handleBlur('content')}
+                                   placeholder="撰寫教案內容... (支援貼上圖片) / Write lesson content here..."
+                                   readOnly={isInteractionLocked}
+                                 />
+                               </FieldContainer>
+                             ) : (
+                               <div className="w-full relative">
+                                 {isInteractionLocked ? (
+                                   <div className="border border-stone-200 dark:border-slate-800 rounded-2xl p-4 bg-white dark:bg-slate-900 flex items-center justify-center min-h-[300px]">
+                                     {currentPlan.canvasImage ? (
+                                       <img 
+                                         src={currentPlan.canvasImage} 
+                                         alt="手繪視覺藍圖" 
+                                         className="max-w-full h-auto object-contain rounded-lg"
+                                         style={{ maxHeight: `${currentPlan.canvasHeight || 500}px` }}
+                                       />
+                                     ) : (
+                                       <span className="text-muted-foreground text-sm font-bold">（尚無手繪視覺藍圖）</span>
+                                     )}
+                                   </div>
+                                 ) : (
+                                   <FieldContainer field="canvasData" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+                                     <div 
+                                       className="w-full rounded-2xl border border-stone-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-900"
+                                       onFocus={() => handleFocus('canvasData')}
+                                       onBlur={() => handleBlur('canvasData')}
+                                     >
+                                       <FabricCanvas
+                                         initialData={currentPlan.canvasData}
+                                         initialHeight={currentPlan.canvasHeight || 500}
+                                         onSave={(data, height, image) => {
+                                           handlePlanUpdate({
+                                             canvasData: data,
+                                             canvasHeight: height,
+                                             canvasImage: image
+                                           });
+                                         }}
+                                       />
+                                     </div>
+                                   </FieldContainer>
+                                 )}
+                               </div>
+                             )}
+                           </section>
 
                           <section className="w-full flex flex-col">
                             <SectionHeader title={t('MATERIALS')} icon={Package} />

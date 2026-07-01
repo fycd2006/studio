@@ -159,7 +159,7 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
  <div className="w-8" />
  </div>
 
- <div className="overflow-x-auto w-full scrollbar-hide">
+ <div className="overflow-x-auto w-full custom-scrollbar">
  <table className="w-full  table-fixed min-w-[800px]">
  <thead>
  <tr className="dark:bg-[#FBF9F6]/50 dark:bg-slate-900/80">

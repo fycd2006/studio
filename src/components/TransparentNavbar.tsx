@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePlans } from "@/hooks/use-plans";
+import { usePresence } from "@/hooks/use-presence";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -58,7 +59,8 @@ export function TransparentNavbar({ groups }: NavbarProps) {
   const { toast } = useToast();
   const { t, language } = useTranslation();
   const { role } = useAuth();
-  const { camps, activeCampId, groups: allGroups, addPlan } = usePlans();
+  const { camps, activeCampId, activePlanId, groups: allGroups, addPlan } = usePlans();
+  const { activeViewers } = usePresence(activePlanId);
   const isHome = pathname === "/";
   const lastScrollY = useRef(0);
   const shortBeepRef = useRef<HTMLAudioElement | null>(null);
@@ -285,6 +287,33 @@ export function TransparentNavbar({ groups }: NavbarProps) {
             </div>
 
             <div className="flex items-center gap-4">
+              {/* Online Active Viewers list */}
+              {activePlanId && activeViewers && activeViewers.length > 0 && (
+                <div className="flex items-center -space-x-2 mr-2">
+                  {activeViewers.map((viewer) => {
+                    const initials = viewer.name.slice(0, 2);
+                    let hash = 0;
+                    for (let i = 0; i < viewer.uid.length; i++) {
+                      hash = viewer.uid.charCodeAt(i) + ((hash << 5) - hash);
+                    }
+                    const hue = Math.abs(hash) % 360;
+                    return (
+                      <div
+                        key={viewer.uid}
+                        style={{ backgroundColor: `hsl(${hue}, 70%, 45%)` }}
+                        className="w-8 h-8 rounded-full border-2 border-[#FBF9F6] dark:border-slate-900 flex items-center justify-center text-white text-[10px] font-bold shadow-md cursor-help relative group transition-transform hover:scale-110 hover:z-10"
+                      >
+                        {initials}
+                        {/* Custom Tooltip */}
+                        <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-stone-900/95 dark:bg-slate-800/95 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                          {viewer.name}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
               {activeCamp && (
                 <div
                   className={cn(
@@ -467,6 +496,34 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                   </span>
                 </div>
               </Link>
+              {/* Online Active Viewers on Mobile */}
+              {activePlanId && activeViewers && activeViewers.length > 0 && (
+                <div className="flex items-center -space-x-1.5 mr-2">
+                  {activeViewers.slice(0, 3).map((viewer) => {
+                    const initials = viewer.name.slice(0, 2);
+                    let hash = 0;
+                    for (let i = 0; i < viewer.uid.length; i++) {
+                      hash = viewer.uid.charCodeAt(i) + ((hash << 5) - hash);
+                    }
+                    const hue = Math.abs(hash) % 360;
+                    return (
+                      <div
+                        key={viewer.uid}
+                        style={{ backgroundColor: `hsl(${hue}, 70%, 45%)` }}
+                        className="w-7 h-7 rounded-full border-2 border-[#FBF9F6] dark:border-slate-900 flex items-center justify-center text-white text-[9px] font-bold shadow-md"
+                        title={viewer.name}
+                      >
+                        {initials}
+                      </div>
+                    );
+                  })}
+                  {activeViewers.length > 3 && (
+                    <div className="w-7 h-7 rounded-full bg-stone-300 dark:bg-slate-700 border-2 border-[#FBF9F6] dark:border-slate-900 flex items-center justify-center text-stone-600 dark:text-slate-350 text-[9px] font-bold shadow-md">
+                      +{activeViewers.length - 3}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
