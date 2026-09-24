@@ -9,6 +9,18 @@ export type VersionHistoryEntry = {
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
   {
+    id: "build-lp62e7u",
+    version: "1.0.34",
+    label: "更新項目",
+    date: "2026-09-24",
+    title: "新增小隊對戰模式，讓排程更彈性",
+    highlights: [
+      "在「智慧輪轉排程設定」頁，新增「小隊對戰模式」區塊。",
+      "您可選擇「每輪不同隊伍」或「固定小組」進行對戰。",
+      "勾選關卡旁的提示文字，會依據對戰模式顯示不同說明。"
+    ],
+  },
+  {
     id: "build-kjzyv1q",
     version: "1.0.33",
     label: "更新項目",

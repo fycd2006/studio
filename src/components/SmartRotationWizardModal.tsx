@@ -13,6 +13,7 @@ import {
   MapPin, 
   User, 
   UserPlus, 
+  Users,
   Plus, 
   Minus, 
   Sparkles, 
@@ -62,6 +63,7 @@ export function SmartRotationWizardModal({
   const [day, setDay] = useState(defaultDay);
   const [teamCount, setTeamCount] = useState(4); // Default 4 teams
   const [targetStationCount, setTargetStationCount] = useState(3); // Default 3 stations
+  const [matchupMode, setMatchupMode] = useState<"rotate_opponents" | "fixed_pairs">("rotate_opponents");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Extract distinct activity types from plans
@@ -179,6 +181,7 @@ export function SmartRotationWizardModal({
         tableTitle,
         day,
         teamCount,
+        matchupMode,
         stations: checked.map((s) => ({
           planId: s.planId,
           name: s.name,
@@ -384,6 +387,47 @@ export function SmartRotationWizardModal({
             )}
           </div>
 
+          {/* Matchup Mode Selector */}
+          <div className="flex items-center justify-between p-3 rounded-2xl bg-stone-100/60 dark:bg-white/[0.02] border border-stone-200/60 dark:border-white/5">
+            <div className="space-y-0.5">
+              <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-orange-500" />
+                <span>小隊對戰模式</span>
+              </div>
+              <div className="text-[11px] text-stone-500 dark:text-stone-400">
+                {matchupMode === "rotate_opponents"
+                  ? "每次闖關與不同小隊對抗（全員互戰）"
+                  : "固定小隊組合跑遍各關卡（關卡零重複）"}
+              </div>
+            </div>
+            <div className="flex items-center gap-1 bg-white dark:bg-white/5 p-1 rounded-xl border border-stone-200 dark:border-white/10 shrink-0">
+              <button
+                type="button"
+                onClick={() => setMatchupMode("rotate_opponents")}
+                className={cn(
+                  "px-3 py-1 text-xs font-mono rounded-lg transition-all cursor-pointer",
+                  matchupMode === "rotate_opponents"
+                    ? "bg-orange-500 text-white font-bold shadow-xs"
+                    : "text-stone-600 dark:text-stone-300 hover:text-foreground"
+                )}
+              >
+                每輪不同隊伍 (預設)
+              </button>
+              <button
+                type="button"
+                onClick={() => setMatchupMode("fixed_pairs")}
+                className={cn(
+                  "px-3 py-1 text-xs font-mono rounded-lg transition-all cursor-pointer",
+                  matchupMode === "fixed_pairs"
+                    ? "bg-orange-500 text-white font-bold shadow-xs"
+                    : "text-stone-600 dark:text-stone-300 hover:text-foreground"
+                )}
+              >
+                固定小組
+              </button>
+            </div>
+          </div>
+
           {/* Table Title Input */}
           <div className="space-y-1.5">
             <label className="text-[11px] font-mono font-medium text-stone-500 dark:text-stone-400">
@@ -403,7 +447,7 @@ export function SmartRotationWizardModal({
               <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
                 <span>勾選當日關卡與確認關主/地點</span>
                 <span className="text-[10px] font-mono font-medium text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-md bg-orange-500/10 border border-orange-500/20">
-                  已選 {checkedCount} 關 · 進行 {checkedCount} 回合零撞關輪轉
+                  已選 {checkedCount} 關 · {matchupMode === "rotate_opponents" ? "每輪不同隊伍對決" : `${checkedCount} 回合零撞關輪轉`}
                 </span>
               </label>
               <div className="text-[10px] font-mono text-stone-400 hidden sm:flex items-center gap-1">
@@ -524,10 +568,14 @@ export function SmartRotationWizardModal({
             <div className="p-3.5 rounded-2xl bg-orange-500/5 border border-orange-500/20 space-y-1">
               <div className="flex items-center gap-2 text-xs font-bold text-orange-700 dark:text-orange-400">
                 <Sparkles className="w-3.5 h-3.5 text-orange-500 shrink-0" />
-                <span>賽程規則：{checkedCount} 關卡 · {teamCount} 小隊 · {checkedCount} 回合輪轉</span>
+                <span>
+                  賽程規則：{checkedCount} 關卡 · {teamCount} 小隊 · {matchupMode === "rotate_opponents" ? "每輪不同隊伍交手" : `${checkedCount} 回合輪轉`}
+                </span>
               </div>
               <p className="text-[11px] text-stone-600 dark:text-stone-400 pl-5 leading-relaxed">
-                每回合安排兩小隊在同一關卡對戰。全部小隊在 {checkedCount} 回合中順序輪轉各站，保證<strong>零撞關、每隊絕不重複造訪同一關卡</strong>。
+                {matchupMode === "rotate_opponents"
+                  ? `每輪安排兩小隊在同一關卡對戰。全部小隊每回合都與不同隊伍對決（第 1 小隊依序與第 2、3、4 小隊交手，四隊全員互戰）。`
+                  : `每回合安排兩小隊在同一關卡對戰。全部小隊在 ${checkedCount} 回合中順序輪轉各站，保證零撞關、每隊絕不重複造訪同一關卡。`}
               </p>
             </div>
           )}
@@ -537,7 +585,7 @@ export function SmartRotationWizardModal({
         <div className="p-4 sm:p-5 border-t border-stone-200/70 dark:border-white/10 bg-stone-50/50 dark:bg-white/[0.02] flex items-center justify-between gap-3">
           <div className="text-[11px] font-mono text-stone-500 dark:text-stone-400 hidden sm:block">
             <span>
-              已選 {checkedCount} 關卡 · {teamCount} 隊伍 · {checkedCount} 回合輪轉（零撞關）
+              已選 {checkedCount} 關卡 · {teamCount} 隊伍 · {matchupMode === "rotate_opponents" ? "每輪不同隊伍" : "零撞關輪轉"}
             </span>
           </div>
 
