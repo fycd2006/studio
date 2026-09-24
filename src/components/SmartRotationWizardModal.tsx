@@ -61,7 +61,7 @@ export function SmartRotationWizardModal({
   const { t } = useTranslation();
   const [day, setDay] = useState(defaultDay);
   const [teamCount, setTeamCount] = useState(4); // Default 4 teams
-  const [roundOption, setRoundOption] = useState<"all_stations" | "all_opponents">("all_stations");
+  const [targetStationCount, setTargetStationCount] = useState(3); // Default 3 stations
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Extract distinct activity types from plans
@@ -111,15 +111,16 @@ export function SmartRotationWizardModal({
   const [stationItems, setStationItems] = useState<StationItemState[]>([]);
 
   // When filteredPlans change or modal opens, initialize station items
+  // PRESET: Default to checking the first 3 stations (or filteredPlans.length if fewer than 3)
   useEffect(() => {
     if (!isOpen) return;
-    const initialItems: StationItemState[] = filteredPlans.map((p) => {
+    const initialItems: StationItemState[] = filteredPlans.map((p, idx) => {
       const lead = p.leadMember || stripHtml(p.members).split("、")[0] || stripHtml(p.members) || "";
       const assistant = p.assistantMember || "";
       const loc = p.location || "";
       return {
         planId: p.id,
-        checked: true, // Default checked
+        checked: idx < 3, // Default check the first 3 stations!
         name: stripHtml(p.activityName) || "未命名關卡",
         location: loc,
         lead,
@@ -130,9 +131,21 @@ export function SmartRotationWizardModal({
       };
     });
     setStationItems(initialItems);
+    setTargetStationCount(Math.min(3, Math.max(1, filteredPlans.length)));
   }, [filteredPlans, isOpen]);
 
   const checkedCount = stationItems.filter((s) => s.checked).length;
+
+  // Direct station count changer (e.g. user selects 3 stations)
+  const handleStationCountChange = (count: number) => {
+    setTargetStationCount(count);
+    setStationItems((prev) =>
+      prev.map((item, idx) => ({
+        ...item,
+        checked: idx < count,
+      }))
+    );
+  };
 
   const handleStationFieldChange = (
     index: number,
@@ -150,6 +163,8 @@ export function SmartRotationWizardModal({
     setStationItems((prev) => {
       const next = [...prev];
       next[index] = { ...next[index], checked: !next[index].checked };
+      const currentChecked = next.filter((s) => s.checked).length;
+      setTargetStationCount(currentChecked);
       return next;
     });
   };
@@ -164,7 +179,6 @@ export function SmartRotationWizardModal({
         tableTitle,
         day,
         teamCount,
-        roundOption,
         stations: checked.map((s) => ({
           planId: s.planId,
           name: s.name,
@@ -209,20 +223,20 @@ export function SmartRotationWizardModal({
               <DialogTitle className="text-base sm:text-lg font-bold text-foreground flex items-center gap-2">
                 <span>智能排定闖關表</span>
                 <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20">
-                  雙隊對戰制
+                  {checkedCount} 關卡 · {teamCount} 小隊輪轉
                 </span>
               </DialogTitle>
               <DialogDescription className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
-                選擇天數與關卡，系統自動帶入主副關主與地點，並生成零撞關輪轉對戰表。
+                選擇天數與關卡數（預設 3 關），自動帶入主副關主與地點，並生成零撞關、不重複輪轉對戰表。
               </DialogDescription>
             </div>
           </div>
         </DialogHeader>
 
         {/* Scrollable Body */}
-        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5 no-scrollbar">
+        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 no-scrollbar">
           {/* Section 1: Basic Parameters Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 bg-stone-100/60 dark:bg-white/[0.02] p-3.5 rounded-2xl border border-stone-200/60 dark:border-white/5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-stone-100/60 dark:bg-white/[0.02] p-3.5 rounded-2xl border border-stone-200/60 dark:border-white/5">
             {/* Day */}
             <div className="space-y-1.5">
               <label className="text-[11px] font-mono font-medium text-stone-500 dark:text-stone-400 flex items-center gap-1.5">
@@ -247,7 +261,7 @@ export function SmartRotationWizardModal({
             <div className="space-y-1.5">
               <label className="text-[11px] font-mono font-medium text-stone-500 dark:text-stone-400 flex items-center gap-1.5">
                 <Layers className="w-3.5 h-3.5 text-stone-400" />
-                <span>活動類型</span>
+                <span>活動教案</span>
               </label>
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                 <SelectTrigger className="h-9 rounded-xl text-xs bg-white dark:bg-white/5 border border-stone-200 dark:border-white/10 text-foreground">
@@ -272,32 +286,102 @@ export function SmartRotationWizardModal({
                 <User className="w-3.5 h-3.5 text-stone-400" />
                 <span>參賽小隊數</span>
               </label>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <Button
                   type="button"
                   variant="outline"
                   size="icon"
-                  className="h-9 w-9 rounded-xl border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 shrink-0"
+                  className="h-9 w-8 rounded-xl border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 shrink-0"
                   disabled={teamCount <= 2}
                   onClick={() => setTeamCount((prev) => Math.max(2, prev - 2))}
                 >
-                  <Minus className="w-3.5 h-3.5" />
+                  <Minus className="w-3 h-3" />
                 </Button>
-                <div className="flex-1 text-center font-mono font-bold text-xs sm:text-sm py-1.5 px-2 bg-white dark:bg-white/5 rounded-xl border border-stone-200 dark:border-white/10 text-foreground">
+                <div className="flex-1 text-center font-mono font-bold text-xs py-1.5 px-1 bg-white dark:bg-white/5 rounded-xl border border-stone-200 dark:border-white/10 text-foreground">
                   {teamCount} 隊
                 </div>
                 <Button
                   type="button"
                   variant="outline"
                   size="icon"
-                  className="h-9 w-9 rounded-xl border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 shrink-0"
+                  className="h-9 w-8 rounded-xl border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 shrink-0"
                   disabled={teamCount >= 16}
                   onClick={() => setTeamCount((prev) => prev + 2)}
                 >
-                  <Plus className="w-3.5 h-3.5" />
+                  <Plus className="w-3 h-3" />
                 </Button>
               </div>
             </div>
+
+            {/* Station Count Selector */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-mono font-medium text-stone-500 dark:text-stone-400 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-orange-500" />
+                <span>關卡數量</span>
+              </label>
+              <Select
+                value={String(checkedCount || targetStationCount)}
+                onValueChange={(val) => handleStationCountChange(parseInt(val, 10))}
+              >
+                <SelectTrigger className="h-9 rounded-xl font-mono text-xs bg-white dark:bg-white/5 border border-stone-200 dark:border-white/10 text-foreground">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border border-stone-200 dark:border-white/10 shadow-xl bg-white dark:bg-[#14191C]">
+                  {[2, 3, 4, 5, 6].map((num) => (
+                    <SelectItem key={num} value={String(num)} className="text-xs font-mono">
+                      {num} 關 {num === 3 ? "(推薦預設)" : ""}
+                    </SelectItem>
+                  ))}
+                  {stationItems.length > 0 && stationItems.length !== 3 && (
+                    <SelectItem value={String(stationItems.length)} className="text-xs font-mono">
+                      全部 ({stationItems.length} 關)
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Quick Station Count Buttons */}
+          <div className="flex items-center gap-1.5 flex-wrap px-1">
+            <span className="text-[11px] font-mono text-stone-400 mr-1 flex items-center gap-1">
+              <span>快速選擇關卡數:</span>
+            </span>
+            {[2, 3, 4, 5, 6].map((num) => {
+              const isAvailable = num <= stationItems.length;
+              const isSelected = checkedCount === num;
+              return (
+                <button
+                  key={num}
+                  type="button"
+                  disabled={!isAvailable}
+                  onClick={() => handleStationCountChange(num)}
+                  className={cn(
+                    "px-2.5 py-1 text-xs font-mono rounded-lg border transition-all cursor-pointer",
+                    isSelected
+                      ? "bg-orange-500 text-white border-orange-500 shadow-xs font-bold ring-2 ring-orange-500/20"
+                      : "bg-stone-50 dark:bg-white/5 border-stone-200 dark:border-white/10 text-stone-600 dark:text-stone-300 hover:border-orange-400",
+                    !isAvailable && "opacity-35 cursor-not-allowed"
+                  )}
+                >
+                  {num} 關 {num === 3 && "(預設)"}
+                </button>
+              );
+            })}
+            {stationItems.length > 0 && (
+              <button
+                type="button"
+                onClick={() => handleStationCountChange(stationItems.length)}
+                className={cn(
+                  "px-2.5 py-1 text-xs font-mono rounded-lg border transition-all cursor-pointer",
+                  checkedCount === stationItems.length
+                    ? "bg-orange-500 text-white border-orange-500 shadow-xs font-bold ring-2 ring-orange-500/20"
+                    : "bg-stone-50 dark:bg-white/5 border-stone-200 dark:border-white/10 text-stone-600 dark:text-stone-300 hover:border-orange-400"
+                )}
+              >
+                全部關卡 ({stationItems.length})
+              </button>
+            )}
           </div>
 
           {/* Table Title Input */}
@@ -318,13 +402,13 @@ export function SmartRotationWizardModal({
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
                 <span>勾選當日關卡與確認關主/地點</span>
-                <span className="text-[10px] font-mono font-normal text-stone-400">
-                  (已選 {checkedCount} 關)
+                <span className="text-[10px] font-mono font-medium text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-md bg-orange-500/10 border border-orange-500/20">
+                  已選 {checkedCount} 關 · 進行 {checkedCount} 回合零撞關輪轉
                 </span>
               </label>
-              <div className="text-[10px] font-mono text-orange-600 dark:text-orange-400 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
-                <span>修改將自動全域同步回寫教案</span>
+              <div className="text-[10px] font-mono text-stone-400 hidden sm:flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <span>地點與關主修改將同步回寫教案</span>
               </div>
             </div>
 
@@ -435,42 +519,16 @@ export function SmartRotationWizardModal({
             )}
           </div>
 
-          {/* Special 3-station option toggle */}
-          {checkedCount === 3 && teamCount === 4 && (
-            <div className="p-3.5 rounded-2xl bg-orange-500/5 border border-orange-500/20 space-y-2">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-orange-700 dark:text-orange-400">
-                <AlertCircle className="w-4 h-4 text-orange-500 shrink-0" />
-                <span>3 關卡 × 4 小隊賽制模式</span>
+          {/* Schedule Rule Summary */}
+          {checkedCount > 0 && (
+            <div className="p-3.5 rounded-2xl bg-orange-500/5 border border-orange-500/20 space-y-1">
+              <div className="flex items-center gap-2 text-xs font-bold text-orange-700 dark:text-orange-400">
+                <Sparkles className="w-3.5 h-3.5 text-orange-500 shrink-0" />
+                <span>賽程規則：{checkedCount} 關卡 · {teamCount} 小隊 · {checkedCount} 回合輪轉</span>
               </div>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <button
-                  type="button"
-                  onClick={() => setRoundOption("all_stations")}
-                  className={cn(
-                    "p-2.5 rounded-xl border text-left transition-all cursor-pointer",
-                    roundOption === "all_stations"
-                      ? "bg-white dark:bg-white/10 border-orange-500 shadow-2xs font-bold text-foreground"
-                      : "bg-transparent border-stone-200 dark:border-white/10 text-stone-500"
-                  )}
-                >
-                  <div className="font-mono text-xs">3 回合賽程</div>
-                  <div className="text-[10px] font-normal text-stone-400 mt-0.5">每隊跑完 3 關</div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setRoundOption("all_opponents")}
-                  className={cn(
-                    "p-2.5 rounded-xl border text-left transition-all cursor-pointer",
-                    roundOption === "all_opponents"
-                      ? "bg-white dark:bg-white/10 border-orange-500 shadow-2xs font-bold text-foreground"
-                      : "bg-transparent border-stone-200 dark:border-white/10 text-stone-500"
-                  )}
-                >
-                  <div className="font-mono text-xs">4 回合賽程</div>
-                  <div className="text-[10px] font-normal text-stone-400 mt-0.5">每隊交手 3 隊各 1 次</div>
-                </button>
-              </div>
+              <p className="text-[11px] text-stone-600 dark:text-stone-400 pl-5 leading-relaxed">
+                每回合安排兩小隊在同一關卡對戰。全部小隊在 {checkedCount} 回合中順序輪轉各站，保證<strong>零撞關、每隊絕不重複造訪同一關卡</strong>。
+              </p>
             </div>
           )}
         </div>
@@ -479,7 +537,7 @@ export function SmartRotationWizardModal({
         <div className="p-4 sm:p-5 border-t border-stone-200/70 dark:border-white/10 bg-stone-50/50 dark:bg-white/[0.02] flex items-center justify-between gap-3">
           <div className="text-[11px] font-mono text-stone-500 dark:text-stone-400 hidden sm:block">
             <span>
-              已選 {checkedCount} 關卡 · {teamCount} 隊伍
+              已選 {checkedCount} 關卡 · {teamCount} 隊伍 · {checkedCount} 回合輪轉（零撞關）
             </span>
           </div>
 
