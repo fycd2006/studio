@@ -32,6 +32,7 @@ export function usePresence(planId: string | null) {
   
   // Track fields locked by THIS user defensively so we can unlock them on unmount
   const lockedFieldsRef = useRef<Set<string>>(new Set());
+  const lockTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   // Determine user display name or fallback to a deterministic random animal nickname
   const getMyName = useCallback(() => {
@@ -86,6 +87,8 @@ export function usePresence(planId: string | null) {
     return () => {
       isUnmounted = true;
       unsubscribe();
+      lockTimersRef.current.forEach(timer => clearTimeout(timer));
+      lockTimersRef.current.clear();
       // On unmount or planId change, unlock everything THIS user had locked
       if (lockedFieldsRef.current.size > 0 && db && user) {
         const updates: Record<string, any> = {};
@@ -129,21 +132,45 @@ export function usePresence(planId: string | null) {
 
   const lockField = useCallback((fieldName: string) => {
     if (!db || !user || !planId) return;
-    lockedFieldsRef.current.add(fieldName);
-    const docRef = doc(db, 'planPresence', planId);
-    const myName = getMyName();
-    
-    setDocumentNonBlocking(docRef, {
-      [fieldName]: {
-        uid: user.uid,
-        name: myName,
-        timestamp: Date.now(),
-      }
-    }, { merge: true });
+
+    // Clear any pending timer for this field
+    const existing = lockTimersRef.current.get(fieldName);
+    if (existing) {
+      clearTimeout(existing);
+      lockTimersRef.current.delete(fieldName);
+    }
+
+    // Micro-debounce 150ms to prevent burst writes on fast Tab navigation
+    const timer = setTimeout(() => {
+      lockTimersRef.current.delete(fieldName);
+      lockedFieldsRef.current.add(fieldName);
+      const docRef = doc(db, 'planPresence', planId);
+      const myName = getMyName();
+      
+      setDocumentNonBlocking(docRef, {
+        [fieldName]: {
+          uid: user.uid,
+          name: myName,
+          timestamp: Date.now(),
+        }
+      }, { merge: true });
+    }, 150);
+
+    lockTimersRef.current.set(fieldName, timer);
   }, [db, user, planId, getMyName]);
 
   const unlockField = useCallback((fieldName: string) => {
     if (!db || !user || !planId) return;
+
+    // If focus left before the 150ms lock debounce fired, cancel the lock write entirely
+    const pendingTimer = lockTimersRef.current.get(fieldName);
+    if (pendingTimer) {
+      clearTimeout(pendingTimer);
+      lockTimersRef.current.delete(fieldName);
+      return;
+    }
+
+    if (!lockedFieldsRef.current.has(fieldName)) return;
     lockedFieldsRef.current.delete(fieldName);
     const docRef = doc(db, 'planPresence', planId);
     setDocumentNonBlocking(docRef, {

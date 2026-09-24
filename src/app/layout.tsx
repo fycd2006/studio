@@ -6,10 +6,37 @@ import { ThemeProvider } from '@/components/ThemeProvider';
 import { AuthProvider } from '@/lib/auth-context';
 import { I18nProvider } from '@/lib/i18n-context';
 import { PlansProvider } from '@/lib/plans-context';
+import { TimerProvider } from '@/lib/timer-context';
 import { AppShell } from '@/components/AppShell';
 import { WhatsNewDialog } from '@/components/WhatsNewDialog';
 import { MotionProvider } from '@/components/MotionProvider';
 import Script from 'next/script';
+import { Inter, Space_Grotesk, Fira_Code, Fira_Sans } from 'next/font/google';
+
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-space-grotesk',
+});
+
+const firaCode = Fira_Code({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-fira-code',
+});
+
+const firaSans = Fira_Sans({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  display: 'swap',
+  variable: '--font-fira-sans',
+});
 
 export const metadata: Metadata = {
  title: 'NTUT CD Camp — Volunteer Studio',
@@ -20,10 +47,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
- themeColor: [
- { media: '(prefers-color-scheme: light)', color: '#FBF9F6' },
- { media: '(prefers-color-scheme: dark)', color: '#121212' },
- ],
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#FAF8F5' },
+    { media: '(prefers-color-scheme: dark)', color: '#0B1012' },
+  ],
  width: 'device-width',
  initialScale: 1,
  viewportFit: 'cover',
@@ -43,22 +70,21 @@ export default function RootLayout({
  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
  <meta name="apple-mobile-web-app-title" content="CD Camp" />
  <link rel="apple-touch-icon" href="/logo.png" />
- <link rel="preconnect" href="https://fonts.googleapis.com" />
- <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
- <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
  </head>
- <body className="font-body antialiased" suppressHydrationWarning>
+ <body className={`${inter.variable} ${spaceGrotesk.variable} ${firaCode.variable} ${firaSans.variable} font-body antialiased`} suppressHydrationWarning>
  <ThemeProvider>
  <FirebaseClientProvider>
  <AuthProvider>
  <I18nProvider>
  <PlansProvider>
+ <TimerProvider>
  <MotionProvider>
  <AppShell>
  <WhatsNewDialog />
  {children}
  </AppShell>
  </MotionProvider>
+ </TimerProvider>
  </PlansProvider>
  </I18nProvider>
  </AuthProvider>

@@ -649,8 +649,8 @@ export function FabricCanvas({ initialData, initialHeight = 500, onSave }: Fabri
  }, [activeColor, brushSize, activeTool]);
 
  return (
- <div className="flex h-full w-full min-h-0 flex-col gap-0 overflow-hidden rounded-xl bg-white dark:bg-slate-900 shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
- <div className="flex flex-wrap items-center gap-1 p-1 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md sticky top-0 z-10 shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <div className="flex h-full w-full min-h-0 flex-col gap-0 overflow-hidden rounded-xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 shadow-sm">
+ <div className="flex flex-wrap items-center gap-1 p-1 bg-white/60 dark:bg-white/[0.02] backdrop-blur-md sticky top-0 z-10 border-b border-stone-200/80 dark:border-white/10">
  <TooltipProvider>
  <Tooltip>
  <TooltipTrigger asChild>
@@ -678,7 +678,7 @@ export function FabricCanvas({ initialData, initialHeight = 500, onSave }: Fabri
  <PopoverTrigger asChild>
  <div className="w-5 h-5 rounded-full cursor-pointer transition-all border-none" style={{ backgroundColor: activeColor }} />
  </PopoverTrigger>
- <PopoverContent className="w-48 p-3 rounded-2xl shadow-2xl bg-white dark:bg-slate-800 shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <PopoverContent className="w-48 p-3 rounded-2xl shadow-2xl bg-white/95 dark:bg-[#14191C]/95 backdrop-blur-xl border border-stone-200/80 dark:border-white/10 shadow-2xl">
  <div className="grid grid-cols-4 gap-2">
  {['#336699', '#3b82f6', '#ef4444', '#22c55e', '#f97316', '#a855f7', '#000000', '#f8fafc'].map(c => (
  <div key={c} className="w-8 h-8 rounded-full cursor-pointer hover:opacity-90 transition-all shadow-sm" style={{ backgroundColor: c }} onClick={() => {
@@ -718,7 +718,7 @@ export function FabricCanvas({ initialData, initialHeight = 500, onSave }: Fabri
  }
  }}
  >
- <span className="text-[10px] text-slate-400 font-bold whitespace-nowrap">粗細</span>
+ <span className="text-[10px] font-mono font-bold text-fg-muted whitespace-nowrap">粗細</span>
  <Slider 
  value={[brushSize]} 
  min={1} 
@@ -798,7 +798,7 @@ export function FabricCanvas({ initialData, initialHeight = 500, onSave }: Fabri
  }}><Trash2 className="h-4 w-4" /></Button>
  </div>
 
- <div ref={wrapperRef} className="relative flex-1 w-full min-h-0 overflow-hidden bg-[#FBF9F6] dark:bg-[#0a0a0b] dot-grid">
+ <div ref={wrapperRef} className="relative flex-1 w-full min-h-0 overflow-hidden bg-[#FAF8F5] dark:bg-[#0B1012] dot-grid">
  <canvas ref={canvasRef} className="absolute inset-0 w-full h-full touch-none" />
  </div>
  </div>

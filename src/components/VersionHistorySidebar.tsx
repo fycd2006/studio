@@ -91,10 +91,10 @@ export function VersionHistorySidebar({
  }, [versions]);
 
  return (
- <div className={cn("fixed top-0 right-0 h-[100dvh] w-full sm:w-96 z-[100] flex flex-col bg-white/95 backdrop-blur-xl dark:bg-slate-900/95 border-l border-stone-200/50 dark:border-white/10 shadow-2xl transition-all duration-300", className)}>
+ <div className={cn("fixed top-0 right-0 h-[100dvh] w-full sm:w-96 z-[100] flex flex-col bg-white/95 backdrop-blur-xl dark:bg-[#14191C]/95 border-l border-stone-200/80 dark:border-white/10 shadow-2xl transition-all duration-300", className)}>
  <div className="px-6 pb-4 pt-[calc(env(safe-area-inset-top,1.5rem))]">
  <div className="flex items-center justify-between mb-4">
- <h2 className="text-[15px] font-black tracking-widest text-[#2C2A28] dark:text-white uppercase flex items-center gap-2.5">
+ <h2 className="text-[15px] font-black tracking-widest text-foreground uppercase flex items-center gap-2.5">
  <History className="h-5 w-5 text-orange-600 dark:text-amber-400" />
  版本紀錄 / History
  </h2>
@@ -103,7 +103,7 @@ export function VersionHistorySidebar({
  size="icon"
  onClick={onClose}
  title="關閉版本紀錄"
- className="h-8 w-8 rounded-full text-stone-500 hover:text-stone-700 hover:bg-stone-100 dark:hover:bg-slate-800 border-none transition-all"
+ className="h-8 w-8 rounded-full text-fg-muted hover:text-foreground hover:bg-stone-100 dark:hover:bg-white/10 border-none transition-all"
  >
  <X className="h-4 w-4" />
  </Button>
@@ -115,7 +115,7 @@ export function VersionHistorySidebar({
  onClick={onToggleFilter}
  className={cn(
 							"h-7 px-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
-							showNamedOnly ? "bg-orange-100 text-orange-700 dark:bg-amber-400/20 dark:text-amber-400" : "bg-stone-100 text-stone-500 hover:bg-stone-200 dark:bg-slate-800 dark:text-stone-400 dark:hover:bg-slate-700"
+							showNamedOnly ? "bg-orange-100 text-orange-700 dark:bg-amber-400/20 dark:text-amber-400" : "bg-stone-100 text-stone-500 hover:bg-stone-200 dark:bg-white/5 dark:text-fg-muted dark:hover:bg-white/10"
 						)}
  >
  <Filter className="h-3.5 w-3.5 mr-1.5" />
@@ -127,7 +127,7 @@ export function VersionHistorySidebar({
  <ScrollArea className="flex-1">
  <div className="p-4 space-y-8">
  <div className="space-y-4">
- <h3 className="text-[10px] font-black text-stone-400 dark:text-slate-500 uppercase tracking-[0.2em] px-2">
+ <h3 className="text-[10px] font-black text-fg-muted font-mono uppercase tracking-[0.2em] px-2">
  目前狀態 / Current
  </h3>
  <div 
@@ -135,12 +135,12 @@ export function VersionHistorySidebar({
 									"p-4 rounded-2xl transition-all cursor-pointer relative group border",
 									selectedVersionId === null
 										? "bg-orange-50/80 dark:bg-amber-400/10 border-orange-200/50 dark:border-amber-400/20 shadow-[0_2px_12px_rgba(249,115,22,0.08)] dark:shadow-none" 
-										: "bg-white/40 dark:bg-slate-800/40 border-transparent hover:border-stone-200/60 dark:hover:border-white/10 hover:bg-white/80 dark:hover:bg-slate-800/80 hover:shadow-sm"
+										: "bg-white/40 dark:bg-white/[0.03] border-transparent hover:border-stone-200/80 dark:hover:border-white/15 hover:bg-white/80 dark:hover:bg-white/[0.06] hover:shadow-sm"
 								)}
  onClick={onBackToCurrent}
  >
  <div className="flex items-start gap-3">
- <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white bg-gradient-to-br from-orange-400 to-orange-600 shadow-md ring-2 ring-white dark:ring-slate-900">
+ <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white bg-gradient-to-br from-orange-400 to-orange-600 shadow-md ring-2 ring-white dark:ring-[#0B1012]">
  <span className="text-[10px] font-black uppercase tracking-wider">LIVE</span>
  </div>
  <div className="flex-1 min-w-0">
@@ -180,7 +180,7 @@ export function VersionHistorySidebar({
  </Button>
  </div>
  ) : (
- <span className="font-bold text-sm text-[#2C2A28] dark:text-white truncate block">
+ <span className="font-bold text-sm text-foreground truncate block">
  當前版本 (Current Draft)
  </span>
  )}
@@ -209,7 +209,7 @@ export function VersionHistorySidebar({
 
  {groupedVersions.map(([groupName, list]) => (
  <div key={groupName} className="space-y-4">
- <h3 className="text-[10px] font-black text-stone-400 dark:text-slate-500 uppercase tracking-[0.2em] px-2">
+ <h3 className="text-[10px] font-black text-fg-muted font-mono uppercase tracking-[0.2em] px-2">
  {groupName}
  </h3>
  <div className="space-y-2">
@@ -220,7 +220,7 @@ export function VersionHistorySidebar({
 								"p-4 rounded-2xl transition-all cursor-pointer relative group border",
 								selectedVersionId === version.id 
 									? "bg-orange-50/80 dark:bg-amber-400/10 border-orange-200/50 dark:border-amber-400/20 shadow-[0_2px_12px_rgba(249,115,22,0.08)] dark:shadow-none" 
-									: "bg-white/40 dark:bg-slate-800/40 border-transparent hover:border-stone-200/60 dark:hover:border-white/10 hover:bg-white/80 dark:hover:bg-slate-800/80 hover:shadow-sm"
+									: "bg-white/40 dark:bg-white/[0.03] border-transparent hover:border-stone-200/80 dark:hover:border-white/15 hover:bg-white/80 dark:hover:bg-white/[0.06] hover:shadow-sm"
 							)}
  onClick={() => onSelectVersion(version)}
  >
@@ -253,7 +253,7 @@ export function VersionHistorySidebar({
  </Button>
  </div>
  ) : (
- <span className="font-bold text-sm text-[#2C2A28] dark:text-white truncate block">
+ <span className="font-bold text-sm text-foreground truncate block">
  {version.versionName || version.name}
  </span>
  )}
@@ -262,11 +262,11 @@ export function VersionHistorySidebar({
  )}
  </div>
  <div className="flex items-center gap-2 mt-1">
- <span className="text-[10px] font-bold text-stone-500 dark:text-slate-400 uppercase tracking-widest">
+ <span className="text-[10px] font-mono font-bold text-fg-muted uppercase tracking-widest">
  {version.authorName}
  </span>
  <span className="text-[10px] text-stone-300 dark:text-slate-700">•</span>
- <time className="text-[10px] font-bold text-stone-400 dark:text-slate-500 uppercase tracking-widest">
+ <time className="text-[10px] font-bold text-fg-muted font-mono uppercase tracking-widest">
  {format(new Date(version.createdAt), "HH:mm")}
  </time>
  </div>
@@ -288,7 +288,7 @@ export function VersionHistorySidebar({
  <Button 
  variant="ghost" 
  size="icon" 
- className="h-7 w-7 text-stone-400 hover:text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-900/40 dark:hover:text-rose-400 rounded-full transition-colors"
+ className="h-7 w-7 text-stone-400 hover:text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-500/10 dark:hover:text-rose-400 rounded-full transition-colors"
  onClick={(e) => {
  e.stopPropagation();
  onDelete(version.id);

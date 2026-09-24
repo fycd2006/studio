@@ -1,9 +1,7 @@
-const CACHE_NAME = 'ntut-cd-camp-v3';
+const CACHE_NAME = 'ntut-cd-camp-v5';
 const STATIC_ASSETS = [
   '/offline.html',
   '/beep.wav',
-  '/logo.png',
-  '/favicon.ico',
   '/timer-worker.js'
 ];
 

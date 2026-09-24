@@ -57,3 +57,6 @@ error_output.html
 test-output*.txt
 ts_errors.txt
 client_secret_*.json
+.agents/
+__pycache__/
+*.pyc

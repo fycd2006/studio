@@ -11,10 +11,10 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['Inter', 'sans-serif'],
-        headline: ['Space Grotesk', 'sans-serif'],
+        body: ['var(--font-inter)', 'Inter', 'sans-serif'],
+        headline: ['var(--font-space-grotesk)', 'Space Grotesk', 'sans-serif'],
         comic: ['Comic Neue', 'cursive'],
-        code: ['JetBrains Mono', 'monospace'],
+        code: ['var(--font-fira-code)', 'JetBrains Mono', 'monospace'],
       },
       colors: {
         background: 'hsl(var(--background))',
@@ -67,12 +67,47 @@ export default {
           gold: '#C5A059',
           goldLight: '#D4AF37',
           goldDark: '#B8860B',
-          // New Warm Palette
-          warmBg: '#FAF9F6', // stone-50/orange-50 mix
-          warmAccent: '#F97316', // orange-500
-          warmHighlight: '#FACC15', // yellow-400
-          warmText: '#292524', // stone-800
-        }
+          warmBg: '#FAF9F6',
+          warmAccent: '#F97316',
+          warmHighlight: '#FACC15',
+          warmText: '#292524',
+        },
+        // Fluid Glass Architectural Design Tokens
+        canvas: {
+          dark: '#0B1012',
+          surface: '#15181A',
+          elevated: '#1C2023',
+          light: '#F4F5F6',
+        },
+        fg: {
+          primary: '#FFFFFF',
+          secondary: '#8E9498',
+          muted: '#5A6065',
+          inverse: '#111315',
+        },
+        hairline: {
+          light: 'rgba(255, 255, 255, 0.08)',
+          hover: 'rgba(255, 255, 255, 0.22)',
+          dark: 'rgba(0, 0, 0, 0.08)',
+        },
+      },
+      letterSpacing: {
+        tighter: '-0.04em',
+        tight: '-0.02em',
+        technical: '0.08em',
+        widest: '0.15em',
+      },
+      backdropBlur: {
+        capsule: '18px',
+        drawer: '30px',
+      },
+      transitionTimingFunction: {
+        'expo-out': 'cubic-bezier(0.16, 1, 0.3, 1)',
+        'gentle-in-out': 'cubic-bezier(0.65, 0, 0.35, 1)',
+      },
+      transitionDuration: {
+        '400': '400ms',
+        '800': '800ms',
       },
       borderRadius: {
         lg: 'var(--radius)',

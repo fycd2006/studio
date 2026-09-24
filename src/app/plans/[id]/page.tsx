@@ -39,24 +39,38 @@ export default function PlanEditorPage() {
  }
  }, [id, setActivePlanId]);
 
- if (!plan) {
- return (
- <div className="h-full flex flex-col items-center justify-center bg-[#FBF9F6] dark:bg-slate-900 text-[#2C2A28] dark:text-slate-50 transition-colors">
- <Loader2 className="w-8 h-8 animate-spin text-orange-500 hover:text-amber-400 mb-4" />
- <h2 className="text-xl font-bold">載入中或是找不到教案...</h2>
- <Button variant="ghost" className="mt-4 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={() => router.push("/plans")}>
- <ArrowLeft className="w-4 h-4 mr-2" /> 返回總覽
- </Button>
- </div>
- );
- }
+  if (!plan) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#FAF8F5] dark:bg-[#0B1012] text-foreground transition-colors p-6">
+        <div className="w-16 h-16 rounded-2xl bg-white/80 dark:bg-white/[0.04] border border-stone-200/80 dark:border-white/10 flex items-center justify-center mb-6 shadow-xs">
+          <Loader2 className="w-7 h-7 animate-spin text-orange-500" />
+        </div>
+        <div className="text-[10px] font-mono tracking-widest text-fg-muted uppercase mb-2">
+          // CURRICULUM SPECIFICATION //
+        </div>
+        <h2 className="text-xl sm:text-2xl font-normal text-foreground tracking-tight mb-2">
+          載入中或找不到指定教案
+        </h2>
+        <p className="text-xs sm:text-sm text-fg-muted max-w-sm text-center mb-6">
+          此教案可能已被移除，或正在自雲端資料庫同步中。
+        </p>
+        <button
+          onClick={() => router.push("/plans")}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-mono font-medium uppercase tracking-wider text-foreground bg-white/80 dark:bg-white/[0.05] hover:bg-white dark:hover:bg-white/10 border border-stone-200/90 dark:border-white/15 transition-all shadow-xs cursor-pointer"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>返回教案總覽</span>
+        </button>
+      </div>
+    );
+  }
 
- const handleUpdate = (id: string, updates: any) => {
- updatePlan(id, updates);
- };
+  const handleUpdate = (id: string, updates: any) => {
+    updatePlan(id, updates);
+  };
 
- return (
- <div className="min-h-screen relative flex flex-col bg-[#FBF9F6] dark:bg-slate-900 text-[#2C2A28] dark:text-slate-50 transition-colors">
+  return (
+    <div className="min-h-screen relative flex flex-col bg-[#FAF8F5] dark:bg-[#0B1012] text-foreground transition-colors">
  <div className="flex-1 min-w-0 flex flex-col">
  <PlanEditor 
  plan={plan} 

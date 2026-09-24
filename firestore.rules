@@ -2,9 +2,47 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // 協作模式：只要是通過身份驗證的使用者（包含匿名登入）皆可存取所有資料
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // 營隊專案資料
+    match /camps/{campId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // 教案集合 (lessonPlans)
+    match /lessonPlans/{planId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /plans/{planId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // 闖關輪替表
+    match /rotationTables/{tableId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // 版本歷程
+    match /planVersions/{versionId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // 在線協同狀態（心跳）
+    match /planPresence/{planId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // 使用者與全域設定
+    match /userSettings/{settingId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // 其他未知集合預設限制需登入
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isAuthenticated();
     }
   }
 }

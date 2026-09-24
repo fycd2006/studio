@@ -53,8 +53,8 @@ export async function GET() {
       throw new Error('No photos matched in the scraped URL. The link might be invalid or not public.');
     }
 
-    // Format all to High-Res 1080p center cropped
-    const images = Array.from(links).map((baseUrl) => `${baseUrl}=w1920-h1080-c`);
+    // Format to optimized 720p HD center cropped (crisp on Retina while cutting payload by 50%+)
+    const images = Array.from(links).map((baseUrl) => `${baseUrl}=w1280-h720-c`);
 
     // Deterministic shuffle logic over the cached duration (changes every 45 mins)
     for (let i = images.length - 1; i > 0; i--) {
@@ -62,8 +62,8 @@ export async function GET() {
       [images[i], images[j]] = [images[j], images[i]];
     }
 
-    // Limit payload to 15 random memory highlights
-    return NextResponse.json({ images: images.slice(0, 15) });
+    // Limit payload to 10 random memory highlights for optimal mobile performance
+    return NextResponse.json({ images: images.slice(0, 10) });
   } catch (error) {
     console.error('Hero Image API Error (Scraper):', error);
     const backup = getFallbackImages();

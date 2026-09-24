@@ -1,95 +1,94 @@
-@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer utilities {
-  .font-fira-code { font-family: 'Fira Code', monospace; }
-  .font-fira-sans { font-family: 'Fira Sans', sans-serif; }
+  .font-fira-code { font-family: var(--font-fira-code), 'Fira Code', monospace; }
+  .font-fira-sans { font-family: var(--font-fira-sans), 'Fira Sans', sans-serif; }
 }
 
 @layer base {
   /* ═══════════════════════════════════════════════
-     🌞 LIGHT MODE — Warm Cream + Vibrant Orange
+     🌞 LIGHT MODE — Warm Cream Craft Paper (Fluid Glass inspired)
      ═══════════════════════════════════════════════ */
   :root {
-    --background: 30 40% 98%;
+    --background: 38 28% 97.5%; /* #FAF8F5 */
     --foreground: 20 20% 12%;
-    --card: 30 30% 97%;
+    --card: 0 0% 100%;
     --card-foreground: 20 20% 12%;
-    --popover: 30 30% 97%;
+    --popover: 0 0% 100%;
     --popover-foreground: 20 20% 12%;
     --primary: 24 95% 53%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 24 60% 95%;
+    --secondary: 35 25% 94%;
     --secondary-foreground: 24 80% 35%;
-    --muted: 30 15% 93%;
+    --muted: 35 15% 92%;
     --muted-foreground: 20 10% 45%;
     --accent: 32 95% 55%;
     --accent-foreground: 20 20% 12%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 30 15% 88%;
-    --input: 30 15% 88%;
+    --border: 35 15% 88%;
+    --input: 35 15% 88%;
     --ring: 24 95% 53%;
     --radius: 1.25rem;
 
-    --sidebar-background: 30 30% 97%;
+    --sidebar-background: 38 28% 97.5%;
     --sidebar-foreground: 20 20% 12%;
     --sidebar-primary: 24 95% 53%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 24 60% 95%;
+    --sidebar-accent: 35 25% 94%;
     --sidebar-accent-foreground: 24 80% 35%;
-    --sidebar-border: 30 15% 90%;
+    --sidebar-border: 35 15% 88%;
     --sidebar-ring: 24 95% 53%;
+
+    --bar-theme: 38 28% 97.5%;
+    --bar-theme-border: 35 15% 88%;
   }
 
   /* ═══════════════════════════════════════════════
-     🌙 DARK MODE — Deep Navy + Neon Orange Glow
+     🌙 DARK MODE — Fluid Glass Deep Obsidian (#0B1012)
      ═══════════════════════════════════════════════ */
   .dark {
-    --background: 220 20% 8%;
-    --foreground: 30 20% 92%;
-    --card: 220 18% 11%;
-    --card-foreground: 30 20% 92%;
-    --popover: 220 18% 11%;
-    --popover-foreground: 30 20% 92%;
+    --background: 197 24% 5.9%; /* #0B1012 Deep Obsidian */
+    --foreground: 0 0% 100%; /* #FFFFFF */
+    --card: 200 11% 9.2%; /* #15181A */
+    --card-foreground: 0 0% 100%;
+    --popover: 206 11% 12.5%; /* #1C2023 */
+    --popover-foreground: 0 0% 100%;
     --primary: 24 100% 55%;
-    --primary-foreground: 220 20% 8%;
-    --secondary: 220 15% 16%;
-    --secondary-foreground: 24 90% 65%;
-    --muted: 220 15% 14%;
-    --muted-foreground: 220 10% 55%;
-    --accent: 32 100% 50%;
-    --accent-foreground: 220 20% 8%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 206 11% 12.5%;
+    --secondary-foreground: 206 5% 58%; /* #8E9498 */
+    --muted: 206 6% 37%; /* #5A6065 */
+    --muted-foreground: 206 5% 58%;
+    --accent: 24 100% 55%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 100%;
-    --border: 220 15% 18%;
-    --input: 220 15% 18%;
+    --border: 206 11% 14%;
+    --input: 206 11% 14%;
     --ring: 24 100% 55%;
 
-    --sidebar-background: 220 18% 10%;
-    --sidebar-foreground: 30 20% 92%;
+    --sidebar-background: 200 11% 9.2%;
+    --sidebar-foreground: 0 0% 100%;
     --sidebar-primary: 24 100% 55%;
-    --sidebar-primary-foreground: 220 20% 8%;
-    --sidebar-accent: 220 15% 16%;
-    --sidebar-accent-foreground: 24 90% 65%;
-    --sidebar-border: 220 15% 16%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 206 11% 12.5%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 206 11% 14%;
     --sidebar-ring: 24 100% 55%;
 
-    /* Dark navbar/actionbar brand navy (ui-ux-pro-max: Midnight Blue #0A0E27) */
-    --bar-theme: 232 59% 10%;
-    --bar-theme-border: 226 59% 18%;
+    --bar-theme: 197 24% 5.9%;
+    --bar-theme-border: 206 11% 14%;
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
   html {
-    font-size: 17px;
+    font-size: 16px;
+    background-color: #0B1012;
   }
   body {
     @apply bg-background text-foreground font-body antialiased text-base;
@@ -129,25 +128,98 @@
 }
 
 /* ═══════════════════════════════════════════════
-   Dot Grid Background
+   Fluid Glass Design Tokens (Engineering Specification)
    ═══════════════════════════════════════════════ */
-.dot-grid {
-  background-image: radial-gradient(circle, hsl(var(--primary) / 0.1) 0.8px, transparent 0.8px);
-  background-size: 24px 24px;
-}
-.dark .dot-grid {
-  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0.8px, transparent 0.8px);
+
+/* Fluid Typography Matrix */
+.fluid-display {
+  font-size: clamp(2.75rem, 7.5vw, 7.5rem);
+  line-height: 1.0;
+  letter-spacing: -0.04em;
+  font-weight: 500;
 }
 
-/* ═══════════════════════════════════════════════
-   Glassmorphism Cards
-   ═══════════════════════════════════════════════ */
-.glass-card {
-  @apply bg-white/70 backdrop-blur-xl border border-white/20 shadow-xl shadow-slate-200/50;
+.fluid-h1 {
+  font-size: clamp(2rem, 4.5vw, 4.25rem);
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  font-weight: 500;
 }
-.dark .glass-card {
-  @apply bg-white/[0.04] border-white/[0.06] shadow-none;
-  box-shadow: 0 0 0 1px hsl(var(--border)), 0 8px 32px hsl(220 20% 4% / 0.5);
+
+.fluid-h2 {
+  font-size: clamp(1.5rem, 2.5vw, 2.25rem);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  font-weight: 400;
+}
+
+.fluid-body {
+  font-size: clamp(1rem, 1.3vw, 1.25rem);
+  line-height: 1.6;
+  font-weight: 300;
+}
+
+.fluid-meta {
+  font-size: clamp(0.6875rem, 0.8vw, 0.75rem);
+  line-height: 1.4;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-family: var(--font-fira-code), 'JetBrains Mono', monospace;
+}
+
+/* Fluid Glass Floating Pill HUD (Engineering Spec 5.1) */
+.glass-pill {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+.dark .glass-pill {
+  background: rgba(15, 18, 20, 0.72);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+}
+
+/* Architectural Studio Sheet / Surface */
+.studio-sheet {
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+.dark .studio-sheet {
+  background: #15181A;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Architectural Hairline 1px Dividers */
+.hairline-divider {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+.dark .hairline-divider {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Clean Engineering Spec Label */
+.architectural-tag {
+  font-family: var(--font-fira-code), 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8E9498;
+  font-weight: 500;
+}
+
+/* Tactile Spring Interaction */
+.btn-tactile {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-tactile:hover {
+  transform: translateY(-1px);
+}
+.btn-tactile:active {
+  transform: scale(0.97);
 }
 
 /* ═══════════════════════════════════════════════
@@ -180,9 +252,6 @@
   opacity: 1;
 }
 
-/* ═══════════════════════════════════════════════
-   Button Shimmer Effect
-   ═══════════════════════════════════════════════ */
 .btn-shimmer {
   position: relative;
   overflow: hidden;

@@ -1,7 +1,7 @@
 import { LessonPlan, Camp, RotationTableData, CampItem } from "@/types/plan";
 import { exportToDocxBlob } from "@/lib/export-utils";
-import * as XLSX from "xlsx";
-import JSZip from "jszip";
+
+type XLSXModule = typeof import("xlsx");
 
 /**
  * 將所有教案 (Word, 與教案總覽相同渲染品質) +
@@ -15,7 +15,13 @@ export async function exportProjectBackupZip(
   plans: LessonPlan[],
   tables: RotationTableData[]
 ) {
+  const [XLSX, JSZipModule] = await Promise.all([
+    import("xlsx"),
+    import("jszip"),
+  ]);
+  const JSZip = (JSZipModule as any).default || JSZipModule;
   const zip = new JSZip();
+
   const campPlans = plans.filter((p) => p.campId === campId);
   const campTables = tables.filter((t) => t.campId === campId);
   const camp = camps.find((c) => c.id === campId);
@@ -33,7 +39,7 @@ export async function exportProjectBackupZip(
   }
 
   // ─── 2. Excel: 道具清單 (3 sheets) + 闖關表 (1 sheet) ──────
-  const excelBlob = buildStyledExcel(campId, camp, campPlans, campTables);
+  const excelBlob = buildStyledExcel(campId, camp, campPlans, campTables, XLSX);
   zip.file(`${sanitize(campName)}_道具清單_闖關表.xlsx`, excelBlob);
 
   // ─── 3. 產生 ZIP 並觸發下載 ─────────────────────
@@ -44,17 +50,18 @@ export async function exportProjectBackupZip(
 /**
  * 匯出行政中樞使用的單一 Excel（活動/教學/營期/闖關表）。
  */
-export function exportAdminExcel(
+export async function exportAdminExcel(
   campId: string,
   campName: string,
   camps: Camp[],
   plans: LessonPlan[],
   tables: RotationTableData[]
 ) {
+  const XLSX = await import("xlsx");
   const campPlans = plans.filter((p) => p.campId === campId);
   const campTables = tables.filter((t) => t.campId === campId);
   const camp = camps.find((c) => c.id === campId);
-  const excelBlob = buildStyledExcel(campId, camp, campPlans, campTables);
+  const excelBlob = buildStyledExcel(campId, camp, campPlans, campTables, XLSX);
   triggerDownload(excelBlob, `${sanitize(campName)}_道具清單_闖關表_${dateTag()}.xlsx`);
 }
 
@@ -66,7 +73,8 @@ function buildStyledExcel(
   campId: string,
   camp: Camp | undefined,
   campPlans: LessonPlan[],
-  campTables: RotationTableData[]
+  campTables: RotationTableData[],
+  XLSX: XLSXModule
 ): Blob {
   const wb = XLSX.utils.book_new();
 
@@ -75,16 +83,16 @@ function buildStyledExcel(
   const campItems = camp?.campItems || [];
 
   // Sheet 1: 活動組道具
-  addPropsSheet(wb, "活動組道具", activityPlans);
+  addPropsSheet(XLSX, wb, "活動組道具", activityPlans);
 
   // Sheet 2: 教學組道具
-  addPropsSheet(wb, "教學組道具", teachingPlans);
+  addPropsSheet(XLSX, wb, "教學組道具", teachingPlans);
 
   // Sheet 3: 營期物品
-  addCampItemsSheet(wb, "營期物品", campItems);
+  addCampItemsSheet(XLSX, wb, "營期物品", campItems);
 
   // Sheet 4: 闖關表
-  addRotationSheet(wb, "闖關表", campTables);
+  addRotationSheet(XLSX, wb, "闖關表", campTables);
 
   const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
   return new Blob([buf], {
@@ -93,7 +101,7 @@ function buildStyledExcel(
 }
 
 /** 活動/教學 道具 sheet */
-function addPropsSheet(wb: XLSX.WorkBook, sheetName: string, lessonPlans: LessonPlan[]) {
+function addPropsSheet(XLSX: XLSXModule, wb: any, sheetName: string, lessonPlans: LessonPlan[]) {
   const rows: Record<string, string>[] = [];
 
   // Group by scheduledName (分類)
@@ -156,7 +164,7 @@ function addPropsSheet(wb: XLSX.WorkBook, sheetName: string, lessonPlans: Lesson
 }
 
 /** 營期物品 sheet */
-function addCampItemsSheet(wb: XLSX.WorkBook, sheetName: string, items: CampItem[]) {
+function addCampItemsSheet(XLSX: XLSXModule, wb: any, sheetName: string, items: CampItem[]) {
   const rows: Record<string, string>[] = [];
 
   // Group by usage
@@ -197,7 +205,7 @@ function addCampItemsSheet(wb: XLSX.WorkBook, sheetName: string, items: CampItem
 }
 
 /** 闖關表 sheet */
-function addRotationSheet(wb: XLSX.WorkBook, sheetName: string, campTables: RotationTableData[]) {
+function addRotationSheet(XLSX: XLSXModule, wb: any, sheetName: string, campTables: RotationTableData[]) {
   const rows: Record<string, string | number>[] = [];
 
   campTables.forEach((table) => {

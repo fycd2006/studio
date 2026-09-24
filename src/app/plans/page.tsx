@@ -22,6 +22,11 @@ import {
  Search,
  Kanban,
  Filter,
+ ArrowUpRight,
+ ArrowRight,
+ ArrowUpDown,
+ X,
+ SlidersHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -356,521 +361,888 @@ export default function PlansOverview() {
  });
  };
 
- const renderPlanActions = (plan: LessonPlan) => (
- <div className="relative z-10" onClick={(e) => e.stopPropagation()}>
- <DropdownMenu>
- <DropdownMenuTrigger asChild>
- <button
- onPointerDown={(e) => e.stopPropagation()}
- onClick={(e) => e.stopPropagation()}
- className="h-8 w-8 inline-flex items-center justify-center rounded-md text-stone-500 hover:bg-stone-100 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors"
- aria-label="教案操作"
- >
- <MoreHorizontal className="w-4 h-4" />
- </button>
- </DropdownMenuTrigger>
- <DropdownMenuContent
- align="end"
- onClick={(e) => e.stopPropagation()}
- className="w-44 bg-white dark:bg-slate-800 border-none shadow-[0_8px_30px_rgba(140,120,100,0.05)]"
- >
- <DropdownMenuItem
- onSelect={(e) => {
- e.preventDefault();
- e.stopPropagation();
- void handleDownloadPlan(plan, "word");
- }}
- className="cursor-pointer"
- >
- <Download className="w-4 h-4 mr-2" />
- 下載 Word
- </DropdownMenuItem>
- <DropdownMenuItem
- onSelect={(e) => {
- e.preventDefault();
- e.stopPropagation();
- void handleDownloadPlan(plan, "pdf");
- }}
- className="cursor-pointer"
- >
- <FileText className="w-4 h-4 mr-2" />
- 下載 PDF
- </DropdownMenuItem>
- {isAdmin && groups.length > 0 && (
- <DropdownMenuSub>
- <DropdownMenuSubTrigger className="cursor-pointer">
- <Users className="w-4 h-4 mr-2" />
- 更換組別
- </DropdownMenuSubTrigger>
- <DropdownMenuSubContent className="w-44 bg-white dark:bg-slate-800 border-none shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
- {groups.map((group) => {
- const params = getUnifiedGroupBadgeParams(group.slug, group.nameZh);
- return (
- <DropdownMenuItem
- key={group.id}
- onSelect={(e) => {
- e.preventDefault();
- e.stopPropagation();
- handleChangePlanGroup(plan, group.id);
- }}
- className="cursor-pointer"
- >
- <span className={cn("w-2 h-2 rounded-full", params.dot)} />
- {language === 'zh' ? group.nameZh : group.nameEn}
- </DropdownMenuItem>
- );
- })}
- </DropdownMenuSubContent>
- </DropdownMenuSub>
- )}
- {isAdmin && (
- <DropdownMenuItem
- onSelect={(e) => {
- e.preventDefault();
- e.stopPropagation();
- handleDeletePlan(plan.id, getPlanDisplayName(plan));
- }}
- className="cursor-pointer text-rose-600 focus:text-rose-600"
- >
- <Trash2 className="w-4 h-4 mr-2" />
- 刪除教案
- </DropdownMenuItem>
- )}
- </DropdownMenuContent>
- </DropdownMenu>
- </div>
- );
+  const renderPlanActions = (plan: LessonPlan) => (
+    <div className="relative z-10" onClick={(e) => e.stopPropagation()}>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            className="h-8 w-8 inline-flex items-center justify-center rounded-full text-stone-400 hover:text-foreground hover:bg-stone-200/60 dark:hover:bg-white/10 transition-colors cursor-pointer"
+            aria-label="教案操作"
+          >
+            <MoreHorizontal className="w-4 h-4" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="end"
+          onClick={(e) => e.stopPropagation()}
+          className="w-48 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-2xl p-1.5"
+        >
+          <DropdownMenuItem
+            onSelect={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              void handleDownloadPlan(plan, "word");
+            }}
+            className="cursor-pointer text-xs py-2 px-3 rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2"
+          >
+            <Download className="w-4 h-4 text-orange-500" />
+            <span>下載 Word (.docx)</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              void handleDownloadPlan(plan, "pdf");
+            }}
+            className="cursor-pointer text-xs py-2 px-3 rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2"
+          >
+            <FileText className="w-4 h-4 text-rose-500" />
+            <span>下載 PDF (.pdf)</span>
+          </DropdownMenuItem>
+          {isAdmin && groups.length > 0 && (
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger className="cursor-pointer text-xs py-2 px-3 rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2">
+                <Users className="w-4 h-4 text-stone-400" />
+                <span>更換組別</span>
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="w-48 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-2xl p-1.5">
+                {groups.map((group) => {
+                  const params = getUnifiedGroupBadgeParams(group.slug, group.nameZh);
+                  return (
+                    <DropdownMenuItem
+                      key={group.id}
+                      onSelect={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleChangePlanGroup(plan, group.id);
+                      }}
+                      className="cursor-pointer text-xs py-2 px-3 rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2"
+                    >
+                      <span className={cn("w-2 h-2 rounded-full shadow-xs shrink-0", params.colorDot)} />
+                      <span>{language === 'zh' ? group.nameZh : group.nameEn}</span>
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+          )}
+          {isAdmin && (
+            <DropdownMenuItem
+              onSelect={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleDeletePlan(plan.id, getPlanDisplayName(plan));
+              }}
+              className="cursor-pointer text-xs py-2 px-3 rounded-xl text-rose-600 hover:bg-rose-500/10 focus:text-rose-600 flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4 text-rose-500" />
+              <span>刪除教案</span>
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
 
- return (
- <div 
- className="overflow-x-clip bg-[#F9F8F6] dark:bg-slate-900 text-[#2C2A28] dark:text-slate-50 transition-colors selection:bg-orange-200 dark:selection:bg-amber-500/30 font-sans touch-auto overscroll-x-none relative min-h-screen flex flex-col sm:block"
- onTouchStart={handleSwipeStart}
- onTouchEnd={handleSwipeEnd}
- >
+  return (
+    <div 
+      className="overflow-x-clip bg-[#FAF8F5] dark:bg-[#0B1012] text-foreground transition-colors font-sans touch-auto overscroll-x-none relative min-h-screen flex flex-col sm:block"
+      onTouchStart={handleSwipeStart}
+      onTouchEnd={handleSwipeEnd}
+    >
+      <div className="max-w-[1720px] mx-auto pt-24 sm:pt-32 pb-28 sm:pb-24 px-4 sm:px-8 md:px-12 xl:px-16 touch-auto relative z-10 w-full flex flex-col sm:block overflow-y-auto sm:overflow-y-visible flex-1 sm:flex-none">
+        {/* ── HEADER ─────────────── */}
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-6 border-b border-stone-200/80 dark:border-white/10 mb-8 relative z-10">
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="w-1.5 h-1.5 rotate-45 bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.8)] inline-block" />
+              <span className="text-xs font-mono tracking-widest text-orange-600 dark:text-orange-400 font-medium uppercase">
+                {activeCamp?.name?.toUpperCase() || "NTUT CHONG DE"} // CURRICULUM DIRECTORY
+              </span>
+            </div>
+            <h1 className="text-3xl sm:text-5xl md:text-6xl font-normal tracking-[-0.03em] uppercase leading-[0.96] text-foreground">
+              {language === 'zh' ? '教案總覽' : 'Plans Overview'}
+              <span className="text-fg-muted font-light ml-3 text-lg sm:text-2xl">
+                CURRICULUM DIRECTORY
+              </span>
+            </h1>
+            <p className="text-sm sm:text-base text-fg-secondary font-light max-w-2xl leading-relaxed mt-3">
+              {language === 'zh' ? '營隊核心教案架構、即時同步修訂與分工總覽。' : 'Core curriculum architecture, real-time collaboration, and division of responsibilities.'}
+            </p>
+          </div>
 
- <div className="max-w-[1400px] mx-auto pt-20 sm:pt-32 pb-28 sm:pb-24 px-4 sm:px-6 md:px-8 xl:px-12 touch-auto relative z-10 w-full flex flex-col sm:block overflow-y-auto sm:overflow-y-visible flex-1 sm:flex-none">
- {/* ── HEADER ─────────────── */}
- <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-6 mb-0 sm:mb-12 pb-0 sm:pb-8 relative z-10 shrink-0">
- <div className="flex-1 min-w-0">
- <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-[#2C2A28] dark:text-white mb-1.5 sm:mb-2">
- {language === 'zh' ? '教案總覽' : 'Plans Overview'}
- </h1>
- <p className="text-stone-500 dark:text-slate-400 font-medium uppercase tracking-[0.2em] text-[10px] sm:text-xs">
- {activeCamp?.name || "All Projects"} // Planning // Coordination
- </p>
- </div>
- </div>
-
- <ActionBar title="PLANS ACTIONS" className="action-bar-container hidden md:!flex !flex-nowrap !justify-start md:!justify-between overflow-x-auto scrollbar-hide gap-2 md:gap-3 mb-4 p-0 !w-full">
-            <div className={cn("flex flex-nowrap items-center gap-1 shrink-0", actionBarTheme.clusterInset)}>
-              <DropdownMenu open={isAdding} onOpenChange={handleAddMenuOpenChange}>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    className={cn(actionBarTheme.controlPrimary, "px-3 font-bold text-xs cursor-pointer", !isAdmin && "opacity-60")}
-                  >
-                    {!isAdmin && <Lock className="w-3 h-3 md:mr-1" />}
-                    <Plus className="w-3.5 h-3.5 md:mr-1" />
-                    <span className="hidden md:inline">新增檔案</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="start"
-                  sideOffset={8}
-                  className="w-56 bg-background dark:bg-slate-800 shadow-[0_8px_30px_rgba(140,120,100,0.05)] dark:shadow-none border-none"
+          {/* Actions Cluster (Desktop Only - Mobile is merged to side FAB) */}
+          <div className="hidden md:flex flex-wrap items-center gap-3 shrink-0">
+            {/* Add Plan Button */}
+            <DropdownMenu open={isAdding} onOpenChange={handleAddMenuOpenChange}>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className={cn(
+                    "group inline-flex items-center gap-2.5 px-6 sm:px-7 py-3 rounded-full text-xs font-mono font-medium uppercase tracking-wider text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-[0_4px_16px_rgba(249,115,22,0.3)] hover:shadow-[0_8px_24px_rgba(249,115,22,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 cursor-pointer",
+                    !isAdmin && "opacity-60 cursor-not-allowed"
+                  )}
                 >
-                  {groups.map((group) => (
+                  {!isAdmin ? <Lock className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                  <span>新增檔案</span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                sideOffset={8}
+                className="w-56 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-2xl p-1.5"
+              >
+                {groups.map((group) => {
+                  const params = getUnifiedGroupBadgeParams(group.slug, group.nameZh);
+                  return (
                     <DropdownMenuItem
                       key={group.id}
                       onSelect={() => handleCreatePlan(group.slug)}
-                      className="cursor-pointer font-bold"
+                      className="cursor-pointer font-medium text-xs py-2.5 px-3 rounded-xl hover:bg-orange-500/10 hover:text-orange-600 transition-colors flex items-center gap-2"
                     >
+                      <span className={cn("w-2 h-2 rounded-full shadow-xs shrink-0", params.colorDot)} />
                       {language === 'zh' ? group.nameZh : group.nameEn}
                     </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-              <div className={cn(actionBarTheme.separator, "h-4 mx-0.5")} />
+            {/* Batch Export Button */}
+            <DropdownMenu open={isDownloadMenuOpen} onOpenChange={setIsDownloadMenuOpen}>
+              <DropdownMenuTrigger asChild>
+                <button
+                  disabled={isBatchDownloading || plans.length === 0}
+                  className={cn(
+                    "inline-flex items-center gap-2 px-5 py-3 rounded-full text-xs font-mono font-medium uppercase tracking-wider text-foreground/80 hover:text-foreground bg-white/80 dark:bg-white/[0.04] hover:bg-white dark:hover:bg-white/10 border border-stone-200/90 dark:border-white/15 backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 cursor-pointer",
+                    (isBatchDownloading || plans.length === 0) && "opacity-50 cursor-not-allowed"
+                  )}
+                >
+                  <Download className="w-3.5 h-3.5 text-orange-500" />
+                  <span>{isBatchDownloading ? "封裝下載中..." : "批次匯出"}</span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                sideOffset={8}
+                className="w-60 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-2xl p-1.5"
+              >
+                <div className="px-3 py-1.5 text-[10px] font-mono tracking-widest text-fg-muted uppercase">
+                  全部教案匯出 (ALL PLANS)
+                </div>
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    void handleBatchDownload("word", "all");
+                  }}
+                  className="cursor-pointer text-xs py-2 px-3 rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2"
+                >
+                  <FileText className="w-4 h-4 text-orange-500" />
+                  <span>所有 Word (.docx)</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    void handleBatchDownload("pdf", "all");
+                  }}
+                  className="cursor-pointer text-xs py-2 px-3 rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2"
+                >
+                  <FileText className="w-4 h-4 text-rose-500" />
+                  <span>所有 PDF (.pdf)</span>
+                </DropdownMenuItem>
+                <div className="h-px bg-stone-200/60 dark:bg-white/10 my-1 mx-2" />
+                <div className="px-3 py-1.5 text-[10px] font-mono tracking-widest text-fg-muted uppercase">
+                  目前篩選結果 (FILTERED)
+                </div>
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    void handleBatchDownload("word", "filtered");
+                  }}
+                  className="cursor-pointer text-xs py-2 px-3 rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2 text-fg-secondary"
+                >
+                  <Download className="w-3.5 h-3.5 text-stone-400" />
+                  <span>僅限目前篩選 (Word)</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    void handleBatchDownload("pdf", "filtered");
+                  }}
+                  className="cursor-pointer text-xs py-2 px-3 rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2 text-fg-secondary"
+                >
+                  <Download className="w-3.5 h-3.5 text-stone-400" />
+                  <span>僅限目前篩選 (PDF)</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
 
-              <DropdownMenu open={isDownloadMenuOpen} onOpenChange={setIsDownloadMenuOpen}>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    disabled={isBatchDownloading || plans.length === 0}
-                    className={cn(
-                      actionBarTheme.controlAccent,
-                      "px-3 font-bold text-xs cursor-pointer",
-                      (isBatchDownloading || plans.length === 0) && "opacity-60 cursor-not-allowed"
-                    )}
-                    title="批次下載教案"
-                  >
-                    <Download className={cn("w-3.5 h-3.5", !isBatchDownloading && "md:mr-1.5")} />
-                    <span className="hidden md:inline">{isBatchDownloading ? "封裝下載中..." : "批次下載"}</span>
-                  </Button>
-                </DropdownMenuTrigger>
- <DropdownMenuContent align="start" sideOffset={8} className="w-56 bg-background dark:bg-slate-800/95 shadow-[0_16px_40px_rgba(140,120,100,0.06)] border-none rounded-2xl overflow-hidden p-2">
- <DropdownMenuItem
- onSelect={(e) => {
- e.preventDefault();
- void handleBatchDownload("word", "all");
- }}
- className="cursor-pointer rounded-lg px-3 py-2.5 font-medium transition-colors focus:bg-stone-50 dark:focus:bg-slate-700/50"
- >
- <FileText className="w-4 h-4 mr-2.5 text-stone-400" />
- 所有的 Word
- </DropdownMenuItem>
- <DropdownMenuItem
- onSelect={(e) => {
- e.preventDefault();
- void handleBatchDownload("pdf", "all");
- }}
- className="cursor-pointer rounded-lg px-3 py-2.5 font-medium transition-colors focus:bg-stone-50 dark:focus:bg-slate-700/50"
- >
- <FileText className="w-4 h-4 mr-2.5 text-rose-400" />
- 所有的 PDF
- </DropdownMenuItem>
- <div className="h-px bg-stone-100 dark:bg-slate-700/50 my-1 mx-2"></div>
- <DropdownMenuItem
- onSelect={(e) => {
- e.preventDefault();
- void handleBatchDownload("word", "filtered");
- }}
- className="cursor-pointer rounded-lg px-3 py-2.5 font-medium transition-colors focus:bg-stone-50 dark:focus:bg-slate-700/50 text-stone-500"
- >
- 僅限目前篩選 (Word)
- </DropdownMenuItem>
- <DropdownMenuItem
- onSelect={(e) => {
- e.preventDefault();
- void handleBatchDownload("pdf", "filtered");
- }}
- className="cursor-pointer rounded-lg px-3 py-2.5 font-medium transition-colors focus:bg-stone-50 dark:focus:bg-slate-700/50 text-stone-500"
- >
- 僅限目前篩選 (PDF)
- </DropdownMenuItem>
- </DropdownMenuContent>
- </DropdownMenu>
- </div>
+        {/* ── 4-COLUMN HUD METRICS STRIP ── */}
+        {/* Desktop Full HUD Strip */}
+        <div className="hidden md:grid md:grid-cols-4 gap-4 sm:gap-6 pb-6 mb-8 border-b border-stone-200/80 dark:border-white/10">
+          <div className="flex flex-col">
+            <span className="text-[10px] font-mono tracking-widest text-fg-muted uppercase flex items-center gap-1.5 mb-1">
+              <span className="w-1 h-1 rotate-45 bg-orange-500" />
+              01 / TOTAL PLANS
+            </span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl sm:text-3xl font-light font-mono tracking-tight text-foreground">
+                {plans.length}
+              </span>
+              <span className="text-xs font-mono text-fg-muted uppercase">RECORDS</span>
+            </div>
+          </div>
 
- <div className="flex-1 hidden md:block"></div>
+          <div className="flex flex-col">
+            <span className="text-[10px] font-mono tracking-widest text-fg-muted uppercase flex items-center gap-1.5 mb-1">
+              <span className="w-1 h-1 rotate-45 bg-orange-500" />
+              02 / ACTIVE CAMP
+            </span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-base sm:text-xl font-normal font-mono tracking-tight text-orange-600 dark:text-orange-400 truncate">
+                {activeCamp?.name || "ALL EDITIONS"}
+              </span>
+            </div>
+          </div>
 
- <div className="flex items-center gap-2 shrink-0 min-w-max">
- <div className={cn("flex items-center shrink-0 gap-1.5", actionBarTheme.clusterInset)}>
- <button onClick={() => setViewType("grid")} className={cn("p-2 rounded-lg transition-all cursor-pointer group", viewType === "grid" ? actionBarTheme.segmentedActive : actionBarTheme.segmentedIdle)} title="畫廊視圖 (Grid)">
- <LayoutGrid className={cn("w-4 h-4 group-hover:scale-110 transition-transform", viewType === "grid" && "scale-110")} />
- </button>
- <button onClick={() => setViewType("board")} className={cn("p-2 rounded-lg transition-all cursor-pointer group", viewType === "board" ? actionBarTheme.segmentedActive : actionBarTheme.segmentedIdle)} title="看板視圖 (Board)">
- <Kanban className={cn("w-4 h-4 group-hover:scale-110 transition-transform", viewType === "board" && "scale-110")} />
- </button>
- <button onClick={() => setViewType("list")} className={cn("p-2 rounded-lg transition-all cursor-pointer group", viewType === "list" ? actionBarTheme.segmentedActive : actionBarTheme.segmentedIdle)} title="清單視圖 (List)">
- <List className={cn("w-4 h-4 group-hover:scale-110 transition-transform", viewType === "list" && "scale-110")} />
- </button>
- </div>
+          <div className="flex flex-col">
+            <span className="text-[10px] font-mono tracking-widest text-fg-muted uppercase flex items-center gap-1.5 mb-1">
+              <span className="w-1 h-1 rotate-45 bg-orange-500" />
+              03 / DIVISIONS
+            </span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl sm:text-3xl font-light font-mono tracking-tight text-foreground">
+                {groups.length}
+              </span>
+              <span className="text-xs font-mono text-fg-muted uppercase">TEAMS</span>
+            </div>
+          </div>
 
- <div className={cn(actionBarTheme.separator, "h-4 mx-0.5 shrink-0")} />
+          <div className="flex flex-col">
+            <span className="text-[10px] font-mono tracking-widest text-fg-muted uppercase flex items-center gap-1.5 mb-1">
+              <span className="w-1 h-1 rotate-45 bg-orange-500" />
+              04 / VIEW MODE
+            </span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-base sm:text-xl font-medium font-mono tracking-wider text-foreground uppercase">
+                [ {viewType.toUpperCase()} ]
+              </span>
+            </div>
+          </div>
+        </div>
 
- <div className={cn("flex items-center shrink-0 gap-1.5", actionBarTheme.clusterInset)}>
- <button onClick={() => { setSwipeDirection(-1); setFilterGroup('all'); }} className={cn(actionBarTheme.segmented, filterGroup === 'all' ? actionBarTheme.segmentedActive : actionBarTheme.segmentedIdle)}> 
- <span className="md:hidden">全部</span>
- <span className="hidden md:inline">{language === 'zh' ? '全部' : 'All Plans'}</span>
- </button>
- {groups.map((group) => {
- const params = getUnifiedGroupBadgeParams(group.slug, group.nameZh);
- const isActive = filterGroup === group.slug;
- const isHovered = hoveredGroupId === group.id;
- return (
- <button
- key={group.id}
- onClick={() => { setSwipeDirection(1); setFilterGroup(group.slug); }}
- onMouseEnter={() => setHoveredGroupId(group.id)}
- onMouseLeave={() => setHoveredGroupId(null)}
- onFocus={() => setHoveredGroupId(group.id)}
- onBlur={() => setHoveredGroupId(null)}
- style={(isActive || isHovered) ? { backgroundColor: params.uiBg, color: params.uiText } : undefined}
- className={cn(
- actionBarTheme.segmented,
- (isActive || isHovered)
- ? "shadow-sm scale-100"
- : actionBarTheme.segmentedIdle
- )}
- >
- {isActive && (
- <motion.div layoutId="activeGroupPill" className="absolute inset-0 bg-black/5 dark:bg-black/10 mix-blend-multiply rounded-lg pointer-events-none" />
- )}
- <span className="md:hidden">{(language === 'zh' ? group.nameZh : group.nameEn).slice(0, 2)}</span>
- <span className="hidden md:inline relative z-10">{language === 'zh' ? group.nameZh : group.nameEn}</span>
- </button>
- );
- })}
- </div>
+        {/* Mobile Compact Micro HUD Strip (drastically reduced footprint) */}
+        <div className="md:hidden grid grid-cols-4 gap-2 py-2 px-3 mb-4 rounded-xl bg-white/60 dark:bg-white/[0.02] border border-stone-200/80 dark:border-white/10 backdrop-blur-sm">
+          <div className="flex flex-col min-w-0">
+            <span className="text-[9px] font-mono tracking-tight text-fg-muted uppercase flex items-center gap-1 truncate">
+              <span className="w-1 h-1 rotate-45 bg-orange-500 shrink-0" />
+              01/PLANS
+            </span>
+            <div className="flex items-baseline gap-1 mt-0.5">
+              <span className="text-sm font-light font-mono text-foreground leading-none">
+                {plans.length}
+              </span>
+              <span className="text-[9px] font-mono text-fg-muted uppercase">REC</span>
+            </div>
+          </div>
 
- <div className={cn(actionBarTheme.separator, "h-4 mx-0.5 shrink-0")} />
+          <div className="flex flex-col min-w-0">
+            <span className="text-[9px] font-mono tracking-tight text-fg-muted uppercase flex items-center gap-1 truncate">
+              <span className="w-1 h-1 rotate-45 bg-orange-500 shrink-0" />
+              02/CAMP
+            </span>
+            <span className="text-xs font-mono text-orange-600 dark:text-orange-400 truncate mt-0.5 leading-none">
+              {activeCamp?.name || "ALL"}
+            </span>
+          </div>
 
- <div className={cn("flex items-center shrink-0 gap-1.5", actionBarTheme.clusterInset)}>
- <button onClick={() => handleSortClick('updatedAt')} className={cn(actionBarTheme.segmented, sortBy === 'updatedAt' ? actionBarTheme.segmentedActive : actionBarTheme.segmentedIdle)}> 
- <Clock className="w-3.5 h-3.5" />
- <span className="hidden md:inline">修改時間</span>
- {sortBy === 'updatedAt' && (
- <span className="inline-flex items-center text-orange-500 dark:text-amber-500">
- {sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />}
- </span>
- )}
- </button>
- <button onClick={() => handleSortClick('name')} className={cn(actionBarTheme.segmented, sortBy === 'name' ? actionBarTheme.segmentedActive : actionBarTheme.segmentedIdle)}> 
- <FileText className="w-3.5 h-3.5" />
- <span className="hidden md:inline">名稱排序</span>
- {sortBy === 'name' && (
- <span className="inline-flex items-center text-orange-500 dark:text-amber-500">
- {sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />}
- </span>
- )}
- </button>
-  <button onClick={() => handleSortClick('category')} className={cn(actionBarTheme.segmented, sortBy === 'category' ? actionBarTheme.segmentedActive : actionBarTheme.segmentedIdle)}> 
-  <Filter className="w-3.5 h-3.5" />
-  <span className="hidden md:inline">類別排序</span>
-  {sortBy === 'category' && (
-  <span className="inline-flex items-center text-orange-500 dark:text-amber-500">
-  {sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />}
-  </span>
-  )}
-  </button>
- </div>
- </div>
- </ActionBar>
+          <div className="flex flex-col min-w-0">
+            <span className="text-[9px] font-mono tracking-tight text-fg-muted uppercase flex items-center gap-1 truncate">
+              <span className="w-1 h-1 rotate-45 bg-orange-500 shrink-0" />
+              03/TEAMS
+            </span>
+            <div className="flex items-baseline gap-1 mt-0.5">
+              <span className="text-sm font-light font-mono text-foreground leading-none">
+                {groups.length}
+              </span>
+              <span className="text-[9px] font-mono text-fg-muted uppercase">DIV</span>
+            </div>
+          </div>
 
-  {/* ── MOBILE FIXED SIDE BAR (Vertical FABs) ─────────── */}
-  <div className="md:hidden">
-    <AnimatePresence>
-      {activeFab && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-[60]"
-          onClick={() => setActiveFab(null)}
-        />
-      )}
-    </AnimatePresence>
+          <div className="flex flex-col min-w-0">
+            <span className="text-[9px] font-mono tracking-tight text-fg-muted uppercase flex items-center gap-1 truncate">
+              <span className="w-1 h-1 rotate-45 bg-orange-500 shrink-0" />
+              04/VIEW
+            </span>
+            <span className="text-xs font-mono font-medium text-foreground uppercase mt-0.5 leading-none truncate">
+              {viewType}
+            </span>
+          </div>
+        </div>
 
-    <FabStagger className="fixed bottom-20 right-2 z-[65] flex flex-col items-end gap-3 pointer-events-none [&>*]:pointer-events-auto">
-      
-      {/* Batch Download FAB */}
-      <div className="relative flex items-center justify-end">
-        <AnimatePresence>
-          {activeFab === 'download' && (
-            <motion.div
-              initial={{ opacity: 0, x: 20, scale: 0.95 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 10, scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              className="absolute right-14 bg-background/95 backdrop-blur-xl border border-stone-200/60 dark:border-slate-700/60 rounded-xl shadow-xl p-1 flex flex-col w-48"
-            >
-              <button onClick={() => { handleBatchDownload("word", "all"); setActiveFab(null); }} className="flex items-center px-4 py-3 text-left font-semibold text-[13px] rounded-lg hover:bg-stone-100 dark:hover:bg-slate-800 transition-colors text-stone-700 dark:text-slate-200">
-                <FileText className="w-4 h-4 mr-2.5 text-stone-400" /> 所有的 Word
+        {/* ── TOOLBAR (Filter, Search & Controls) ─────────── */}
+        <div className="flex flex-col gap-3 mb-6 sm:mb-12">
+          {/* Search Input */}
+          <div className="relative w-full group">
+            <Search className="w-4 h-4 sm:w-5 sm:h-5 absolute left-4 top-1/2 -translate-y-1/2 text-stone-500 dark:text-stone-400 group-focus-within:text-orange-500 transition-colors pointer-events-none z-10" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="請搜尋教案名稱、類別或人員..."
+              className="w-full pl-11 pr-14 h-12 rounded-2xl bg-white/80 dark:bg-white/[0.03] border border-stone-200/80 dark:border-white/10 backdrop-blur-md text-sm sm:text-base font-normal text-foreground placeholder:text-fg-muted focus:outline-none focus:border-orange-500/80 focus:ring-2 focus:ring-orange-500/20 transition-all shadow-xs"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-mono text-fg-muted hover:text-orange-500 flex items-center gap-1 z-10 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>CLEAR</span>
               </button>
-              <button onClick={() => { handleBatchDownload("pdf", "all"); setActiveFab(null); }} className="flex items-center px-4 py-3 text-left font-semibold text-[13px] rounded-lg hover:bg-stone-100 dark:hover:bg-slate-800 transition-colors text-stone-700 dark:text-slate-200">
-                <FileText className="w-4 h-4 mr-2.5 text-rose-400" /> 所有的 PDF
-              </button>
-              <div className="h-px w-full bg-stone-200 dark:bg-slate-700 my-1" />
-              <button onClick={() => { handleBatchDownload("word", "filtered"); setActiveFab(null); }} className="flex items-center px-4 py-3 text-left font-semibold text-[13px] rounded-lg hover:bg-stone-100 dark:hover:bg-slate-800 transition-colors text-stone-500">
-                僅限篩選 (Word)
-              </button>
-              <button onClick={() => { handleBatchDownload("pdf", "filtered"); setActiveFab(null); }} className="flex items-center px-4 py-3 text-left font-semibold text-[13px] rounded-lg hover:bg-stone-100 dark:hover:bg-slate-800 transition-colors text-stone-500">
-                僅限篩選 (PDF)
-              </button>
-            </motion.div>
+            )}
+          </div>
+
+          {/* Mobile Active Filter Badge Indicator */}
+          {filterGroup !== 'all' && (
+            <div className="flex md:hidden items-center gap-2">
+              <span className="text-[10px] font-mono text-fg-muted uppercase">目前分組:</span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/30">
+                <span>{groups.find(g => g.slug === filterGroup)?.nameZh || filterGroup}</span>
+                <button
+                  onClick={() => setFilterGroup('all')}
+                  className="hover:opacity-80 p-0.5 cursor-pointer"
+                  title="清除分組篩選"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            </div>
           )}
-        </AnimatePresence>
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          disabled={isBatchDownloading || plans.length === 0}
-          onClick={() => setActiveFab(activeFab === 'download' ? null : 'download')}
-          className={cn(
-            "h-11 w-11 rounded-full shadow-lg border backdrop-blur-md flex items-center justify-center transition-colors relative z-10 focus:outline-none",
-            (isBatchDownloading || plans.length === 0) && "opacity-60 cursor-not-allowed",
-            activeFab === 'download' ? "bg-stone-200/90 dark:bg-slate-700/90 border-transparent ring-2 ring-orange-500/50" : "bg-white/90 dark:bg-slate-800/90 border-stone-200/50 dark:border-slate-700/50"
-          )}
-          title="批量下載"
-        >
-          <Download className="w-5 h-5 text-stone-700 dark:text-slate-300" />
-        </motion.button>
-      </div>
 
-      {/* View Type FAB */}
-      <div className="relative flex items-center justify-end">
-        <AnimatePresence>
-          {activeFab === 'view' && (
-            <motion.div
-              initial={{ opacity: 0, x: 20, scale: 0.95 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 10, scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              className="absolute right-14 bg-background/95 backdrop-blur-xl border border-stone-200/60 dark:border-slate-700/60 rounded-xl shadow-xl p-1 flex flex-col w-36"
-            >
-              <button onClick={() => { setViewType("grid"); setActiveFab(null); }} className={cn("flex items-center px-4 py-3 text-left font-bold text-xs rounded-lg transition-colors gap-2", viewType === "grid" ? "bg-stone-100 dark:bg-slate-700 text-stone-900 dark:text-white" : "text-stone-700 dark:text-slate-200 hover:bg-stone-50 dark:hover:bg-slate-800")}>
-                <LayoutGrid className="w-4 h-4" /> Grid
+          {/* Filter Rail & Controls Cluster (Desktop Only) */}
+          <div className="hidden md:flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            {/* Group Filter Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+              <button
+                onClick={() => { setSwipeDirection(-1); setFilterGroup('all'); }}
+                className={cn(
+                  "relative px-4 py-2 rounded-full text-xs font-mono tracking-wider uppercase transition-all duration-200 shrink-0 cursor-pointer",
+                  filterGroup === 'all'
+                    ? "bg-orange-500 text-white font-medium shadow-md shadow-orange-500/20"
+                    : "bg-white/60 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/10 border border-stone-200/80 dark:border-white/10 text-fg-secondary hover:text-foreground"
+                )}
+              >
+                <span>全部 ALL ({plans.length})</span>
               </button>
-              <button onClick={() => { setViewType("board"); setActiveFab(null); }} className={cn("flex items-center px-4 py-3 text-left font-bold text-xs rounded-lg transition-colors gap-2", viewType === "board" ? "bg-stone-100 dark:bg-slate-700 text-stone-900 dark:text-white" : "text-stone-700 dark:text-slate-200 hover:bg-stone-50 dark:hover:bg-slate-800")}>
-                <Kanban className="w-4 h-4" /> Board
-              </button>
-              <button onClick={() => { setViewType("list"); setActiveFab(null); }} className={cn("flex items-center px-4 py-3 text-left font-bold text-xs rounded-lg transition-colors gap-2", viewType === "list" ? "bg-stone-100 dark:bg-slate-700 text-stone-900 dark:text-white" : "text-stone-700 dark:text-slate-200 hover:bg-stone-50 dark:hover:bg-slate-800")}>
-                <List className="w-4 h-4" /> List
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={() => setActiveFab(activeFab === 'view' ? null : 'view')}
-          className={cn(
-            "h-11 w-11 rounded-full shadow-lg border backdrop-blur-md flex items-center justify-center transition-colors relative z-10 focus:outline-none",
-            activeFab === 'view' ? "bg-stone-200/90 dark:bg-slate-700/90 border-transparent ring-2 ring-orange-500/50" : "bg-white/90 dark:bg-slate-800/90 border-stone-200/50 dark:border-slate-700/50"
-          )}
-          title="顯示模式"
-        >
-          {viewType === "grid" ? <LayoutGrid className="w-5 h-5 text-stone-700 dark:text-slate-300" /> : viewType === "board" ? <Kanban className="w-5 h-5 text-stone-700 dark:text-slate-300" /> : <List className="w-5 h-5 text-stone-700 dark:text-slate-300" />}
-        </motion.button>
-      </div>
 
-      {/* Filter FAB */}
-      <div className="relative flex items-center justify-end">
-        <AnimatePresence>
-          {activeFab === 'filter' && (
-            <motion.div
-              initial={{ opacity: 0, x: 20, scale: 0.95 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 10, scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              className="absolute right-14 bg-background/95 backdrop-blur-xl border border-stone-200/60 dark:border-slate-700/60 rounded-xl shadow-xl p-1 flex flex-col w-40"
-            >
-              <button onClick={() => { setFilterGroup('all'); setActiveFab(null); }} className={cn("px-4 py-3 text-left font-bold text-[13px] rounded-lg transition-colors", filterGroup === 'all' ? "bg-stone-100 dark:bg-slate-700 text-stone-900 dark:text-white" : "text-stone-700 dark:text-slate-200 hover:bg-stone-50 dark:hover:bg-slate-800")}>
-                全部
-              </button>
               {groups.map((group) => {
-                const params = getUnifiedGroupBadgeParams(group.slug, group.nameZh);
                 const isActive = filterGroup === group.slug;
+                const count = plans.filter((p) => getPlanGroup(p)?.slug === group.slug).length;
+
                 return (
-                  <button 
-                    key={`m-filter-${group.id}`} 
-                    onClick={() => { setFilterGroup(group.slug); setActiveFab(null); }}
-                    className={cn("px-4 py-3 text-left font-bold text-[13px] rounded-lg transition-colors flex items-center gap-2", isActive && "shadow-sm")}
-                    style={isActive ? { backgroundColor: params.uiBg, color: params.uiText } : undefined}
+                  <button
+                    key={group.id}
+                    onClick={() => { setSwipeDirection(1); setFilterGroup(group.slug); }}
+                    className={cn(
+                      "relative px-4 py-2 rounded-full text-xs font-mono tracking-wider uppercase transition-all duration-200 shrink-0 cursor-pointer flex items-center gap-1.5",
+                      isActive
+                        ? "bg-orange-500 text-white font-medium shadow-md shadow-orange-500/20"
+                        : "bg-white/60 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/10 border border-stone-200/80 dark:border-white/10 text-fg-secondary hover:text-foreground"
+                    )}
                   >
-                    {language === 'zh' ? group.nameZh : group.nameEn}
+                    <span>{language === 'zh' ? group.nameZh : group.nameEn}</span>
+                    <span className={cn(
+                      "text-[10px] px-1.5 py-0.2 rounded-full font-mono",
+                      isActive ? "bg-white/20 text-white" : "bg-black/5 dark:bg-white/10 text-fg-muted"
+                    )}>
+                      {count}
+                    </span>
                   </button>
                 );
               })}
-            </motion.div>
-          )}
-        </AnimatePresence>
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={() => setActiveFab(activeFab === 'filter' ? null : 'filter')}
-          className={cn(
-            "h-11 w-11 rounded-full shadow-lg border backdrop-blur-md flex items-center justify-center transition-colors relative z-10 focus:outline-none",
-            filterGroup !== 'all' ? "ring-2 ring-orange-500 bg-white/90 dark:bg-slate-800/90" : (activeFab === 'filter' ? "bg-stone-200/90 dark:bg-slate-700/90 border-transparent ring-2 ring-orange-500/50" : "bg-white/90 dark:bg-slate-800/90 border-stone-200/50 dark:border-slate-700/50")
-          )}
-          title="篩選分類"
-        >
-          <Filter className="w-5 h-5 text-stone-700 dark:text-slate-300" />
-          {filterGroup !== 'all' && <span className="absolute top-0 right-0 w-3 h-3 bg-orange-500 rounded-full border-2 border-white dark:border-slate-800" />}
-        </motion.button>
-      </div>
+            </div>
 
-      {/* Sort FAB */}
-      <div className="relative flex items-center justify-end">
-        <AnimatePresence>
-          {activeFab === 'sort' && (
-            <motion.div
-              initial={{ opacity: 0, x: 20, scale: 0.95 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 10, scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              className="absolute right-14 bg-background/95 backdrop-blur-xl border border-stone-200/60 dark:border-slate-700/60 rounded-xl shadow-xl p-1 flex flex-col w-40"
-            >
-              <button onClick={() => { handleSortClick('updatedAt'); setActiveFab(null); }} className={cn("flex items-center justify-between px-4 py-3 text-left font-bold text-[13px] rounded-lg transition-colors gap-2", sortBy === 'updatedAt' ? "bg-stone-100 dark:bg-slate-700 text-stone-900 dark:text-white" : "text-stone-700 dark:text-slate-200 hover:bg-stone-50 dark:hover:bg-slate-800")}>
-                <div className="flex items-center gap-2"><Clock className="w-4 h-4" /> 時間</div>
-                {sortBy === 'updatedAt' && (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3 text-orange-500" /> : <ArrowDown className="w-3 h-3 text-orange-500" />)}
-              </button>
-              <button onClick={() => { handleSortClick('name'); setActiveFab(null); }} className={cn("flex items-center justify-between px-4 py-3 text-left font-bold text-[13px] rounded-lg transition-colors gap-2", sortBy === 'name' ? "bg-stone-100 dark:bg-slate-700 text-stone-900 dark:text-white" : "text-stone-700 dark:text-slate-200 hover:bg-stone-50 dark:hover:bg-slate-800")}>
-                <div className="flex items-center gap-2"><FileText className="w-4 h-4" /> 名稱</div>
-                {sortBy === 'name' && (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3 text-orange-500" /> : <ArrowDown className="w-3 h-3 text-orange-500" />)}
-              </button>
-              <button onClick={() => { handleSortClick('category'); setActiveFab(null); }} className={cn("flex items-center justify-between px-4 py-3 text-left font-bold text-[13px] rounded-lg transition-colors gap-2", sortBy === 'category' ? "bg-stone-100 dark:bg-slate-700 text-stone-900 dark:text-white" : "text-stone-700 dark:text-slate-200 hover:bg-stone-50 dark:hover:bg-slate-800")}>
-                <div className="flex items-center gap-2"><Filter className="w-4 h-4" /> 類別</div>
-                {sortBy === 'category' && (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3 text-orange-500" /> : <ArrowDown className="w-3 h-3 text-orange-500" />)}
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={() => setActiveFab(activeFab === 'sort' ? null : 'sort')}
-          className={cn(
-            "h-11 w-11 rounded-full shadow-lg border backdrop-blur-md flex items-center justify-center transition-colors relative z-10 focus:outline-none",
-            activeFab === 'sort' ? "bg-stone-200/90 dark:bg-slate-700/90 border-transparent ring-2 ring-orange-500/50" : "bg-white/90 dark:bg-slate-800/90 border-stone-200/50 dark:border-slate-700/50"
-          )}
-          title="排序"
-        >
-          {sortBy === 'updatedAt' ? <Clock className="w-5 h-5 text-stone-700 dark:text-slate-300" /> : sortBy === 'category' ? <Filter className="w-5 h-5 text-stone-700 dark:text-slate-300" /> : <FileText className="w-5 h-5 text-stone-700 dark:text-slate-300" />}
-        </motion.button>
-      </div>
-
-      <div className="h-px w-6 bg-stone-200 dark:bg-slate-700 my-1 mr-2.5" />
-
-      {/* Add Plan FAB */}
-      <div className="relative flex items-center justify-end">
-        <AnimatePresence>
-          {activeFab === 'add' && (
-            <motion.div
-              initial={{ opacity: 0, x: 20, scale: 0.95 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 10, scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              className="absolute right-16 bg-background/95 backdrop-blur-xl border border-stone-200/60 dark:border-slate-700/60 rounded-xl shadow-xl p-1 flex flex-col w-56"
-            >
-              {groups.map((group) => (
-                <button key={`m-add-${group.id}`} onClick={() => { handleCreatePlan(group.slug); setActiveFab(null); }} className="px-4 py-3.5 text-left font-bold text-sm rounded-lg hover:bg-stone-100 dark:hover:bg-slate-800 transition-colors text-stone-800 dark:text-slate-100">
-                  {language === 'zh' ? group.nameZh : group.nameEn}
+            {/* Secondary Controls (Sort & View Mode) */}
+            <div className="flex items-center gap-3 shrink-0 self-end lg:self-auto">
+              {/* Sort Controls */}
+              <div className="flex items-center gap-1 bg-white/60 dark:bg-white/[0.03] p-1 rounded-full border border-stone-200/80 dark:border-white/10">
+                <button
+                  onClick={() => handleSortClick('updatedAt')}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer",
+                    sortBy === 'updatedAt' ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium" : "text-fg-muted hover:text-foreground"
+                  )}
+                >
+                  <Clock className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">時間</span>
+                  {sortBy === 'updatedAt' && (
+                    sortDirection === 'asc' ? <ArrowUp className="w-3 h-3 text-orange-500" /> : <ArrowDown className="w-3 h-3 text-orange-500" />
+                  )}
                 </button>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={() => {
-            if (!isAdmin) return;
-            setActiveFab(activeFab === 'add' ? null : 'add');
-          }}
-          className={cn(
-            "h-14 w-14 rounded-full shadow-lg border-none flex items-center justify-center transition-all relative z-10 focus:outline-none",
-            !isAdmin ? "opacity-60 bg-stone-400 dark:bg-slate-600" : "bg-[#f48c25] hover:bg-[#e67e1a] text-white"
-          )}
-          title="新增教案"
-        >
-          <motion.div animate={{ rotate: activeFab === 'add' ? 45 : 0 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
-            <Plus className="w-6 h-6" />
-          </motion.div>
-        </motion.button>
-      </div>
 
-    </FabStagger>
-  </div>
-  
-{/* ── TOOLBAR (Filter & Search) ─────────── */}
- <div className="flex flex-col gap-4 mb-4 sm:mb-8 max-w-2xl shrink-0">
- <div className="relative group">
- <Search className="w-4 h-4 sm:w-5 sm:h-5 absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 dark:text-slate-500 group-focus-within:text-orange-500 dark:group-focus-within:text-amber-500 transition-colors" />
- <Input 
- value={searchQuery} 
- onChange={(e) => setSearchQuery(e.target.value)} 
- placeholder="請輸入名稱、分類或相關人員..." 
- className="pl-12 h-12 w-full bg-white dark:bg-slate-800 text-sm sm:text-[15px] focus:ring-2 focus:ring-orange-500/20 border-none transition-all rounded-2xl font-medium shadow-[0_8px_30px_rgba(140,120,100,0.06)] hover:shadow-[0_8px_30px_rgba(140,120,100,0.1)] dark:shadow-none dark:ring-1 dark:ring-white/10" 
- />
- </div>
- </div>
+                <button
+                  onClick={() => handleSortClick('name')}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer",
+                    sortBy === 'name' ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium" : "text-fg-muted hover:text-foreground"
+                  )}
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">名稱</span>
+                  {sortBy === 'name' && (
+                    sortDirection === 'asc' ? <ArrowUp className="w-3 h-3 text-orange-500" /> : <ArrowDown className="w-3 h-3 text-orange-500" />
+                  )}
+                </button>
+
+                <button
+                  onClick={() => handleSortClick('category')}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer",
+                    sortBy === 'category' ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium" : "text-fg-muted hover:text-foreground"
+                  )}
+                >
+                  <Filter className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">類別</span>
+                  {sortBy === 'category' && (
+                    sortDirection === 'asc' ? <ArrowUp className="w-3 h-3 text-orange-500" /> : <ArrowDown className="w-3 h-3 text-orange-500" />
+                  )}
+                </button>
+              </div>
+
+              {/* View Switcher Pill */}
+              <div className="flex items-center gap-1 bg-white/60 dark:bg-white/[0.03] p-1 rounded-full border border-stone-200/80 dark:border-white/10">
+                <button
+                  onClick={() => setViewType("list")}
+                  className={cn(
+                    "p-2 rounded-full transition-all cursor-pointer",
+                    viewType === "list" ? "bg-orange-500 text-white shadow-xs" : "text-fg-muted hover:text-foreground"
+                  )}
+                  title="清單視圖 (List)"
+                >
+                  <List className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setViewType("grid")}
+                  className={cn(
+                    "p-2 rounded-full transition-all cursor-pointer",
+                    viewType === "grid" ? "bg-orange-500 text-white shadow-xs" : "text-fg-muted hover:text-foreground"
+                  )}
+                  title="畫廊視圖 (Grid)"
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setViewType("board")}
+                  className={cn(
+                    "p-2 rounded-full transition-all cursor-pointer",
+                    viewType === "board" ? "bg-orange-500 text-white shadow-xs" : "text-fg-muted hover:text-foreground"
+                  )}
+                  title="看板視圖 (Board)"
+                >
+                  <Kanban className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── MOBILE FIXED SIDE BAR (Vertical FABs) ─────────── */}
+        <div className="md:hidden">
+          <AnimatePresence>
+            {activeFab && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="fixed inset-0 z-[60]"
+                onClick={() => setActiveFab(null)}
+              />
+            )}
+          </AnimatePresence>
+
+          <FabStagger className="fixed bottom-20 right-3 z-[65] flex flex-col items-end gap-3 pointer-events-none [&>*]:pointer-events-auto">
+            {/* 01. View Mode Circle FAB */}
+            <div className="relative flex items-center justify-end">
+              <AnimatePresence>
+                {activeFab === 'view' && (
+                  <motion.div
+                    initial={{ opacity: 0, x: 20, scale: 0.95 }}
+                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                    exit={{ opacity: 0, x: 10, scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    className="absolute right-14 bg-white dark:bg-[#14191C] backdrop-blur-xl border border-stone-200/80 dark:border-white/10 rounded-2xl shadow-xl p-2 flex flex-col w-44 z-20"
+                  >
+                    <div className="px-2.5 py-1 text-[10px] font-mono tracking-widest text-fg-muted uppercase flex items-center gap-1.5 mb-1">
+                      <span className="w-1.5 h-1.5 rotate-45 bg-orange-500" />
+                      檢視版型 VIEW
+                    </div>
+                    <button
+                      onClick={() => { setViewType("list"); setActiveFab(null); }}
+                      className={cn(
+                        "flex items-center gap-2.5 px-3 py-2 text-xs font-mono rounded-xl transition-colors cursor-pointer",
+                        viewType === "list"
+                          ? "bg-orange-500 text-white font-medium shadow-xs"
+                          : "text-foreground hover:bg-stone-100 dark:hover:bg-white/5"
+                      )}
+                    >
+                      <List className="w-4 h-4" />
+                      <span>清單 List</span>
+                    </button>
+                    <button
+                      onClick={() => { setViewType("grid"); setActiveFab(null); }}
+                      className={cn(
+                        "flex items-center gap-2.5 px-3 py-2 text-xs font-mono rounded-xl transition-colors cursor-pointer",
+                        viewType === "grid"
+                          ? "bg-orange-500 text-white font-medium shadow-xs"
+                          : "text-foreground hover:bg-stone-100 dark:hover:bg-white/5"
+                      )}
+                    >
+                      <LayoutGrid className="w-4 h-4" />
+                      <span>畫廊 Grid</span>
+                    </button>
+                    <button
+                      onClick={() => { setViewType("board"); setActiveFab(null); }}
+                      className={cn(
+                        "flex items-center gap-2.5 px-3 py-2 text-xs font-mono rounded-xl transition-colors cursor-pointer",
+                        viewType === "board"
+                          ? "bg-orange-500 text-white font-medium shadow-xs"
+                          : "text-foreground hover:bg-stone-100 dark:hover:bg-white/5"
+                      )}
+                    >
+                      <Kanban className="w-4 h-4" />
+                      <span>看板 Board</span>
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setActiveFab(activeFab === 'view' ? null : 'view')}
+                className={cn(
+                  "h-11 w-11 rounded-full shadow-lg border backdrop-blur-md flex items-center justify-center transition-colors relative z-10 focus:outline-none cursor-pointer",
+                  activeFab === 'view'
+                    ? "bg-orange-500 text-white border-transparent shadow-orange-500/30"
+                    : "bg-white/90 dark:bg-[#14191C]/90 border-stone-200/60 dark:border-white/10 text-foreground"
+                )}
+                title="切換檢視版型"
+              >
+                {viewType === "list" && <List className="w-4 h-4" />}
+                {viewType === "grid" && <LayoutGrid className="w-4 h-4" />}
+                {viewType === "board" && <Kanban className="w-4 h-4" />}
+              </motion.button>
+            </div>
+
+            {/* 02. Sort Order Circle FAB */}
+            <div className="relative flex items-center justify-end">
+              <AnimatePresence>
+                {activeFab === 'sort' && (
+                  <motion.div
+                    initial={{ opacity: 0, x: 20, scale: 0.95 }}
+                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                    exit={{ opacity: 0, x: 10, scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    className="absolute right-14 bg-white dark:bg-[#14191C] backdrop-blur-xl border border-stone-200/80 dark:border-white/10 rounded-2xl shadow-xl p-2 flex flex-col w-52 z-20"
+                  >
+                    <div className="px-2.5 py-1 text-[10px] font-mono tracking-widest text-fg-muted uppercase flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rotate-45 bg-orange-500" />
+                        排序方式 SORT
+                      </div>
+                      {(sortBy !== 'updatedAt' || sortDirection !== 'desc') && (
+                        <button
+                          onClick={() => { setSortBy('updatedAt'); setSortDirection('desc'); }}
+                          className="text-[10px] text-orange-600 dark:text-orange-400 hover:underline cursor-pointer"
+                        >
+                          重設
+                        </button>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleSortClick('updatedAt')}
+                      className={cn(
+                        "flex items-center justify-between px-3 py-2 text-xs font-mono rounded-xl transition-colors cursor-pointer",
+                        sortBy === 'updatedAt'
+                          ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium"
+                          : "text-foreground hover:bg-stone-100 dark:hover:bg-white/5"
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>更新時間</span>
+                      </div>
+                      {sortBy === 'updatedAt' && (
+                        <span className="text-[10px] flex items-center gap-0.5 text-orange-500 font-mono">
+                          {sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+                          {sortDirection === 'asc' ? '升冪' : '降冪'}
+                        </span>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleSortClick('name')}
+                      className={cn(
+                        "flex items-center justify-between px-3 py-2 text-xs font-mono rounded-xl transition-colors cursor-pointer",
+                        sortBy === 'name'
+                          ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium"
+                          : "text-foreground hover:bg-stone-100 dark:hover:bg-white/5"
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>教案名稱</span>
+                      </div>
+                      {sortBy === 'name' && (
+                        <span className="text-[10px] flex items-center gap-0.5 text-orange-500 font-mono">
+                          {sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+                          {sortDirection === 'asc' ? 'A→Z' : 'Z→A'}
+                        </span>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleSortClick('category')}
+                      className={cn(
+                        "flex items-center justify-between px-3 py-2 text-xs font-mono rounded-xl transition-colors cursor-pointer",
+                        sortBy === 'category'
+                          ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium"
+                          : "text-foreground hover:bg-stone-100 dark:hover:bg-white/5"
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Filter className="w-3.5 h-3.5" />
+                        <span>分類組別</span>
+                      </div>
+                      {sortBy === 'category' && (
+                        <span className="text-[10px] flex items-center gap-0.5 text-orange-500 font-mono">
+                          {sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+                          {sortDirection === 'asc' ? '升冪' : '降冪'}
+                        </span>
+                      )}
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setActiveFab(activeFab === 'sort' ? null : 'sort')}
+                className={cn(
+                  "h-11 w-11 rounded-full shadow-lg border backdrop-blur-md flex items-center justify-center transition-colors relative z-10 focus:outline-none cursor-pointer",
+                  activeFab === 'sort' || (sortBy !== 'updatedAt' || sortDirection !== 'desc')
+                    ? "bg-orange-500 text-white border-transparent shadow-orange-500/30"
+                    : "bg-white/90 dark:bg-[#14191C]/90 border-stone-200/60 dark:border-white/10 text-foreground"
+                )}
+                title="排序方式"
+              >
+                <ArrowUpDown className="w-4 h-4" />
+                {(sortBy !== 'updatedAt' || sortDirection !== 'desc') && activeFab !== 'sort' && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-orange-500 ring-2 ring-white dark:ring-[#14191C]" />
+                )}
+              </motion.button>
+            </div>
+
+            {/* 03. Group Filter Circle FAB */}
+            <div className="relative flex items-center justify-end">
+              <AnimatePresence>
+                {activeFab === 'filter' && (
+                  <motion.div
+                    initial={{ opacity: 0, x: 20, scale: 0.95 }}
+                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                    exit={{ opacity: 0, x: 10, scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    className="absolute right-14 bottom-0 bg-white dark:bg-[#14191C] backdrop-blur-xl border border-stone-200/80 dark:border-white/10 rounded-2xl shadow-xl p-2 flex flex-col w-56 max-h-[60vh] overflow-y-auto z-20"
+                  >
+                    <div className="px-2.5 py-1 text-[10px] font-mono tracking-widest text-fg-muted uppercase flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rotate-45 bg-orange-500" />
+                        分組篩選 GROUPS
+                      </div>
+                      <span className="text-[10px] text-foreground font-mono">{filteredPlans.length} 篇</span>
+                    </div>
+                    <button
+                      onClick={() => { setFilterGroup('all'); setActiveFab(null); }}
+                      className={cn(
+                        "w-full px-3 py-2 rounded-xl text-xs font-mono uppercase tracking-wider flex items-center justify-between transition-all cursor-pointer text-left",
+                        filterGroup === 'all'
+                          ? "bg-orange-500 text-white font-medium shadow-xs"
+                          : "text-foreground hover:bg-stone-100 dark:hover:bg-white/5"
+                      )}
+                    >
+                      <span>全部教案 ALL</span>
+                      <span className={cn(
+                        "text-[10px] px-2 py-0.5 rounded-full font-mono",
+                        filterGroup === 'all' ? "bg-white/20 text-white" : "bg-black/5 dark:bg-white/10 text-fg-muted"
+                      )}>
+                        {plans.length}
+                      </span>
+                    </button>
+                    {groups.map((group) => {
+                      const isActive = filterGroup === group.slug;
+                      const count = plans.filter((p) => getPlanGroup(p)?.slug === group.slug).length;
+                      const badgeParams = getUnifiedGroupBadgeParams(group.slug, group.nameZh);
+                      return (
+                        <button
+                          key={`fab-group-${group.id}`}
+                          onClick={() => { setFilterGroup(group.slug); setActiveFab(null); }}
+                          className={cn(
+                            "w-full px-3 py-2 rounded-xl text-xs font-mono uppercase tracking-wider flex items-center justify-between transition-all cursor-pointer text-left mt-0.5",
+                            isActive
+                              ? "bg-orange-500 text-white font-medium shadow-xs"
+                              : "text-foreground hover:bg-stone-100 dark:hover:bg-white/5"
+                          )}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className={cn("w-2 h-2 rounded-full shrink-0 shadow-xs", isActive ? "bg-white" : badgeParams.colorDot)} />
+                            <span>{language === 'zh' ? group.nameZh : group.nameEn}</span>
+                          </div>
+                          <span className={cn(
+                            "text-[10px] px-2 py-0.5 rounded-full font-mono",
+                            isActive ? "bg-white/20 text-white" : "bg-black/5 dark:bg-white/10 text-fg-muted"
+                          )}>
+                            {count}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setActiveFab(activeFab === 'filter' ? null : 'filter')}
+                className={cn(
+                  "h-11 w-11 rounded-full shadow-lg border backdrop-blur-md flex items-center justify-center transition-colors relative z-10 focus:outline-none cursor-pointer",
+                  activeFab === 'filter' || filterGroup !== 'all'
+                    ? "bg-orange-500 text-white border-transparent shadow-orange-500/30"
+                    : "bg-white/90 dark:bg-[#14191C]/90 border-stone-200/60 dark:border-white/10 text-foreground"
+                )}
+                title="分組篩選"
+              >
+                <Filter className="w-4 h-4" />
+                {filterGroup !== 'all' && activeFab !== 'filter' && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-orange-500 ring-2 ring-white dark:ring-[#14191C]" />
+                )}
+              </motion.button>
+            </div>
+
+            {/* 04. Batch Download Circle FAB */}
+            <div className="relative flex items-center justify-end">
+              <AnimatePresence>
+                {activeFab === 'download' && (
+                  <motion.div
+                    initial={{ opacity: 0, x: 20, scale: 0.95 }}
+                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                    exit={{ opacity: 0, x: 10, scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    className="absolute right-14 bottom-0 bg-white dark:bg-[#14191C] backdrop-blur-xl border border-stone-200/80 dark:border-white/10 rounded-2xl shadow-xl p-2 flex flex-col w-52 z-20"
+                  >
+                    <div className="px-2.5 py-1 text-[10px] font-mono tracking-widest text-fg-muted uppercase flex items-center gap-1.5 mb-1">
+                      <span className="w-1.5 h-1.5 rotate-45 bg-orange-500" />
+                      批次匯出 EXPORT
+                    </div>
+                    <button
+                      onClick={() => { void handleBatchDownload("word", "all"); setActiveFab(null); }}
+                      className="flex items-center px-3 py-2 text-left font-mono text-xs rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 transition-colors text-foreground cursor-pointer"
+                    >
+                      <FileText className="w-4 h-4 mr-2 text-orange-500" />
+                      <span>所有 Word (.docx)</span>
+                    </button>
+                    <button
+                      onClick={() => { void handleBatchDownload("pdf", "all"); setActiveFab(null); }}
+                      className="flex items-center px-3 py-2 text-left font-mono text-xs rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 transition-colors text-foreground cursor-pointer"
+                    >
+                      <FileText className="w-4 h-4 mr-2 text-rose-500" />
+                      <span>所有 PDF (.pdf)</span>
+                    </button>
+                    <div className="h-px w-full bg-stone-200/60 dark:bg-white/10 my-1" />
+                    <button
+                      onClick={() => { void handleBatchDownload("word", "filtered"); setActiveFab(null); }}
+                      className="flex items-center px-3 py-1.5 text-left font-mono text-xs rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 transition-colors text-fg-secondary cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5 mr-2 text-stone-400" />
+                      <span>僅限目前篩選 (Word)</span>
+                    </button>
+                    <button
+                      onClick={() => { void handleBatchDownload("pdf", "filtered"); setActiveFab(null); }}
+                      className="flex items-center px-3 py-1.5 text-left font-mono text-xs rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 transition-colors text-fg-secondary cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5 mr-2 text-stone-400" />
+                      <span>僅限目前篩選 (PDF)</span>
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                disabled={isBatchDownloading || plans.length === 0}
+                onClick={() => setActiveFab(activeFab === 'download' ? null : 'download')}
+                className={cn(
+                  "h-11 w-11 rounded-full shadow-lg border backdrop-blur-md flex items-center justify-center transition-colors relative z-10 focus:outline-none cursor-pointer",
+                  (isBatchDownloading || plans.length === 0) && "opacity-60 cursor-not-allowed",
+                  activeFab === 'download'
+                    ? "bg-orange-500 text-white border-transparent shadow-orange-500/30"
+                    : "bg-white/90 dark:bg-[#14191C]/90 border-stone-200/60 dark:border-white/10 text-foreground"
+                )}
+                title="批次匯出"
+              >
+                <Download className={cn("w-4 h-4", activeFab === 'download' ? "text-white" : "text-orange-500")} />
+              </motion.button>
+            </div>
+
+            {/* 05. Add Plan Circle FAB */}
+            <div className="relative flex items-center justify-end">
+              <AnimatePresence>
+                {activeFab === 'add' && (
+                  <motion.div
+                    initial={{ opacity: 0, x: 20, scale: 0.95 }}
+                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                    exit={{ opacity: 0, x: 10, scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    className="absolute right-14 bottom-0 bg-white dark:bg-[#14191C] backdrop-blur-xl border border-stone-200/80 dark:border-white/10 rounded-2xl shadow-xl p-2 flex flex-col w-56 max-h-[60vh] overflow-y-auto z-20"
+                  >
+                    <div className="px-2.5 py-1 text-[10px] font-mono tracking-widest text-fg-muted uppercase flex items-center gap-1.5 mb-1">
+                      <span className="w-1.5 h-1.5 rotate-45 bg-orange-500" />
+                      新增教案 CREATE PLAN
+                    </div>
+                    {groups.map((group) => {
+                      const params = getUnifiedGroupBadgeParams(group.slug, group.nameZh);
+                      return (
+                        <button
+                          key={`m-add-${group.id}`}
+                          onClick={() => { handleCreatePlan(group.slug); setActiveFab(null); }}
+                          className="px-3 py-2 text-left font-medium text-xs font-mono rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 transition-colors text-foreground flex items-center gap-2 cursor-pointer mt-0.5"
+                        >
+                          <span className={cn("w-2 h-2 rounded-full shadow-xs shrink-0", params.colorDot)} />
+                          <span>{language === 'zh' ? group.nameZh : group.nameEn}</span>
+                        </button>
+                      );
+                    })}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={() => {
+                  if (!isAdmin) { crewToast(); return; }
+                  setActiveFab(activeFab === 'add' ? null : 'add');
+                }}
+                className={cn(
+                  "h-12 w-12 rounded-full shadow-lg border-none flex items-center justify-center transition-all relative z-10 focus:outline-none cursor-pointer",
+                  !isAdmin
+                    ? "opacity-60 bg-stone-400 dark:bg-stone-700 text-white"
+                    : "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-orange-500/30"
+                )}
+                title="新增教案"
+              >
+                <motion.div animate={{ rotate: activeFab === 'add' ? 45 : 0 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
+                  <Plus className="w-5 h-5" />
+                </motion.div>
+              </motion.button>
+            </div>
+          </FabStagger>
+        </div>
 
  {/* ── CONTENT ─────────────────────── */}
  <div className="relative overflow-hidden w-full touch-pan-y sm:min-h-[50vh] flex-1 sm:flex-none overflow-y-auto sm:overflow-y-visible pr-1 sm:pr-0">
@@ -884,217 +1256,420 @@ export default function PlansOverview() {
  className="w-full"
  >
  {filteredPlans.length === 0 ? (
- <div className="bg-white dark:bg-slate-800 rounded-[32px] sm:rounded-[40px] p-12 sm:p-24 flex flex-col items-center justify-center text-center shadow-[0_8px_30px_rgba(140,120,100,0.06)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.35)] min-h-[450px] relative overflow-hidden">
+              <div className="border border-stone-200/80 dark:border-white/10 bg-white/40 dark:bg-white/[0.02] backdrop-blur-md rounded-3xl p-12 sm:p-24 flex flex-col items-center justify-center text-center shadow-xs min-h-[420px] relative overflow-hidden">
+                <div className="text-[10px] font-mono tracking-widest text-fg-muted uppercase mb-4 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                  // NO MATCHING PLANS FOUND //
+                </div>
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white dark:bg-white/[0.05] border border-stone-200/80 dark:border-white/10 flex items-center justify-center mb-6 shadow-xs">
+                  <FileText className="w-8 h-8 text-stone-300 dark:text-stone-600" />
+                </div>
+                <h3 className="text-xl sm:text-2xl font-normal text-foreground mb-3 tracking-tight">
+                  目前沒有任何教案
+                </h3>
+                <p className="text-fg-muted max-w-md mx-auto text-xs sm:text-sm leading-relaxed mb-8">
+                  請嘗試更改篩選條件、清除搜尋關鍵字，或是點擊上方「新增檔案」建立全新的教案內容。
+                </p>
+                {isAdmin && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        onClick={(e) => {
+                          if (groups.length === 0) {
+                            e.preventDefault();
+                            toast({
+                              title: "無法新增",
+                              description: "目前沒有可用組別，請先到設定新增組別。",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
+                        className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-xs font-mono font-medium uppercase tracking-wider text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 cursor-pointer"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>立即新增教案</span>
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      align="center"
+                      side="bottom"
+                      sideOffset={8}
+                      className="w-56 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-2xl p-1.5 z-50"
+                    >
+                      {groups.map((group) => {
+                        const params = getUnifiedGroupBadgeParams(group.slug, group.nameZh);
+                        return (
+                          <DropdownMenuItem
+                            key={group.id}
+                            onSelect={() => handleCreatePlan(group.slug)}
+                            className="cursor-pointer font-medium text-xs py-2.5 px-3 rounded-xl hover:bg-orange-500/10 hover:text-orange-600 transition-colors flex items-center gap-2"
+                          >
+                            <span className={cn("w-2 h-2 rounded-full shadow-xs shrink-0", params.colorDot)} />
+                            {language === 'zh' ? group.nameZh : group.nameEn}
+                          </DropdownMenuItem>
+                        );
+                      })}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </div>
+              ) : viewType === "grid" ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                  {filteredPlans.map((plan, i) => {
+                    const group = getPlanGroup(plan);
+                    const groupBadge = getUnifiedGroupBadgeParams(group?.slug || plan.category, group?.nameZh || '');
+                    const indexStr = String(i + 1).padStart(2, '0');
 
- <motion.div 
- initial={{ y: 10, opacity: 0 }} 
- animate={{ y: 0, opacity: 1 }} 
- transition={{ duration: 0.5, ease: "easeOut" }}
- className="relative z-10 flex flex-col items-center"
- >
- <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-[28px] bg-white dark:bg-slate-800 flex items-center justify-center mb-6 sm:mb-8 shadow-[0_12px_40px_rgba(0,0,0,0.08)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.4)] rotate-[-8deg] hover:rotate-[4deg] transition-all duration-500 hover:scale-105">
- <FileText className="w-8 h-8 sm:w-10 sm:h-10 text-stone-300 dark:text-slate-500 drop-shadow-sm" />
- </div>
- <h3 className="text-xl sm:text-2xl font-black text-[#2C2A28] dark:text-slate-100 mb-3 tracking-tight">目前沒有任何教案</h3>
- <p className="text-stone-500/80 dark:text-slate-400 max-w-sm mx-auto text-sm sm:text-[15px] leading-relaxed mb-8">
- 請嘗試更改篩選條件或切換分類，或是點擊上方「新增檔案」按鈕建立全新的教案內容。
- </p>
- {isAdmin && (
- <Button 
- onClick={() => handleAddMenuOpenChange(true)} 
- className="bg-orange-500 hover:bg-orange-600 text-white dark:bg-amber-500 dark:hover:bg-amber-600 dark:text-slate-900 border-none shadow-[0_8px_20px_rgba(249,115,22,0.3)] hover:shadow-[0_12px_30px_rgba(249,115,22,0.4)] transition-all rounded-xl h-11 px-6 font-bold"
- >
- <Plus className="w-4 h-4 mr-2" />
- 立即新增教案
- </Button>
- )}
+                    return (
+                      <motion.div
+                        key={plan.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.03, duration: 0.25, ease: "easeOut" }}
+                        className="h-full"
+                      >
+                        <div
+                          onClick={() => handleOpenPlan(plan.id)}
+                          className="bg-white/80 dark:bg-white/[0.02] border border-stone-200/80 dark:border-white/10 hover:border-orange-500/40 rounded-2xl p-5 sm:p-6 text-left w-full group transition-all duration-300 hover:-translate-y-1 hover:shadow-xl flex flex-col h-full cursor-pointer relative overflow-hidden backdrop-blur-sm"
+                        >
+                          {/* Top Bar: Index + Division badge + Actions */}
+                          <div className="flex items-center justify-between mb-4 relative z-10">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-xs text-fg-muted group-hover:text-orange-500 transition-colors">
+                                {indexStr}
+                              </span>
+                              <span className={cn(
+                                "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium tracking-wider uppercase border",
+                                groupBadge.softBg,
+                                groupBadge.softText,
+                                groupBadge.softBorder
+                              )}>
+                                <span className={cn("w-1.5 h-1.5 rounded-full shrink-0 shadow-xs", groupBadge.colorDot)} />
+                                <span className="truncate">{group ? (language === 'zh' ? group.nameZh : group.nameEn) : '未分類'}</span>
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                              {renderPlanActions(plan)}
+                            </div>
+                          </div>
 
- </motion.div>
- </div>
- ) : viewType === "grid" ? (
- <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
- {filteredPlans.map((plan, i) => (
- <motion.div key={plan.id} initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ delay: i * 0.03, duration: 0.25, ease: "easeOut" }} className="h-full">
- <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-[24px] p-5 sm:p-7 text-left w-full group transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_16px_32px_rgba(140,120,100,0.12)] dark:hover:shadow-[0_16px_32px_rgba(0,0,0,0.45)] flex flex-col h-full cursor-pointer shadow-[0_6px_18px_rgba(140,120,100,0.06)] relative overflow-hidden" onClick={() => handleOpenPlan(plan.id)}>
+                          {/* Title & Category */}
+                          <div className="mb-6 flex-1">
+                            <h3 className="font-normal text-base sm:text-lg text-foreground group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors line-clamp-2 leading-snug mb-1">
+                              {getPlanDisplayName(plan)}
+                            </h3>
+                            <p className="text-xs text-fg-muted font-mono line-clamp-2 leading-relaxed">
+                              {getPlanDisplayCategory(plan) || "暫無細節說明"}
+                            </p>
+                          </div>
 
- <div className="flex justify-between items-start mb-4 sm:mb-5 relative z-10">
- <Badge className={cn("px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider border-0 inline-flex items-center gap-1.5 shadow-none", (() => { const g = getPlanGroup(plan); const params = getUnifiedGroupBadgeParams(g?.slug || plan.category, g?.nameZh || ''); return `${params.lightBg} ${params.lightText}`; })())}>
- <div className={cn("w-1.5 h-1.5 rounded-full", (() => { const g = getPlanGroup(plan); const params = getUnifiedGroupBadgeParams(g?.slug || plan.category, g?.nameZh || ''); return params.dot; })())} />
- {(() => {
- const group = getPlanGroup(plan);
- return group ? (language === 'zh' ? group.nameZh : group.nameEn) : (language === 'zh' ? '未分類' : 'Unknown');
- })()}
- </Badge>
- <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
- {renderPlanActions(plan)}
- <div className="w-8 h-8 rounded-full flex items-center justify-center bg-stone-50 dark:bg-slate-700/50 shadow-sm text-stone-400 dark:text-slate-400 group-hover:text-stone-600 dark:group-hover:text-slate-200 transition-colors ml-1">
- <ChevronRight className="w-4 h-4" />
- </div>
- </div>
- </div>
- 
- <h3 className="font-bold text-base sm:text-[17px] text-[#2C2A28] dark:text-white mb-2 line-clamp-2 leading-[1.4] transition-colors group-hover:text-stone-900 dark:group-hover:text-white">{getPlanDisplayName(plan)}</h3>
- <p className="text-[13px] text-stone-500 dark:text-slate-400 font-medium mb-4 sm:mb-6 flex-1 line-clamp-2 leading-relaxed">{getPlanDisplayCategory(plan)}</p>
- 
- <div className="flex items-center justify-between pt-4 sm:pt-5 border-t border-stone-100 dark:border-slate-700/50 mt-auto">
- <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-stone-400 dark:text-slate-500 font-semibold tracking-wide">
- <Clock className="w-3.5 h-3.5 opacity-70" />
- {plan.updatedAt ? format(new Date(plan.updatedAt), "MM/dd HH:mm") : "—"}
- </div>
- {getPlanDisplayMembers(plan) && (
- <div className="flex items-center justify-center px-2 py-1 bg-stone-50 dark:bg-slate-800 rounded-md gap-1.5 text-[10px] sm:text-[11px] text-stone-500 dark:text-slate-400 font-bold max-w-[120px] truncate">
- <Users className="w-3.5 h-3.5 opacity-70 shrink-0" />
- <span className="truncate">{getPlanDisplayMembers(plan)}</span>
- </div>
- )}
- </div>
- </div>
- </motion.div>
- ))}
- </div>
- ) : viewType === "board" ? (
- <div className="flex gap-4 sm:gap-6 overflow-x-auto pb-8 custom-scrollbar h-full min-h-[600px] snap-x pl-2">
- {groups.map((group, index) => {
- const items = filteredPlans.filter(p => getPlanGroup(p)?.slug === group.slug);
- const badgeParams = getUnifiedGroupBadgeParams(group.slug, group.nameZh);
- return (
- <div key={group.id} className="flex-1 min-w-[320px] max-w-[380px] flex flex-col bg-white/70 dark:bg-slate-800/60 rounded-[24px] p-5 shadow-[0_8px_24px_rgba(140,120,100,0.08)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.3)] snap-center transition-colors">
- <div className="flex items-center justify-between mb-5 px-1 shrink-0">
- <h3 className={cn("font-extrabold text-[13px] sm:text-sm px-3 py-1 rounded-full inline-flex items-center gap-2", badgeParams.lightBg, badgeParams.lightText)}>
- <div className={cn("w-2 h-2 rounded-full", badgeParams.dot)}></div>
- {language === 'zh' ? group.nameZh : group.nameEn}
- </h3>
- <div className="text-xs font-bold text-stone-500 bg-stone-200/50 dark:bg-slate-700/50 dark:text-slate-400 px-2 py-0.5 rounded-full">{items.length}</div>
- </div>
- <div className="flex flex-col gap-3 sm:gap-4 h-full overflow-y-auto pr-2 custom-scrollbar">
- {items.map((plan, i) => (
- <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} key={plan.id}>
- <div onClick={() => handleOpenPlan(plan.id)} className="bg-white dark:bg-slate-800 rounded-2xl p-4 sm:p-5 cursor-pointer group transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(140,120,100,0.1)] dark:hover:shadow-[0_12px_30px_rgba(0,0,0,0.5)] shadow-[0_4px_15px_rgba(140,120,100,0.06)] relative overflow-hidden">
- <div className="flex items-start justify-between gap-3 mb-2 relative z-10">
- <h4 className="font-bold text-[14px] leading-tight text-[#2C2A28] dark:text-slate-100 group-hover:text-stone-900 dark:group-hover:text-white transition-colors line-clamp-2">{getPlanDisplayName(plan)}</h4>
- <div className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity bg-stone-50/80 dark:bg-slate-700/80 rounded-full p-0.5">
- {renderPlanActions(plan)}
- </div>
- </div>
- <p className="text-xs text-stone-500/80 dark:text-slate-400/80 font-medium mb-4 line-clamp-1">{getPlanDisplayCategory(plan)}</p>
- <div className="flex items-center justify-between border-t border-stone-100 dark:border-slate-700/50 pt-3">
- <div className="text-[10px] sm:text-[11px] text-stone-500 dark:text-slate-400 font-bold px-2 py-0.5 bg-[#FBF9F6] dark:bg-slate-900 rounded-md truncate max-w-[150px]">
- {getPlanDisplayMembers(plan) || "—"}
- </div>
- <div className="text-[10px] sm:text-[11px] text-stone-400/80 dark:text-slate-500 font-bold uppercase flex items-center gap-1">
- <Clock className="w-3 h-3" />
- {plan.updatedAt ? format(new Date(plan.updatedAt), "MM/dd") : "—"}
- </div>
- </div>
- </div>
- </motion.div>
- ))}
- {items.length === 0 && (
- <div className="flex flex-col items-center justify-center py-10 opacity-60">
- <div className="w-10 h-10 rounded-full bg-stone-200/50 dark:bg-slate-700/50 flex items-center justify-center mb-3">
- <FileText className="w-4 h-4 text-stone-400 dark:text-slate-500" />
- </div>
- <p className="text-[13px] text-stone-400 dark:text-slate-500 font-medium">尚未新增教案</p>
- </div>
- )}
- </div>
- </div>
- )
- })}
- </div>
- ) : (
- <div className="w-full flex flex-col gap-3 pb-6">
-   {filteredPlans.map((plan, i) => {
-     const group = getPlanGroup(plan);
-     const groupBadge = getUnifiedGroupBadgeParams(group?.slug || plan.category, group?.nameZh || '');
-     const deterministicIndex = getDeterministicIndex(plan.id);
-     const fallbackImages = fallbackImagesData?.images || [];
-     const imageUrl = plan.canvasImage || (fallbackImages.length > 0 ? fallbackImages[deterministicIndex % fallbackImages.length] : null);
+                          {/* Bottom Divider & Metadata */}
+                          <div className="flex items-center justify-between pt-4 border-t border-stone-200/60 dark:border-white/5 mt-auto text-xs">
+                            <div className="flex items-center gap-1.5 font-mono text-[11px] text-fg-muted">
+                              <Clock className="w-3 h-3 text-stone-400 dark:text-stone-500" />
+                              <span>{plan.updatedAt ? format(new Date(plan.updatedAt), "MM/dd HH:mm") : "—"}</span>
+                            </div>
+                            {getPlanDisplayMembers(plan) && (
+                              <div className="flex items-center gap-1 px-2.5 py-0.5 bg-stone-100 dark:bg-white/5 rounded-full text-[10px] text-fg-secondary font-sans truncate max-w-[130px] border border-stone-200/50 dark:border-white/5">
+                                <Users className="w-3 h-3 text-stone-400 shrink-0" />
+                                <span className="truncate">{getPlanDisplayMembers(plan)}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              ) : viewType === "board" ? (
+                <div className="flex gap-4 sm:gap-6 overflow-x-auto pb-8 no-scrollbar h-full min-h-[600px] snap-x pl-1">
+                  {groups.map((group) => {
+                    const items = filteredPlans.filter(p => getPlanGroup(p)?.slug === group.slug);
+                    const badgeParams = getUnifiedGroupBadgeParams(group.slug, group.nameZh);
+                    return (
+                      <div
+                        key={group.id}
+                        className="flex-1 min-w-[320px] max-w-[380px] flex flex-col bg-white/40 dark:bg-white/[0.02] border border-stone-200/80 dark:border-white/10 rounded-3xl p-5 snap-center transition-colors backdrop-blur-sm"
+                      >
+                        <div className="flex items-center justify-between mb-5 px-1 shrink-0">
+                          <div className="flex items-center gap-2">
+                            <span className={cn("w-2 h-2 rounded-full shadow-xs shrink-0", badgeParams.colorDot)} />
+                            <h3 className="font-mono text-xs tracking-wider uppercase text-foreground font-medium">
+                              {language === 'zh' ? group.nameZh : group.nameEn}
+                            </h3>
+                          </div>
+                          <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-stone-200/60 dark:bg-white/10 text-fg-muted font-medium">
+                            {items.length}
+                          </span>
+                        </div>
 
-     return (
-       <motion.div
-         key={plan.id}
-         initial={{ opacity: 0, y: 8 }}
-         animate={{ opacity: 1, y: 0 }}
-         transition={{ delay: i * 0.02 }}
-         onClick={() => handleOpenPlan(plan.id)}
-         className="bg-white dark:bg-slate-800 hover:bg-white dark:hover:bg-slate-700 transition-all duration-300 cursor-pointer group shadow-[0_6px_18px_rgba(140,120,100,0.06)] hover:shadow-[0_10px_28px_rgba(140,120,100,0.1)] dark:shadow-[0_10px_28px_rgba(0,0,0,0.35)] hover:-translate-y-0.5 outline-none rounded-2xl p-3 sm:p-4 flex items-center justify-between border border-stone-100 dark:border-slate-700/50 w-full overflow-hidden"
-       >
-         {/* Left: Info */}
-         <div className="flex-1 min-w-0 pr-4 flex flex-col justify-center">
-           {/* Title */}
-           <h3 className="font-bold text-[16px] sm:text-[18px] text-[#2C2A28] dark:text-slate-100 group-hover:text-stone-900 dark:group-hover:text-white transition-colors truncate flex items-center gap-2">
-             {/* Group Dot indicator */}
-             <div 
-               className={cn("w-2 h-2 rounded-full shrink-0", groupBadge.bg)} 
-               title={group ? (language === 'zh' ? group.nameZh : group.nameEn) : (language === 'zh' ? '未分類' : 'Unknown')}
-             />
-             <span>{getPlanDisplayName(plan)}</span>
-             {getPlanDisplayCategory(plan) && (
-               <span className="text-xs sm:text-sm font-semibold text-stone-400 dark:text-slate-400">
-                 {getPlanDisplayCategory(plan)}
-               </span>
-             )}
-           </h3>
+                        <div className="flex flex-col gap-3 h-full overflow-y-auto pr-1 no-scrollbar">
+                          {items.map((plan, i) => (
+                            <motion.div
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: i * 0.04 }}
+                              key={plan.id}
+                            >
+                              <div
+                                onClick={() => handleOpenPlan(plan.id)}
+                                className="bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 rounded-2xl p-4 cursor-pointer group hover:border-orange-500/50 hover:shadow-lg transition-all duration-200 relative overflow-hidden"
+                              >
+                                <div className="flex items-start justify-between gap-3 mb-2 relative z-10">
+                                  <h4 className="font-normal text-sm text-foreground group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors line-clamp-2">
+                                    {getPlanDisplayName(plan)}
+                                  </h4>
+                                  <div className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                                    {renderPlanActions(plan)}
+                                  </div>
+                                </div>
+                                <p className="text-xs text-fg-muted font-mono mb-4 line-clamp-1">
+                                  {getPlanDisplayCategory(plan) || "暫無細節"}
+                                </p>
+                                <div className="flex items-center justify-between border-t border-stone-200/60 dark:border-white/5 pt-3">
+                                  <div className="text-[11px] text-fg-secondary font-sans truncate max-w-[150px] flex items-center gap-1">
+                                    {getPlanDisplayMembers(plan) ? (
+                                      <>
+                                        <Users className="w-3 h-3 text-stone-400 shrink-0" />
+                                        <span className="truncate">{getPlanDisplayMembers(plan)}</span>
+                                      </>
+                                    ) : (
+                                      <span className="text-fg-muted font-mono">—</span>
+                                    )}
+                                  </div>
+                                  <div className="text-[10px] font-mono text-fg-muted flex items-center gap-1">
+                                    <Clock className="w-3 h-3 text-stone-400" />
+                                    <span>{plan.updatedAt ? format(new Date(plan.updatedAt), "MM/dd") : "—"}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </motion.div>
+                          ))}
+                          {items.length === 0 && (
+                            <div className="flex flex-col items-center justify-center py-12 text-center text-fg-muted">
+                              <FileText className="w-6 h-6 mb-2 opacity-40" />
+                              <p className="text-xs font-mono uppercase tracking-wider">NO PLANS</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                /* ── LIST VIEW (FLUID.GLASS FEATURED-PROJECTS 1PX HAIRLINE TABLE) ── */
+                <div className="w-full">
+                  {/* Desktop Table Header */}
+                  <div className="hidden md:grid grid-cols-[48px_minmax(240px,2fr)_150px_160px_110px_48px] items-center gap-6 xl:gap-8 px-6 py-4 border-b border-stone-200/80 dark:border-white/10 text-[10px] font-mono tracking-widest text-fg-muted uppercase">
+                    <div>#</div>
+                    <div>PLAN / ACTIVITY NAME</div>
+                    <div>DIVISION</div>
+                    <div>COLLABORATORS</div>
+                    <div>MODIFIED</div>
+                    <div className="text-right">ACTIONS</div>
+                  </div>
 
-           {/* Metadata Row */}
-           <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-1.5 text-xs text-stone-500 pl-4">
-             {/* Collaborators */}
-             {getPlanDisplayMembers(plan) && (
-               <div className="flex items-center gap-1 text-stone-600 dark:text-slate-300 font-semibold truncate max-w-[150px]">
-                 <Users className="w-3 h-3 text-stone-400 dark:text-slate-500 shrink-0" />
-                 <span className="truncate">{getPlanDisplayMembers(plan)}</span>
-               </div>
-             )}
+                  {/* Desktop Rows */}
+                  <div className="hidden md:block divide-y divide-stone-200/60 dark:divide-white/5 border-b border-stone-200/80 dark:border-white/10">
+                    {filteredPlans.map((plan, i) => {
+                      const group = getPlanGroup(plan);
+                      const groupBadge = getUnifiedGroupBadgeParams(group?.slug || plan.category, group?.nameZh || '');
+                      const indexStr = String(i + 1).padStart(2, '0');
+                      const category = getPlanDisplayCategory(plan);
+                      const isUncategorized = !category || category === '無分類';
 
-             {/* Updated Time */}
-             <div className="flex items-center gap-1 text-stone-500 dark:text-slate-400 font-bold">
-               <Clock className="w-3.5 h-3.5 text-stone-400 dark:text-slate-500" />
-               {plan.updatedAt ? format(new Date(plan.updatedAt), "yyyy/MM/dd HH:mm") : "—"}
-             </div>
-           </div>
-         </div>
+                      return (
+                        <div
+                          key={plan.id}
+                          onClick={() => handleOpenPlan(plan.id)}
+                          className="group grid grid-cols-[48px_minmax(240px,2fr)_150px_160px_110px_48px] items-center gap-6 xl:gap-8 px-6 py-6.5 hover:bg-orange-500/[0.03] dark:hover:bg-orange-500/[0.04] transition-all duration-200 cursor-pointer"
+                        >
+                          {/* 01: Monospace index */}
+                          <div className="font-mono text-xs text-fg-muted group-hover:text-orange-500 transition-colors">
+                            {indexStr}
+                          </div>
 
-         {/* Right: Actions */}
-         <div className="flex items-center shrink-0" onClick={(e) => e.stopPropagation()}>
-           {/* Quick Actions */}
-           <div className="flex items-center opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-             {renderPlanActions(plan)}
-           </div>
-         </div>
-       </motion.div>
-     );
-   })}
- </div>
- )}
- </motion.div>
- </AnimatePresence>
- </div>
- </div>
+                          {/* 02: Plan name & category */}
+                          <div className="pr-4 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-normal text-[17px] text-foreground group-hover:text-orange-600 dark:group-hover:text-orange-400 group-hover:translate-x-1.5 transition-all duration-200 truncate">
+                                {getPlanDisplayName(plan)}
+                              </span>
+                              <ArrowRight className="w-3.5 h-3.5 text-orange-500 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 shrink-0" />
+                            </div>
+                            {category && (
+                              <div className={cn(
+                                "text-xs font-mono tracking-tight truncate mt-1 transition-colors",
+                                isUncategorized
+                                  ? "text-stone-300 dark:text-stone-600 text-[11px]"
+                                  : "text-fg-muted"
+                              )}>
+                                {category}
+                              </div>
+                            )}
+                          </div>
 
- {/* ── DELETE CONFIRMATION ── */}
- <AnimatePresence>
- {deleteTarget && (
- <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-stone-900/50 dark:bg-slate-900/80 backdrop-blur-sm">
- <motion.div initial={{ scale: 0.98, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.98, opacity: 0 }} transition={{ duration: 0.15 }} className="bg-white dark:bg-slate-800 p-8 rounded-xl max-w-sm w-full relative space-y-6 shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
- <div className="space-y-2">
- <h4 className="text-lg font-semibold text-[#2C2A28] dark:text-white">刪除文件</h4>
- <p className="text-sm text-stone-500 dark:text-slate-400">請輸入 <span className="font-mono text-rose-500 bg-rose-50 dark:bg-rose-500/10 px-1 py-0.5 rounded">delete</span> 刪除「{deleteTarget.name}」。此操作不可復原。</p>
- </div>
- <Input
- type="text" value={deleteInput} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDeleteInput(e.target.value)} placeholder="delete"
- className="w-full bg-[#FBF9F6] dark:bg-slate-900  dark: rounded-md font-mono text-sm focus:ring-rose-500 focus:"
- />
- <div className="flex justify-end gap-3 pt-2">
- <Button variant="ghost" onClick={() => setDeleteTarget(null)} className="h-9 font-medium text-stone-600 dark:text-slate-300">取消</Button>
- <Button variant="destructive" onClick={confirmDelete} disabled={deleteInput !== "delete"} className="h-9 font-medium px-6 bg-rose-600 hover:bg-rose-700 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow">
- 刪除
- </Button>
- </div>
- </motion.div>
- </div>
- )}
- </AnimatePresence>
- </div>
- );
+                          {/* 03: Division */}
+                          <div>
+                            <span className={cn(
+                              "inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-[11px] font-mono font-medium tracking-wider uppercase border",
+                              groupBadge.softBg,
+                              groupBadge.softText,
+                              groupBadge.softBorder
+                            )}>
+                              <span className={cn("w-1.5 h-1.5 rounded-full shrink-0 shadow-xs", groupBadge.colorDot)} />
+                              <span className="truncate">{group ? (language === 'zh' ? group.nameZh : group.nameEn) : '未分類'}</span>
+                            </span>
+                          </div>
+
+                          {/* 04: Collaborators */}
+                          <div className="text-xs text-fg-secondary flex items-center gap-2 truncate font-sans">
+                            {getPlanDisplayMembers(plan) ? (
+                              <>
+                                <Users className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500 shrink-0" />
+                                <span className="truncate max-w-[140px]">{getPlanDisplayMembers(plan)}</span>
+                              </>
+                            ) : (
+                              <span className="text-stone-300 dark:text-stone-600 font-mono text-xs">—</span>
+                            )}
+                          </div>
+
+                          {/* 05: Modified time */}
+                          <div className="text-xs font-mono text-fg-muted flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500 shrink-0" />
+                            <span>{plan.updatedAt ? format(new Date(plan.updatedAt), "MM/dd") : "—"}</span>
+                          </div>
+
+                          {/* 06: Actions */}
+                          <div className="flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
+                            {renderPlanActions(plan)}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Mobile Rows */}
+                  <div className="md:hidden flex flex-col divide-y divide-stone-200/60 dark:divide-white/5 border-y border-stone-200/80 dark:border-white/10">
+                    {filteredPlans.map((plan, i) => {
+                      const group = getPlanGroup(plan);
+                      const groupBadge = getUnifiedGroupBadgeParams(group?.slug || plan.category, group?.nameZh || '');
+                      const indexStr = String(i + 1).padStart(2, '0');
+                      const category = getPlanDisplayCategory(plan);
+                      const isUncategorized = !category || category === '無分類';
+
+                      return (
+                        <div
+                          key={plan.id}
+                          onClick={() => handleOpenPlan(plan.id)}
+                          className="py-3 px-4 hover:bg-orange-500/[0.02] dark:hover:bg-orange-500/[0.04] transition-colors cursor-pointer"
+                        >
+                          {/* Row 1: Index + Plan Name + Division Badge */}
+                          <div className="flex items-center justify-between gap-2.5">
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <span className="font-mono text-xs text-orange-500 font-semibold shrink-0">
+                                {indexStr}
+                              </span>
+                              <h3 className="font-medium text-[15px] text-foreground truncate">
+                                {getPlanDisplayName(plan)}
+                              </h3>
+                            </div>
+                            <span className={cn(
+                              "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium tracking-wider uppercase border shrink-0",
+                              groupBadge.softBg,
+                              groupBadge.softText,
+                              groupBadge.softBorder
+                            )}>
+                              <span className={cn("w-1.5 h-1.5 rounded-full shrink-0 shadow-xs", groupBadge.colorDot)} />
+                              <span>{group ? (language === 'zh' ? group.nameZh : group.nameEn) : '未分類'}</span>
+                            </span>
+                          </div>
+
+                          {/* Row 2: Category & Members + Timestamp & Actions */}
+                          <div className="flex items-center justify-between gap-2 mt-1.5 text-xs">
+                            <div className="flex items-center gap-2 min-w-0 text-fg-muted font-mono text-[11px] truncate">
+                              {!isUncategorized && category && (
+                                <span className="truncate max-w-[130px] text-fg-secondary">
+                                  {category}
+                                </span>
+                              )}
+                              {!isUncategorized && category && getPlanDisplayMembers(plan) && (
+                                <span className="text-stone-300 dark:text-stone-600 shrink-0">·</span>
+                              )}
+                              {getPlanDisplayMembers(plan) && (
+                                <div className="flex items-center gap-1 truncate text-fg-secondary">
+                                  <Users className="w-3 h-3 text-stone-400 shrink-0" />
+                                  <span className="truncate max-w-[130px]">{getPlanDisplayMembers(plan)}</span>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex items-center gap-1 text-[11px] font-mono text-fg-muted">
+                                <Clock className="w-3 h-3 text-stone-400 shrink-0" />
+                                <span>{plan.updatedAt ? format(new Date(plan.updatedAt), "MM/dd") : "—"}</span>
+                              </div>
+                              {renderPlanActions(plan)}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* ── DELETE CONFIRMATION ── */}
+      <AnimatePresence>
+        {deleteTarget && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/40 dark:bg-black/70 backdrop-blur-md">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 p-8 rounded-3xl max-w-sm w-full relative space-y-6 shadow-2xl"
+            >
+              <div className="space-y-2">
+                <div className="text-[10px] font-mono tracking-widest text-rose-500 uppercase flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                  // DELETION WARNING //
+                </div>
+                <h4 className="text-lg font-normal text-foreground">刪除教案檔案</h4>
+                <p className="text-xs text-fg-muted leading-relaxed">
+                  請輸入 <span className="font-mono text-rose-500 bg-rose-500/10 px-1.5 py-0.5 rounded font-semibold">delete</span> 以確認永久刪除「{deleteTarget.name}」。此動作不可撤銷。
+                </p>
+              </div>
+              <input
+                type="text"
+                value={deleteInput}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDeleteInput(e.target.value)}
+                placeholder="delete"
+                className="w-full h-11 px-4 rounded-xl bg-stone-100 dark:bg-white/[0.05] border border-stone-200/80 dark:border-white/10 font-mono text-sm text-foreground placeholder:text-fg-muted focus:outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 transition-all"
+              />
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  onClick={() => setDeleteTarget(null)}
+                  className="px-4 py-2 rounded-full text-xs font-mono text-fg-muted hover:text-foreground hover:bg-stone-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                >
+                  取消 CANCEL
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={deleteInput !== "delete"}
+                  className="px-5 py-2 rounded-full text-xs font-mono font-medium text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-rose-600/20 transition-all cursor-pointer"
+                >
+                  確認刪除 DELETE
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 }

@@ -9,6 +9,18 @@ export type VersionHistoryEntry = {
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
   {
+    id: "build-60h5kt7",
+    version: "1.0.30",
+    label: "更新項目",
+    date: "2026-09-24",
+    title: "我的教案頁面操作列與按鈕視覺升級",
+    highlights: [
+      "在「我的教案」頁面，頂部操作列邊角更圓潤，背景更輕透。",
+      "「新增」與「下載」按鈕更圓潤，點擊時有明顯動態效果。",
+      "檢視模式按鈕更新，外觀更圓潤，選取時視覺更凸顯。"
+    ],
+  },
+  {
     id: "build-9r0btbf",
     version: "1.0.29",
     label: "更新項目",

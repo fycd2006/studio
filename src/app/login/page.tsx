@@ -74,7 +74,6 @@ export default function LoginPage() {
 
  const fetchWallImages = async () => {
  try {
- // 1. 獲取原始圖片 URL
  const res = await fetch("/api/hero-images");
  if (!res.ok) throw new Error("Failed to load hero images");
 
@@ -84,31 +83,9 @@ export default function LoginPage() {
  : [];
  const sourcePool = apiImages.length > 0 ? apiImages : FALLBACK_IMAGES;
 
- // 2. 處理每張圖片 (進階藝術風格轉換)
- const processedImages = await Promise.all(
- sourcePool.map(async (originalUrl: string) => {
- try {
- const res = await fetch("/api/process-hero-image", {
- method: "POST",
- headers: { "Content-Type": "application/json" },
- body: JSON.stringify({ imageUrl: originalUrl }),
- });
- 
- if (res.ok) {
- const blob = await res.blob();
- return URL.createObjectURL(blob);
- } else {
- return originalUrl;
- }
- } catch {
- return originalUrl;
- }
- })
- );
-
  if (!mounted) return;
- setImagePool(processedImages);
- setTiles(Array.from({ length: TILE_COUNT }, (_, i) => processedImages[i % processedImages.length]));
+ setImagePool(sourcePool);
+ setTiles(Array.from({ length: TILE_COUNT }, (_, i) => sourcePool[i % sourcePool.length]));
  } catch {
  if (!mounted) return;
  setImagePool(FALLBACK_IMAGES);
@@ -144,7 +121,7 @@ export default function LoginPage() {
  // Professional handshaking delay
  await new Promise(resolve => setTimeout(resolve, 800));
  
- const success = login(username, password);
+ const success = await login(username, password);
  if (!success) {
  setError(true);
  setIsSubmitting(false);
@@ -193,109 +170,114 @@ export default function LoginPage() {
  <div className="absolute inset-0 bg-gradient-to-br from-[#fff5d4]/14 to-transparent mix-blend-overlay pointer-events-none" />
  <div className="absolute inset-0 bg-slate-900/45 backdrop-blur-[2px] pointer-events-none" />
 
- <motion.div 
- initial={{ opacity: 0, y: 20 }}
- animate={{ opacity: 1, y: 0 }}
- transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }}
- className="relative z-10 mx-auto flex min-h-screen w-[65%] sm:w-full max-w-[25rem] sm:max-w-md md:max-w-[340px] flex-col items-center justify-center px-3 sm:px-4 py-6 sm:py-8"
- >
- <div className="mb-6 sm:mb-8 flex flex-col items-center">
- <Tent className="h-20 sm:h-24 w-20 sm:w-24 text-white drop-shadow-lg" strokeWidth={1} />
- <h1 className="mt-3 sm:mt-4 text-center text-2xl font-black tracking-[0.14em] text-white">
- NTUT CHONG DE
- </h1>
- <p className="mt-1.5 sm:mt-2 text-center text-xs tracking-[0.2em] text-white/70">
- CAMP SYSTEM LOGIN
- </p>
- </div>
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }}
+        className="relative z-10 mx-auto flex min-h-screen w-full max-w-sm flex-col items-center justify-center px-4 py-8"
+      >
+        <div className="mb-6 flex flex-col items-center">
+          <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white mb-3 shadow-lg">
+            <Tent className="h-8 w-8 text-orange-400" strokeWidth={1.5} />
+          </div>
+          <span className="text-[10px] font-mono tracking-widest uppercase text-white/60 mb-1">
+            // VOLUNTEER IDENTITY ACCESS //
+          </span>
+          <h1 className="text-center text-2xl font-normal tracking-tight text-white">
+            NTUT CHONG DE
+          </h1>
+          <p className="mt-0.5 text-center text-xs font-mono tracking-widest uppercase text-white/70">
+            Camp Management Platform
+          </p>
+        </div>
 
- <div className="w-full rounded-[4px] bg-white shadow-2xl overflow-hidden shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
- <form onSubmit={handleSubmit} className="space-y-3 pb-3">
- <div className="px-3 sm:px-4 pt-3 sm:pt-3.5">
- <div className="relative flex items-center">
- <Mail className="mr-3 sm:mr-4 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" strokeWidth={1.5} />
- <input 
- type="text"
- value={username}
- onChange={(e) => setUsername(e.target.value)}
- placeholder="Username"
- className="w-full bg-transparent text-sm text-gray-700 outline-none placeholder:text-gray-500"
- required
- />
- </div>
- </div>
+        <div className="w-full rounded-3xl bg-white/90 dark:bg-[#0B1012]/90 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-2xl p-6 sm:p-7">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-mono uppercase tracking-wider text-fg-muted px-1">帳號 (Username)</label>
+              <div className="relative flex items-center">
+                <Mail className="absolute left-3.5 h-4 w-4 text-fg-muted" strokeWidth={1.5} />
+                <input 
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="請輸入帳號"
+                  className="w-full pl-10 pr-4 h-11 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 text-xs font-normal text-foreground outline-none focus:border-orange-500 transition-colors"
+                  required
+                />
+              </div>
+            </div>
 
- <div className="h-px bg-gray-200" />
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-mono uppercase tracking-wider text-fg-muted px-1">密碼 (Password)</label>
+              <div className="relative flex items-center">
+                <Lock className="absolute left-3.5 h-4 w-4 text-fg-muted" strokeWidth={1.5} />
+                <input 
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full pl-10 pr-10 h-11 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 text-xs font-normal text-foreground outline-none focus:border-orange-500 transition-colors"
+                  required
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 text-fg-muted hover:text-foreground transition-colors p-1"
+                  onMouseDown={() => setShowPassword(true)}
+                  onMouseUp={() => setShowPassword(false)}
+                  onMouseLeave={() => setShowPassword(false)}
+                  onTouchStart={() => setShowPassword(true)}
+                  onTouchEnd={() => setShowPassword(false)}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" strokeWidth={1.5} /> : <Eye className="h-4 w-4" strokeWidth={1.5} />}
+                </button>
+              </div>
+            </div>
 
- <div className="px-3 sm:px-4 pb-3 sm:pb-3.5">
- <div className="relative flex items-center">
- <Lock className="mr-3 sm:mr-4 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" strokeWidth={1.5} />
- <input 
- type={showPassword ? "text" : "password"}
- value={password}
- onChange={(e) => setPassword(e.target.value)}
- placeholder="••••••••"
- className="w-full bg-transparent pr-8 text-sm text-gray-700 outline-none placeholder:text-gray-500"
- required
- />
- <button
- type="button"
- className="absolute right-0 text-gray-400 transition-colors hover:text-gray-600 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
- onMouseDown={() => setShowPassword(true)}
- onMouseUp={() => setShowPassword(false)}
- onMouseLeave={() => setShowPassword(false)}
- onTouchStart={() => setShowPassword(true)}
- onTouchEnd={() => setShowPassword(false)}
- >
- {showPassword ? <EyeOff className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={1.5} /> : <Eye className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={1.5} />}
- </button>
- </div>
- </div>
+            <AnimatePresence>
+              {error && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="rounded-xl bg-rose-500/10 border border-rose-500/20 p-2.5 text-center text-xs font-mono text-rose-600 dark:text-rose-400"
+                >
+                  帳號或密碼錯誤，請重新輸入。
+                </motion.div>
+              )}
+            </AnimatePresence>
 
- <AnimatePresence>
- {error && (
- <motion.div 
- initial={{ opacity: 0, height: 0 }}
- animate={{ opacity: 1, height: "auto" }}
- exit={{ opacity: 0, height: 0 }}
- className="mx-3 sm:mx-4 rounded-sm bg-rose-50 p-2.5 sm:p-3 text-center text-xs font-semibold text-rose-600 border-none"
- >
- 帳號或密碼錯誤，請重新輸入。
- </motion.div>
- )}
- </AnimatePresence>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full h-11 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-mono text-xs uppercase tracking-wider transition-all disabled:opacity-50 shadow-xs flex items-center justify-center cursor-pointer mt-2"
+            >
+              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "登入系統 / Sign in"}
+            </button>
+          </form>
+        </div>
 
- <button
- type="submit"
- disabled={isSubmitting}
- className="mx-3 sm:mx-4 flex h-10 sm:h-11 w-[calc(100%-1.5rem)] sm:w-[calc(100%-2rem)] items-center justify-center rounded-[4px] bg-[#ff6b00] text-xs sm:text-sm font-semibold tracking-[0.06em] text-white transition-colors hover:bg-[#e66000] disabled:cursor-not-allowed disabled:bg-[#ff6b00]/70 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
- >
- {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : "Sign in"}
- </button>
- </form>
- </div>
-
- <div className="mt-6 sm:mt-8 w-full space-y-2.5 sm:space-y-3">
- <a
- href="https://lihi2.cc/3yxOC"
- target="_blank"
- rel="noopener noreferrer"
- className="flex w-full items-center justify-center gap-2.5 sm:gap-3 rounded-[4px] bg-[#3b5998] py-3 sm:py-3.5 text-xs sm:text-sm font-medium tracking-[0.06em] text-white transition-colors hover:bg-[#2d4373]"
- >
- <Facebook className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={1.5} />
- <span className="line-clamp-1">NTUT Chong De Facebook</span>
- </a>
- <a
- href="https://www.instagram.com/taipeitech_cd?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
- target="_blank"
- rel="noopener noreferrer"
- className="flex w-full items-center justify-center gap-2.5 sm:gap-3 rounded-[4px] bg-gradient-to-r from-[#833ab4] via-[#fd1d1d] to-[#fcb045] py-3 sm:py-3.5 text-xs sm:text-sm font-medium tracking-[0.06em] text-white transition-opacity hover:opacity-90"
- >
- <Instagram className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={1.5} />
- <span className="line-clamp-1">NTUT Chong De Instagram</span>
- </a>
- </div>
- </motion.div>
+        <div className="mt-6 w-full space-y-2">
+          <a
+            href="https://lihi2.cc/3yxOC"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex w-full items-center justify-center gap-2.5 rounded-xl bg-white/10 hover:bg-white/15 backdrop-blur-md border border-white/15 py-2.5 text-xs font-mono text-white transition-colors"
+          >
+            <Facebook className="h-4 w-4" strokeWidth={1.5} />
+            <span className="truncate">NTUT Chong De Facebook</span>
+          </a>
+          <a
+            href="https://www.instagram.com/taipeitech_cd?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex w-full items-center justify-center gap-2.5 rounded-xl bg-white/10 hover:bg-white/15 backdrop-blur-md border border-white/15 py-2.5 text-xs font-mono text-white transition-colors"
+          >
+            <Instagram className="h-4 w-4" strokeWidth={1.5} />
+            <span className="truncate">NTUT Chong De Instagram</span>
+          </a>
+        </div>
+      </motion.div>
  </div>
  );
 }

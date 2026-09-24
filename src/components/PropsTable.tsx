@@ -53,9 +53,9 @@ function CellTextarea({
       disabled={readOnly}
       placeholder={placeholder}
       className={cn(
-        "w-full resize-none bg-transparent py-2.5 px-3 text-[13px] text-[#2C2A28] dark:text-slate-100 leading-relaxed",
-        "placeholder:text-stone-300 dark:placeholder:text-slate-600",
-        "focus:outline-none focus:bg-blue-50/60 dark:focus:bg-blue-500/5",
+        "w-full resize-none bg-transparent py-2.5 px-3 text-[13px] text-foreground leading-relaxed",
+        "placeholder:text-fg-muted/40",
+        "focus:outline-none focus:bg-amber-500/5",
         "min-h-[40px] overflow-hidden transition-colors",
         className,
       )}
@@ -97,9 +97,9 @@ function CellInput({
       disabled={readOnly}
       placeholder={placeholder}
       className={cn(
-        "w-full h-[40px] bg-transparent text-center text-[13px] text-[#2C2A28] dark:text-slate-100",
-        "placeholder:text-stone-300 dark:placeholder:text-slate-600",
-        "focus:outline-none focus:bg-blue-50/60 dark:focus:bg-blue-500/5",
+        "w-full h-[40px] bg-transparent text-center text-[13px] text-foreground",
+        "placeholder:text-fg-muted/40",
+        "focus:outline-none focus:bg-amber-500/5",
         "transition-colors",
         className,
       )}
@@ -145,22 +145,22 @@ export function PropsTable({ label, value = [], onChange, onFocus, onBlur, readO
   };
 
   /* ── border tokens ── */
-  const borderCell = "border-r border-b border-stone-200/80 dark:border-slate-700/60";
-  const borderLast = "border-b border-stone-200/80 dark:border-slate-700/60";
+  const borderCell = "border-r border-b border-stone-200/80 dark:border-white/10";
+  const borderLast = "border-b border-stone-200/80 dark:border-white/10";
 
   return (
     <div className="space-y-3">
       {label && (
-        <label className="text-[12px] font-bold text-stone-400 dark:text-slate-500 uppercase tracking-[0.2em] px-1">
+        <label className="text-[11px] font-mono font-bold text-fg-muted uppercase tracking-[0.2em] px-1">
           {label}
         </label>
       )}
 
       <div
         className={cn(
-          "w-full rounded-lg overflow-hidden transition-colors",
-          "border border-stone-200/80 dark:border-slate-700/60",
-          "bg-white dark:bg-slate-900/40",
+          "w-full rounded-2xl overflow-hidden transition-colors",
+          "border border-stone-200/80 dark:border-white/10",
+          "bg-white/80 dark:bg-white/[0.02]",
           "shadow-[0_1px_3px_rgba(0,0,0,0.04)] dark:shadow-none",
           readOnly && "opacity-90",
         )}
@@ -183,20 +183,20 @@ export function PropsTable({ label, value = [], onChange, onFocus, onBlur, readO
 
             {/* ──────── HEADER ──────── */}
             <thead>
-              <tr className="bg-stone-50 dark:bg-slate-800/60">
-                <th className={cn("text-left px-3 py-2.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-stone-500 dark:text-slate-400", borderCell)}>
+              <tr className="bg-stone-100/50 dark:bg-white/[0.04]">
+                <th className={cn("text-left px-3 py-2.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-fg-muted font-mono", borderCell)}>
                   {t("PROP_NAME")}
                 </th>
-                <th className={cn("text-center px-1 py-2.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-stone-500 dark:text-slate-400", borderCell)}>
+                <th className={cn("text-center px-1 py-2.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-fg-muted font-mono", borderCell)}>
                   Qty
                 </th>
-                <th className={cn("text-center px-1 py-2.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-stone-500 dark:text-slate-400", borderCell)}>
+                <th className={cn("text-center px-1 py-2.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-fg-muted font-mono", borderCell)}>
                   Unit
                 </th>
-                <th className={cn("text-left px-3 py-2.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-stone-500 dark:text-slate-400", borderCell)}>
+                <th className={cn("text-left px-3 py-2.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-fg-muted font-mono", borderCell)}>
                   {t("OP_REMARKS")}
                 </th>
-                <th className={cn("text-center px-1 py-2.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-stone-500 dark:text-slate-400 no-print", borderLast)} />
+                <th className={cn("text-center px-1 py-2.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-fg-muted font-mono no-print", borderLast)} />
               </tr>
             </thead>
 
@@ -208,8 +208,8 @@ export function PropsTable({ label, value = [], onChange, onFocus, onBlur, readO
                     key={row.id}
                     className={cn(
                       "group transition-colors",
-                      "hover:bg-stone-50/60 dark:hover:bg-slate-800/30",
-                      idx % 2 === 1 && "bg-stone-25 dark:bg-slate-800/15",
+                      "hover:bg-black/[0.02] dark:hover:bg-white/[0.03]",
+                      idx % 2 === 1 && "bg-black/[0.01] dark:bg-white/[0.01]",
                     )}
                   >
                     {/* Name */}
@@ -254,7 +254,7 @@ export function PropsTable({ label, value = [], onChange, onFocus, onBlur, readO
                         variant="ghost"
                         size="icon"
                         disabled={readOnly}
-                        className="h-8 w-8 text-stone-300 dark:text-slate-700 sm:opacity-0 sm:group-hover:opacity-100 hover:text-rose-500 dark:hover:text-rose-400 transition-all"
+                        className="h-8 w-8 text-fg-muted sm:opacity-0 sm:group-hover:opacity-100 hover:text-rose-500 dark:hover:text-rose-400 transition-all"
                         onClick={() => handleRemoveRow(row.id)}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -264,7 +264,7 @@ export function PropsTable({ label, value = [], onChange, onFocus, onBlur, readO
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="text-center py-10 text-stone-300 dark:text-slate-700 text-[12px] font-bold uppercase tracking-widest">
+                  <td colSpan={5} className="text-center py-10 text-fg-muted font-mono text-[12px] font-bold uppercase tracking-widest">
                     {t("EMPTY_SLOT")}
                   </td>
                 </tr>
@@ -283,7 +283,7 @@ export function PropsTable({ label, value = [], onChange, onFocus, onBlur, readO
                         "w-full flex items-center justify-center gap-2 py-2.5",
                         "text-[12px] font-bold uppercase tracking-widest",
                         "text-orange-500 dark:text-amber-400",
-                        "hover:bg-stone-50 dark:hover:bg-slate-800/40",
+                        "hover:bg-stone-100/60 dark:hover:bg-white/[0.04]",
                         "transition-colors cursor-pointer border-none bg-transparent",
                       )}
                     >

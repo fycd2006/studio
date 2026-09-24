@@ -63,9 +63,9 @@ const FabricCanvas = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-[500px] flex flex-col gap-2.5 items-center justify-center border border-dashed border-stone-200 dark:border-slate-800 rounded-2xl bg-stone-50/50 dark:bg-slate-900/50">
+      <div className="h-[500px] flex flex-col gap-2.5 items-center justify-center border border-dashed border-stone-200/80 dark:border-white/10 rounded-2xl bg-stone-50/50 dark:bg-white/[0.02]">
         <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
-        <span className="text-sm text-stone-500 dark:text-slate-400 font-bold">正在載入藍圖畫布...</span>
+        <span className="text-sm text-fg-muted font-bold">正在載入藍圖畫布...</span>
       </div>
     )
   }
@@ -111,12 +111,21 @@ const FieldContainer = ({
 };
 
 
-const SectionHeader = ({ title, icon: Icon }: { title: string; icon?: any }) => (
-  <div className="flex items-center gap-3 mb-4 pt-6 first:pt-0 border-b border-stone-100 dark:border-white/10 pb-3 transition-colors">
-    {Icon && <Icon className="h-5 w-5 text-stone-400 dark:text-slate-500 opacity-90 transition-colors" />}
-    <h3 className="text-lg font-headline font-bold text-stone-800 dark:text-slate-100 tracking-wide transition-colors">
-      {title}
-    </h3>
+const SectionHeader = ({ title, icon: Icon, tag }: { title: string; icon?: any; tag?: string }) => (
+  <div className="flex items-center justify-between gap-3 mb-4 pt-4 md:pt-8 first:pt-0 border-b hairline-divider pb-3 transition-colors">
+    <div className="flex items-center gap-2.5">
+      <h3 className="text-base sm:text-lg font-sans font-medium text-foreground tracking-tight transition-colors">
+        {title}
+      </h3>
+    </div>
+    <div className="flex items-center gap-2">
+      {tag && (
+        <span className="architectural-tag text-[10px] tracking-technical text-fg-muted hidden sm:inline-flex">
+          {tag}
+        </span>
+      )}
+      {Icon && <Icon className="h-4 w-4 text-muted-foreground/60 transition-colors" />}
+    </div>
   </div>
 );
 
@@ -289,6 +298,17 @@ export function PlanEditor({
     });
   }, [localPlan]);
 
+  const flushPendingUpdates = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    if (Object.keys(pendingUpdatesRef.current).length > 0) {
+      onUpdate(plan.id, pendingUpdatesRef.current);
+      pendingUpdatesRef.current = {};
+    }
+  }, [plan.id, onUpdate]);
+
   const handleFocus = useCallback((field: string) => {
     lockField(field);
     recordHistory();
@@ -296,7 +316,8 @@ export function PlanEditor({
 
   const handleBlur = useCallback((field: string) => {
     unlockField(field);
-  }, [unlockField]);
+    flushPendingUpdates();
+  }, [unlockField, flushPendingUpdates]);
 
   useEffect(() => {
     // Merge remote plan with pending local changes so stale server echoes
@@ -304,12 +325,18 @@ export function PlanEditor({
     setLocalPlan({ ...plan, ...pendingUpdatesRef.current });
   }, [plan]);
 
-  // Clean up debounce timeout on unmount (actual flush logic is below in the beforeunload effect)
+  // Ensure any pending typing updates are flushed to Firestore before unmount or tab close
   useEffect(() => {
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    const handleBeforeUnload = () => {
+      flushPendingUpdates();
     };
-  }, []);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      flushPendingUpdates();
+    };
+  }, [flushPendingUpdates]);
 
   const handlePlanUpdate = (updates: Partial<LessonPlan>) => {
     // Update local UI immediately
@@ -322,12 +349,11 @@ export function PlanEditor({
     // Merge into pending
     pendingUpdatesRef.current = { ...pendingUpdatesRef.current, ...updates };
 
-    // Debounce the actual Firestore write
+    // Debounce the actual Firestore write with responsive 400ms window
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => {
-      onUpdate(plan.id, pendingUpdatesRef.current);
-      pendingUpdatesRef.current = {}; // Clear pending after dispatch
-    }, 1500);
+      flushPendingUpdates();
+    }, 400);
   };
 
   const handlePlanUpdateImmediate = (updates: Partial<LessonPlan>) => {
@@ -405,38 +431,7 @@ export function PlanEditor({
 
   const onUpdateRef = useRef(onUpdate);
   const planIdRef = useRef(plan.id);
-  const toolbarRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const handleViewportChange = () => {
-      if (window.visualViewport && toolbarRef.current) {
-        // 計算鍵盤彈起時產生出來的實際偏移 (佈局視圖底部 - 視覺視圖底部)
-        const offset = window.innerHeight - (window.visualViewport.height + window.visualViewport.offsetTop);
-        const keyboardOffset = Math.max(0, offset);
-
-        // 即時設定絕對底部值，無動畫延遲
-        toolbarRef.current.style.bottom = `${keyboardOffset}px`;
-
-        // 如果鍵盤處於彈起狀態（大於 10px 作為閥值），則移除預設的安全區 padding，避免與鍵盤間有空隙
-        if (keyboardOffset > 10) {
-          toolbarRef.current.style.paddingBottom = "0px";
-        } else {
-          toolbarRef.current.style.paddingBottom = "env(safe-area-inset-bottom)";
-        }
-      }
-    };
-
-    window.visualViewport?.addEventListener('resize', handleViewportChange);
-    window.visualViewport?.addEventListener('scroll', handleViewportChange);
-
-    // 初始化執行一次確保狀態正確
-    handleViewportChange();
-
-    return () => {
-      window.visualViewport?.removeEventListener('resize', handleViewportChange);
-      window.visualViewport?.removeEventListener('scroll', handleViewportChange);
-    };
-  }, []);
 
   useEffect(() => {
     onUpdateRef.current = onUpdate;
@@ -539,34 +534,40 @@ export function PlanEditor({
 
   return (
     <div className={cn(
-      "flex flex-row font-body transition-colors relative w-full min-h-[100dvh]",
-      isPrintMode ? "bg-[#FBF9F6] dark:bg-[hsl(var(--bar-theme))]" : "bg-white dark:bg-slate-800"
+      "flex flex-row font-body transition-colors relative w-full min-h-[100dvh] bg-background text-foreground"
     )}>
       <div className="flex-1 min-w-0 relative flex flex-col">
         <div className={cn(
           "w-full flex flex-col items-center",
-          isPrintMode ? "pt-28 md:pt-24 px-4 md:px-0" : "pt-28 md:pt-20 pb-0 px-4"
+          isPrintMode ? "pt-24 px-4 md:px-0" : "pt-24 md:pt-28 pb-0 px-4"
         )}>
-          <div className="w-full md:max-w-[816px] flex flex-col">
-            <header className="relative z-20 flex-none w-full mb-0 md:mb-6 dark:pb-6 transition-all">
+          <div className="w-full md:max-w-[860px] flex flex-col">
+            <header className="relative z-20 flex-none w-full mb-3 md:mb-6 transition-all">
               <div className="w-full max-w-full flex justify-between items-start gap-4">
                 <div className="flex flex-col w-full text-left">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className={cn(
-                      "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border-none",
-                      (() => {
-                        const params = getUnifiedGroupBadgeParams(currentGroup?.slug || currentPlan.category, currentGroup?.nameZh || '');
-                        return `${params.lightBg} ${params.lightText}`;
-                      })()
-                    )}>
-                      {currentGroupLabel}
+                    {(() => {
+                      const params = getUnifiedGroupBadgeParams(currentGroup?.slug || currentPlan.category, currentGroup?.nameZh || '');
+                      return (
+                        <span className={cn(
+                          "inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[10px] font-mono font-medium tracking-wider uppercase border",
+                          params.softBg,
+                          params.softText,
+                          params.softBorder
+                        )}>
+                          <span className={cn("w-1.5 h-1.5 rounded-full shrink-0 shadow-xs", params.colorDot)} />
+                          <span>{currentGroupLabel}</span>
+                        </span>
+                      );
+                    })()}
+                    <span className="architectural-tag text-[10px]">
+                      CURRICULUM SPECIFICATION
                     </span>
                   </div>
-                  <p className="text-xs tracking-[0.18em] text-stone-500 dark:text-slate-400 uppercase font-medium mb-1.5 transition-colors">Lesson Plan Editor // New Draft</p>
                   <input
                     value={(currentPlan.activityName || "").replace(/<[^>]*>?/gm, '')}
                     onChange={(e) => handlePlanUpdate({ activityName: e.target.value })}
-                    className="text-3xl md:text-4xl font-extrabold tracking-tight bg-transparent focus:ring-0 focus:outline-none text-[#2C2A28] dark:text-white w-full px-0 transition-colors placeholder:transition-colors"
+                    className="text-2xl sm:text-3xl md:text-5xl font-headline font-extrabold tracking-tight bg-transparent focus:ring-0 focus:outline-none text-foreground w-full px-0 transition-colors placeholder:text-muted-foreground/40"
                     placeholder={t('ENTER_TITLE')}
                     readOnly={isInteractionLocked}
                   />
@@ -576,9 +577,9 @@ export function PlanEditor({
           </div>
         </div>
 
-        <ActionBar title="" tone="plain" className={cn(
-          "justify-center gap-1.5 md:gap-2 !bg-white dark:!bg-slate-800 !mb-0 !py-0.5 transition-all duration-300 ease-out border-b border-stone-100 dark:border-slate-700/50",
-          isEditingMode ? "translate-y-0 opacity-100" : "max-md:-translate-y-4 max-md:opacity-0 max-md:pointer-events-none"
+        <ActionBar title="STUDIO COMMAND" tone="plain" className={cn(
+          "transition-all duration-300 ease-out",
+          isEditingMode ? "translate-y-0 opacity-100 pointer-events-auto" : "max-md:translate-y-full max-md:opacity-0 max-md:pointer-events-none"
         )}>
           <Button
             variant="ghost"
@@ -595,7 +596,7 @@ export function PlanEditor({
             <Check className="h-4 w-4" />
           </Button>
 
-          <div className={cn("hidden md:flex flex-row items-center px-1", actionBarTheme.cluster)}>
+          <div className={cn("flex flex-row items-center px-1", actionBarTheme.cluster)}>
             <MarkdownToolbar className="bg-transparent border-none sm:border-none px-0" />
           </div>
 
@@ -615,7 +616,7 @@ export function PlanEditor({
               actionBarTheme.controlGhost,
               actionBarTheme.controlIcon,
               actionBarTheme.controlElevated,
-              isSidebarOpen && "bg-stone-200 dark:bg-slate-700"
+              isSidebarOpen && "bg-stone-200 dark:bg-white/15"
             )}
           >
             <History className="w-4 h-4" />
@@ -628,9 +629,15 @@ export function PlanEditor({
                 <span className="hidden sm:inline">匯出</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-32 rounded-xl">
-              <DropdownMenuItem onClick={handlePrint} className="text-xs font-bold font-fira-code">PDF (.pdf)</DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportWord} className="text-xs font-bold font-fira-code">WORD (.docx)</DropdownMenuItem>
+            <DropdownMenuContent align="end" className="w-36 rounded-2xl border border-stone-200/80 dark:border-white/10 bg-white dark:bg-[#14191C] shadow-2xl p-1.5">
+              <DropdownMenuItem onClick={handlePrint} className="text-xs font-mono py-2 px-3 rounded-xl cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2">
+                <FileText className="w-4 h-4 text-rose-500" />
+                <span>PDF (.pdf)</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportWord} className="text-xs font-mono py-2 px-3 rounded-xl cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2">
+                <FileText className="w-4 h-4 text-orange-500" />
+                <span>WORD (.docx)</span>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -659,18 +666,18 @@ export function PlanEditor({
                 className={cn(actionBarTheme.controlGhost, "px-2.5 font-bold text-xs shadow-sm hover:shadow-md gap-1.5")}
                 title="縮放頁面 / Page Zoom"
               >
-                <ZoomIn className="h-3.5 w-3.5 text-stone-600 dark:text-slate-300" />
+                <ZoomIn className="h-3.5 w-3.5 text-fg-muted" />
                 <span className="font-fira-code">{Math.round(pageZoom * 100)}%</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="center" className="w-32 rounded-xl p-1">
-              <DropdownMenuItem onClick={handleZoomIn} disabled={pageZoom >= 2} className="text-xs font-bold gap-2 cursor-pointer">
+            <DropdownMenuContent align="center" className="w-44 rounded-2xl border border-stone-200/80 dark:border-white/10 bg-white dark:bg-[#14191C] shadow-2xl p-1.5">
+              <DropdownMenuItem onClick={handleZoomIn} disabled={pageZoom >= 2} className="text-xs py-2 px-3 rounded-xl gap-2 cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 font-mono">
                 <ZoomIn className="h-3.5 w-3.5" /> 放大 (Zoom In)
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleZoomOut} disabled={pageZoom <= 0.3} className="text-xs font-bold gap-2 cursor-pointer">
+              <DropdownMenuItem onClick={handleZoomOut} disabled={pageZoom <= 0.3} className="text-xs py-2 px-3 rounded-xl gap-2 cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 font-mono">
                 <ZoomOut className="h-3.5 w-3.5" /> 縮小 (Zoom Out)
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleFitAll} className="text-xs font-bold gap-2 cursor-pointer">
+              <DropdownMenuItem onClick={handleFitAll} className="text-xs py-2 px-3 rounded-xl gap-2 cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 font-mono">
                 <Maximize className="h-3.5 w-3.5" /> 重設 (100%)
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -712,25 +719,27 @@ export function PlanEditor({
                   )}
                 >
                   {isLoadingPreview ? (
-                    <div className="h-full min-h-[260px] w-full md:w-[816px] flex flex-col items-center justify-center gap-2 text-stone-500 dark:text-slate-400 transition-colors">
+                    <div className="h-full min-h-[260px] w-full md:w-[816px] flex flex-col items-center justify-center gap-2 text-fg-muted transition-colors">
                       <Loader2 className="h-5 w-5 animate-spin" />
                       <p className="text-xs font-bold uppercase tracking-widest">Reconstructing History...</p>
                     </div>
                   ) : (
                     <div className={cn(
-                      "w-full overflow-visible bg-white dark:bg-slate-800 transition-all",
-                      isPrintMode ? "shadow-md rounded-none sm:rounded-sm border-none sm:border border-stone-200 dark:border-slate-700" : "shadow-none rounded-none border-none"
+                      "w-full overflow-visible transition-all",
+                      isPrintMode
+                        ? "studio-sheet rounded-none sm:rounded-2xl"
+                        : "studio-sheet rounded-2xl sm:rounded-3xl border hairline-divider my-2 sm:my-6"
                     )}>
                       <div className={cn(
-                        "leading-[1.6]",
-                        isPrintMode ? "px-6 md:px-10 py-10 space-y-6 md:space-y-8" : "px-2 py-6 space-y-5"
+                        "leading-[1.65]",
+                        isPrintMode ? "px-6 md:px-10 py-10 space-y-6 md:space-y-8" : "px-4 sm:px-8 md:px-12 py-8 sm:py-10 space-y-8"
                       )}>
                         {isHistoryMode && (
                           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 bg-orange-50/80 backdrop-blur-xl dark:bg-amber-900/10 border border-orange-200/50 dark:border-amber-700/30 rounded-2xl mb-8 gap-4 shadow-[0_4px_24px_-8px_rgba(249,115,22,0.15)]">
                             <div className="flex items-center gap-3">
                               <div className="w-2 h-8 bg-gradient-to-b from-orange-400 to-orange-600 rounded-full shadow-inner" />
                               <div>
-                                <span className="text-[14px] font-black tracking-widest text-[#2C2A28] dark:text-white uppercase block">歷史紀錄 / History View</span>
+                                <span className="text-[14px] font-black tracking-widest text-foreground uppercase block">歷史紀錄 / History View</span>
                                 {selectedVersion && (
                                   <span className="text-[9px] font-bold text-stone-500 uppercase tracking-widest">
                                     Showing: {selectedVersion.versionName || selectedVersion.name} ({format(new Date(selectedVersion.createdAt), "MM/dd HH:mm")})
@@ -747,7 +756,7 @@ export function PlanEditor({
                                     setIsHistoryMode(false);
                                     setIsSidebarOpen(false);
                                   }}
-                                  className="h-10 px-5 rounded-full font-bold text-[11px] uppercase tracking-widest text-stone-500 hover:bg-stone-200 hover:text-stone-700 dark:hover:bg-slate-800 transition-all flex-1 sm:flex-none"
+                                  className="h-10 px-5 rounded-full font-bold text-[11px] uppercase tracking-widest text-stone-500 hover:bg-stone-200 hover:text-foreground dark:hover:bg-white/10 transition-all flex-1 sm:flex-none"
                                 >
                                   取消 / Cancel
                                 </Button>
@@ -762,9 +771,9 @@ export function PlanEditor({
                           </div>
                         )}
 
-                        <div className="space-y-12">
+                        <div className="space-y-6 md:space-y-12">
                           <section>
-                            <SectionHeader title="活動類型" icon={Layers} />
+                            <SectionHeader title="活動類型" icon={Layers} tag="ACTIVITY TYPE" />
                             {isHistoryMode ? (
                               <DiffHighlighter type="text" oldValue={previousPlan?.scheduledName} newValue={previewPlan?.scheduledName} />
                             ) : (
@@ -779,7 +788,7 @@ export function PlanEditor({
 
                           {!isScriptMode && (
                             <section>
-                              <SectionHeader title={t('SUBJECT')} icon={Target} />
+                              <SectionHeader title={t('SUBJECT')} icon={Target} tag="SUBJECT" />
                               {isHistoryMode ? (
                                 <DiffHighlighter type="text" oldValue={previousPlan?.activityName} newValue={previewPlan?.activityName} />
                               ) : (
@@ -801,7 +810,7 @@ export function PlanEditor({
 
                           {!isScriptMode && (
                             <section>
-                              <SectionHeader title={t('CASE_PERSONNEL')} icon={Users} />
+                              <SectionHeader title={t('CASE_PERSONNEL')} icon={Users} tag="CREW" />
                               {isHistoryMode ? (
                                 <DiffHighlighter type="text" oldValue={previousPlan?.members} newValue={previewPlan?.members} />
                               ) : (
@@ -822,7 +831,7 @@ export function PlanEditor({
                           )}
 
                           <section>
-                            <SectionHeader title={t('MISSION_OBJ')} icon={Target} />
+                            <SectionHeader title={t('MISSION_OBJ')} icon={Target} tag="MISSION" />
                             {isHistoryMode ? (
                               <DiffHighlighter type="markdown" oldValue={previousPlan?.purpose} newValue={previewPlan?.purpose} />
                             ) : (
@@ -843,7 +852,7 @@ export function PlanEditor({
                           {!isScriptMode && (
                             <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
                               <div className="space-y-2">
-                                <SectionHeader title={t('TIME_WINDOW')} icon={Clock} />
+                                <SectionHeader title={t('TIME_WINDOW')} icon={Clock} tag="DURATION" />
                                 {isHistoryMode ? (
                                   <DiffHighlighter type="text" oldValue={previousPlan?.time} newValue={previewPlan?.time} />
                                 ) : (
@@ -862,7 +871,7 @@ export function PlanEditor({
                                 )}
                               </div>
                               <div className="space-y-2">
-                                <SectionHeader title={t('VENUE')} icon={MapPin} />
+                                <SectionHeader title={t('VENUE')} icon={MapPin} tag="VENUE" />
                                 {isHistoryMode ? (
                                   <DiffHighlighter type="text" oldValue={previousPlan?.location} newValue={previewPlan?.location} />
                                 ) : (
@@ -885,7 +894,7 @@ export function PlanEditor({
 
                           {!isScriptMode && (
                             <section>
-                              <SectionHeader title={t('PROCEDURES')} icon={Layout} />
+                              <SectionHeader title={t('PROCEDURES')} icon={Layout} tag="WORKFLOW" />
                               {isHistoryMode ? (
                                 <DiffHighlighter type="markdown" oldValue={previousPlan?.process} newValue={previewPlan?.process} />
                               ) : (
@@ -904,21 +913,21 @@ export function PlanEditor({
                           )}
 
                            <section className="flex flex-col w-full">
-                             <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pt-6 first:pt-0 border-b border-stone-100 dark:border-white/10 pb-3 transition-colors">
-                               <div className="flex items-center gap-3">
-                                 <BookOpen className="h-5 w-5 text-stone-400 dark:text-slate-500 opacity-90 transition-colors" />
-                                 <h3 className="text-lg font-headline font-bold text-stone-800 dark:text-slate-100 tracking-wide transition-colors">
+                             <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pt-8 first:pt-0 border-b hairline-divider pb-3 transition-colors">
+                               <div className="flex items-center gap-2.5">
+                                 <h3 className="text-base sm:text-lg font-headline font-bold text-foreground tracking-tight transition-colors">
                                    {t('VISUAL_BLUEPRINT')}
                                  </h3>
+                                 <span className="architectural-tag text-[10px] hidden sm:inline-flex">VISUAL BLUEPRINT</span>
                                </div>
-                               <div className="flex items-center gap-1.5 bg-stone-100 dark:bg-slate-800 p-0.5 rounded-lg text-xs font-bold">
+                               <div className="flex items-center gap-1 bg-black/[0.04] dark:bg-white/[0.06] p-1 rounded-full text-xs font-bold border border-black/[0.04] dark:border-white/[0.06]">
                                  <button
                                    onClick={() => setBlueprintMode('text')}
                                    className={cn(
-                                     "px-3 py-1.5 rounded-md transition-all flex items-center gap-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500",
+                                     "px-3 py-1 rounded-full transition-all flex items-center gap-1.5 cursor-pointer text-xs font-headline font-semibold btn-tactile",
                                      blueprintMode === 'text' 
-                                       ? "bg-white dark:bg-slate-700 shadow-sm text-stone-900 dark:text-white"
-                                       : "text-stone-500 dark:bg-slate-800 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white"
+                                       ? "bg-white dark:bg-white/15 shadow-sm text-foreground"
+                                       : "text-muted-foreground hover:text-foreground"
                                    )}
                                  >
                                    <FileText className="h-3.5 w-3.5" />
@@ -927,10 +936,10 @@ export function PlanEditor({
                                  <button
                                    onClick={() => setBlueprintMode('canvas')}
                                    className={cn(
-                                     "px-3 py-1.5 rounded-md transition-all flex items-center gap-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500",
+                                     "px-3 py-1 rounded-full transition-all flex items-center gap-1.5 cursor-pointer text-xs font-headline font-semibold btn-tactile",
                                      blueprintMode === 'canvas' 
-                                       ? "bg-white dark:bg-slate-700 shadow-sm text-stone-900 dark:text-white"
-                                       : "text-stone-500 dark:bg-slate-800 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white"
+                                       ? "bg-white dark:bg-white/15 shadow-sm text-foreground"
+                                       : "text-muted-foreground hover:text-foreground"
                                    )}
                                  >
                                    <Palette className="h-3.5 w-3.5" />
@@ -953,7 +962,7 @@ export function PlanEditor({
                              ) : (
                                <div className="w-full relative">
                                  {isInteractionLocked ? (
-                                   <div className="border border-stone-200 dark:border-slate-800 rounded-2xl p-4 bg-white dark:bg-slate-900 flex items-center justify-center min-h-[300px]">
+                                   <div className="border border-stone-200/80 dark:border-white/10 rounded-2xl p-4 bg-white/80 dark:bg-white/[0.03] flex items-center justify-center min-h-[300px]">
                                      {currentPlan.canvasImage ? (
                                        <img 
                                          src={currentPlan.canvasImage} 
@@ -968,7 +977,7 @@ export function PlanEditor({
                                  ) : (
                                    <FieldContainer field="canvasData" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
                                      <div 
-                                       className="w-full rounded-2xl border border-stone-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-900"
+                                       className="w-full rounded-2xl border border-stone-200/80 dark:border-white/10 overflow-hidden bg-white/80 dark:bg-white/[0.03]"
                                        onFocus={() => handleFocus('canvasData')}
                                        onBlur={() => handleBlur('canvasData')}
                                      >
@@ -991,7 +1000,7 @@ export function PlanEditor({
                            </section>
 
                           <section className="w-full flex flex-col">
-                            <SectionHeader title={t('MATERIALS')} icon={Package} />
+                            <SectionHeader title={t('MATERIALS')} icon={Package} tag="MATERIALS & PROPS" />
                             {isHistoryMode ? (
                               <DiffHighlighter type="table" oldValue={previousPlan?.props} newValue={previewPlan?.props} />
                             ) : (
@@ -1011,7 +1020,7 @@ export function PlanEditor({
 
                           {!isScriptMode && (
                             <section>
-                              <SectionHeader title={t('OPENING_CLOSING') || "開場與結語"} icon={StickyNote} />
+                              <SectionHeader title={t('OPENING_CLOSING') || "開場與結語"} icon={StickyNote} tag="REMARKS" />
                               {isHistoryMode ? (
                                 <DiffHighlighter type="markdown" oldValue={previousPlan?.openingClosingRemarks} newValue={previewPlan?.openingClosingRemarks} />
                               ) : (
@@ -1031,7 +1040,7 @@ export function PlanEditor({
                           )}
 
                           <section>
-                            <SectionHeader title="備註" icon={StickyNote} />
+                            <SectionHeader title="備註" icon={StickyNote} tag="OPERATIONAL NOTES" />
                             {isHistoryMode ? (
                               <DiffHighlighter type="markdown" oldValue={previousPlan?.remarks} newValue={previewPlan?.remarks} />
                             ) : (
@@ -1059,16 +1068,6 @@ export function PlanEditor({
         </div>
       </div>
 
-      <div
-        ref={toolbarRef}
-        className={cn(
-          "md:hidden fixed bottom-0 left-0 right-0 z-[60] pb-[env(safe-area-inset-bottom)] pointer-events-none will-change-[bottom] transition-transform duration-300 ease-out",
-          isEditingMode ? "translate-y-0" : "translate-y-full"
-        )}>
-        <div className="pointer-events-auto bg-white dark:bg-slate-800 w-full">
-          <MarkdownToolbar className="justify-start pb-2 pt-1 shadow-none border-none border-t-0" />
-        </div>
-      </div>
 
       <Button
         type="button"
@@ -1077,7 +1076,7 @@ export function PlanEditor({
         onClick={() => setIsEditingMode(true)}
         title="進入編輯模式"
         className={cn(
-          "fixed right-4 bottom-[calc(env(safe-area-inset-bottom)+20px)] z-[70] h-14 w-14 rounded-2xl bg-orange-600 text-white dark:bg-amber-400 dark:text-[#2C2A28] shadow-[0_10px_28px_rgba(234,88,12,0.32)] dark:shadow-[0_10px_28px_rgba(251,191,36,0.28)] border-none transition-all duration-300 ease-out md:hidden",
+          "fixed right-4 bottom-[calc(env(safe-area-inset-bottom)+20px)] z-[70] h-14 w-14 rounded-2xl bg-orange-600 text-white dark:bg-amber-400 dark:text-[#0B1012] shadow-[0_10px_28px_rgba(234,88,12,0.32)] dark:shadow-[0_10px_28px_rgba(251,191,36,0.28)] border-none transition-all duration-300 ease-out md:hidden",
           !isEditingMode && isFabVisible ? "translate-y-0 opacity-100 pointer-events-auto" : "translate-y-8 opacity-0 pointer-events-none"
         )}
       >

@@ -11,32 +11,28 @@ import {
   FolderOpen,
   ShieldCheck,
   Settings,
-  ChevronDown,
+  ChevronUp,
   Plus,
   Volume2,
   Monitor,
+  Clock,
+  FileSpreadsheet,
+  Package2,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, getUnifiedGroupBadgeParams } from "@/lib/utils";
 import { usePlans } from "@/hooks/use-plans";
 import { usePresence } from "@/hooks/use-presence";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslation } from "@/lib/i18n-context";
-
-const NAV_ITEMS = [
-  { label: "Home", href: "/", icon: Home },
-  { label: "Plans", href: "/plans", icon: FolderOpen },
-  { label: "Admin", href: "/admin", icon: ShieldCheck },
-  { label: "Settings", href: "/settings", icon: Settings },
-] as const;
+import { AnimatePresence, motion } from "framer-motion";
 
 interface NavbarProps {
   groups?: Array<{ id: string; slug: string; nameZh: string; nameEn: string }>;
@@ -44,7 +40,7 @@ interface NavbarProps {
 
 export function TransparentNavbar({ groups }: NavbarProps) {
   const SHORT_BEEP_URL = "/beep.wav";
-  const [activeMegaMenu, setActiveMegaMenu] = useState<"plans" | "admin" | null>(null);
+  const [activeSubmenu, setActiveSubmenu] = useState<"plans" | "admin" | null>(null);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   const [isQuickAddExpanded, setIsQuickAddExpanded] = useState(false);
 
@@ -61,9 +57,9 @@ export function TransparentNavbar({ groups }: NavbarProps) {
   const { role } = useAuth();
   const { camps, activeCampId, activePlanId, groups: allGroups, addPlan } = usePlans();
   const { activeViewers } = usePresence(activePlanId);
-  const isHome = pathname === "/";
   const lastScrollY = useRef(0);
   const shortBeepRef = useRef<HTMLAudioElement | null>(null);
+  const closeSubmenuTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     shortBeepRef.current = new Audio(SHORT_BEEP_URL);
@@ -88,21 +84,31 @@ export function TransparentNavbar({ groups }: NavbarProps) {
       typeof group.nameEn === "string"
   );
 
+  const planDropdownGroups = safeGroups.length > 0
+    ? safeGroups
+    : [
+        { id: "group-activity", slug: "activity", nameZh: "活動組", nameEn: "Activity" },
+        { id: "group-teaching", slug: "teaching", nameZh: "教學組", nameEn: "Teaching" },
+      ];
+
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
     return pathname.startsWith(href);
   };
 
-  const isMenuOpen = activeMegaMenu !== null;
-  const navTextClass = "text-[#2C2A28] dark:text-white hover:opacity-80";
-  const navIconClass = "text-[#2C2A28] dark:text-white hover:opacity-80";
+  const handleMouseEnter = (menu: "plans" | "admin") => {
+    if (closeSubmenuTimeoutRef.current) {
+      clearTimeout(closeSubmenuTimeoutRef.current);
+      closeSubmenuTimeoutRef.current = null;
+    }
+    setActiveSubmenu(menu);
+  };
 
-  const planDropdownGroups = safeGroups.slice(0, 10);
-  const adminDropdownItems = [
-    { label: "timer", href: "/admin?tab=timer" },
-    { label: "tables", href: "/admin?tab=tables" },
-    { label: "props", href: "/admin?tab=props" },
-  ];
+  const handleMouseLeave = () => {
+    closeSubmenuTimeoutRef.current = setTimeout(() => {
+      setActiveSubmenu(null);
+    }, 180);
+  };
 
   const toggleAudioUnlock = async () => {
     if (audioUnlocked) {
@@ -172,10 +178,6 @@ export function TransparentNavbar({ groups }: NavbarProps) {
 
     const handleScroll = () => {
       const currentY = window.scrollY;
-      if (process.env.NODE_ENV !== "production") {
-        console.log("[Navbar scrollY]", currentY);
-      }
-
       if (Math.abs(currentY - lastScrollY.current) < THRESHOLD) return;
       const goingDown = currentY > lastScrollY.current && currentY > 60;
       setIsNavbarVisible(!goingDown);
@@ -186,461 +188,407 @@ export function TransparentNavbar({ groups }: NavbarProps) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [setIsNavbarVisible]);
 
+  useEffect(() => {
+    setActiveSubmenu(null);
+  }, [pathname]);
+
+  // Hide the floating dock on specific full-screen or sub routes if needed
+  const isPlanDetail = /^\/plans\/[^/]+$/.test(pathname);
+
   return (
     <>
-      <nav
-        className={cn(
-          "fixed top-0 left-0 w-full z-50 transition-all duration-300 ease-in-out",
-          isHome
-            ? "bg-transparent border-none"
-            : "bg-[#FBF9F6] dark:bg-[hsl(var(--bar-theme))] border-none shadow-none",
-          !isNavbarVisible && (hasActionBar || isFullscreen)
-            ? "max-md:-translate-y-full"
-            : "max-md:translate-y-0"
-        )}
-      >
-        <div
-          className={cn(
-            "relative",
-            isHome ? "bg-transparent border-none" : "bg-transparent"
-          )}
-          onMouseLeave={() => setActiveMegaMenu(null)}
-        >
-          <div className="hidden md:flex items-center justify-between px-6 py-4 h-16">
-            <div className="flex items-center">
-              <Link href="/" className="flex items-center gap-3 min-w-0">
-                <div className="relative w-10 h-10 rounded-full overflow-hidden bg-transparent dark:bg-white shadow-[0_4px_14px_rgba(0,0,0,0.35)] flex-shrink-0">
-                  <Image
-                    src="/NTUTCDlogo.png"
-                    alt="NTUTCDlogo"
-                    fill
-                    sizes="40px"
-                    className="object-cover"
-                    priority
-                  />
-                </div>
-                <div className="flex flex-col leading-tight text-[#2C2A28] dark:text-white min-w-0 w-[188px]">
-                  <span className="block w-[170px] text-[0.68rem] font-bold tracking-[0.08em] text-slate-700 dark:text-white/95 whitespace-nowrap [font-family:'Noto_Sans_TC','PingFang_TC','Microsoft_JhengHei',sans-serif]">
-                    北科崇德青年社
-                  </span>
-                  <span className="block w-[170px] text-[0.64rem] font-semibold tracking-[0.01em] text-slate-800 dark:text-white/90 whitespace-nowrap [font-family:'Avenir_Next','Segoe_UI','Arial_Narrow',sans-serif]">
-                    NTUT Chong De Young Club
-                  </span>
-                </div>
-              </Link>
-            </div>
-
-            <div className="flex items-center gap-8 justify-center">
-              <Link
-                href="/"
-                className={cn(
-                  "font-bold tracking-widest uppercase text-base md:text-lg transition-colors duration-300 ",
-                  isActive("/")
-                    ? "text-[#2C2A28] dark:text-white underline underline-offset-8"
-                    : "text-[#2C2A28] dark:text-white hover:text-orange-600 dark:hover:text-orange-200"
-                )}
-              >
-                Home
-              </Link>
-
-              <div className="relative group" onMouseEnter={() => setActiveMegaMenu("plans")}>
-                <Link
-                  href="/plans"
-                  className={cn(
-                    "font-bold tracking-widest uppercase text-base md:text-lg transition-colors duration-300 inline-flex items-center gap-1 ",
-                    isActive("/plans")
-                      ? "text-[#2C2A28] dark:text-white underline underline-offset-8"
-                      : "text-[#2C2A28] dark:text-white hover:text-orange-600 dark:hover:text-orange-200"
-                  )}
-                >
-                  Plans
-                  <ChevronDown className={cn("w-3.5 h-3.5 opacity-90", navIconClass)} />
-                </Link>
+      {/* ── 1. TOP MINIMALIST ARCHITECTURAL HEADER (Logo on top) ── */}
+      <header className="fixed top-0 left-0 w-full z-40 px-4 sm:px-8 py-3.5 pointer-events-none transition-all duration-300">
+        <div className="max-w-[1720px] mx-auto flex items-center justify-between">
+          {/* Left: Brand LOGO & Title */}
+          <div className="pointer-events-auto">
+            <Link href="/" className="flex items-center gap-3 group btn-tactile">
+              <div className="relative w-8 h-8 rounded-full overflow-hidden bg-white/80 dark:bg-white/10 p-0.5 border border-hairline-light shadow-sm flex-shrink-0 transition-transform group-hover:scale-105">
+                <Image
+                  src="/NTUTCDlogo.png"
+                  alt="NTUTCDlogo"
+                  fill
+                  sizes="32px"
+                  className="object-cover rounded-full"
+                  priority
+                />
               </div>
-
-              <div className="relative group" onMouseEnter={() => setActiveMegaMenu("admin")}>
-                <Link
-                  href="/admin"
-                  className={cn(
-                    "font-bold tracking-widest uppercase text-base md:text-lg transition-colors duration-300 inline-flex items-center gap-1 ",
-                    isActive("/admin")
-                      ? "text-[#2C2A28] dark:text-white underline underline-offset-8"
-                      : "text-[#2C2A28] dark:text-white hover:text-orange-600 dark:hover:text-orange-200"
-                  )}
-                >
-                  Admin
-                  <ChevronDown className={cn("w-3.5 h-3.5 opacity-90", navIconClass)} />
-                </Link>
+              <div className="flex flex-col leading-tight">
+                <span className="text-xs font-bold tracking-wider text-foreground whitespace-nowrap">
+                  北科崇德
+                </span>
+                <span className="text-[10px] font-mono tracking-technical text-fg-muted uppercase whitespace-nowrap">
+                  NTUT CD CLUB
+                </span>
               </div>
-
-              <Link
-                href="/settings"
-                className={cn(
-                  "font-bold tracking-widest uppercase text-base md:text-lg transition-colors duration-300 ",
-                  isActive("/settings")
-                    ? "text-[#2C2A28] dark:text-white underline underline-offset-8"
-                    : "text-[#2C2A28] dark:text-white hover:text-orange-600 dark:hover:text-orange-200"
-                )}
-              >
-                Settings
-              </Link>
-            </div>
-
-            <div className="flex items-center gap-4">
-              {/* Online Active Viewers list */}
-              {activePlanId && activeViewers && activeViewers.length > 0 && (
-                <div className="flex items-center -space-x-2 mr-2">
-                  {activeViewers.map((viewer) => {
-                    const initials = viewer.name.slice(0, 2);
-                    let hash = 0;
-                    for (let i = 0; i < viewer.uid.length; i++) {
-                      hash = viewer.uid.charCodeAt(i) + ((hash << 5) - hash);
-                    }
-                    const hue = Math.abs(hash) % 360;
-                    return (
-                      <div
-                        key={viewer.uid}
-                        style={{ backgroundColor: `hsl(${hue}, 70%, 45%)` }}
-                        className="w-8 h-8 rounded-full border-2 border-[#FBF9F6] dark:border-slate-900 flex items-center justify-center text-white text-[10px] font-bold shadow-md cursor-help relative group transition-transform hover:scale-110 hover:z-10"
-                      >
-                        {initials}
-                        {/* Custom Tooltip */}
-                        <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-stone-900/95 dark:bg-slate-800/95 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                          {viewer.name}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {activeCamp && (
-                <div
-                  className={cn(
-                    "px-3 py-1 rounded-full text-xs font-semibold text-[#2C2A28] dark:text-white bg-white/25 dark:bg-white/15 backdrop-blur-sm"
-                  )}
-                >
-                  {activeCamp.name}
-                </div>
-              )}
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn(
-                      "h-9 w-9 rounded-lg bg-transparent transition-colors duration-300 hover:bg-white/15",
-                      navIconClass
-                    )}
-                    aria-label="Desktop navigation menu"
-                  >
-                    <Menu className={cn("w-5 h-5", navIconClass)} />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  className="w-[360px] rounded-2xl bg-[#FBF9F6] dark:bg-black/80 backdrop-blur-md shadow-2xl p-3 border-none"
-                >
-                  <div className="flex flex-col gap-3">
-                    <div className="rounded-xl bg-stone-100/70 dark:bg-white/10 p-3">
-                      <button
-                        type="button"
-                        onClick={() => setIsQuickAddExpanded((prev) => !prev)}
-                        className="w-full flex items-center justify-between gap-2 px-1 py-1 text-[#2C2A28] dark:text-white"
-                      >
-                        <span className="inline-flex items-center gap-2">
-                          <Plus className="w-5 h-5" />
-                          <span className="font-semibold">{t('QUICK_ADD_PLAN')}</span>
-                        </span>
-                        <ChevronDown
-                          className={cn(
-                            "w-4 h-4 transition-transform duration-300",
-                            isQuickAddExpanded ? "rotate-180" : "rotate-0"
-                          )}
-                        />
-                      </button>
-
-                      {isQuickAddExpanded &&
-                        (safeGroups.length > 0 ? (
-                          <div className="grid grid-cols-2 gap-2 pt-2">
-                            {safeGroups.map((group) => (
-                              <button
-                                type="button"
-                                key={group.id}
-                                onClick={() => handleQuickAddPlan(group.slug, language === 'zh' ? group.nameZh : group.nameEn)}
-                                className="rounded-lg px-3 py-2 text-sm font-semibold text-left text-[#2C2A28] bg-white/80 hover:bg-white dark:bg-white/10 dark:text-white dark:hover:bg-white/20 transition-colors duration-300"
-                              >
-                                {language === 'zh' ? group.nameZh : group.nameEn}
-                              </button>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="px-1 py-2 text-sm text-stone-500 dark:text-slate-300">{t('NO_GROUP_AVAILABLE')}</div>
-                        ))}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={toggleAudioUnlock}
-                      className="flex items-center justify-between px-4 py-3 rounded-lg font-semibold transition-all duration-300 text-[#2C2A28] hover:bg-stone-100 dark:text-white dark:hover:bg-white/15 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
-                    >
-                      <span className="inline-flex items-center gap-3">
-                        <Volume2 className="w-5 h-5 text-[#2C2A28] dark:text-white" />
-                        {audioUnlocked ? t('AUDIO_DISABLE') : t('AUDIO_ENABLE')}
-                      </span>
-                      <span className="text-xs font-bold text-stone-500 dark:text-slate-300">
-                        {audioUnlocked ? t('AUDIO_STATUS_ON') : t('AUDIO_STATUS_OFF')}
-                      </span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={enterBlackoutMode}
-                      className="flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-all duration-300 text-[#2C2A28] hover:bg-stone-100 dark:text-white dark:hover:bg-white/15 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
-                    >
-                      <Monitor className="w-5 h-5 text-[#2C2A28] dark:text-white" />
-                      {t('ENTER_SAVER_MODE')}
-                    </button>
-
-                    <div className="pt-2">
-                      <div className="flex items-center justify-between rounded-xl bg-stone-100/70 dark:bg-white/10 px-3 py-2">
-                        <span className="text-sm font-semibold text-[#2C2A28] dark:text-white">{t('THEME_LABEL')}</span>
-                        <ThemeToggle className="h-9 w-9 rounded-lg bg-white dark:bg-slate-900" />
-                      </div>
-                      {activeCamp && (
-                        <div className="pt-3">
-                          <p className="text-xs text-stone-600 dark:text-white/80 mb-1">{t('CURRENT_CAMP')}</p>
-                          <p className="font-semibold text-[#2C2A28] dark:text-white">{activeCamp.name}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            </Link>
           </div>
 
-          <div
-            className={cn(
-              "hidden md:block absolute top-full left-0 w-full origin-top transition-all duration-300 ease-out",
-              activeMegaMenu ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-2 pointer-events-none"
+          {/* Right: Operational Status & System Controls */}
+          <div className="pointer-events-auto flex items-center gap-2 sm:gap-3">
+            {/* Active Camp Badge */}
+            {activeCamp && (
+              <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono tracking-wider text-primary bg-primary/10 border border-primary/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse inline-block" />
+                <span className="max-w-[140px] truncate uppercase">{activeCamp.name}</span>
+              </div>
             )}
-            onMouseEnter={() => setActiveMegaMenu((prev) => prev ?? "plans")}
-          >
-            <div
-              className={cn(
-                "w-full border-none rounded-t-none",
-                isHome
-                  ? "bg-transparent shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
-                  : "border-none shadow-none bg-[#FBF9F6] dark:bg-[hsl(var(--bar-theme))]"
-              )}
-            >
-              <div className="max-w-6xl mx-auto px-6 py-6">
-                {activeMegaMenu === "plans" && (
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                    {(planDropdownGroups.length > 0
-                      ? planDropdownGroups
-                      : [
-                          { id: "activity", slug: "activity", nameZh: "活動組", nameEn: "Activity" },
-                          { id: "teaching", slug: "teaching", nameZh: "教學組", nameEn: "Teaching" },
-                        ]
-                    ).map((group) => (
-                      <Link
-                        key={group.id}
-                        href={`/plans?group=${group.slug}`}
-                        className="block rounded-lg px-4 py-3 bg-white/5 dark:bg-black/20 text-[#2C2A28] dark:text-white hover:bg-white/20 dark:hover:bg-black/40 transition-all duration-300 transform hover:-translate-y-0.5 shadow-[0_8px_30px_rgba(140,120,100,0.05)]"
-                      >
-                        <p className="font-semibold">{group.nameZh}</p>
-                        <p className="text-[11px] uppercase tracking-wide text-slate-700 dark:text-white/80">{group.nameEn}</p>
-                      </Link>
-                    ))}
-                  </div>
-                )}
 
-                {activeMegaMenu === "admin" && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    {adminDropdownItems.map((item) => (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className="block rounded-lg px-4 py-3 bg-transparent text-[#2C2A28] dark:text-white font-semibold"
-                      >
-                        {item.href.includes('timer') ? t('TIMER_CONTROL') : item.href.includes('tables') ? t('ROTATION_TABLE') : t('PROPS_LIST')}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="md:hidden flex flex-col">
-            <div className="flex items-center justify-between px-4 py-3 min-h-16">
-              <Link href="/" className="flex items-center gap-2.5 flex-1 pr-2 min-w-0">
-                <div className="relative w-9 h-9 rounded-full overflow-hidden bg-transparent dark:bg-white shadow-[0_4px_14px_rgba(0,0,0,0.35)] flex-shrink-0">
-                  <Image
-                    src="/NTUTCDlogo.png"
-                    alt="NTUTCDlogo"
-                    fill
-                    sizes="36px"
-                    className="object-cover"
-                  />
-                </div>
-                <div className="flex flex-col leading-tight text-[#2C2A28] dark:text-white w-[132px]">
-                  <span className="block w-[118px] text-[0.58rem] font-bold tracking-[0.04em] text-slate-700 dark:text-white/95 whitespace-nowrap [font-family:'Noto_Sans_TC','PingFang_TC','Microsoft_JhengHei',sans-serif]">
-                    北科崇德青年社
-                  </span>
-                  <span className="block w-[118px] text-[0.48rem] font-semibold tracking-[-0.01em] text-slate-800 dark:text-white/90 whitespace-nowrap [font-family:'Avenir_Next','Segoe_UI','Arial_Narrow',sans-serif]">
-                    NTUT Chong De Young Club
-                  </span>
-                </div>
-              </Link>
-              {/* Online Active Viewers on Mobile */}
-              {activePlanId && activeViewers && activeViewers.length > 0 && (
-                <div className="flex items-center -space-x-1.5 mr-2">
-                  {activeViewers.slice(0, 3).map((viewer) => {
-                    const initials = viewer.name.slice(0, 2);
-                    let hash = 0;
-                    for (let i = 0; i < viewer.uid.length; i++) {
-                      hash = viewer.uid.charCodeAt(i) + ((hash << 5) - hash);
-                    }
-                    const hue = Math.abs(hash) % 360;
-                    return (
-                      <div
-                        key={viewer.uid}
-                        style={{ backgroundColor: `hsl(${hue}, 70%, 45%)` }}
-                        className="w-7 h-7 rounded-full border-2 border-[#FBF9F6] dark:border-slate-900 flex items-center justify-center text-white text-[9px] font-bold shadow-md"
-                        title={viewer.name}
-                      >
-                        {initials}
-                      </div>
-                    );
-                  })}
-                  {activeViewers.length > 3 && (
-                    <div className="w-7 h-7 rounded-full bg-stone-300 dark:bg-slate-700 border-2 border-[#FBF9F6] dark:border-slate-900 flex items-center justify-center text-stone-600 dark:text-slate-350 text-[9px] font-bold shadow-md">
-                      +{activeViewers.length - 3}
+            {/* Active Live Collaborators */}
+            {activePlanId && activeViewers && activeViewers.length > 0 && (
+              <div className="flex items-center -space-x-1.5">
+                {activeViewers.slice(0, 3).map((viewer) => {
+                  const initials = viewer.name.slice(0, 2);
+                  return (
+                    <div
+                      key={viewer.uid}
+                      className="w-6 h-6 rounded-full bg-primary text-white text-[9px] font-bold flex items-center justify-center border border-canvas-dark shadow-sm"
+                      title={viewer.name}
+                    >
+                      {initials}
                     </div>
-                  )}
-                </div>
-              )}
+                  );
+                })}
+              </div>
+            )}
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    className={cn(
-                      "p-2 rounded-lg transition-colors duration-300 bg-transparent text-[#2C2A28] dark:text-white hover:bg-white/15"
-                    )}
-                    aria-label="Open menu"
-                  >
-                    <Menu className={cn("w-5 h-5", navIconClass)} />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  className="w-[92vw] max-w-[360px] rounded-2xl bg-[#FBF9F6] dark:bg-black/80 backdrop-blur-md shadow-2xl p-3 border-none"
+            {/* System Controls Dropdown (Theme, Quick Add, Audio) */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full glass-pill border border-hairline-light hover:border-hairline-hover transition-all btn-tactile"
+                  aria-label="System Menu"
                 >
-                  <div className="flex flex-col gap-3">
-                    <div className="rounded-xl bg-stone-100/70 dark:bg-white/10 p-3">
-                      <button
-                        type="button"
-                        onClick={() => setIsQuickAddExpanded((prev) => !prev)}
-                        className="w-full flex items-center justify-between gap-2 px-1 py-1 text-[#2C2A28] dark:text-white"
-                      >
-                        <span className="inline-flex items-center gap-2">
-                          <Plus className="w-5 h-5" />
-                          <span className="font-semibold">{t('QUICK_ADD_PLAN')}</span>
-                        </span>
-                        <ChevronDown
-                          className={cn(
-                            "w-4 h-4 transition-transform duration-300",
-                            isQuickAddExpanded ? "rotate-180" : "rotate-0"
-                          )}
-                        />
-                      </button>
-
-                      {isQuickAddExpanded &&
-                        (safeGroups.length > 0 ? (
-                          <div className="grid grid-cols-2 gap-2 pt-2">
-                            {safeGroups.map((group) => (
-                              <button
-                                type="button"
-                                key={group.id}
-                                onClick={() => handleQuickAddPlan(group.slug, language === 'zh' ? group.nameZh : group.nameEn)}
-                                className="rounded-lg px-3 py-2 text-sm font-semibold text-left text-[#2C2A28] bg-white/80 hover:bg-white dark:bg-white/10 dark:text-white dark:hover:bg-white/20 transition-colors duration-300"
-                              >
-                                {language === 'zh' ? group.nameZh : group.nameEn}
-                              </button>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="px-1 py-2 text-sm text-stone-500 dark:text-slate-300">{t('NO_GROUP_AVAILABLE')}</div>
-                        ))}
-                    </div>
-
+                  <Menu className="w-4 h-4 text-foreground" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-[320px] rounded-2xl glass-pill shadow-2xl p-3 border border-hairline-light"
+              >
+                <div className="flex flex-col gap-2.5">
+                  <div className="rounded-xl bg-black/5 dark:bg-white/5 p-3 border border-hairline-light">
                     <button
                       type="button"
-                      onClick={toggleAudioUnlock}
-                      className="flex items-center justify-between px-4 py-3 rounded-lg font-semibold transition-all duration-300 text-[#2C2A28] hover:bg-stone-100 dark:text-white dark:hover:bg-white/15 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
+                      onClick={() => setIsQuickAddExpanded((prev) => !prev)}
+                      className="w-full flex items-center justify-between gap-2 px-1 py-1 text-foreground"
                     >
-                      <span className="inline-flex items-center gap-3">
-                        <Volume2 className="w-5 h-5 text-[#2C2A28] dark:text-white" />
-                        {audioUnlocked ? t('AUDIO_DISABLE') : t('AUDIO_ENABLE')}
+                      <span className="inline-flex items-center gap-2">
+                        <Plus className="w-4 h-4 text-primary" />
+                        <span className="font-medium text-sm">{t('QUICK_ADD_PLAN')}</span>
                       </span>
-                      <span className="text-xs font-bold text-stone-500 dark:text-slate-300">
-                        {audioUnlocked ? t('AUDIO_STATUS_ON') : t('AUDIO_STATUS_OFF')}
-                      </span>
+                      <ChevronUp
+                        className={cn(
+                          "w-4 h-4 transition-transform duration-300",
+                          isQuickAddExpanded ? "rotate-0" : "rotate-180"
+                        )}
+                      />
                     </button>
 
-                    <button
-                      type="button"
-                      onClick={enterBlackoutMode}
-                      className="flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-all duration-300 text-[#2C2A28] hover:bg-stone-100 dark:text-white dark:hover:bg-white/15 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
-                    >
-                      <Monitor className="w-5 h-5 text-[#2C2A28] dark:text-white" />
-                      {t('ENTER_SAVER_MODE')}
-                    </button>
-
-                    <div className="pt-2">
-                      <div className="flex items-center justify-between rounded-xl bg-stone-100/70 dark:bg-white/10 px-3 py-2">
-                        <span className="text-sm font-semibold text-[#2C2A28] dark:text-white">{t('THEME_LABEL')}</span>
-                        <ThemeToggle className="h-9 w-9 rounded-lg bg-white dark:bg-slate-900" />
-                      </div>
-                      {activeCamp && (
-                        <div className="pt-3">
-                          <p className="text-xs text-stone-600 dark:text-white/80 mb-1">{t('CURRENT_CAMP')}</p>
-                          <p className="font-semibold text-[#2C2A28] dark:text-white">{activeCamp.name}</p>
+                    {isQuickAddExpanded &&
+                      (safeGroups.length > 0 ? (
+                        <div className="grid grid-cols-2 gap-2 pt-2">
+                          {safeGroups.map((group) => (
+                            <button
+                              type="button"
+                              key={group.id}
+                              onClick={() => handleQuickAddPlan(group.slug, language === 'zh' ? group.nameZh : group.nameEn)}
+                              className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-left text-foreground bg-white/70 hover:bg-white dark:bg-white/10 dark:hover:bg-white/20 border border-hairline-light transition-all"
+                            >
+                              {language === 'zh' ? group.nameZh : group.nameEn}
+                            </button>
+                          ))}
                         </div>
-                      )}
-                    </div>
+                      ) : (
+                        <div className="px-1 py-2 text-xs text-fg-muted">{t('NO_GROUP_AVAILABLE')}</div>
+                      ))}
                   </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
 
-            {/* Top Navigation Links - Hidden on Mobile because of MobileTabBar */}
-            <div className="hidden">
-              <div className="grid grid-cols-4 items-center text-center gap-2 w-full max-w-md mx-auto">
-                {NAV_ITEMS.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                      "text-[0.94rem] font-black uppercase tracking-wide whitespace-nowrap transition-colors duration-300 ",
-                      isActive(item.href)
-                        ? "text-[#2C2A28] dark:text-white underline underline-offset-8"
-                        : "text-[#2C2A28] dark:text-white hover:text-orange-600 dark:hover:text-orange-200"
-                    )}
+                  <button
+                    type="button"
+                    onClick={toggleAudioUnlock}
+                    className="flex items-center justify-between px-3.5 py-2.5 rounded-xl font-medium text-sm text-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-all btn-tactile"
                   >
-                    {item.href === "/" ? "Home" : item.href === "/plans" ? "Plans" : item.href === "/admin" ? "Admin" : "Settings"}
-                  </Link>
-                ))}
-              </div>
-            </div>
+                    <span className="inline-flex items-center gap-2.5">
+                      <Volume2 className="w-4 h-4 text-primary" />
+                      {audioUnlocked ? t('AUDIO_DISABLE') : t('AUDIO_ENABLE')}
+                    </span>
+                    <span className="text-xs font-mono font-bold text-fg-muted">
+                      {audioUnlocked ? t('AUDIO_STATUS_ON') : t('AUDIO_STATUS_OFF')}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={enterBlackoutMode}
+                    className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl font-medium text-sm text-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-all btn-tactile"
+                  >
+                    <Monitor className="w-4 h-4 text-primary" />
+                    {t('ENTER_SAVER_MODE')}
+                  </button>
+
+                  <div className="pt-1">
+                    <div className="flex items-center justify-between rounded-xl bg-black/5 dark:bg-white/5 px-3 py-2 border border-hairline-light">
+                      <span className="text-xs font-medium text-foreground">{t('THEME_LABEL')}</span>
+                      <ThemeToggle className="h-8 w-8 rounded-lg bg-white/80 dark:bg-white/10 border border-stone-200/80 dark:border-white/10" />
+                    </div>
+                    {activeCamp && (
+                      <div className="pt-2 px-1">
+                        <p className="text-[10px] font-mono uppercase tracking-wider text-fg-muted mb-0.5">{t('CURRENT_CAMP')}</p>
+                        <p className="text-xs font-semibold text-foreground truncate">{activeCamp.name}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
-      </nav>
+      </header>
 
+      {/* ── 2. BOTTOM FLOATING CAPSULE NAV ISLAND (Fluid Glass signature dock) ── */}
+      <div 
+        className={cn(
+          "fixed bottom-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 pointer-events-auto",
+          isPlanDetail ? "max-md:hidden opacity-90 hover:opacity-100" : "opacity-100"
+        )}
+      >
+        <div 
+          className="relative"
+          onMouseLeave={handleMouseLeave}
+        >
+          {/* Mobile backdrop to dismiss upward submenu on click outside */}
+          {activeSubmenu && (
+            <div
+              className="fixed inset-0 z-40 sm:hidden"
+              onClick={() => setActiveSubmenu(null)}
+            />
+          )}
+
+          {/* Upward-Floating Submenu Sheet (Detached from the capsule) */}
+          <AnimatePresence>
+            {activeSubmenu && (
+              <motion.div
+                initial={{ opacity: 0, y: 8, x: "-50%", scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, x: "-50%", scale: 1 }}
+                exit={{ opacity: 0, y: 8, x: "-50%", scale: 0.96 }}
+                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                className={cn(
+                  "absolute bottom-full mb-3 left-1/2 rounded-2xl p-3 backdrop-blur-[24px] max-w-[calc(100vw-32px)] z-50",
+                  "bg-white/95 dark:bg-[#121619]/95 border border-stone-200/90 dark:border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.12)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)]",
+                  "before:absolute before:top-full before:left-0 before:w-full before:h-4 before:content-['']",
+                  activeSubmenu === "plans"
+                    ? planDropdownGroups.length <= 2
+                      ? "w-[300px] sm:w-[380px]"
+                      : planDropdownGroups.length === 3
+                      ? "w-[340px] sm:w-[480px]"
+                      : "w-[340px] sm:w-[560px]"
+                    : "w-[340px] sm:w-[480px]"
+                )}
+                onMouseEnter={() => {
+                  if (closeSubmenuTimeoutRef.current) {
+                    clearTimeout(closeSubmenuTimeoutRef.current);
+                    closeSubmenuTimeoutRef.current = null;
+                  }
+                }}
+                onMouseLeave={handleMouseLeave}
+              >
+                {activeSubmenu === "plans" && (
+                  <div
+                    className={cn(
+                      "grid gap-2.5",
+                      planDropdownGroups.length === 1 && "grid-cols-1",
+                      planDropdownGroups.length === 2 && "grid-cols-2",
+                      planDropdownGroups.length === 3 && "grid-cols-3",
+                      planDropdownGroups.length >= 4 && "grid-cols-2 sm:grid-cols-4"
+                    )}
+                  >
+                    {planDropdownGroups.map((group) => {
+                      const badgeParams = getUnifiedGroupBadgeParams(group.slug, group.nameZh);
+                      return (
+                        <Link
+                          key={group.id}
+                          href={`/plans?group=${encodeURIComponent(group.slug)}`}
+                          onClick={() => setActiveSubmenu(null)}
+                          className="p-3 rounded-xl bg-stone-50 hover:bg-white dark:bg-white/5 dark:hover:bg-white/10 border border-stone-200/80 dark:border-white/10 hover:border-primary/50 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group flex flex-col justify-between"
+                        >
+                          <div>
+                            <div className="architectural-tag mb-1.5 flex items-center gap-1.5">
+                              <span
+                                className="w-2 h-2 rounded-full shrink-0 shadow-xs"
+                                style={{ backgroundColor: badgeParams.uiBg }}
+                              />
+                              <span className="font-mono text-[9px] uppercase tracking-wider truncate text-fg-muted">
+                                {group.nameEn || group.slug}
+                              </span>
+                            </div>
+                            <div className="text-xs font-bold text-foreground group-hover:text-primary transition-colors truncate">
+                              {language === "zh" ? group.nameZh : group.nameEn}
+                            </div>
+                          </div>
+                          <div className="text-[10px] text-fg-secondary mt-1 line-clamp-1 font-medium">
+                            {language === "zh" ? group.nameEn : group.nameZh}
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {activeSubmenu === "admin" && (
+                  <div className="grid grid-cols-3 gap-2.5">
+                    <Link
+                      href="/admin?tab=timer"
+                      onClick={() => setActiveSubmenu(null)}
+                      className="p-3 rounded-xl bg-stone-50 hover:bg-white dark:bg-white/5 dark:hover:bg-white/10 border border-stone-200/80 dark:border-white/10 hover:border-primary/50 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="architectural-tag mb-1.5 flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-primary" />
+                          <span>TIMER</span>
+                        </div>
+                        <div className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
+                          {t('TIMER_CONTROL')}
+                        </div>
+                      </div>
+                      <div className="text-[10px] text-fg-secondary mt-1 line-clamp-1 font-medium">
+                        Countdown & Audio
+                      </div>
+                    </Link>
+
+                    <Link
+                      href="/admin?tab=tables"
+                      onClick={() => setActiveSubmenu(null)}
+                      className="p-3 rounded-xl bg-stone-50 hover:bg-white dark:bg-white/5 dark:hover:bg-white/10 border border-stone-200/80 dark:border-white/10 hover:border-primary/50 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="architectural-tag mb-1.5 flex items-center gap-1">
+                          <FileSpreadsheet className="w-3 h-3 text-primary" />
+                          <span>ROTATION</span>
+                        </div>
+                        <div className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
+                          {t('ROTATION_TABLE')}
+                        </div>
+                      </div>
+                      <div className="text-[10px] text-fg-secondary mt-1 line-clamp-1 font-medium">
+                        Stations & Schedule
+                      </div>
+                    </Link>
+
+                    <Link
+                      href="/admin?tab=props"
+                      onClick={() => setActiveSubmenu(null)}
+                      className="p-3 rounded-xl bg-stone-50 hover:bg-white dark:bg-white/5 dark:hover:bg-white/10 border border-stone-200/80 dark:border-white/10 hover:border-primary/50 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="architectural-tag mb-1.5 flex items-center gap-1">
+                          <Package2 className="w-3 h-3 text-primary" />
+                          <span>PROPS</span>
+                        </div>
+                        <div className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
+                          {t('PROPS_LIST')}
+                        </div>
+                      </div>
+                      <div className="text-[10px] text-fg-secondary mt-1 line-clamp-1 font-medium">
+                        Items & Checklist
+                      </div>
+                    </Link>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Fluid Glass Capsule Dock Island */}
+          <nav className="glass-pill rounded-full border border-hairline-light shadow-[0_20px_50px_rgba(0,0,0,0.6)] p-1.5 flex items-center gap-1 sm:gap-1.5">
+            {/* Home Tab */}
+            <Link
+              href="/"
+              aria-label={t('NAV_HOME')}
+              className={cn(
+                "w-10 h-10 sm:w-auto sm:h-auto sm:px-4 sm:py-2 rounded-full text-xs font-mono uppercase tracking-wider transition-all duration-200 btn-tactile inline-flex items-center justify-center gap-1.5",
+                isActive("/")
+                  ? "bg-white dark:bg-white/15 text-foreground font-semibold shadow-sm"
+                  : "text-fg-secondary hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10"
+              )}
+            >
+              <Home className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+              <span className="hidden sm:inline">{t('NAV_HOME')}</span>
+            </Link>
+
+            {/* Plans Tab with Upward Submenu Indicator */}
+            <div
+              className="relative"
+              onMouseEnter={() => handleMouseEnter("plans")}
+            >
+              <Link
+                href="/plans"
+                aria-label={t('NAV_PLANS')}
+                onClick={() => setActiveSubmenu((prev) => (prev === "plans" ? null : "plans"))}
+                className={cn(
+                  "w-10 h-10 sm:w-auto sm:h-auto sm:px-4 sm:py-2 rounded-full text-xs font-mono uppercase tracking-wider transition-all duration-200 btn-tactile inline-flex items-center justify-center gap-1.5",
+                  isActive("/plans") || activeSubmenu === "plans"
+                    ? "bg-white dark:bg-white/15 text-foreground font-semibold shadow-sm"
+                    : "text-fg-secondary hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10"
+                )}
+              >
+                <FolderOpen className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                <span className="hidden sm:inline whitespace-nowrap">{t('NAV_PLANS')}</span>
+                <ChevronUp
+                  className={cn(
+                    "w-3 h-3 transition-transform duration-200 hidden sm:inline-block",
+                    activeSubmenu === "plans" ? "rotate-180 text-primary opacity-100" : "opacity-60"
+                  )}
+                />
+              </Link>
+            </div>
+
+            {/* Admin Tab with Upward Submenu Indicator */}
+            <div
+              className="relative"
+              onMouseEnter={() => handleMouseEnter("admin")}
+            >
+              <Link
+                href="/admin"
+                aria-label={t('NAV_ADMIN')}
+                onClick={() => setActiveSubmenu((prev) => (prev === "admin" ? null : "admin"))}
+                className={cn(
+                  "w-10 h-10 sm:w-auto sm:h-auto sm:px-4 sm:py-2 rounded-full text-xs font-mono uppercase tracking-wider transition-all duration-200 btn-tactile inline-flex items-center justify-center gap-1.5",
+                  isActive("/admin") || activeSubmenu === "admin"
+                    ? "bg-white dark:bg-white/15 text-foreground font-semibold shadow-sm"
+                    : "text-fg-secondary hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10"
+                )}
+              >
+                <ShieldCheck className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                <span className="hidden sm:inline whitespace-nowrap">{t('NAV_ADMIN')}</span>
+                <ChevronUp
+                  className={cn(
+                    "w-3 h-3 transition-transform duration-200 hidden sm:inline-block",
+                    activeSubmenu === "admin" ? "rotate-180 text-primary opacity-100" : "opacity-60"
+                  )}
+                />
+              </Link>
+            </div>
+
+            {/* Settings Tab */}
+            <Link
+              href="/settings"
+              aria-label={t('NAV_SETTINGS')}
+              className={cn(
+                "w-10 h-10 sm:w-auto sm:h-auto sm:px-4 sm:py-2 rounded-full text-xs font-mono uppercase tracking-wider transition-all duration-200 btn-tactile inline-flex items-center justify-center gap-1.5",
+                isActive("/settings")
+                  ? "bg-white dark:bg-white/15 text-foreground font-semibold shadow-sm"
+                  : "text-fg-secondary hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10"
+              )}
+            >
+              <Settings className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+              <span className="hidden sm:inline">{t('NAV_SETTINGS')}</span>
+            </Link>
+          </nav>
+        </div>
+      </div>
     </>
   );
 }

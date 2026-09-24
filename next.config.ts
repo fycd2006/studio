@@ -8,12 +8,7 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_BUILD_ID: process.env.VERCEL_GIT_COMMIT_SHA || `${Date.now()}`,
     NEXT_PUBLIC_BUILD_TIME: new Date().toISOString(),
   },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+
   images: {
     remotePatterns: [
       {

@@ -172,6 +172,21 @@ export function PlansProvider({ children }: { children: ReactNode }) {
     }
   }, [user, isUserLoading, auth]);
 
+  const [activeCampId, setActiveCampId] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('activeCampId');
+    }
+    return null;
+  });
+
+  useEffect(() => {
+    if (activeCampId) {
+      localStorage.setItem('activeCampId', activeCampId);
+    } else {
+      localStorage.removeItem('activeCampId');
+    }
+  }, [activeCampId]);
+
   const campsQuery = useMemoFirebase(() => {
     if (!db || !user) return null;
     return query(collection(db, 'camps'), orderBy('createdAt', 'desc'));
@@ -180,16 +195,19 @@ export function PlansProvider({ children }: { children: ReactNode }) {
   const camps = campsData || [];
 
   const plansQuery = useMemoFirebase(() => {
-    if (!db || !user) return null;
-    return query(collection(db, 'lessonPlans'), orderBy('order', 'asc'));
-  }, [db, user]);
-  const { data: allPlansData } = useCollection<LessonPlan>(plansQuery);
-  const allPlans = allPlansData || [];
+    if (!db || !user || !activeCampId) return null;
+    return query(collection(db, 'lessonPlans'), where('campId', '==', activeCampId));
+  }, [db, user, activeCampId]);
+  const { data: rawPlansData } = useCollection<LessonPlan>(plansQuery);
+  const allPlans = useMemo(() => {
+    if (!rawPlansData) return [];
+    return [...rawPlansData].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  }, [rawPlansData]);
 
   const tablesQuery = useMemoFirebase(() => {
-    if (!db || !user) return null;
-    return query(collection(db, 'rotationTables'));
-  }, [db, user]);
+    if (!db || !user || !activeCampId) return null;
+    return query(collection(db, 'rotationTables'), where('campId', '==', activeCampId));
+  }, [db, user, activeCampId]);
   const { data: allTablesData } = useCollection<RotationTableData>(tablesQuery);
   const allTables = allTablesData || [];
 
@@ -216,25 +234,8 @@ export function PlansProvider({ children }: { children: ReactNode }) {
     return Array.from(bySlug.values());
   }, [settings?.groups]);
 
-  const [activeCampId, setActiveCampId] = useState<string | null>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('activeCampId');
-    }
-    return null;
-  });
-
-  useEffect(() => {
-    if (activeCampId) {
-      localStorage.setItem('activeCampId', activeCampId);
-    } else {
-      localStorage.removeItem('activeCampId');
-    }
-  }, [activeCampId]);
-
   const [activePlanId, setActivePlanId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'editor' | 'admin'>('editor');
-  
-  const [localTimeLeft, setLocalTimeLeft] = useState(0);
 
   const versionsQuery = useMemoFirebase(() => {
     if (!db || !user || !activePlanId) return null;
@@ -395,110 +396,6 @@ export function PlansProvider({ children }: { children: ReactNode }) {
     });
   }, [tableHistory, db]);
 
-  const workerRef = useRef<Worker | null>(null);
-
-  useEffect(() => {
-    if (!settings) return;
-    
-    if (typeof Worker !== 'undefined' && !workerRef.current) {
-      try {
-        workerRef.current = new Worker('/timer-worker.js');
-        console.log('[TimerWorker] initialized');
-      } catch (err) {
-        console.warn('[TimerWorker] Failed to initialize, using fallback:', err);
-      }
-    }
-
-    if (workerRef.current) {
-      workerRef.current.onmessage = (e) => {
-        const { type, remaining } = e.data;
-        if (type === 'tick') {
-          if (settings.isRunning) {
-            setLocalTimeLeft(remaining);
-            if (remaining === 0 && role === 'admin') {
-              const targetRef = doc(db!, 'userSettings', 'global');
-              const expectedTargetEndTime = settings.targetEndTime;
-              getDoc(targetRef).then((snap) => {
-                if (snap.exists()) {
-                  const latest = snap.data();
-                  if (latest.isRunning && latest.targetEndTime === expectedTargetEndTime) {
-                    updateDocumentNonBlocking(targetRef, { 
-                      isRunning: false, 
-                      timeLeft: 0,
-                      updatedAt: Date.now() 
-                    });
-                  }
-                }
-              });
-            }
-          }
-        }
-      };
-    }
-
-    if (settings.isRunning && settings.targetEndTime && workerRef.current) {
-      workerRef.current.postMessage({
-        type: 'start',
-        data: { targetEndTime: settings.targetEndTime, timeOffset: getServerTimeOffset() }
-      });
-    } else if (!settings.isRunning && workerRef.current) {
-      workerRef.current.postMessage({ type: 'stop' });
-      setLocalTimeLeft(settings.timeLeft || 0);
-    }
-
-    const tick = () => {
-      const currentTime = getCorrectedNow();
-      if (settings.isRunning && settings.targetEndTime) {
-        const remaining = Math.max(0, Math.floor((settings.targetEndTime - currentTime) / 1000));
-        setLocalTimeLeft(remaining);
-        
-        if (remaining === 0 && settings.isRunning && role === 'admin') {
-          const targetRef = doc(db!, 'userSettings', 'global');
-          const expectedTargetEndTime = settings.targetEndTime;
-          getDoc(targetRef).then((snap) => {
-            if (snap.exists()) {
-              const latest = snap.data();
-              if (latest.isRunning && latest.targetEndTime === expectedTargetEndTime) {
-                updateDocumentNonBlocking(targetRef, { 
-                  isRunning: false, 
-                  timeLeft: 0,
-                  updatedAt: currentTime 
-                });
-              }
-            }
-          });
-        }
-      } else {
-        setLocalTimeLeft(settings.timeLeft || 0);
-      }
-    };
-
-    let interval: ReturnType<typeof setInterval> | null = null;
-    if (!workerRef.current) {
-      tick();
-      interval = setInterval(tick, 1000);
-    } else {
-      tick();
-    }
-    
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        tick();
-        if (workerRef.current && settings.isRunning && settings.targetEndTime) {
-          workerRef.current.postMessage({
-            type: 'start',
-            data: { targetEndTime: settings.targetEndTime, timeOffset: getServerTimeOffset() }
-          });
-        }
-      }
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      if (interval) clearInterval(interval);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [settings, db, role]);
 
   useEffect(() => {
     if (campsData === null) return;
@@ -737,10 +634,10 @@ export function PlansProvider({ children }: { children: ReactNode }) {
   }, [db, camps]);
 
   const value = useMemo(() => ({
-    isLoading: isUserLoading || campsData === null || allPlansData === null,
+    isLoading: isUserLoading || campsData === null || (!!activeCampId && rawPlansData === null),
     camps, activeCampId, setActiveCampId, addCamp, updateCamp, deleteCamp, toggleCampLock,
-    plans: allPlans.filter(p => p.campId === activeCampId), 
-    tables: allTables.filter(t => t.campId === activeCampId), 
+    plans: allPlans, 
+    tables: allTables, 
     activePlan: allPlans.find(p => p.id === activePlanId) || null,
     activePlanId, setActivePlanId, updatePlan, deletePlan, addPlan, reorderPlans,
     activePlanVersions, savePlanVersion, restorePlanVersion, updatePlanVersionName, deletePlanVersion, autoSaveCurrentState, getFullVersionState,
@@ -752,26 +649,12 @@ export function PlansProvider({ children }: { children: ReactNode }) {
     audioEnabled: true,
     timer: {
       duration: settings?.duration || 40 * 60,
-      timeLeft: localTimeLeft,
+      timeLeft: settings?.timeLeft || 0,
       targetEndTime: settings?.targetEndTime,
       isRunning: settings?.isRunning || false,
-      setIsRunning: (r: boolean) => {
-        if (!db) return;
-        const nowTime = getCorrectedNow();
-        const target = r ? nowTime + (localTimeLeft * 1000) : 0;
-        setDocumentNonBlocking(doc(db, 'userSettings', 'global'), { isRunning: r, timeLeft: localTimeLeft, targetEndTime: target, updatedAt: nowTime }, { merge: true });
-      },
-      setDuration: (d: number) => {
-        if (!db) return;
-        setLocalTimeLeft(d);
-        setDocumentNonBlocking(doc(db, 'userSettings', 'global'), { duration: d, timeLeft: d, targetEndTime: 0, isRunning: false, updatedAt: getCorrectedNow() }, { merge: true });
-      },
-      reset: () => {
-        if (!db) return;
-        const d = settings?.duration || 40 * 60;
-        setLocalTimeLeft(d);
-        setDocumentNonBlocking(doc(db, 'userSettings', 'global'), { isRunning: false, timeLeft: d, targetEndTime: 0, updatedAt: getCorrectedNow() }, { merge: true });
-      }
+      setIsRunning: () => {},
+      setDuration: () => {},
+      reset: () => {}
     },
     activityTypes: settings?.activityTypes || ['劇本', '大地遊戲', '科學闖關', '科學實驗', '手作課程', '相見歡', '起床遊戲'],
     addActivityType: (newType: string) => {
@@ -890,9 +773,9 @@ export function PlansProvider({ children }: { children: ReactNode }) {
       }, { merge: true });
     }
   }), [
-    isUserLoading, campsData, allPlansData, camps, activeCampId, allPlans, allTables,
+    isUserLoading, campsData, rawPlansData, camps, activeCampId, allPlans, allTables,
     activePlanId, activePlanVersions, planHistory.past.length, planHistory.future.length,
-    tableHistory.past.length, tableHistory.future.length, viewMode, settings, localTimeLeft,
+    tableHistory.past.length, tableHistory.future.length, viewMode, settings,
     db, groups, addCamp, updateCamp, deleteCamp, toggleCampLock, updatePlan, deletePlan,
     addPlan, reorderPlans, savePlanVersion, restorePlanVersion, updatePlanVersionName,
     deletePlanVersion, autoSaveCurrentState, getFullVersionState, undoPlan, redoPlan,

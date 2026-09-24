@@ -79,15 +79,15 @@ export function WhatsNewDialog() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="relative w-full max-w-lg bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl rounded-[32px] shadow-2xl overflow-hidden border border-white/50 dark:border-white/10 flex flex-col max-h-[85vh]"
+            className="relative w-full max-w-lg bg-white/95 dark:bg-[#14191C]/95 backdrop-blur-3xl rounded-[32px] shadow-2xl overflow-hidden border border-stone-200/80 dark:border-white/10 flex flex-col max-h-[85vh]"
           >
             {/* Header */}
-            <div className="relative pt-10 pb-6 px-8 text-center bg-gradient-to-br from-orange-50 to-white dark:from-slate-800/50 dark:to-slate-900 rounded-t-[32px]">
+            <div className="relative pt-10 pb-6 px-8 text-center bg-gradient-to-br from-amber-500/10 to-transparent dark:from-white/[0.04] dark:to-transparent rounded-t-[32px]">
               <div className="absolute top-4 right-4">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 rounded-full text-stone-400 hover:bg-stone-200/50 dark:hover:bg-white/10 transition-colors"
+                  className="h-8 w-8 rounded-full text-fg-muted hover:bg-stone-200/50 dark:hover:bg-white/10 transition-colors"
                   onClick={handleDismiss}
                 >
                   <X className="w-4 h-4" />
@@ -96,37 +96,37 @@ export function WhatsNewDialog() {
               <div className="w-16 h-16 mx-auto bg-gradient-to-br from-orange-400 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/20 mb-6 rotate-3">
                 <Rocket className="w-8 h-8 text-white -rotate-3" />
               </div>
-              <h2 className="text-2xl font-black text-[#2C2A28] dark:text-white tracking-tight mb-2 flex items-center justify-center gap-2">
+              <h2 className="text-2xl font-black text-foreground tracking-tight mb-2 flex items-center justify-center gap-2">
                 最新更新通知
                 <Sparkles className="w-5 h-5 text-amber-500" />
               </h2>
-              <p className="text-sm font-medium text-stone-500 dark:text-slate-400">
+              <p className="text-sm font-medium text-fg-muted">
                 我們帶來了一些新玩意，讓您的體驗更加極致
               </p>
             </div>
 
             {/* Content List */}
-            <div className="flex-1 px-8 overflow-y-auto max-h-[50vh] min-h-[200px] scrollbar-thin scrollbar-thumb-stone-200 dark:scrollbar-thumb-slate-700">
+            <div className="flex-1 px-8 overflow-y-auto max-h-[50vh] min-h-[200px] scrollbar-thin scrollbar-thumb-stone-200 dark:scrollbar-thumb-white/10">
               <div className="py-2 pb-8 space-y-8">
                 {missedVersions.map((entry) => (
                   <div key={entry.id} className="relative pl-6">
                     <div className="absolute left-0 top-1.5 w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
-                    <div className="absolute left-[3px] top-4 bottom-[-32px] w-0.5 bg-stone-100 dark:bg-slate-800/50" />
+                    <div className="absolute left-[3px] top-4 bottom-[-32px] w-0.5 bg-stone-200/60 dark:bg-white/10" />
                     
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-bold text-lg text-[#2C2A28] dark:text-white leading-tight">
+                      <h3 className="font-bold text-lg text-foreground leading-tight">
                         {entry.title}
                       </h3>
                       <Badge className="bg-orange-100/80 dark:bg-amber-500/10 text-orange-700 dark:text-amber-400 text-[10px] font-black uppercase tracking-widest border-none px-2 py-0.5">
                         v{entry.version}
                       </Badge>
                     </div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-stone-400 dark:text-slate-500 mb-3">
+                    <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-fg-muted mb-3">
                       {entry.date}
                     </p>
                     <ul className="space-y-2.5">
                       {entry.highlights.map((item, idx) => (
-                        <li key={idx} className="flex items-start gap-2.5 text-sm font-medium text-stone-600 dark:text-slate-300">
+                        <li key={idx} className="flex items-start gap-2.5 text-sm font-medium text-fg-muted">
                           <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5 opacity-80" />
                           <span className="leading-relaxed">{item}</span>
                         </li>
@@ -138,10 +138,10 @@ export function WhatsNewDialog() {
             </div>
 
             {/* Footer */}
-            <div className="p-6 pt-4 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border-t border-stone-100/50 dark:border-white/5">
+            <div className="p-6 pt-4 bg-white/50 dark:bg-[#0B1012]/50 backdrop-blur-md border-t border-stone-200/80 dark:border-white/10">
               <Button
                 onClick={handleDismiss}
-                className="w-full h-12 rounded-2xl bg-[#2C2A28] dark:bg-white text-white dark:text-[#2C2A28] font-bold text-sm shadow-xl shadow-black/10 dark:shadow-white/10 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                className="w-full h-12 rounded-2xl bg-foreground text-background font-bold text-sm shadow-xl shadow-black/10 dark:shadow-white/5 hover:opacity-90 active:scale-[0.98] transition-all"
               >
                 開始體驗 / Let's Go
               </Button>

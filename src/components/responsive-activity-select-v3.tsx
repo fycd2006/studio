@@ -65,7 +65,7 @@ export function ResponsiveActivitySelectV3({
               focus-visible:ring-2 focus-visible:ring-orange-500
               ${isSelected 
                 ? "bg-orange-100/50 text-orange-600 dark:bg-amber-900/40 dark:text-amber-400" 
-                : "hover:bg-stone-50 dark:hover:bg-slate-700 active:bg-stone-100"}
+                : "hover:bg-stone-100/60 dark:hover:bg-white/10 active:bg-stone-100"}
             `}
           >
             <span className="text-base">{type}</span>
@@ -88,7 +88,7 @@ export function ResponsiveActivitySelectV3({
           onClick={() => !disabled && setOpen(!open)}
           aria-expanded={open}
           disabled={disabled}
-          className="w-full h-12 justify-between rounded-xl px-4 font-bold text-base bg-transparent dark:bg-transparent shadow-none hover:bg-stone-50 dark:hover:bg-slate-700 border-none transition-colors"
+          className="w-full h-12 justify-between rounded-xl px-4 font-bold text-base bg-transparent dark:bg-transparent shadow-none hover:bg-stone-100/60 dark:hover:bg-white/10 border-none transition-colors"
         >
           {value || <span className="text-muted-foreground font-normal">-- 請選擇活動類型 --</span>}
           <ChevronDown className={`ml-2 h-5 w-5 shrink-0 transition-transform duration-200 ${open ? "rotate-180 opacity-100" : "opacity-50"}`} />
@@ -96,7 +96,7 @@ export function ResponsiveActivitySelectV3({
         
         {open && (
           <div 
-            className="absolute top-full left-0 mt-2 z-[100] w-full p-1 rounded-2xl shadow-xl border border-stone-100 dark:border-slate-700 bg-white dark:bg-slate-800 animate-in fade-in-0 zoom-in-95"
+            className="absolute top-full left-0 mt-2 z-[100] w-full p-1 rounded-2xl shadow-xl border border-stone-200/80 dark:border-white/10 bg-white/95 dark:bg-[#14191C]/95 backdrop-blur-xl animate-in fade-in-0 zoom-in-95"
           >
             <div className="max-h-[300px] overflow-y-auto w-full custom-scrollbar pr-1">
                <OptionList />
@@ -113,19 +113,19 @@ export function ResponsiveActivitySelectV3({
         variant="ghost" 
         onClick={() => !disabled && setOpen(true)}
         disabled={disabled}
-        className="w-full h-14 justify-between rounded-xl px-4 font-bold text-base bg-stone-50/50 dark:bg-slate-800/50 shadow-sm active:scale-[0.98] transition-transform"
+        className="w-full h-14 justify-between rounded-xl px-4 font-bold text-base bg-stone-50/50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 shadow-sm active:scale-[0.98] transition-transform"
       >
         {value || <span className="text-muted-foreground font-normal">-- 請選擇活動類型 --</span>}
         <ChevronDown className="ml-2 h-5 w-5 shrink-0 opacity-50" />
       </Button>
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="bottom" className="rounded-t-3xl pb-8 px-4 flex flex-col gap-4 bg-white dark:bg-slate-900 border-t-0 max-h-[85vh]">
-          <SheetHeader className="text-left pb-2 border-b border-stone-100 dark:border-slate-800">
+        <SheetContent side="bottom" className="rounded-t-3xl pb-[max(1.5rem,calc(env(safe-area-inset-bottom)+1rem))] px-4 flex flex-col gap-3 bg-white/95 dark:bg-[#14191C]/95 backdrop-blur-xl border border-stone-200/80 dark:border-white/10 max-h-[85vh] z-[100]">
+          <SheetHeader className="text-left pb-2 border-b border-stone-200/80 dark:border-white/10">
             <SheetTitle className="text-lg font-bold flex items-center gap-2 text-stone-700 dark:text-stone-300">
               <Layout className="w-5 h-5 text-orange-500" /> 選擇活動類型
             </SheetTitle>
           </SheetHeader>
-          <div className="flex-1 w-full mt-2 max-h-[60vh] overflow-y-auto pr-1">
+          <div className="flex-1 w-full mt-2 max-h-[60vh] overflow-y-auto pr-1 pb-8 overscroll-contain">
             <OptionList />
           </div>
         </SheetContent>

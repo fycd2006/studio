@@ -80,7 +80,7 @@ export function FabStagger({ children, className }: FabStaggerProps) {
       <div className="pointer-events-auto">
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="w-[50px] h-[50px] sm:w-[56px] sm:h-[56px] rounded-full bg-white dark:bg-slate-800 shadow-[0_8px_30px_rgba(140,120,100,0.15)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.4)] flex items-center justify-center text-stone-500 hover:text-orange-500 dark:text-slate-400 dark:hover:text-amber-500 transition-colors border border-stone-100 dark:border-white/5"
+          className="w-[50px] h-[50px] sm:w-[56px] sm:h-[56px] rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-md shadow-lg border border-stone-200/80 dark:border-white/10 flex items-center justify-center text-fg-muted hover:text-foreground transition-colors"
         >
           <motion.div
             animate={{ rotate: isExpanded ? 0 : 180 }}

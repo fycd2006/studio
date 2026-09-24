@@ -7,8 +7,8 @@ type Role = 'admin' | 'crew' | null;
 
 interface AuthContextType {
   role: Role;
-  login: (username: string, password: string) => boolean;
-  logout: () => void;
+  login: (username: string, password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -38,24 +38,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [role, isLoading, pathname, router]);
 
-  const login = (username: string, password: string): boolean => {
-    let identifiedRole: Role = null;
+  const login = async (username: string, password: string): Promise<boolean> => {
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
 
-    if (username === "admin" && password === "ntutfycdcamp") {
-      identifiedRole = "admin";
-    } else if (username === "crew" && password === "cdcamp") {
-      identifiedRole = "crew";
-    }
+      if (!res.ok) return false;
 
-    if (identifiedRole) {
-      setRole(identifiedRole);
-      localStorage.setItem("studio_role", identifiedRole);
-      return true;
+      const data = await res.json();
+      if (data.role) {
+        setRole(data.role);
+        localStorage.setItem("studio_role", data.role);
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
     }
-    return false;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      // Ignore network error on logout
+    }
     setRole(null);
     localStorage.removeItem("studio_role");
     router.push("/login");

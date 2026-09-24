@@ -18,11 +18,19 @@ export function getUnifiedGroupBadgeParams(slug: string = '', nameZh: string = '
     shadow: string,
     uiBg: string,
     uiText: string,
+    colorDot: string,
+    softBg: string,
+    softText: string,
+    softBorder: string,
   ) => ({
     // New fields
     bg,
     text: lightText,
     dot,
+    colorDot,
+    softBg,
+    softText,
+    softBorder,
     // Legacy fields (kept for compatibility)
     lightBg,
     lightText,
@@ -35,14 +43,14 @@ export function getUnifiedGroupBadgeParams(slug: string = '', nameZh: string = '
   });
 
   const palettes = [
-    build('bg-indigo-500 dark:bg-indigo-500', 'text-white', 'bg-white/95', 'ring-indigo-500/45', 'from-indigo-500 to-indigo-600', 'bg-indigo-500', 'shadow-indigo-500/25', '#6366F1', '#FFFFFF'),
-    build('bg-rose-500 dark:bg-rose-500', 'text-white', 'bg-white/95', 'ring-rose-500/45', 'from-rose-500 to-rose-600', 'bg-rose-500', 'shadow-rose-500/25', '#F43F5E', '#FFFFFF'),
-    build('bg-emerald-500 dark:bg-emerald-500', 'text-white', 'bg-white/95', 'ring-emerald-500/45', 'from-emerald-500 to-emerald-600', 'bg-emerald-500', 'shadow-emerald-500/25', '#10B981', '#FFFFFF'),
-    build('bg-blue-500 dark:bg-blue-500', 'text-white', 'bg-white/95', 'ring-blue-500/45', 'from-blue-500 to-blue-600', 'bg-blue-500', 'shadow-blue-500/25', '#3B82F6', '#FFFFFF'),
-    build('bg-violet-500 dark:bg-violet-500', 'text-white', 'bg-white/95', 'ring-violet-500/45', 'from-violet-500 to-violet-600', 'bg-violet-500', 'shadow-violet-500/25', '#8B5CF6', '#FFFFFF'),
-    build('bg-cyan-500 dark:bg-cyan-500', 'text-white', 'bg-white/95', 'ring-cyan-500/45', 'from-cyan-500 to-cyan-600', 'bg-cyan-500', 'shadow-cyan-500/25', '#06B6D4', '#FFFFFF'),
-    build('bg-fuchsia-500 dark:bg-fuchsia-500', 'text-white', 'bg-white/95', 'ring-fuchsia-500/45', 'from-fuchsia-500 to-fuchsia-600', 'bg-fuchsia-500', 'shadow-fuchsia-500/25', '#D946EF', '#FFFFFF'),
-    build('bg-teal-500 dark:bg-teal-500', 'text-white', 'bg-white/95', 'ring-teal-500/45', 'from-teal-500 to-teal-600', 'bg-teal-500', 'shadow-teal-500/25', '#14B8A6', '#FFFFFF'),
+    build('bg-indigo-500 dark:bg-indigo-500', 'text-white', 'bg-white/95', 'ring-indigo-500/45', 'from-indigo-500 to-indigo-600', 'bg-indigo-500', 'shadow-indigo-500/25', '#6366F1', '#FFFFFF', 'bg-indigo-500', 'bg-indigo-500/15 dark:bg-indigo-500/20', 'text-indigo-700 dark:text-indigo-300', 'border-indigo-500/30 dark:border-indigo-500/40'),
+    build('bg-rose-500 dark:bg-rose-500', 'text-white', 'bg-white/95', 'ring-rose-500/45', 'from-rose-500 to-rose-600', 'bg-rose-500', 'shadow-rose-500/25', '#F43F5E', '#FFFFFF', 'bg-rose-500', 'bg-rose-500/15 dark:bg-rose-500/20', 'text-rose-700 dark:text-rose-300', 'border-rose-500/30 dark:border-rose-500/40'),
+    build('bg-emerald-500 dark:bg-emerald-500', 'text-white', 'bg-white/95', 'ring-emerald-500/45', 'from-emerald-500 to-emerald-600', 'bg-emerald-500', 'shadow-emerald-500/25', '#10B981', '#FFFFFF', 'bg-emerald-500', 'bg-emerald-500/15 dark:bg-emerald-500/20', 'text-emerald-700 dark:text-emerald-300', 'border-emerald-500/30 dark:border-emerald-500/40'),
+    build('bg-blue-500 dark:bg-blue-500', 'text-white', 'bg-white/95', 'ring-blue-500/45', 'from-blue-500 to-blue-600', 'bg-blue-500', 'shadow-blue-500/25', '#3B82F6', '#FFFFFF', 'bg-blue-500', 'bg-blue-500/15 dark:bg-blue-500/20', 'text-blue-700 dark:text-blue-300', 'border-blue-500/30 dark:border-blue-500/40'),
+    build('bg-violet-500 dark:bg-violet-500', 'text-white', 'bg-white/95', 'ring-violet-500/45', 'from-violet-500 to-violet-600', 'bg-violet-500', 'shadow-violet-500/25', '#8B5CF6', '#FFFFFF', 'bg-violet-500', 'bg-violet-500/15 dark:bg-violet-500/20', 'text-violet-700 dark:text-violet-300', 'border-violet-500/30 dark:border-violet-500/40'),
+    build('bg-cyan-500 dark:bg-cyan-500', 'text-white', 'bg-white/95', 'ring-cyan-500/45', 'from-cyan-500 to-cyan-600', 'bg-cyan-500', 'shadow-cyan-500/25', '#06B6D4', '#FFFFFF', 'bg-cyan-500', 'bg-cyan-500/15 dark:bg-cyan-500/20', 'text-cyan-700 dark:text-cyan-300', 'border-cyan-500/30 dark:border-cyan-500/40'),
+    build('bg-fuchsia-500 dark:bg-fuchsia-500', 'text-white', 'bg-white/95', 'ring-fuchsia-500/45', 'from-fuchsia-500 to-fuchsia-600', 'bg-fuchsia-500', 'shadow-fuchsia-500/25', '#D946EF', '#FFFFFF', 'bg-fuchsia-500', 'bg-fuchsia-500/15 dark:bg-fuchsia-500/20', 'text-fuchsia-700 dark:text-fuchsia-300', 'border-fuchsia-500/30 dark:border-fuchsia-500/40'),
+    build('bg-teal-500 dark:bg-teal-500', 'text-white', 'bg-white/95', 'ring-teal-500/45', 'from-teal-500 to-teal-600', 'bg-teal-500', 'shadow-teal-500/25', '#14B8A6', '#FFFFFF', 'bg-teal-500', 'bg-teal-500/15 dark:bg-teal-500/20', 'text-teal-700 dark:text-teal-300', 'border-teal-500/30 dark:border-teal-500/40'),
   ];
 
   // Requirement: activity group always orange.
@@ -57,6 +65,10 @@ export function getUnifiedGroupBadgeParams(slug: string = '', nameZh: string = '
       'shadow-orange-500/25',
       '#F97316',
       '#FFFFFF',
+      'bg-orange-500',
+      'bg-orange-500/15 dark:bg-orange-500/20',
+      'text-orange-700 dark:text-orange-400',
+      'border-orange-500/30 dark:border-orange-500/40',
     );
   }
 

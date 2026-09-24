@@ -38,19 +38,17 @@ export function MobileTabBar() {
     <AnimatePresence>
       {!shouldHide && (
         <motion.nav
-          initial={{ y: "100%", opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: "100%", opacity: 0 }}
+          initial={{ y: "150%", opacity: 0, x: "-50%" }}
+          animate={{ y: 0, opacity: 1, x: "-50%" }}
+          exit={{ y: "150%", opacity: 0, x: "-50%" }}
           transition={{ type: "spring", stiffness: 400, damping: 40 }}
           className={cn(
-            "fixed bottom-0 inset-x-0 z-[60] md:hidden",
-            "bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl saturate-150",
-            "border-t border-white/20 dark:border-white/5",
-            "shadow-[0_-8px_30px_rgba(140,120,100,0.06)] dark:shadow-[0_-8px_30px_rgba(0,0,0,0.4)]"
+            "fixed bottom-6 left-1/2 z-[60] md:hidden w-[calc(100%-2rem)] max-w-sm",
+            "glass-pill rounded-full p-1.5",
+            "border border-hairline-light shadow-[0_20px_50px_rgba(0,0,0,0.6)]"
           )}
-          style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         >
-          <div className="flex items-center justify-around h-[68px] px-2 relative">
+          <div className="flex items-center justify-around h-14 px-1 relative">
             {TABS.map((tab) => {
               const active = isActive(tab.href, pathname);
               const Icon = tab.icon;
@@ -59,7 +57,7 @@ export function MobileTabBar() {
                   key={tab.key}
                   onClick={() => router.push(tab.href)}
                   className={cn(
-                    "relative flex flex-col items-center justify-center w-full h-full gap-1 transition-colors z-10",
+                    "relative flex flex-col items-center justify-center w-full h-full gap-0.5 transition-colors z-10",
                     "focus:outline-none"
                   )}
                 >
@@ -67,29 +65,29 @@ export function MobileTabBar() {
                   {active && (
                     <motion.div
                       layoutId="mobile-tab-indicator"
-                      className="absolute inset-0 m-1 rounded-2xl bg-stone-100/80 dark:bg-slate-800/80 -z-10 shadow-sm border border-white/40 dark:border-white/5"
+                      className="absolute inset-0 rounded-full bg-white/10 dark:bg-white/10 -z-10 border border-hairline-light"
                       initial={false}
                       transition={{ type: "spring", stiffness: 500, damping: 35 }}
                     />
                   )}
                   
                   <motion.div 
-                    whileTap={{ scale: 0.85 }} 
+                    whileTap={{ scale: 0.88 }} 
                     className="flex flex-col items-center justify-center w-full h-full"
                   >
                     <Icon
                       className={cn(
-                        "w-[22px] h-[22px] transition-all duration-300",
-                        active ? "text-orange-500 dark:text-amber-500 scale-110 drop-shadow-sm" : "text-stone-400 dark:text-slate-500"
+                        "w-4 h-4 transition-all duration-300",
+                        active ? "text-primary scale-105" : "text-fg-secondary"
                       )}
-                      strokeWidth={active ? 2.5 : 2}
+                      strokeWidth={active ? 2.2 : 1.7}
                     />
                     <span
                       className={cn(
-                        "text-[10px] tracking-wide transition-all duration-300 mt-1",
+                        "text-[9px] font-mono uppercase tracking-wider transition-all duration-300 mt-0.5",
                         active 
-                          ? "font-extrabold text-orange-600 dark:text-amber-500" 
-                          : "font-semibold text-stone-400 dark:text-slate-500"
+                          ? "font-semibold text-foreground" 
+                          : "font-normal text-fg-secondary"
                       )}
                     >
                       {t(tab.labelKey)}

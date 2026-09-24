@@ -89,7 +89,7 @@ export const Sidebar = React.forwardRef<
  if (isMobile) {
  return (
  <Sheet open={openMobile} onOpenChange={setOpenMobile}>
- <SheetContent side="left" className="w-[--sidebar-width] bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl p-0 text-sidebar-foreground dark:flex flex-col h-full overflow-hidden shadow-2xl transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <SheetContent side="left" className="w-[--sidebar-width] bg-white/85 dark:bg-[#0B1012]/85 backdrop-blur-2xl p-0 text-sidebar-foreground dark:flex flex-col h-full overflow-hidden shadow-2xl transition-colors border-r border-stone-200/80 dark:border-white/10">
  <SheetTitle className="sr-only">側邊欄選單</SheetTitle>
  <div className="flex-1 w-full overflow-y-auto overflow-x-hidden scrollbar-hide">
  {children}
@@ -124,8 +124,8 @@ export const Sidebar = React.forwardRef<
  <div className={cn(
  "duration-300 fixed inset-y-0 z-50 hidden h-svh transition-[left,right,width,background-color] ease-in-out md:flex flex-col left-0",
  state === "expanded" ? "w-[--sidebar-width]" : "w-[--sidebar-width-icon]",
- state === "expanded" && !isPinned ? "bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl shadow-2xl  dark:" : "",
- state === "expanded" && isPinned ? "bg-white dark:bg-slate-900  dark:" : "",
+ state === "expanded" && !isPinned ? "bg-white/70 dark:bg-[#0B1012]/70 backdrop-blur-xl shadow-2xl border-r border-stone-200/80 dark:border-white/10" : "",
+ state === "expanded" && isPinned ? "bg-white/80 dark:bg-[#0B1012]/80 backdrop-blur-md border-r border-stone-200/80 dark:border-white/10" : "",
  state === "collapsed" ? "bg-transparent  pointer-events-none" : "",
  className
  )} {...props}>
@@ -168,7 +168,7 @@ export const SidebarGroup = React.forwardRef<HTMLDivElement, React.ComponentProp
 SidebarGroup.displayName = "SidebarGroup"
 
 export const SidebarGroupLabel = React.forwardRef<HTMLDivElement, React.ComponentProps<"div">>(({ className, ...props }, ref) => (
- <div ref={ref} data-sidebar="group-label" className={cn("duration-200 flex h-7 shrink-0 items-center rounded-md px-2 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] outline-none transition-[margin,opa] ease-linear group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0", className)} {...props} />
+ <div ref={ref} data-sidebar="group-label" className={cn("duration-200 flex h-7 shrink-0 items-center rounded-md px-2 text-[10px] font-black text-fg-muted font-mono uppercase tracking-[0.2em] outline-none transition-[margin,opa] ease-linear group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0", className)} {...props} />
 ))
 SidebarGroupLabel.displayName = "SidebarGroupLabel"
 

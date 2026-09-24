@@ -186,27 +186,27 @@ export function PlanSidebar({
  <SidebarHeader className="dark:px-4 px-4 py-5 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:py-4 transition-colors z-20 relative">
  <div className="flex items-center justify-between group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-3 overflow-hidden">
  <Link href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-all duration-300 min-w-max">
- <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden bg-[#FBF9F6] dark:bg-white dark:p-0.5 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8 shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
+ <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden bg-white/80 dark:bg-white/10 border border-stone-200/80 dark:border-white/10 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8 shadow-xs">
  <img src="/logo.png" alt="Logo" className="w-full h-full object-contain"
  onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
  <Sparkles className="h-5 w-5 text-orange-500 dark:text-amber-400 hidden" />
  </div>
  <div className="flex flex-col group-data-[collapsible=icon]:hidden">
- <h1 className="text-[12px] font-black text-[#2C2A28] dark:text-white tracking-tight leading-none uppercase">NTUT CD CAMP</h1>
- <span className="text-[8px] font-bold text-orange-500 dark:text-amber-400 uppercase tracking-widest mt-1">VOLUNTEER STUDIO</span>
+ <h1 className="text-[12px] font-normal text-foreground tracking-tight leading-none uppercase">NTUT CD CAMP</h1>
+ <span className="text-[8px] font-mono font-medium text-orange-600 dark:text-orange-400 uppercase tracking-widest mt-1">VOLUNTEER STUDIO</span>
  </div>
  </Link>
  {!isMobile && (
  <div className="flex items-center gap-1">
  {!isCollapsed && (
  <Button variant="ghost" size="icon" onClick={togglePin}
- className={cn("h-7 w-7 rounded-lg transition-all shrink-0 cursor-pointer", isPinned ? "text-orange-500 dark:text-amber-400 bg-orange-50 dark:bg-amber-400/10" : "text-stone-400 dark:text-slate-500 hover:bg-[#FBF9F6] dark:hover:bg-white/5 hover:text-stone-700 dark:hover:text-slate-300")}
+ className={cn("h-7 w-7 rounded-lg transition-all shrink-0 cursor-pointer", isPinned ? "text-orange-600 dark:text-orange-400 bg-orange-500/10" : "text-fg-muted hover:bg-stone-500/10 dark:hover:bg-white/5 hover:text-foreground")}
  title={isPinned ? "取消釘選 (Unpin)" : "釘選側邊欄 (Pin sidebar)"}>
  <Pin className={cn("h-3.5 w-3.5", isPinned && "fill-current")} />
  </Button>
  )}
  <Button variant="ghost" size="icon" onClick={toggleSidebar}
- className="h-7 w-7 rounded-lg text-stone-400 dark:text-slate-500 hover:bg-[#FBF9F6] dark:hover:bg-white/5 hover:text-orange-500 dark:hover:text-amber-400 transition-all shrink-0 cursor-pointer shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
+ className="h-7 w-7 rounded-lg text-fg-muted hover:bg-stone-500/10 dark:hover:bg-white/5 hover:text-foreground transition-all shrink-0 cursor-pointer">
  {isCollapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
  </Button>
  </div>
@@ -226,16 +226,16 @@ export function PlanSidebar({
  <TooltipTrigger asChild>
  <Link href={item.href}
  className={cn(
- "group/nav relative flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 cursor-pointer",
+ "group/nav relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 cursor-pointer",
  "group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0",
- isActive ? "bg-orange-50 dark:bg-amber-400/10 text-orange-600 dark:text-amber-400" : "text-stone-500 dark:text-slate-400 hover:text-[#2C2A28] dark:hover:text-slate-200 hover:bg-[#FBF9F6] dark:hover:bg-white/5"
+ isActive ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium" : "text-fg-muted hover:text-foreground hover:bg-stone-500/10 dark:hover:bg-white/5"
  )}>
- {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-orange-500 dark:bg-amber-400 rounded-r-full" />}
- <Icon className={cn("h-[18px] w-[18px] shrink-0", isActive ? "text-orange-600 dark:text-amber-400" : "text-stone-400 dark:text-slate-400 group-hover/nav:text-[#2C2A28] dark:group-hover/nav:text-slate-200")} />
- <span className="text-[11px] font-bold tracking-wide group-data-[collapsible=icon]:hidden uppercase">{item.label}</span>
+ {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-orange-500 rounded-r-full" />}
+ <Icon className={cn("h-[18px] w-[18px] shrink-0", isActive ? "text-orange-600 dark:text-orange-400" : "text-fg-muted group-hover/nav:text-foreground")} />
+ <span className="text-[11px] font-mono tracking-wide group-data-[collapsible=icon]:hidden uppercase">{item.label}</span>
  </Link>
  </TooltipTrigger>
- <TooltipContent side="right" className={cn("text-[10px] font-bold uppercase tracking-widest", !isCollapsed && "hidden")}>
+ <TooltipContent side="right" className={cn("text-[10px] font-mono uppercase tracking-widest", !isCollapsed && "hidden")}>
  {item.label}
  </TooltipContent>
  </Tooltip>
@@ -246,9 +246,9 @@ export function PlanSidebar({
 
  {/* ═══ PROJECT INFO (expanded only) ═══ */}
  <div className="mt-6 mb-2 px-3 group-data-[collapsible=icon]:hidden">
- <div className="flex flex-col gap-2 p-3 bg-[#FBF9F6]/50 dark:bg-white/5 rounded-xl dark:shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none">
+ <div className="flex flex-col gap-2 p-3 bg-stone-500/[0.04] dark:bg-white/[0.03] rounded-2xl border border-stone-200/80 dark:border-white/10">
  <div className="flex items-center justify-between">
- <label className="text-[9px] font-black text-stone-400 dark:text-slate-500 uppercase tracking-widest leading-none">
+ <label className="text-[9px] font-mono text-fg-muted uppercase tracking-widest leading-none">
  Active Project
  </label>
  {isAdmin && activeCamp && (
@@ -267,10 +267,10 @@ export function PlanSidebar({
  )}
  </div>
  <div className="flex items-center gap-2">
- <span className="text-[11px] font-black text-[#2C2A28] dark:text-white truncate">
+ <span className="text-[11px] font-normal text-foreground truncate">
  {activeCamp?.isLocked ? "🔒 " : ""}{activeCamp?.name || "No Active Project"}
  </span>
- {activeCamp && <Badge className="h-4 px-1 text-[8px] font-black uppercase tracking-tighter bg-orange-100 dark:bg-amber-400/10 text-orange-600 dark:text-amber-400 shrink-0">Live</Badge>}
+ {activeCamp && <Badge className="h-4 px-1.5 text-[8px] font-mono uppercase tracking-widest bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/30 shrink-0">Live</Badge>}
  </div>
  </div>
  </div>
@@ -296,7 +296,7 @@ export function PlanSidebar({
  </Badge>
  </SidebarGroupLabel>
  <Button variant="ghost" size="icon"
- className="h-6 w-6 text-stone-400 dark:text-slate-500 hover:text-orange-500 dark:hover:text-amber-400 hover:bg-[#FBF9F6] dark:hover:bg-white/5 cursor-pointer transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none"
+ className="h-6 w-6 text-fg-muted hover:text-orange-500 dark:hover:text-amber-400 hover:bg-[#FAF8F5] dark:hover:bg-white/5 cursor-pointer transition-colors shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none"
  onClick={() => {
  const newId = onAdd(group.slug);
  if (newId) router.push(`/plans/${newId}`);
@@ -323,27 +323,27 @@ export function PlanSidebar({
  ref={provided.innerRef}
  {...provided.draggableProps}
  className={cn(
- "group/item relative flex items-center gap-2 ml-1 px-3 py-2 rounded-lg transition-all duration-200 cursor-pointer overflow-hidden",
- isActive ? "bg-orange-100/80 text-orange-700 dark:bg-amber-400/10 dark:text-amber-300 font-bold shadow-[0_0_0_1px_rgba(249,115,22,0.2)] dark:shadow-[0_0_0_1px_rgba(251,191,36,0.2)] " : "text-stone-500 dark:text-slate-400 hover:text-[#2C2A28] dark:hover:text-slate-200 hover:bg-[#FBF9F6] dark:hover:bg-white/5 font-medium border-none ",
- snapshot.isDragging && "shadow-xl bg-white dark:bg-slate-800 z-50  dark:"
+ "group/item relative flex items-center gap-2 ml-1 px-3 py-2 rounded-xl transition-all duration-200 cursor-pointer overflow-hidden",
+ isActive ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium border border-orange-500/30" : "text-fg-muted hover:text-foreground hover:bg-stone-500/10 dark:hover:bg-white/5 font-normal border border-transparent",
+ snapshot.isDragging && "shadow-xl bg-white/95 dark:bg-[#14191C]/95 z-50 border border-stone-200/80 dark:border-white/10"
  )}
  onClick={() => {
  if (pathname !== `/plans/${plan.id}`) router.push(`/plans/${plan.id}`);
  }}
  >
- {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[4px] h-5 bg-orange-500 dark:bg-amber-400 rounded-r-full shadow-sm" />}
+ {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-orange-500 rounded-r-full shadow-xs" />}
  {isAdmin && (
  <div {...provided.dragHandleProps} className="opacity-0 group-hover/item:opacity-40">
  <GripVertical className="h-3.5 w-3.5" />
  </div>
  )}
  {!isAdmin && <div {...provided.dragHandleProps} />}
- <FileText className={cn("h-3.5 w-3.5 shrink-0", isActive ? "text-orange-600 dark:text-amber-400" : "text-stone-400 dark:text-slate-500")} />
- <div className={cn("flex-1 min-w-0 truncate text-[11px] font-medium", isActive ? "text-orange-600 dark:text-amber-400 max-w-full" : "max-w-full")}>
+ <FileText className={cn("h-3.5 w-3.5 shrink-0", isActive ? "text-orange-600 dark:text-orange-400" : "text-fg-muted")} />
+ <div className={cn("flex-1 min-w-0 truncate text-[11px]", isActive ? "text-orange-600 dark:text-orange-400 font-medium max-w-full" : "max-w-full")}>
  {planTitle}
  </div>
  <Button variant="ghost" size="icon"
- className="h-6 w-6 opacity-0 group-hover/item:opacity-100 rounded-md text-stone-400 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 cursor-pointer transition-colors border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
+ className="h-6 w-6 opacity-0 group-hover/item:opacity-100 rounded-md text-fg-muted hover:text-rose-500 dark:hover:text-rose-400 cursor-pointer transition-colors"
  onClick={(e) => {
  e.stopPropagation();
  if (role !== 'admin') {
@@ -377,14 +377,14 @@ export function PlanSidebar({
  <SidebarFooter className="dark:px-3 px-3 py-3 group-data-[collapsible=icon]:px-1.5 transition-colors flex flex-row items-center justify-between z-20 relative">
  <div className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center">
  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
- <span className="text-[9px] font-bold text-stone-400 dark:text-slate-500 uppercase tracking-widest group-data-[collapsible=icon]:hidden">System Online</span>
+ <span className="text-[9px] font-mono text-fg-muted uppercase tracking-widest group-data-[collapsible=icon]:hidden">System Online</span>
  </div>
  {isMounted && (!isCollapsed || isMobile) && (
  <div className="flex items-center gap-1">
  <Button
  variant="ghost"
  size="icon"
- className="h-7 w-7 rounded-lg text-stone-400 dark:text-slate-400 hover:text-orange-500 dark:hover:text-amber-400 hover:bg-[#FBF9F6] dark:hover:bg-white/5 transition-colors cursor-pointer shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none"
+ className="h-7 w-7 rounded-lg text-fg-muted hover:text-foreground hover:bg-stone-500/10 dark:hover:bg-white/5 transition-colors cursor-pointer"
  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
  >
  {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
@@ -392,7 +392,7 @@ export function PlanSidebar({
  <Button
  variant="ghost"
  size="sm"
- className="h-7 px-2 text-xs font-bold rounded-lg text-stone-400 dark:text-slate-400 hover:text-orange-500 dark:hover:text-amber-400 hover:bg-[#FBF9F6] dark:hover:bg-white/5 transition-colors cursor-pointer shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none"
+ className="h-7 px-2 text-xs font-mono rounded-lg text-fg-muted hover:text-foreground hover:bg-stone-500/10 dark:hover:bg-white/5 transition-colors cursor-pointer"
  onClick={() => setLanguage(language === 'zh' ? 'en' : 'zh')}
  >
  {language === 'zh' ? 'EN' : '中'}
@@ -404,71 +404,71 @@ export function PlanSidebar({
 
  {/* ═══ TYPE-DELETE PLAN MODAL ═══ */}
  <Dialog open={!!deletePlanTarget} onOpenChange={(open) => { if (!open) { setDeletePlanTarget(null); setDeleteInput(""); } }}>
- <DialogContent className="rounded-2xl p-8 bg-white dark:bg-slate-900 shadow-2xl max-w-md shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
- <DialogHeader><DialogTitle className="text-lg font-bold tracking-tight">刪除教案 / Delete Plan</DialogTitle></DialogHeader>
+ <DialogContent className="rounded-3xl p-6 sm:p-8 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl max-w-md">
+ <DialogHeader><DialogTitle className="text-lg font-normal tracking-tight text-foreground">刪除教案 / Delete Plan</DialogTitle></DialogHeader>
  <div className="space-y-4 py-2">
- <p className="text-sm text-slate-500">確認刪除「<strong className="text-[#2C2A28] dark:text-white">{deletePlanTarget?.name}</strong>」？此操作無法復原。</p>
+ <p className="text-xs font-mono text-fg-muted">確認刪除「<strong className="text-foreground">{deletePlanTarget?.name}</strong>」？此操作無法復原。</p>
  <div className="space-y-2">
- <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">請輸入 <span className="text-rose-500 font-mono">delete</span> 確認</label>
+ <label className="text-[10px] font-mono uppercase tracking-widest text-fg-muted">請輸入 <span className="text-rose-500 font-mono">delete</span> 確認</label>
  <Input type="text" value={deleteInput} onChange={e => setDeleteInput(e.target.value)} placeholder="delete"
- className="font-mono h-11 rounded-lg focus:ring-2 focus:ring-rose-500/30 focus:" />
+ className="font-mono h-11 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 text-foreground" />
  </div>
  </div>
  <DialogFooter className="gap-2">
- <Button variant="ghost" onClick={() => { setDeletePlanTarget(null); setDeleteInput(""); }} className="rounded-lg font-semibold h-11 cursor-pointer">取消</Button>
+ <Button variant="ghost" onClick={() => { setDeletePlanTarget(null); setDeleteInput(""); }} className="rounded-xl font-mono text-xs uppercase tracking-wider h-11 cursor-pointer">取消</Button>
  <Button variant="destructive" onClick={handleConfirmDeletePlan} disabled={deleteInput !== "delete"}
- className="rounded-lg font-semibold h-11 px-8 cursor-pointer disabled:opacity-40 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow">確認刪除</Button>
+ className="rounded-xl font-mono text-xs uppercase tracking-wider h-11 px-8 cursor-pointer disabled:opacity-40">確認刪除</Button>
  </DialogFooter>
  </DialogContent>
  </Dialog>
 
  {/* ═══ ADD CAMP DIALOG ═══ */}
  <Dialog open={isAddCampOpen} onOpenChange={setIsAddCampOpen}>
- <DialogContent className="rounded-2xl p-8 bg-white dark:bg-slate-900 shadow-2xl shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
- <DialogHeader><DialogTitle className="text-lg font-bold tracking-tight">建立營隊專案 / Create Project</DialogTitle></DialogHeader>
+ <DialogContent className="rounded-3xl p-6 sm:p-8 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl">
+ <DialogHeader><DialogTitle className="text-lg font-normal tracking-tight text-foreground">建立營隊專案 / Create Project</DialogTitle></DialogHeader>
  <div className="py-4 space-y-5">
  <div className="space-y-2">
- <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">名稱 / Name</label>
- <Input placeholder="科學夏令營 / Camp Name" value={tempCamp.name || ""} onChange={(e) => setTempCamp({ ...tempCamp, name: e.target.value })} className="h-11 rounded-lg font-semibold" />
+ <label className="text-[10px] font-mono text-fg-muted uppercase tracking-widest">名稱 / Name</label>
+ <Input placeholder="科學夏令營 / Camp Name" value={tempCamp.name || ""} onChange={(e) => setTempCamp({ ...tempCamp, name: e.target.value })} className="h-11 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 font-normal text-foreground" />
  </div>
  <div className="grid grid-cols-2 gap-4">
  <div className="space-y-2">
- <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">開始 / Start</label>
- <Input type="date" value={tempCamp.campStartDate || ""} onChange={(e) => setTempCamp({ ...tempCamp, campStartDate: e.target.value })} className="h-11 rounded-lg font-semibold" />
+ <label className="text-[10px] font-mono text-fg-muted uppercase tracking-widest">開始 / Start</label>
+ <Input type="date" value={tempCamp.campStartDate || ""} onChange={(e) => setTempCamp({ ...tempCamp, campStartDate: e.target.value })} className="h-11 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 font-mono text-xs text-foreground" />
  </div>
  <div className="space-y-2">
- <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">結束 / End</label>
- <Input type="date" value={tempCamp.campEndDate || ""} onChange={(e) => setTempCamp({ ...tempCamp, campEndDate: e.target.value })} className="h-11 rounded-lg font-semibold" />
+ <label className="text-[10px] font-mono text-fg-muted uppercase tracking-widest">結束 / End</label>
+ <Input type="date" value={tempCamp.campEndDate || ""} onChange={(e) => setTempCamp({ ...tempCamp, campEndDate: e.target.value })} className="h-11 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 font-mono text-xs text-foreground" />
  </div>
  </div>
  </div>
  <DialogFooter className="gap-2">
- <Button variant="outline" onClick={() => setIsAddCampOpen(false)} className="rounded-lg font-semibold h-11 cursor-pointer">取消</Button>
- <Button onClick={handleCreateCamp} className="gold-btn rounded-lg font-semibold h-11 px-8 cursor-pointer border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow">確認 / Confirm</Button>
+ <Button variant="outline" onClick={() => setIsAddCampOpen(false)} className="rounded-xl font-mono text-xs uppercase tracking-wider h-11 cursor-pointer">取消</Button>
+ <Button onClick={handleCreateCamp} className="rounded-xl font-mono text-xs uppercase tracking-wider h-11 px-8 cursor-pointer bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-xs">確認 / Confirm</Button>
  </DialogFooter>
  </DialogContent>
  </Dialog>
 
  {/* ═══ CAMP SETTINGS DIALOG ═══ */}
  <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
- <DialogContent className="rounded-2xl p-8 bg-white dark:bg-slate-900 shadow-2xl max-w-lg shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
- <DialogHeader><DialogTitle className="text-lg font-bold tracking-tight">專案設定 / Project Settings</DialogTitle></DialogHeader>
+ <DialogContent className="rounded-3xl p-6 sm:p-8 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl max-w-lg">
+ <DialogHeader><DialogTitle className="text-lg font-normal tracking-tight text-foreground">專案設定 / Project Settings</DialogTitle></DialogHeader>
  <div className="py-4 space-y-6">
  <div className="space-y-2">
- <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">專案名稱 / Name</label>
- <Input value={tempCamp.name || ""} onChange={(e) => setTempCamp({ ...tempCamp, name: e.target.value })} className="h-11 rounded-lg font-semibold" />
+ <label className="text-[10px] font-mono text-fg-muted uppercase tracking-widest">專案名稱 / Name</label>
+ <Input value={tempCamp.name || ""} onChange={(e) => setTempCamp({ ...tempCamp, name: e.target.value })} className="h-11 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 font-normal text-foreground" />
  </div>
  <div className="grid grid-cols-2 gap-4">
  <div className="space-y-2">
- <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">營期開始 / Start</label>
- <Input type="date" value={tempCamp.campStartDate || ""} onChange={(e) => setTempCamp({ ...tempCamp, campStartDate: e.target.value })} className="h-11 rounded-lg font-semibold" />
+ <label className="text-[10px] font-mono text-fg-muted uppercase tracking-widest">營期開始 / Start</label>
+ <Input type="date" value={tempCamp.campStartDate || ""} onChange={(e) => setTempCamp({ ...tempCamp, campStartDate: e.target.value })} className="h-11 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 font-mono text-xs text-foreground" />
  </div>
  <div className="space-y-2">
- <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">營期結束 / End</label>
- <Input type="date" value={tempCamp.campEndDate || ""} onChange={(e) => setTempCamp({ ...tempCamp, campEndDate: e.target.value })} className="h-11 rounded-lg font-semibold" />
+ <label className="text-[10px] font-mono text-fg-muted uppercase tracking-widest">營期結束 / End</label>
+ <Input type="date" value={tempCamp.campEndDate || ""} onChange={(e) => setTempCamp({ ...tempCamp, campEndDate: e.target.value })} className="h-11 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 font-mono text-xs text-foreground" />
  </div>
  </div>
- <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-6 pt-6 dark:">
+ <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-6 pt-6">
  {[
  { ks: 'meeting1StartDate', ke: 'meeting1EndDate', l: '一收' },
  { ks: 'meeting2StartDate', ke: 'meeting2EndDate', l: '二收' },

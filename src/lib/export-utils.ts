@@ -1,20 +1,6 @@
-import { 
-  Document, 
-  Packer, 
-  Paragraph, 
-  HeadingLevel, 
-  AlignmentType, 
-  ImageRun, 
-  TextRun,
-  Table as DocxTable,
-  TableRow as DocxTableRow,
-  TableCell as DocxTableCell,
-  WidthType,
-  LevelFormat,
-  BorderStyle,
-  VerticalAlign
-} from "docx";
 import { LessonPlan } from "@/types/plan";
+
+type DocxModule = typeof import("docx");
 
 const PRIMARY_COLOR = "E67E22"; // 活力橘風格
 const TEXT_COLOR = "1E293B"; // Slate-800
@@ -243,11 +229,12 @@ const htmlToPlainText = (html?: string) => {
 /**
  * 處理富文本內容中的 HTML 標記，將其轉化為 Word 支援的 Paragraphs
  */
-function parseHtmlToDocx(html: string) {
+function parseHtmlToDocx(docx: DocxModule, html: string) {
+  const { Paragraph, TextRun, AlignmentType } = docx;
   const normalizedHtml = stripInvalidXmlChars(html);
   if (!normalizedHtml) return [new Paragraph({ text: "無內容", spacing: { after: 200 } })];
 
-  const paragraphs: Paragraph[] = [];
+  const paragraphs: InstanceType<typeof Paragraph>[] = [];
   if (typeof document !== 'undefined') {
     const container = document.createElement('div');
     container.innerHTML = normalizedHtml;
@@ -260,7 +247,7 @@ function parseHtmlToDocx(html: string) {
       if (node.style?.textAlign === 'center') alignment = AlignmentType.CENTER;
       if (node.style?.textAlign === 'right') alignment = AlignmentType.RIGHT;
 
-      const children: TextRun[] = [];
+      const children: InstanceType<typeof TextRun>[] = [];
       
       const processTextNodes = (parent: any) => {
         parent.childNodes.forEach((child: any) => {
@@ -320,7 +307,8 @@ function parseHtmlToDocx(html: string) {
 /**
  * 建立美化過的標題段落
  */
-function createStyledHeading(title: string) {
+function createStyledHeading(docx: DocxModule, title: string) {
+  const { Paragraph, TextRun, BorderStyle } = docx;
   return new Paragraph({
     children: [
       new TextRun({
@@ -372,6 +360,23 @@ export async function exportToDocxBlob(plan: LessonPlan, canvasImageData?: strin
 
 /** Internal: build the rich docx blob (shared by exportToDocx and exportToDocxBlob) */
 async function buildRichDocxBlob(plan: LessonPlan, canvasImageData?: string): Promise<Blob> {
+  const docx = await import("docx");
+  const {
+    Document,
+    Packer,
+    Paragraph,
+    HeadingLevel,
+    AlignmentType,
+    ImageRun,
+    TextRun,
+    Table: DocxTable,
+    TableRow: DocxTableRow,
+    TableCell: DocxTableCell,
+    WidthType,
+    LevelFormat,
+    VerticalAlign,
+  } = docx;
+
   // 若未明確傳入畫布圖片，從 canvasData JSON 動態渲染 PNG
   let resolvedCanvas = canvasImageData;
   if (!resolvedCanvas && plan.canvasData && typeof plan.canvasData === 'string' && plan.canvasData.trim().startsWith('{')) {
@@ -399,15 +404,15 @@ async function buildRichDocxBlob(plan: LessonPlan, canvasImageData?: string): Pr
     }),
     
     ...(isScriptMode ? [] : [
-      createStyledHeading("【教案成員】"),
+      createStyledHeading(docx, "【教案成員】"),
       new Paragraph({ 
         children: [new TextRun({ text: stripInvalidXmlChars(plan.members || "無"), color: TEXT_COLOR, size: 24 })], 
         spacing: { after: 200 } 
       })
     ]),
 
-    createStyledHeading("【教案目的】"),
-    ...parseHtmlToDocx(plan.purpose),
+    createStyledHeading(docx, "【教案目的】"),
+    ...parseHtmlToDocx(docx, plan.purpose),
 
     ...(isScriptMode ? [] : [
       new Paragraph({
@@ -426,14 +431,14 @@ async function buildRichDocxBlob(plan: LessonPlan, canvasImageData?: string): Pr
         spacing: { before: 120, after: 300 }
       }),
       
-      createStyledHeading("【教案流程】"),
-      ...parseHtmlToDocx(plan.process),
+      createStyledHeading(docx, "【教案流程】"),
+      ...parseHtmlToDocx(docx, plan.process),
     ])
   ];
 
   // 如果有畫布圖片
   if (resolvedCanvas) {
-    children.push(createStyledHeading("【教案視覺圖表】"));
+    children.push(createStyledHeading(docx, "【教案視覺圖表】"));
     try {
       const base64Data = resolvedCanvas.split(',')[1] || resolvedCanvas;
       children.push(new Paragraph({
@@ -456,17 +461,17 @@ async function buildRichDocxBlob(plan: LessonPlan, canvasImageData?: string): Pr
   }
 
   children.push(
-    createStyledHeading("【教案內容說明】"),
-    ...parseHtmlToDocx(plan.content),
+    createStyledHeading(docx, "【教案內容說明】"),
+    ...parseHtmlToDocx(docx, plan.content),
 
     ...(isScriptMode ? [] : [
-      createStyledHeading("【分工】"),
-      ...parseHtmlToDocx(plan.divisionOfLabor)
+      createStyledHeading(docx, "【分工】"),
+      ...parseHtmlToDocx(docx, plan.divisionOfLabor)
     ])
   );
 
   // 道具表格匯出
-  children.push(createStyledHeading("【道具表】"));
+  children.push(createStyledHeading(docx, "【道具表】"));
   if (plan.props && plan.props.length > 0) {
     children.push(new DocxTable({
       width: { size: 100, type: WidthType.PERCENTAGE },
@@ -526,12 +531,12 @@ async function buildRichDocxBlob(plan: LessonPlan, canvasImageData?: string): Pr
   }
 
   children.push(
-    createStyledHeading("【備註】"),
-    ...parseHtmlToDocx(plan.remarks),
+    createStyledHeading(docx, "【備註】"),
+    ...parseHtmlToDocx(docx, plan.remarks),
 
     ...(isScriptMode ? [] : [
-      createStyledHeading("【開場結語】"),
-      ...parseHtmlToDocx(plan.openingClosingRemarks)
+      createStyledHeading(docx, "【開場結語】"),
+      ...parseHtmlToDocx(docx, plan.openingClosingRemarks)
     ])
   );
 
