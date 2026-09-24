@@ -1,33 +1,70 @@
 "use client"
 
-import { usePathname, useRouter } from "next/navigation";
-import { Home, FileText, Shield, Settings } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Home, FolderOpen, Clock, FileSpreadsheet, Package2, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n-context";
-import { useActionBarStore } from "@/store/action-bar-store";
-import { AnimatePresence, motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const TABS = [
   { key: "home", href: "/", icon: Home, labelKey: "NAV_HOME" as const },
-  { key: "plans", href: "/plans", icon: FileText, labelKey: "NAV_PLANS" as const },
-  { key: "admin", href: "/admin", icon: Shield, labelKey: "NAV_ADMIN" as const },
-  { key: "settings", href: "/settings", icon: Settings, labelKey: "NAV_SETTINGS" as const },
+  { key: "plans", href: "/plans", icon: FolderOpen, labelKey: "NAV_PLANS" as const },
+  { key: "timer", href: "/admin?tab=timer", icon: Clock, labelKey: "NAV_TIMER" as const, adminTab: "timer" as const },
+  { key: "tables", href: "/admin?tab=tables", icon: FileSpreadsheet, labelKey: "NAV_TABLES" as const, adminTab: "tables" as const },
+  { key: "props", href: "/admin?tab=props", icon: Package2, labelKey: "NAV_PROPS" as const, adminTab: "props" as const },
 ];
 
 /** Routes where the tab bar should NOT appear */
 const HIDDEN_ROUTES = ["/login", "/signup", "/editor-mode"];
 
-/** Check if a tab is active based on the current pathname */
-function isActive(href: string, pathname: string) {
-  if (href === "/") return pathname === "/";
-  return pathname.startsWith(href);
-}
-
 export function MobileTabBar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { t } = useTranslation();
-  const isFullscreen = useActionBarStore((s) => s.isFullscreen);
+
+  const [adminTab, setAdminTab] = useState<"timer" | "tables" | "props">(() => {
+    const tab = (searchParams?.get("tab") || "").toLowerCase();
+    if (tab === "tables" || tab === "props") return tab;
+    return "timer";
+  });
+
+  useEffect(() => {
+    const tab = (searchParams?.get("tab") || "").toLowerCase();
+    if (tab === "tables" || tab === "props" || tab === "timer") {
+      setAdminTab(tab as "timer" | "tables" | "props");
+    } else if (pathname === "/admin") {
+      setAdminTab("timer");
+    }
+  }, [searchParams, pathname]);
+
+  useEffect(() => {
+    const handleAdminTabSync = (e: Event) => {
+      const custom = e as CustomEvent<string>;
+      if (custom.detail === "timer" || custom.detail === "tables" || custom.detail === "props") {
+        setAdminTab(custom.detail);
+      }
+    };
+    window.addEventListener("admin-tab-change", handleAdminTabSync);
+    return () => window.removeEventListener("admin-tab-change", handleAdminTabSync);
+  }, []);
+
+  const isTabActive = (tab: (typeof TABS)[number]) => {
+    if (tab.adminTab) {
+      return pathname === "/admin" && adminTab === tab.adminTab;
+    }
+    if (tab.href === "/") return pathname === "/";
+    return pathname.startsWith(tab.href);
+  };
+
+  const handleNavClick = (href: string, targetAdminTab?: "timer" | "tables" | "props") => {
+    if (targetAdminTab) {
+      setAdminTab(targetAdminTab);
+      window.dispatchEvent(new CustomEvent("admin-tab-change", { detail: targetAdminTab }));
+    }
+    router.push(href);
+  };
 
   // Hide on auth pages, editor mode, plan detail pages
   const shouldHide =
@@ -37,67 +74,61 @@ export function MobileTabBar() {
   return (
     <AnimatePresence>
       {!shouldHide && (
-        <motion.nav
-          initial={{ y: "150%", opacity: 0, x: "-50%" }}
-          animate={{ y: 0, opacity: 1, x: "-50%" }}
-          exit={{ y: "150%", opacity: 0, x: "-50%" }}
-          transition={{ type: "spring", stiffness: 400, damping: 40 }}
+        <nav
+          aria-label="Mobile Navigation"
           className={cn(
-            "fixed bottom-6 left-1/2 z-[60] md:hidden w-[calc(100%-2rem)] max-w-sm",
-            "glass-pill rounded-full p-1.5",
-            "border border-hairline-light shadow-[0_20px_50px_rgba(0,0,0,0.6)]"
+            "fixed bottom-0 inset-x-0 w-full z-[60] md:hidden",
+            "bg-[#FAF8F5]/95 dark:bg-[#0B1012]/95 backdrop-blur-2xl border-t border-stone-200/80 dark:border-white/10",
+            "pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-2 px-1",
+            "shadow-[0_-4px_24px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.5)]"
           )}
         >
-          <div className="flex items-center justify-around h-14 px-1 relative">
+          <div className="grid grid-cols-5 items-center justify-items-center w-full max-w-lg mx-auto">
             {TABS.map((tab) => {
-              const active = isActive(tab.href, pathname);
+              const active = isTabActive(tab);
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.key}
-                  onClick={() => router.push(tab.href)}
-                  className={cn(
-                    "relative flex flex-col items-center justify-center w-full h-full gap-0.5 transition-colors z-10",
-                    "focus:outline-none"
-                  )}
+                  type="button"
+                  onClick={() => handleNavClick(tab.href, tab.adminTab)}
+                  className="flex flex-col items-center justify-center w-full py-0.5 focus:outline-none select-none cursor-pointer group"
+                  aria-label={t(tab.labelKey)}
                 >
-                  {/* Sliding Highlight Indicator */}
-                  {active && (
-                    <motion.div
-                      layoutId="mobile-tab-indicator"
-                      className="absolute inset-0 rounded-full bg-white/10 dark:bg-white/10 -z-10 border border-hairline-light"
-                      initial={false}
-                      transition={{ type: "spring", stiffness: 500, damping: 35 }}
-                    />
-                  )}
-                  
-                  <motion.div 
-                    whileTap={{ scale: 0.88 }} 
-                    className="flex flex-col items-center justify-center w-full h-full"
-                  >
+                  <div className="relative w-11 sm:w-13 h-7 flex items-center justify-center rounded-full transition-all">
+                    {active && (
+                      <motion.div
+                        layoutId="mobile-standalone-m3-active-pill"
+                        className="absolute inset-0 rounded-full bg-orange-500/15 dark:bg-orange-500/25 border border-orange-500/20"
+                        transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                      />
+                    )}
                     <Icon
                       className={cn(
-                        "w-4 h-4 transition-all duration-300",
-                        active ? "text-primary scale-105" : "text-fg-secondary"
+                        "w-4 h-4 z-10 transition-all duration-200",
+                        active
+                          ? "text-orange-600 dark:text-orange-400 scale-105"
+                          : "text-stone-500 dark:text-stone-400 group-hover:text-foreground"
                       )}
                       strokeWidth={active ? 2.2 : 1.7}
                     />
-                    <span
-                      className={cn(
-                        "text-[9px] font-mono uppercase tracking-wider transition-all duration-300 mt-0.5",
-                        active 
-                          ? "font-semibold text-foreground" 
-                          : "font-normal text-fg-secondary"
-                      )}
-                    >
-                      {t(tab.labelKey)}
-                    </span>
-                  </motion.div>
+                  </div>
+
+                  <span
+                    className={cn(
+                      "text-[10px] tracking-tight mt-1 transition-colors truncate max-w-full px-0.5 font-sans leading-none text-center",
+                      active
+                        ? "font-bold text-foreground"
+                        : "font-medium text-stone-500 dark:text-stone-400 group-hover:text-foreground"
+                    )}
+                  >
+                    {t(tab.labelKey)}
+                  </span>
                 </button>
               );
             })}
           </div>
-        </motion.nav>
+        </nav>
       )}
     </AnimatePresence>
   );

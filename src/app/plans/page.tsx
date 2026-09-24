@@ -683,10 +683,63 @@ export default function PlansOverview() {
           </div>
         </div>
 
+        {/* ── TOP GROUP TABS (Google Play Style) ── */}
+        <div className="w-full border-b border-stone-200/80 dark:border-white/10 mb-4 sm:mb-6 overflow-hidden">
+          <div className="flex items-center gap-6 sm:gap-8 overflow-x-auto no-scrollbar px-1 pb-0">
+            <button
+              onClick={() => { setSwipeDirection(-1); setFilterGroup('all'); }}
+              className={cn(
+                "relative pb-3 pt-1 text-sm sm:text-base font-medium transition-colors shrink-0 whitespace-nowrap cursor-pointer flex items-center gap-1.5 focus:outline-none select-none",
+                filterGroup === 'all'
+                  ? "font-bold text-foreground"
+                  : "text-stone-500 dark:text-stone-400 hover:text-foreground font-normal"
+              )}
+            >
+              <span>全部 ALL</span>
+              <span className="text-xs opacity-75 font-mono font-normal">({plans.length})</span>
+              {filterGroup === 'all' && (
+                <motion.div
+                  layoutId="group-tab-underline"
+                  className="absolute bottom-0 inset-x-0 h-[3px] bg-orange-500 rounded-full shadow-[0_1px_6px_rgba(249,115,22,0.4)]"
+                  transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                />
+              )}
+            </button>
+
+            {groups.map((group) => {
+              const isActive = filterGroup === group.slug;
+              const count = plans.filter((p) => getPlanGroup(p)?.slug === group.slug).length;
+
+              return (
+                <button
+                  key={group.id}
+                  onClick={() => { setSwipeDirection(1); setFilterGroup(group.slug); }}
+                  className={cn(
+                    "relative pb-3 pt-1 text-sm sm:text-base font-medium transition-colors shrink-0 whitespace-nowrap cursor-pointer flex items-center gap-1.5 focus:outline-none select-none",
+                    isActive
+                      ? "font-bold text-foreground"
+                      : "text-stone-500 dark:text-stone-400 hover:text-foreground font-normal"
+                  )}
+                >
+                  <span>{language === 'zh' ? group.nameZh : group.nameEn}</span>
+                  <span className="text-xs opacity-75 font-mono font-normal">({count})</span>
+                  {isActive && (
+                    <motion.div
+                      layoutId="group-tab-underline"
+                      className="absolute bottom-0 inset-x-0 h-[3px] bg-orange-500 rounded-full shadow-[0_1px_6px_rgba(249,115,22,0.4)]"
+                      transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* ── TOOLBAR (Filter, Search & Controls) ─────────── */}
-        <div className="flex flex-col gap-3 mb-6 sm:mb-12">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6 sm:mb-12">
           {/* Search Input */}
-          <div className="relative w-full group">
+          <div className="relative flex-1 group">
             <Search className="w-4 h-4 sm:w-5 sm:h-5 absolute left-4 top-1/2 -translate-y-1/2 text-stone-500 dark:text-stone-400 group-focus-within:text-orange-500 transition-colors pointer-events-none z-10" />
             <input
               type="text"
@@ -706,68 +759,8 @@ export default function PlansOverview() {
             )}
           </div>
 
-          {/* Mobile Active Filter Badge Indicator */}
-          {filterGroup !== 'all' && (
-            <div className="flex md:hidden items-center gap-2">
-              <span className="text-[10px] font-mono text-fg-muted uppercase">目前分組:</span>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/30">
-                <span>{groups.find(g => g.slug === filterGroup)?.nameZh || filterGroup}</span>
-                <button
-                  onClick={() => setFilterGroup('all')}
-                  className="hover:opacity-80 p-0.5 cursor-pointer"
-                  title="清除分組篩選"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            </div>
-          )}
-
-          {/* Filter Rail & Controls Cluster (Desktop Only) */}
-          <div className="hidden md:flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            {/* Group Filter Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
-              <button
-                onClick={() => { setSwipeDirection(-1); setFilterGroup('all'); }}
-                className={cn(
-                  "relative px-4 py-2 rounded-full text-xs font-mono tracking-wider uppercase transition-all duration-200 shrink-0 cursor-pointer",
-                  filterGroup === 'all'
-                    ? "bg-orange-500 text-white font-medium shadow-md shadow-orange-500/20"
-                    : "bg-white/60 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/10 border border-stone-200/80 dark:border-white/10 text-fg-secondary hover:text-foreground"
-                )}
-              >
-                <span>全部 ALL ({plans.length})</span>
-              </button>
-
-              {groups.map((group) => {
-                const isActive = filterGroup === group.slug;
-                const count = plans.filter((p) => getPlanGroup(p)?.slug === group.slug).length;
-
-                return (
-                  <button
-                    key={group.id}
-                    onClick={() => { setSwipeDirection(1); setFilterGroup(group.slug); }}
-                    className={cn(
-                      "relative px-4 py-2 rounded-full text-xs font-mono tracking-wider uppercase transition-all duration-200 shrink-0 cursor-pointer flex items-center gap-1.5",
-                      isActive
-                        ? "bg-orange-500 text-white font-medium shadow-md shadow-orange-500/20"
-                        : "bg-white/60 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/10 border border-stone-200/80 dark:border-white/10 text-fg-secondary hover:text-foreground"
-                    )}
-                  >
-                    <span>{language === 'zh' ? group.nameZh : group.nameEn}</span>
-                    <span className={cn(
-                      "text-[10px] px-1.5 py-0.2 rounded-full font-mono",
-                      isActive ? "bg-white/20 text-white" : "bg-black/5 dark:bg-white/10 text-fg-muted"
-                    )}>
-                      {count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Secondary Controls (Sort & View Mode) */}
-            <div className="flex items-center gap-3 shrink-0 self-end lg:self-auto">
+          {/* Secondary Controls (Sort & View Mode) */}
+          <div className="hidden md:flex items-center gap-3 shrink-0 self-end lg:self-auto">
               {/* Sort Controls */}
               <div className="flex items-center gap-1 bg-white/60 dark:bg-white/[0.03] p-1 rounded-full border border-stone-200/80 dark:border-white/10">
                 <button
@@ -848,7 +841,6 @@ export default function PlansOverview() {
               </div>
             </div>
           </div>
-        </div>
 
         {/* ── MOBILE FIXED SIDE BAR (Vertical FABs) ─────────── */}
         <div className="md:hidden">

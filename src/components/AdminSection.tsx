@@ -160,7 +160,7 @@ export function AdminSection({
     return () => container.removeEventListener('wheel', handleWheel);
   }, []);
 
-  // Keep main admin tab synced with URL query/hash for navbar dropdown navigation.
+  // Keep main admin tab synced with URL query/hash and custom event for navbar navigation.
   useEffect(() => {
     const tabFromQuery = (searchParams.get('tab') || '').toLowerCase();
     if (tabFromQuery === 'timer' || tabFromQuery === 'tables' || tabFromQuery === 'props') {
@@ -172,6 +172,17 @@ export function AdminSection({
     if (tabFromHash !== activeMainTab) setActiveMainTab(tabFromHash);
   }, [searchParams, resolveMainTabFromHash, activeMainTab]);
 
+  useEffect(() => {
+    const handleTabSync = (e: Event) => {
+      const custom = e as CustomEvent<string>;
+      if (custom.detail === 'timer' || custom.detail === 'tables' || custom.detail === 'props') {
+        setActiveMainTab(custom.detail as MainTab);
+      }
+    };
+    window.addEventListener('admin-tab-change', handleTabSync);
+    return () => window.removeEventListener('admin-tab-change', handleTabSync);
+  }, []);
+
   const handleMainTabChange = useCallback((value: string) => {
     if (value !== 'timer' && value !== 'tables' && value !== 'props') return;
     const nextTab = value as MainTab;
@@ -181,6 +192,7 @@ export function AdminSection({
     params.set('tab', nextTab);
     const nextUrl = `${pathname}?${params.toString()}`;
     window.history.replaceState(null, '', nextUrl);
+    window.dispatchEvent(new CustomEvent('admin-tab-change', { detail: nextTab }));
   }, [pathname, searchParams]);
 
   // Toggle fullscreen mode for props spreadsheet

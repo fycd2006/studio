@@ -9,6 +9,18 @@ export type VersionHistoryEntry = {
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
   {
+    id: "build-tihvnf4",
+    version: "1.0.31",
+    label: "更新項目",
+    date: "2026-09-24",
+    title: "營隊總覽新增分類篩選，查找營隊更便利",
+    highlights: [
+      "在營隊總覽頁面搜尋框上方，新增營隊分類標籤列。",
+      "點擊分類標籤，頁面會立即篩選並顯示該類別的營隊。",
+      "每個分類標籤會顯示該類別的營隊數量，並有底線指示目前選取項。"
+    ],
+  },
+  {
     id: "build-60h5kt7",
     version: "1.0.30",
     label: "更新項目",
