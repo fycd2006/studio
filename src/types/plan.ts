@@ -105,6 +105,8 @@ export interface LessonPlan {
   scheduledName: string;
   activityName: string;
   members: string;
+  leadMember?: string;
+  assistantMember?: string;
   time: string;
   location: string;
   purpose: string;

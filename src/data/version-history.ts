@@ -9,6 +9,17 @@ export type VersionHistoryEntry = {
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
   {
+    id: "build-kjzyv1q",
+    version: "1.0.33",
+    label: "更新項目",
+    date: "2026-09-24",
+    title: "營隊計畫總覽頁面顯示與操作優化",
+    highlights: [
+      "「營隊計畫總覽」的「負責人」欄位，現可顯示主要與協同負責人，搜尋也支援。",
+      "「營隊計畫總覽」頁面，上方分類標籤列捲動時會固定，方便快速切換。"
+    ],
+  },
+  {
     id: "build-ucz5cji",
     version: "1.0.32",
     label: "更新項目",

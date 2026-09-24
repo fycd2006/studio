@@ -126,7 +126,7 @@ interface PlansContextType {
   redoPlan: () => void;
   canUndoPlan: boolean;
   canRedoPlan: boolean;
-  addTable: (day?: string) => void;
+  addTable: (dayOrData?: string | Partial<RotationTableData>) => void;
   updateTable: (id: string, u: Partial<RotationTableData>) => void;
   deleteTable: (id: string) => void;
   undoTable: () => void;
@@ -600,10 +600,27 @@ export function PlansProvider({ children }: { children: ReactNode }) {
     categoryPlans.forEach((p, index) => updateDocumentNonBlocking(doc(db, 'lessonPlans', p.id), { order: index }));
   }, [db, activeCampId, allPlans, pushPlanHistory]);
 
-  const addTable = useCallback((day: string = 'Day 1') => {
+  const addTable = useCallback((dayOrCustom?: string | Partial<RotationTableData>) => {
     if (!db || !user || !activeCampId) return;
     pushTableHistory();
     const tableId = Math.random().toString(36).substr(2, 9);
+
+    if (typeof dayOrCustom === "object" && dayOrCustom !== null) {
+      const newTable: RotationTableData = {
+        id: tableId,
+        campId: activeCampId,
+        ownerId: user.uid,
+        title: dayOrCustom.title || "大地遊戲闖關表",
+        day: dayOrCustom.day || "Day 1",
+        stations: dayOrCustom.stations || [],
+        rounds: dayOrCustom.rounds || [],
+        teamOrders: dayOrCustom.teamOrders || [],
+      };
+      setDocumentNonBlocking(doc(db, "rotationTables", tableId), newTable, { merge: true });
+      return;
+    }
+
+    const day = typeof dayOrCustom === "string" ? dayOrCustom : "Day 1";
     const newTable: RotationTableData = {
       id: tableId, campId: activeCampId, ownerId: user.uid, title: '大地遊戲闖關表', day,
       stations: Array.from({ length: 4 }, (_, i) => ({ id: Math.random().toString(36).substr(2, 9), name: `關卡${i + 1}`, location: '', lead: '', assistant: '' })),

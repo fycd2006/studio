@@ -5,7 +5,9 @@ import { RotationTableData, LessonPlan, PropItem, Camp, CampItem, Group } from "
 import { AdminTimer } from "@/components/AdminTimer";
 import { AdminRotationTable } from "@/components/AdminRotationTable";
 import { Button } from "@/components/ui/button";
-import { Clock, Table as TableIcon, Plus, Lock, Unlock, Calendar, Undo2, Redo2, Package2, ZoomIn, ZoomOut, Maximize, MoreHorizontal, FileDown } from "lucide-react";
+import { Clock, Table as TableIcon, Plus, Lock, Unlock, Calendar, Undo2, Redo2, Package2, ZoomIn, ZoomOut, Maximize, MoreHorizontal, FileDown, Zap } from "lucide-react";
+import { SmartRotationWizardModal } from "@/components/SmartRotationWizardModal";
+import { GeneratedSchedule } from "@/lib/rotation-scheduler";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminDialog } from "@/components/AdminDialog";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -37,7 +39,7 @@ import { exportAdminExcel } from "@/lib/export-excel";
 
 interface AdminSectionProps {
   tables: RotationTableData[];
-  onAddTable: (day: string) => void;
+  onAddTable: (dayOrData?: string | Partial<RotationTableData>) => void;
   onUpdateTable: (id: string, updates: Partial<RotationTableData>) => void;
   onDeleteTable: (id: string) => void;
   onUndoTable?: () => void;
@@ -84,6 +86,29 @@ export function AdminSection({
   const [activeMainTab, setActiveMainTab] = useState<MainTab>('timer');
   const [activeFab, setActiveFab] = useState<string | null>(null);
   const [activePropsTab, setActivePropsTab] = useState<'activity' | 'teaching' | 'all-props'>('activity');
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
+
+  const handleWizardGenerate = useCallback(async (
+    schedule: GeneratedSchedule,
+    updatedPlans: Array<{ id: string; location: string; lead: string; assistant: string }>
+  ) => {
+    onAddTable(schedule);
+
+    updatedPlans.forEach((p) => {
+      const combined = [p.lead, p.assistant].filter(Boolean).join('、');
+      onUpdatePlan(p.id, {
+        location: p.location,
+        leadMember: p.lead,
+        assistantMember: p.assistant,
+        members: combined
+      });
+    });
+
+    toast({
+      title: "⚡ 智能闖關表已生成",
+      description: `已成功生成「${schedule.title}」，主副關主與地點已全域同步至教案庫。`,
+    });
+  }, [onAddTable, onUpdatePlan, toast]);
 
   // Zoom state for tables and props list
   const [zoom, setZoom] = useState(1);
@@ -1186,9 +1211,22 @@ export function AdminSection({
                   </div>
 
                   {!isLocked && (
-                    <Button onClick={() => onAddTable(selectedDay)} className="rounded-full font-mono text-xs uppercase tracking-wider gap-1.5 h-9 px-5 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-xs">
-                      <Plus className="h-3.5 w-3.5" /> 新增輪替表
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        onClick={() => setIsWizardOpen(true)}
+                        className="rounded-full font-mono text-xs uppercase tracking-wider gap-1.5 h-9 px-4.5 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-xs cursor-pointer"
+                      >
+                        <Zap className="h-3.5 w-3.5 fill-white" /> 智能排定精靈
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => onAddTable(selectedDay)}
+                        className="rounded-full font-mono text-xs uppercase tracking-wider gap-1.5 h-9 px-3.5 border-stone-300 dark:border-white/10 text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-white/5 shadow-2xs cursor-pointer"
+                        title="新增空白輪替表"
+                      >
+                        <Plus className="h-3.5 w-3.5" /> <span className="hidden sm:inline">空白表</span>
+                      </Button>
+                    </div>
                   )}
                 </div>
 
@@ -1250,6 +1288,14 @@ export function AdminSection({
         </div>
       </main>
 
+      {/* Smart Rotation Wizard Modal */}
+      <SmartRotationWizardModal
+        isOpen={isWizardOpen}
+        onClose={() => setIsWizardOpen(false)}
+        plans={plans}
+        defaultDay={selectedDay}
+        onGenerate={handleWizardGenerate}
+      />
     </div>
   );
 }

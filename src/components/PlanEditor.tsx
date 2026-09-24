@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Loader2,
+  ArrowLeft,
   FileDown,
   Plus,
   Trash2,
@@ -43,6 +44,7 @@ import { format } from "date-fns";
 import dynamic from "next/dynamic";
 import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { cn, getUnifiedGroupBadgeParams } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 import { actionBarTheme } from "@/lib/actionbar-theme";
 import { useTranslation } from "@/lib/i18n-context";
 import {
@@ -153,6 +155,7 @@ export function PlanEditor({
   versions = [], onSaveVersion, onRestoreVersion, onDeleteVersion, onAutoSave, getFullVersionState, onUpdateVersionName, activityTypes = []
 }: PlanEditorProps) {
   const { t, language } = useTranslation();
+  const router = useRouter();
   const { toast } = useToast();
   const { lockField, unlockField, isLockedByOther, getLockInfo } = usePresence(plan.id);
 
@@ -545,6 +548,25 @@ export function PlanEditor({
             <header className="relative z-20 flex-none w-full mb-3 md:mb-6 transition-all">
               <div className="w-full max-w-full flex justify-between items-start gap-4">
                 <div className="flex flex-col w-full text-left">
+                  {/* Top Back Navigation Button */}
+                  <div className="mb-2.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (typeof window !== "undefined" && window.history.length > 1) {
+                          router.back();
+                        } else {
+                          router.push('/plans');
+                        }
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono font-medium text-stone-600 dark:text-stone-300 bg-stone-100/90 dark:bg-white/5 hover:bg-stone-200/90 dark:hover:bg-white/10 border border-stone-200/80 dark:border-white/10 transition-all cursor-pointer group shadow-2xs w-fit"
+                      aria-label="返回上一頁"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5 text-orange-500" />
+                      <span>返回上一頁</span>
+                    </button>
+                  </div>
+
                   <div className="flex items-center gap-2 mb-2">
                     {(() => {
                       const params = getUnifiedGroupBadgeParams(currentGroup?.slug || currentPlan.category, currentGroup?.nameZh || '');
@@ -812,20 +834,77 @@ export function PlanEditor({
                             <section>
                               <SectionHeader title={t('CASE_PERSONNEL')} icon={Users} tag="CREW" />
                               {isHistoryMode ? (
-                                <DiffHighlighter type="text" oldValue={previousPlan?.members} newValue={previewPlan?.members} />
+                                <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                                  <div>
+                                    <div className="text-xs font-mono font-medium text-stone-500 dark:text-stone-400 mb-1.5 flex items-center gap-1.5">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                                      <span>{t('LEAD')}</span>
+                                    </div>
+                                    <DiffHighlighter
+                                      type="text"
+                                      oldValue={previousPlan?.leadMember || previousPlan?.members}
+                                      newValue={previewPlan?.leadMember || previewPlan?.members}
+                                    />
+                                  </div>
+                                  <div>
+                                    <div className="text-xs font-mono font-medium text-stone-500 dark:text-stone-400 mb-1.5 flex items-center gap-1.5">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-stone-400" />
+                                      <span>{t('ASSISTANT')}</span>
+                                    </div>
+                                    <DiffHighlighter
+                                      type="text"
+                                      oldValue={previousPlan?.assistantMember}
+                                      newValue={previewPlan?.assistantMember}
+                                    />
+                                  </div>
+                                </div>
                               ) : (
-                                <FieldContainer field="members" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
-                                  <O2RichEditor
-                                    value={currentPlan.members}
-                                    onChange={(val) => handlePlanUpdate({ members: val })}
-                                    onFocus={() => handleFocus('members')}
-                                    onBlur={() => handleBlur('members')}
-                                    placeholder="列出相關人員... / List members..."
-                                    minHeight="38px"
-                                    readOnly={isInteractionLocked}
-                                    simplified={true}
-                                  />
-                                </FieldContainer>
+                                <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                                  <div>
+                                    <div className="text-xs font-mono font-medium text-stone-500 dark:text-stone-400 mb-1.5 flex items-center gap-1.5">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                                      <span>{t('LEAD')}</span>
+                                    </div>
+                                    <FieldContainer field="leadMember" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+                                      <O2RichEditor
+                                        value={currentPlan.leadMember ?? (currentPlan.members || '')}
+                                        onChange={(val) => {
+                                          const asst = currentPlan.assistantMember ?? '';
+                                          const combined = [val, asst].filter(Boolean).join('、');
+                                          handlePlanUpdate({ leadMember: val, members: combined });
+                                        }}
+                                        onFocus={() => handleFocus('leadMember')}
+                                        onBlur={() => handleBlur('leadMember')}
+                                        placeholder="主關主姓名 / Lead..."
+                                        minHeight="38px"
+                                        readOnly={isInteractionLocked}
+                                        simplified={true}
+                                      />
+                                    </FieldContainer>
+                                  </div>
+                                  <div>
+                                    <div className="text-xs font-mono font-medium text-stone-500 dark:text-stone-400 mb-1.5 flex items-center gap-1.5">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-stone-400" />
+                                      <span>{t('ASSISTANT')}</span>
+                                    </div>
+                                    <FieldContainer field="assistantMember" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+                                      <O2RichEditor
+                                        value={currentPlan.assistantMember ?? ''}
+                                        onChange={(val) => {
+                                          const lead = currentPlan.leadMember ?? (currentPlan.members || '');
+                                          const combined = [lead, val].filter(Boolean).join('、');
+                                          handlePlanUpdate({ assistantMember: val, members: combined });
+                                        }}
+                                        onFocus={() => handleFocus('assistantMember')}
+                                        onBlur={() => handleBlur('assistantMember')}
+                                        placeholder="副關主姓名 / Assistant..."
+                                        minHeight="38px"
+                                        readOnly={isInteractionLocked}
+                                        simplified={true}
+                                      />
+                                    </FieldContainer>
+                                  </div>
+                                </div>
                               )}
                             </section>
                           )}

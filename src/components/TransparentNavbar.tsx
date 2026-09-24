@@ -118,6 +118,17 @@ export function TransparentNavbar({ groups }: NavbarProps) {
     return () => window.removeEventListener("admin-tab-change", handleAdminTabSync);
   }, []);
 
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 15);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   const NAV_ITEMS = [
     { key: "home", href: "/", icon: Home, labelKey: "NAV_HOME" as const },
     { key: "plans", href: "/plans", icon: FolderOpen, labelKey: "NAV_PLANS" as const },
@@ -247,7 +258,12 @@ export function TransparentNavbar({ groups }: NavbarProps) {
   return (
     <>
       {/* ── 1. TOP MINIMALIST ARCHITECTURAL HEADER (Logo on top) ── */}
-      <header className="fixed top-0 left-0 w-full z-40 px-4 sm:px-8 py-3.5 pointer-events-none transition-all duration-300">
+      <header className={cn(
+        "fixed top-0 left-0 w-full z-40 px-4 sm:px-8 py-3 sm:py-3.5 pointer-events-none transition-all duration-300",
+        isScrolled
+          ? "bg-[#FAF8F5]/90 dark:bg-[#0B1012]/90 backdrop-blur-md border-b border-stone-200/60 dark:border-white/10 shadow-2xs"
+          : "bg-transparent border-b border-transparent"
+      )}>
         <div className="max-w-[1720px] mx-auto flex items-center justify-between">
           {/* Left: Brand LOGO & Title */}
           <div className="pointer-events-auto">

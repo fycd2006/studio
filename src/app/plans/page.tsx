@@ -109,8 +109,12 @@ export default function PlansOverview() {
  toPlainText(plan.activityName) || "未命名文件";
  const getPlanDisplayCategory = (plan: typeof plans[number]) =>
  toPlainText(plan.scheduledName) || "無分類";
- const getPlanDisplayMembers = (plan: typeof plans[number]) =>
- toPlainText(plan.members);
+ const getPlanDisplayMembers = (plan: typeof plans[number]) => {
+   if (plan.leadMember || plan.assistantMember) {
+     return [plan.leadMember, plan.assistantMember].filter(Boolean).join('、');
+   }
+   return toPlainText(plan.members);
+ };
 
  const mapCategoryToSlug = (value?: string | null) => {
  const key = normalizeKey(value);
@@ -221,7 +225,9 @@ export default function PlansOverview() {
  result = result.filter(p => 
  toPlainText(p.activityName).toLowerCase().includes(q) ||
  toPlainText(p.scheduledName).toLowerCase().includes(q) ||
- toPlainText(p.members).toLowerCase().includes(q)
+ toPlainText(p.members).toLowerCase().includes(q) ||
+ (p.leadMember && p.leadMember.toLowerCase().includes(q)) ||
+ (p.assistantMember && p.assistantMember.toLowerCase().includes(q))
  );
  }
  result = [...result].sort((a, b) => {
@@ -470,7 +476,7 @@ export default function PlansOverview() {
       onTouchStart={handleSwipeStart}
       onTouchEnd={handleSwipeEnd}
     >
-      <div className="max-w-[1720px] mx-auto pt-24 sm:pt-32 pb-28 sm:pb-24 px-4 sm:px-8 md:px-12 xl:px-16 touch-auto relative z-10 w-full flex flex-col sm:block overflow-y-auto sm:overflow-y-visible flex-1 sm:flex-none">
+      <div className="max-w-[1720px] mx-auto pt-24 sm:pt-32 pb-28 sm:pb-24 px-4 sm:px-8 md:px-12 xl:px-16 touch-auto relative z-10 w-full">
         {/* ── HEADER ─────────────── */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-6 border-b border-stone-200/80 dark:border-white/10 mb-8 relative z-10">
           <div>
@@ -701,8 +707,8 @@ export default function PlansOverview() {
           </div>
         </div>
 
-        {/* ── TOP GROUP TABS (Google Play Style) ── */}
-        <div className="w-full border-b border-stone-200/80 dark:border-white/10 mb-4 sm:mb-6 overflow-hidden">
+        {/* ── TOP GROUP TABS (Google Play Style Sticky) ── */}
+        <div className="sticky top-[56px] sm:top-[60px] z-30 -mx-4 px-4 sm:-mx-8 sm:px-8 md:-mx-12 md:px-12 xl:-mx-16 xl:px-16 bg-[#FAF8F5]/95 dark:bg-[#0B1012]/95 backdrop-blur-md border-b border-stone-200/80 dark:border-white/10 mb-4 sm:mb-6 overflow-hidden pt-2 transition-all">
           <div className="group-tabs-scroll flex items-center gap-6 sm:gap-8 overflow-x-auto no-scrollbar px-1 pb-0">
             <button
               ref={(el) => { tabRefs.current['all'] = el; }}
