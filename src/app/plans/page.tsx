@@ -80,9 +80,10 @@ export default function PlansOverview() {
  const [sortBy, setSortBy] = useState<"updatedAt" | "name" | "category">("updatedAt");
  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
  const [swipeDirection, setSwipeDirection] = useState<1 | -1>(1);
-  const [activeFab, setActiveFab] = useState<string | null>(null);
+ const [activeFab, setActiveFab] = useState<string | null>(null);
  const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null);
  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
+ const tabRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
 
  const handleSortClick = (nextSortBy: "updatedAt" | "name" | "category") => {
  if (sortBy === nextSortBy) {
@@ -140,51 +141,68 @@ export default function PlansOverview() {
  setFilterGroup('all');
  }, [searchParams, groups]);
 
- const switchGroupByDirection = (direction: 1 | -1) => {
- if (groupOrder.length <= 1) return;
- const currentIndex = groupOrder.indexOf(filterGroup);
- const safeIndex = currentIndex >= 0 ? currentIndex : 0;
- const nextIndex = (safeIndex + direction + groupOrder.length) % groupOrder.length;
- setSwipeDirection(direction);
- setFilterGroup(groupOrder[nextIndex]);
- };
+  useEffect(() => {
+    const el = tabRefs.current[filterGroup];
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }, [filterGroup]);
 
- const handleSwipeStart = (e: React.TouchEvent<HTMLDivElement>) => {
- // Don't track swipe if touch started on ActionBar or mobile bottom bar
- const target = e.target as HTMLElement;
- if (target.closest('.action-bar-container') || target.closest('.plans-mobile-bar')) {
- swipeStartRef.current = null;
- return;
- }
- const t = e.touches[0];
- swipeStartRef.current = { x: t.clientX, y: t.clientY };
- };
+  const switchGroupByDirection = (direction: 1 | -1) => {
+    if (groupOrder.length <= 1) return;
+    const currentIndex = groupOrder.indexOf(filterGroup);
+    const safeIndex = currentIndex >= 0 ? currentIndex : 0;
+    const nextIndex = safeIndex + direction;
+    if (nextIndex < 0 || nextIndex >= groupOrder.length) return;
+    setSwipeDirection(direction);
+    setFilterGroup(groupOrder[nextIndex]);
+  };
 
- const handleSwipeEnd = (e: React.TouchEvent<HTMLDivElement>) => {
- // Disable swipe-to-switch in board and list modes (list has horizontal scroll)
- if (viewType === "board" || viewType === "list") {
- swipeStartRef.current = null;
- return;
- }
- // Don't switch if swipe ended on ActionBar or mobile bottom bar
- const target = e.target as HTMLElement;
- if (target.closest('.action-bar-container') || target.closest('.plans-mobile-bar')) {
- swipeStartRef.current = null;
- return;
- }
- const start = swipeStartRef.current;
- if (!start) return;
+  const handleSwipeStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    if (
+      target.closest('.action-bar-container') ||
+      target.closest('.plans-mobile-bar') ||
+      target.closest('input') ||
+      target.closest('textarea') ||
+      target.closest('.group-tabs-scroll')
+    ) {
+      swipeStartRef.current = null;
+      return;
+    }
+    const t = e.touches[0];
+    swipeStartRef.current = { x: t.clientX, y: t.clientY };
+  };
 
- const t = e.changedTouches[0];
- const deltaX = t.clientX - start.x;
- const deltaY = t.clientY - start.y;
+  const handleSwipeEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (viewType === "board") {
+      swipeStartRef.current = null;
+      return;
+    }
+    const target = e.target as HTMLElement;
+    if (
+      target.closest('.action-bar-container') ||
+      target.closest('.plans-mobile-bar') ||
+      target.closest('input') ||
+      target.closest('textarea') ||
+      target.closest('.group-tabs-scroll')
+    ) {
+      swipeStartRef.current = null;
+      return;
+    }
+    const start = swipeStartRef.current;
+    if (!start) return;
 
- if (Math.abs(deltaX) > 45 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
- switchGroupByDirection(deltaX < 0 ? 1 : -1);
- }
+    const t = e.changedTouches[0];
+    const deltaX = t.clientX - start.x;
+    const deltaY = t.clientY - start.y;
 
- swipeStartRef.current = null;
- };
+    if (Math.abs(deltaX) > 40 && Math.abs(deltaX) > Math.abs(deltaY) * 1.3) {
+      switchGroupByDirection(deltaX < 0 ? 1 : -1);
+    }
+
+    swipeStartRef.current = null;
+  };
 
  const filteredPlans = useMemo(() => {
  let result = plans;
@@ -685,9 +703,14 @@ export default function PlansOverview() {
 
         {/* ── TOP GROUP TABS (Google Play Style) ── */}
         <div className="w-full border-b border-stone-200/80 dark:border-white/10 mb-4 sm:mb-6 overflow-hidden">
-          <div className="flex items-center gap-6 sm:gap-8 overflow-x-auto no-scrollbar px-1 pb-0">
+          <div className="group-tabs-scroll flex items-center gap-6 sm:gap-8 overflow-x-auto no-scrollbar px-1 pb-0">
             <button
-              onClick={() => { setSwipeDirection(-1); setFilterGroup('all'); }}
+              ref={(el) => { tabRefs.current['all'] = el; }}
+              onClick={() => {
+                const currentIndex = groupOrder.indexOf(filterGroup);
+                setSwipeDirection(currentIndex > 0 ? -1 : 1);
+                setFilterGroup('all');
+              }}
               className={cn(
                 "relative pb-3 pt-1 text-sm sm:text-base font-medium transition-colors shrink-0 whitespace-nowrap cursor-pointer flex items-center gap-1.5 focus:outline-none select-none",
                 filterGroup === 'all'
@@ -713,7 +736,13 @@ export default function PlansOverview() {
               return (
                 <button
                   key={group.id}
-                  onClick={() => { setSwipeDirection(1); setFilterGroup(group.slug); }}
+                  ref={(el) => { tabRefs.current[group.slug] = el; }}
+                  onClick={() => {
+                    const currentIndex = groupOrder.indexOf(filterGroup);
+                    const targetIndex = groupOrder.indexOf(group.slug);
+                    setSwipeDirection(targetIndex >= currentIndex ? 1 : -1);
+                    setFilterGroup(group.slug);
+                  }}
                   className={cn(
                     "relative pb-3 pt-1 text-sm sm:text-base font-medium transition-colors shrink-0 whitespace-nowrap cursor-pointer flex items-center gap-1.5 focus:outline-none select-none",
                     isActive

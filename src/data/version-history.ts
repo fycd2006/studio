@@ -9,6 +9,18 @@ export type VersionHistoryEntry = {
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
   {
+    id: "build-ucz5cji",
+    version: "1.0.32",
+    label: "更新項目",
+    date: "2026-09-24",
+    title: "優化「我的教案」頁面分組顯示與滑動操作",
+    highlights: [
+      "在「我的教案」頁面，選擇分組後，該分組標籤會自動捲動至可視範圍。",
+      "在「我的教案」頁，從輸入框或分組標籤處滑動，不再意外切換分組。",
+      "「我的教案」列表模式，現在支援左右滑動來切換不同的分組。"
+    ],
+  },
+  {
     id: "build-tihvnf4",
     version: "1.0.31",
     label: "更新項目",
