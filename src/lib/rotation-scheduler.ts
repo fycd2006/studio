@@ -13,7 +13,7 @@ export interface SchedulerOptions {
   day: string;
   teamCount: number; // default 4
   roundCount?: number; // optional override
-  matchupMode?: "rotate_opponents" | "fixed_pairs"; // default "rotate_opponents"
+  matchupMode?: "fixed_pairs" | "rotate_opponents"; // default "fixed_pairs" (零重複關卡)
   stations: PlanStationInput[];
 }
 
@@ -58,15 +58,15 @@ function generateRoundRobinPairs(teamCount: number): Array<Array<[number, number
 /**
  * Intelligent scheduler for rotation tables with 2 teams per station.
  * Supports:
- * - rotate_opponents (default): Every team faces a different team each round (e.g. 1v2, 1v3, 1v4).
- * - fixed_pairs: Teams move as fixed pairs to visit all stations with zero station repeats.
+ * - fixed_pairs (default): Teams visit distinct stations with zero duplicate stations (確保一隊只在同一關一次).
+ * - rotate_opponents: Every team faces a different team each round (e.g. 1v2, 1v3, 1v4).
  */
 export function generateRotationSchedule(options: SchedulerOptions): GeneratedSchedule {
   const {
     tableTitle,
     day,
     teamCount = 4,
-    matchupMode = "rotate_opponents",
+    matchupMode = "fixed_pairs",
     stations: inputStations,
   } = options;
 

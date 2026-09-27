@@ -9,6 +9,18 @@ export type VersionHistoryEntry = {
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
   {
+    id: "build-46sa7oo",
+    version: "1.0.35",
+    label: "更新項目",
+    date: "2026-09-27",
+    title: "營隊賽程設定預設模式與說明更清晰",
+    highlights: [
+      "在設定賽程的彈出視窗，「小隊對戰模式」預設改為「零重複關卡」。",
+      "「小隊對戰模式」的兩種選項，其按鈕與說明文字現在更明確。",
+      "頁面頂部的已選關卡摘要，現在會更清楚顯示當前模式的說明。"
+    ],
+  },
+  {
     id: "build-lp62e7u",
     version: "1.0.34",
     label: "更新項目",
