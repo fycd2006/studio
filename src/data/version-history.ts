@@ -9,6 +9,17 @@ export type VersionHistoryEntry = {
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
   {
+    id: "build-e5hgqd2",
+    version: "1.0.36",
+    label: "更新項目",
+    date: "2026-09-27",
+    title: "優化 4 隊 4 關輪轉排程，讓活動更順暢",
+    highlights: [
+      "排程設定頁，4 隊 4 關時，關主排程確保兩次帶關間有休息。",
+      "排程設定頁，4 隊 4 關時，小隊保證跑遍所有關卡且換對手。"
+    ],
+  },
+  {
     id: "build-46sa7oo",
     version: "1.0.35",
     label: "更新項目",

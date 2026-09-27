@@ -148,12 +148,29 @@ export function generateRotationSchedule(options: SchedulerOptions): GeneratedSc
     }
   } else {
     // ── FIXED PAIRS MODE (固定小組輪轉各站) ──
-    const numPairs = Math.ceil(teamCount / 2);
-    const defaultRounds = Math.max(stationCount, numPairs);
-    const numRounds = options.roundCount ? Math.min(options.roundCount, defaultRounds) : defaultRounds;
+    if (teamCount === 4 && stationCount === 4) {
+      // 4 teams, 4 stations: alternating rest schedule
+      // 關卡 1、2：第一輪帶關、第二輪休息、第三輪帶關、第四輪休息
+      // 關卡 3、4：第一輪休息、第二輪帶關、第三輪休息、第四輪帶關
+      // 保證所有關主在兩次帶關之間「必有整整一輪完整休息」！
+      // 同時保證每隊 4 關全跑遍、零重複關卡，且中途成功換對手！
+      const schedule4Rest = [
+        ["1 vs 2", "3 vs 4", "—", "—"],
+        ["—", "—", "1 vs 3", "2 vs 4"],
+        ["3 vs 4", "1 vs 2", "—", "—"],
+        ["—", "—", "2 vs 4", "1 vs 3"],
+      ];
+      const roundsToUse = options.roundCount ? Math.min(options.roundCount, 4) : 4;
+      for (let r = 0; r < roundsToUse; r++) {
+        rounds.push({ cells: schedule4Rest[r] });
+      }
+    } else {
+      const numPairs = Math.ceil(teamCount / 2);
+      const defaultRounds = Math.max(stationCount, numPairs);
+      const numRounds = options.roundCount ? Math.min(options.roundCount, defaultRounds) : defaultRounds;
 
-    for (let r = 0; r < numRounds; r++) {
-      const cells = Array(stationCount).fill("—");
+      for (let r = 0; r < numRounds; r++) {
+        const cells = Array(stationCount).fill("—");
 
       if (stationCount >= numPairs) {
         for (let p = 0; p < numPairs; p++) {
@@ -182,6 +199,7 @@ export function generateRotationSchedule(options: SchedulerOptions): GeneratedSc
       rounds.push({ cells });
     }
   }
+}
 
   // ── AUTO-DERIVE TEAM ORDERS (小隊視角對應表) ──
   // For each team, inspect every round to find which station they were assigned to
