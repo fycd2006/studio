@@ -297,6 +297,19 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
                 </td>
               </tr>
 
+              {/* Rotation Order Column Labels */}
+              <tr className="bg-stone-50/70 dark:bg-white/[0.02] text-[10px] font-mono text-stone-500 dark:text-stone-400 uppercase tracking-wider border-b border-stone-200/60 dark:border-white/10">
+                <td className="w-[110px] md:w-[140px] p-1.5 text-center font-bold bg-stone-50/50 dark:bg-white/[0.02] border-r border-stone-200/60 dark:border-white/10">
+                  小隊名稱
+                </td>
+                {table.stations.map((_, colIdx) => (
+                  <td key={colIdx} className="p-1.5 text-center border-r border-stone-200/60 dark:border-white/10 last:border-r-0 font-medium text-orange-600 dark:text-orange-400">
+                    第 {colIdx + 1} 輪行程
+                  </td>
+                ))}
+                {!isReadOnly && <td className="w-10"></td>}
+              </tr>
+
               {table.teamOrders.map((team, tIdx) => (
                 <tr key={team.id} className="hover:bg-stone-50/50 dark:hover:bg-white/[0.02] transition-colors">
                   <td className="w-[110px] md:w-[140px] p-2 text-center bg-stone-50/40 dark:bg-white/[0.01] border-r border-stone-200/60 dark:border-white/10">

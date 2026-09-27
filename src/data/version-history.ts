@@ -9,6 +9,18 @@ export type VersionHistoryEntry = {
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
   {
+    id: "build-142lzvj",
+    version: "1.0.37",
+    label: "更新項目",
+    date: "2026-09-27",
+    title: "輪轉表新增欄位標題，智慧排程顯示規則摘要。",
+    highlights: [
+      "營隊輪轉表：表格上方新增「小隊名稱」與「輪次」標題。",
+      "智慧排程精靈：選取關卡後，彈窗立即顯示賽程規則摘要。",
+      "智慧排程精靈：特定排程組合時，會顯示關主輪休與體驗說明。"
+    ],
+  },
+  {
     id: "build-e5hgqd2",
     version: "1.0.36",
     label: "更新項目",

@@ -95,7 +95,11 @@ export function SmartRotationWizardModal({
 
   useEffect(() => {
     const catLabel = selectedCategory === "all" ? "大地遊戲" : selectedCategory;
-    setTableTitle(`${day} ${catLabel}闖關表`);
+    const suffix =
+      catLabel.endsWith("闖關") || catLabel.endsWith("遊戲") || catLabel.endsWith("大賽")
+        ? "輪轉表"
+        : "闖關表";
+    setTableTitle(`${day} ${catLabel}${suffix}`);
   }, [day, selectedCategory]);
 
   // Filter plans based on selectedCategory
@@ -428,6 +432,39 @@ export function SmartRotationWizardModal({
             </div>
           </div>
 
+          {/* Schedule Rule Summary Banner (Prominently Placed for Instant Feedback) */}
+          {checkedCount > 0 && (
+            <div className="p-3.5 rounded-2xl bg-orange-500/5 border border-orange-500/20 space-y-1.5 transition-all">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 text-xs font-bold text-orange-700 dark:text-orange-400">
+                  <Sparkles className="w-3.5 h-3.5 text-orange-500 shrink-0" />
+                  <span>
+                    賽程規則：{checkedCount} 關卡 · {teamCount} 小隊 · {matchupMode === "fixed_pairs" ? "零重複關卡（每關只進一次）" : "每輪不同隊伍交手"}
+                  </span>
+                </div>
+                {matchupMode === "fixed_pairs" && checkedCount === 4 && (
+                  <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                    ☕ 關主享輪休
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-stone-600 dark:text-stone-400 pl-5.5 leading-relaxed">
+                {matchupMode === "fixed_pairs" ? (
+                  checkedCount === 4 ? (
+                    <>
+                      <span className="font-semibold text-foreground">☕ 關主輪休保障：</span>關卡 1&2 與關卡 3&4 奇偶輪交替開關，<strong>關主每帶一輪即享有一整輪完整休息</strong>。<br />
+                      <span className="font-semibold text-foreground">✨ 零重複體驗：</span>4 隊皆跑滿 4 關，<strong>每隊每關只進 1 次</strong>，且中途成功換對手！
+                    </>
+                  ) : (
+                    `保證一隊只會在同一關出現一次（100% 零重複關卡）。全部小隊在 ${checkedCount} 回合中順序輪轉各站，完全玩遍各關卡教案。`
+                  )
+                ) : (
+                  `每輪安排兩小隊在同一關卡對戰。全部小隊每回合都與不同隊伍對決（四隊全員互戰），部分小隊會留守原關卡迎戰新挑戰者。`
+                )}
+              </p>
+            </div>
+          )}
+
           {/* Table Title Input */}
           <div className="space-y-1.5">
             <label className="text-[11px] font-mono font-medium text-stone-500 dark:text-stone-400">
@@ -506,26 +543,32 @@ export function SmartRotationWizardModal({
 
                       {/* Inputs Grid: Location, Lead, Assistant */}
                       {item.checked && (
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 border-t border-stone-100 dark:border-white/5">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-stone-100 dark:border-white/5">
                           {/* Location */}
-                          <div className="relative">
-                            <MapPin className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-2.5" />
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-mono text-stone-500 dark:text-stone-400 flex items-center gap-1 font-medium">
+                              <MapPin className="w-3 h-3 text-stone-400" />
+                              <span>關卡地點</span>
+                            </label>
                             <Input
                               value={item.location}
                               onChange={(e) =>
                                 handleStationFieldChange(idx, "location", e.target.value)
                               }
-                              placeholder="關卡地點 (Location)..."
+                              placeholder="例：禮堂、操場..."
                               className={cn(
-                                "h-8 pl-8 text-xs rounded-xl bg-stone-50 dark:bg-white/5 border-stone-200 dark:border-white/10",
+                                "h-8 text-xs rounded-xl bg-stone-50 dark:bg-white/5 border-stone-200 dark:border-white/10",
                                 isLocationChanged && "border-emerald-500/60 ring-1 ring-emerald-500/20"
                               )}
                             />
                           </div>
 
                           {/* Lead */}
-                          <div className="relative">
-                            <User className="w-3.5 h-3.5 text-orange-500 absolute left-2.5 top-2.5" />
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-mono text-orange-600 dark:text-orange-400 flex items-center gap-1 font-medium">
+                              <User className="w-3 h-3 text-orange-500" />
+                              <span>主關主 (負責人)</span>
+                            </label>
                             <Input
                               value={item.lead}
                               onChange={(e) =>
@@ -533,15 +576,18 @@ export function SmartRotationWizardModal({
                               }
                               placeholder="主關主姓名..."
                               className={cn(
-                                "h-8 pl-8 text-xs rounded-xl bg-stone-50 dark:bg-white/5 border-stone-200 dark:border-white/10",
+                                "h-8 text-xs rounded-xl bg-stone-50 dark:bg-white/5 border-stone-200 dark:border-white/10",
                                 isLeadChanged && "border-emerald-500/60 ring-1 ring-emerald-500/20"
                               )}
                             />
                           </div>
 
                           {/* Assistant */}
-                          <div className="relative">
-                            <UserPlus className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-2.5" />
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-mono text-stone-500 dark:text-stone-400 flex items-center gap-1 font-medium">
+                              <UserPlus className="w-3 h-3 text-stone-400" />
+                              <span>副關主 / 隊輔</span>
+                            </label>
                             <Input
                               value={item.assistant}
                               onChange={(e) =>
@@ -549,7 +595,7 @@ export function SmartRotationWizardModal({
                               }
                               placeholder="副關主姓名..."
                               className={cn(
-                                "h-8 pl-8 text-xs rounded-xl bg-stone-50 dark:bg-white/5 border-stone-200 dark:border-white/10",
+                                "h-8 text-xs rounded-xl bg-stone-50 dark:bg-white/5 border-stone-200 dark:border-white/10",
                                 isAssistantChanged && "border-emerald-500/60 ring-1 ring-emerald-500/20"
                               )}
                             />
@@ -562,23 +608,6 @@ export function SmartRotationWizardModal({
               </div>
             )}
           </div>
-
-          {/* Schedule Rule Summary */}
-          {checkedCount > 0 && (
-            <div className="p-3.5 rounded-2xl bg-orange-500/5 border border-orange-500/20 space-y-1">
-              <div className="flex items-center gap-2 text-xs font-bold text-orange-700 dark:text-orange-400">
-                <Sparkles className="w-3.5 h-3.5 text-orange-500 shrink-0" />
-                <span>
-                  賽程規則：{checkedCount} 關卡 · {teamCount} 小隊 · {matchupMode === "fixed_pairs" ? "每隊每關只進一次（零撞關）" : "每輪不同隊伍交手"}
-                </span>
-              </div>
-              <p className="text-[11px] text-stone-600 dark:text-stone-400 pl-5 leading-relaxed">
-                {matchupMode === "fixed_pairs"
-                  ? `保證一隊只會在同一關出現一次（零重複關卡）。全部小隊在 ${checkedCount} 回合中順序輪轉各站，完全玩遍各關卡教案。`
-                  : `每輪安排兩小隊在同一關卡對戰。全部小隊每回合都與不同隊伍對決（四隊全員互戰），部分小隊會留守原關卡迎戰新挑戰者。`}
-              </p>
-            </div>
-          )}
         </div>
 
         {/* Footer */}
