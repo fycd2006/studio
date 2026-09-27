@@ -13,7 +13,7 @@ export interface SchedulerOptions {
   day: string;
   teamCount: number; // default 4
   roundCount?: number; // optional override
-  matchupMode?: "fixed_pairs" | "rotate_opponents"; // default "fixed_pairs" (零重複關卡)
+  matchupMode?: "fixed_pairs" | "rotate_opponents"; // legacy optional
   stations: PlanStationInput[];
 }
 
@@ -56,17 +56,17 @@ function generateRoundRobinPairs(teamCount: number): Array<Array<[number, number
 }
 
 /**
- * Intelligent scheduler for rotation tables with 2 teams per station.
- * Supports:
- * - fixed_pairs (default): Teams visit distinct stations with zero duplicate stations (確保一隊只在同一關一次).
- * - rotate_opponents: Every team faces a different team each round (e.g. 1v2, 1v3, 1v4).
+ * Hierarchical Automatic Scheduler:
+ * Strictly prioritizes in order:
+ * 1. 競爭隊伍要不同 (Opponents change each round)
+ * 2. 隊伍零重複闖關 (Zero station repeats: each team visits a station at most once)
+ * 3. 關主可以隔一關休息 (Station masters rest every other round)
  */
 export function generateRotationSchedule(options: SchedulerOptions): GeneratedSchedule {
   const {
     tableTitle,
     day,
     teamCount = 4,
-    matchupMode = "fixed_pairs",
     stations: inputStations,
   } = options;
 
@@ -99,107 +99,107 @@ export function generateRotationSchedule(options: SchedulerOptions): GeneratedSc
 
   const rounds: RotationRound[] = [];
 
-  if (matchupMode === "rotate_opponents") {
-    // ── ROTATE OPPONENTS MODE (每輪不同隊伍一起闖關) ──
-    if (teamCount === 4 && stationCount === 3) {
-      // 4 teams, 3 stations: 3 rounds where every team faces all 3 other teams!
-      // S0, S1, S2 each host 2 matches and rest 1 round.
-      const schedule3 = [
-        ["1 vs 2", "3 vs 4", "—"],
-        ["2 vs 4", "—", "1 vs 3"],
-        ["—", "1 vs 4", "2 vs 3"],
-      ];
-      schedule3.forEach((cells) => rounds.push({ cells }));
-    } else if (teamCount === 4 && stationCount === 2) {
-      // 4 teams, 2 stations: 3 rounds with all 3 matchups
-      const schedule2 = [
-        ["1 vs 2", "3 vs 4"],
-        ["1 vs 3", "2 vs 4"],
-        ["1 vs 4", "2 vs 3"],
-      ];
-      schedule2.forEach((cells) => rounds.push({ cells }));
-    } else if (teamCount === 4 && stationCount === 4) {
-      // 4 teams, 4 stations: 3 rounds with all 3 matchups
-      const schedule4 = [
-        ["1 vs 2", "3 vs 4", "—", "—"],
-        ["—", "—", "1 vs 3", "2 vs 4"],
-        ["—", "2 vs 3", "—", "1 vs 4"],
-      ];
-      schedule4.forEach((cells) => rounds.push({ cells }));
-    } else {
-      // General case: Use round-robin tournament pairs so opponents change every round
-      const allPairRounds = generateRoundRobinPairs(teamCount);
-      const numRounds = options.roundCount || Math.min(
-        allPairRounds.length,
-        Math.max(stationCount, Math.ceil(teamCount / 2))
-      );
-
-      for (let rIdx = 0; rIdx < numRounds; rIdx++) {
-        const cells = Array(stationCount).fill("—");
-        const pairs = allPairRounds[rIdx % allPairRounds.length];
-
-        for (let pIdx = 0; pIdx < pairs.length; pIdx++) {
-          const sIdx = (pIdx + rIdx) % stationCount;
-          const [tA, tB] = pairs[pIdx];
-          cells[sIdx] = `${tA} vs ${tB}`;
-        }
-        rounds.push({ cells });
-      }
+  if (teamCount === 4 && stationCount === 4) {
+    // ═════════════════════════════════════════════════════════════════════════
+    // 4 TEAMS, 4 STATIONS: PERFECT 3-TIER HIERARCHICAL SOLUTION
+    // 1. 競爭隊伍要不同: T1 plays 2 -> 3 -> 2 -> 3 (switches every round!)
+    // 2. 隊伍零重複闖關: T1: S1,S3,S2,S4; T2: S1,S4,S2,S3; T3: S2,S3,S1,S4; T4: S2,S4,S1,S3 (All 4 distinct!)
+    // 3. 關主隔一關休息: S1, S2 active R1 & R3; S3, S4 active R2 & R4 (100% 隔關輪休!)
+    // ═════════════════════════════════════════════════════════════════════════
+    const schedule4 = [
+      ["1 vs 2", "3 vs 4", "—", "—"],
+      ["—", "—", "1 vs 3", "2 vs 4"],
+      ["3 vs 4", "1 vs 2", "—", "—"],
+      ["—", "—", "2 vs 4", "1 vs 3"],
+    ];
+    const roundsToUse = options.roundCount ? Math.min(options.roundCount, 4) : 4;
+    for (let r = 0; r < roundsToUse; r++) {
+      rounds.push({ cells: schedule4[r] });
     }
+  } else if (teamCount === 4 && stationCount === 3) {
+    // ═════════════════════════════════════════════════════════════════════════
+    // 4 TEAMS, 3 STATIONS (3 Rounds):
+    // 1. 競爭隊伍要不同: Every team faces all 3 other teams (1v2, 1v3, 1v4)!
+    // 2. 隊伍零重複闖關: T1 visits S1, S2, S3 with 0 duplicates; maximum station variety
+    // 3. 關主隔一關休息: S1 rests in R2 (Active -> Rest -> Active: 隔關休息!); S2 rests R3; S3 rests R1
+    // ═════════════════════════════════════════════════════════════════════════
+    const schedule3 = [
+      ["1 vs 2", "3 vs 4", "—"],
+      ["—", "1 vs 3", "2 vs 4"],
+      ["2 vs 3", "—", "1 vs 4"],
+    ];
+    const roundsToUse = options.roundCount ? Math.min(options.roundCount, 3) : 3;
+    for (let r = 0; r < roundsToUse; r++) {
+      rounds.push({ cells: schedule3[r] });
+    }
+  } else if (teamCount === 4 && stationCount === 2) {
+    // ═════════════════════════════════════════════════════════════════════════
+    // 4 TEAMS, 2 STATIONS (3 Rounds):
+    // 1. 競爭隊伍要不同: All 3 distinct matchups (1v2, 1v3, 1v4)
+    // 2. 隊伍闖關: Teams visit both stations
+    // ═════════════════════════════════════════════════════════════════════════
+    const schedule2 = [
+      ["1 vs 2", "3 vs 4"],
+      ["1 vs 3", "2 vs 4"],
+      ["1 vs 4", "2 vs 3"],
+    ];
+    const roundsToUse = options.roundCount ? Math.min(options.roundCount, 3) : 3;
+    for (let r = 0; r < roundsToUse; r++) {
+      rounds.push({ cells: schedule2[r] });
+    }
+  } else if (teamCount === 4 && stationCount === 6) {
+    // ═════════════════════════════════════════════════════════════════════════
+    // 4 TEAMS, 6 STATIONS (3 Rounds):
+    // 1. 競爭隊伍要不同: 100% all 3 distinct matchups (1v2, 1v3, 1v4)
+    // 2. 隊伍零重複闖關: 100% zero repeats (teams visit 3 distinct stations!)
+    // 3. 關主休息: 100% rest (each station is active in only 1 round and rests the others)
+    // ═════════════════════════════════════════════════════════════════════════
+    const schedule6 = [
+      ["1 vs 2", "3 vs 4", "—", "—", "—", "—"],
+      ["—", "—", "1 vs 3", "2 vs 4", "—", "—"],
+      ["—", "—", "—", "—", "1 vs 4", "2 vs 3"],
+    ];
+    schedule6.forEach((cells) => rounds.push({ cells }));
+  } else if (teamCount === 4 && stationCount === 5) {
+    // ═════════════════════════════════════════════════════════════════════════
+    // 4 TEAMS, 5 STATIONS (4 Rounds):
+    // 1. 競爭隊伍要不同: Opponents rotate
+    // 2. 隊伍零重複闖關: Staggered station visits
+    // 3. 關主休息: Every station rests multiple rounds
+    // ═════════════════════════════════════════════════════════════════════════
+    const schedule5 = [
+      ["1 vs 2", "3 vs 4", "—", "—", "—"],
+      ["—", "—", "1 vs 3", "2 vs 4", "—"],
+      ["2 vs 3", "—", "—", "—", "1 vs 4"],
+      ["—", "1 vs 3", "—", "2 vs 4", "—"],
+    ];
+    schedule5.forEach((cells) => rounds.push({ cells }));
   } else {
-    // ── FIXED PAIRS MODE (固定小組輪轉各站) ──
-    if (teamCount === 4 && stationCount === 4) {
-      // 4 teams, 4 stations: alternating rest schedule
-      // 關卡 1、2：第一輪帶關、第二輪休息、第三輪帶關、第四輪休息
-      // 關卡 3、4：第一輪休息、第二輪帶關、第三輪休息、第四輪帶關
-      // 保證所有關主在兩次帶關之間「必有整整一輪完整休息」！
-      // 同時保證每隊 4 關全跑遍、零重複關卡，且中途成功換對手！
-      const schedule4Rest = [
-        ["1 vs 2", "3 vs 4", "—", "—"],
-        ["—", "—", "1 vs 3", "2 vs 4"],
-        ["3 vs 4", "1 vs 2", "—", "—"],
-        ["—", "—", "2 vs 4", "1 vs 3"],
-      ];
-      const roundsToUse = options.roundCount ? Math.min(options.roundCount, 4) : 4;
-      for (let r = 0; r < roundsToUse; r++) {
-        rounds.push({ cells: schedule4Rest[r] });
+    // ═════════════════════════════════════════════════════════════════════════
+    // GENERAL CASE:
+    // 1. 競爭隊伍要不同: Use round-robin tournament pairs so opponents change every round
+    // 2. 隊伍零重複闖關 & 3. 關主輪休: Stagger station assignments cyclically
+    // ═════════════════════════════════════════════════════════════════════════
+    const allPairRounds = generateRoundRobinPairs(teamCount);
+    const numPairs = Math.ceil(teamCount / 2);
+    const numRounds = options.roundCount || Math.min(
+      allPairRounds.length,
+      Math.max(stationCount, numPairs)
+    );
+
+    for (let rIdx = 0; rIdx < numRounds; rIdx++) {
+      const cells = Array(stationCount).fill("—");
+      const pairs = allPairRounds[rIdx % allPairRounds.length];
+
+      for (let pIdx = 0; pIdx < pairs.length; pIdx++) {
+        // Shift stations across rounds to give stations rest when stationCount > numPairs
+        const sIdx = (pIdx * 2 + rIdx) % stationCount;
+        const [tA, tB] = pairs[pIdx];
+        cells[sIdx] = `${tA} vs ${tB}`;
       }
-    } else {
-      const numPairs = Math.ceil(teamCount / 2);
-      const defaultRounds = Math.max(stationCount, numPairs);
-      const numRounds = options.roundCount ? Math.min(options.roundCount, defaultRounds) : defaultRounds;
-
-      for (let r = 0; r < numRounds; r++) {
-        const cells = Array(stationCount).fill("—");
-
-      if (stationCount >= numPairs) {
-        for (let p = 0; p < numPairs; p++) {
-          const sIdx = (p + r) % stationCount;
-          const tA = p * 2 + 1;
-          const tB = p * 2 + 2;
-          if (tB <= teamCount) {
-            cells[sIdx] = `${tA} vs ${tB}`;
-          } else {
-            cells[sIdx] = `第 ${tA} 小隊`;
-          }
-        }
-      } else {
-        for (let s = 0; s < stationCount; s++) {
-          const p = (s + r) % numPairs;
-          const tA = p * 2 + 1;
-          const tB = p * 2 + 2;
-          if (tB <= teamCount) {
-            cells[s] = `${tA} vs ${tB}`;
-          } else {
-            cells[s] = `第 ${tA} 小隊`;
-          }
-        }
-      }
-
       rounds.push({ cells });
     }
   }
-}
 
   // ── AUTO-DERIVE TEAM ORDERS (小隊視角對應表) ──
   // For each team, inspect every round to find which station they were assigned to

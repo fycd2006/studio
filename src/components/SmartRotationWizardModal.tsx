@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { LessonPlan } from "@/types/plan";
 import { generateRotationSchedule, GeneratedSchedule } from "@/lib/rotation-scheduler";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -13,14 +13,9 @@ import {
   MapPin, 
   User, 
   UserPlus, 
-  Users,
   Plus, 
   Minus, 
-  Sparkles, 
-  RotateCcw, 
-  Layers, 
-  Calendar,
-  AlertCircle
+  Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n-context";
@@ -61,63 +56,60 @@ export function SmartRotationWizardModal({
 }: SmartRotationWizardModalProps) {
   const { t } = useTranslation();
   const [day, setDay] = useState(defaultDay);
-  const [teamCount, setTeamCount] = useState(4); // Default 4 teams
-  const [targetStationCount, setTargetStationCount] = useState(3); // Default 3 stations
-  const [matchupMode, setMatchupMode] = useState<"fixed_pairs" | "rotate_opponents">("fixed_pairs");
+  const [teamCount, setTeamCount] = useState(4);
+  const [targetStationCount, setTargetStationCount] = useState(3);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Extract distinct activity types from plans
-  const distinctCategories = useMemo(() => {
-    const set = new Set<string>();
+  // Category stats
+  const categoryStats = useMemo(() => {
+    const map = new Map<string, number>();
+    let totalCount = 0;
     plans.forEach((p) => {
-      const cat = stripHtml(p.scheduledName);
-      if (cat) set.add(cat);
+      if (p.category === "activity") {
+        totalCount++;
+        const cat = stripHtml(p.scheduledName) || "未分類";
+        map.set(cat, (map.get(cat) || 0) + 1);
+      }
     });
-    // Add default fallbacks if empty
-    if (set.size === 0) {
-      set.add("大地遊戲");
-      set.add("分站闖關");
-    }
-    return Array.from(set);
+    return {
+      totalCount,
+      categories: Array.from(map.entries()).map(([name, count]) => ({ name, count })),
+    };
   }, [plans]);
 
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const hasInitializedCategory = useRef(false);
 
   useEffect(() => {
-    if (distinctCategories.length > 0 && selectedCategory === "all") {
-      // Default to first category if available
-      const preferred = distinctCategories.find(c => c.includes("大地") || c.includes("闖關")) || distinctCategories[0];
-      if (preferred) setSelectedCategory(preferred);
+    if (!isOpen) {
+      hasInitializedCategory.current = false;
+      return;
     }
-  }, [distinctCategories, selectedCategory]);
+    if (!hasInitializedCategory.current && categoryStats.categories.length > 0) {
+      const preferred = categoryStats.categories.find(
+        (c) => c.name.includes("闖關") || c.name.includes("遊戲")
+      ) || categoryStats.categories[0];
+      if (preferred) setSelectedCategory(preferred.name);
+      hasInitializedCategory.current = true;
+    }
+  }, [categoryStats.categories, isOpen]);
 
   const [tableTitle, setTableTitle] = useState(`${day} 大地遊戲闖關表`);
 
   useEffect(() => {
     const catLabel = selectedCategory === "all" ? "大地遊戲" : selectedCategory;
-    const suffix =
-      catLabel.endsWith("闖關") || catLabel.endsWith("遊戲") || catLabel.endsWith("大賽")
-        ? "輪轉表"
-        : "闖關表";
+    const suffix = catLabel.endsWith("闖關") || catLabel.endsWith("遊戲") || catLabel.endsWith("大賽") ? "輪轉表" : "闖關表";
     setTableTitle(`${day} ${catLabel}${suffix}`);
   }, [day, selectedCategory]);
 
-  // Filter plans based on selectedCategory
   const filteredPlans = useMemo(() => {
-    if (selectedCategory === "all") {
-      return plans.filter((p) => p.category === "activity");
-    }
-    return plans.filter((p) => {
-      const name = stripHtml(p.scheduledName);
-      return name === selectedCategory || p.category === "activity";
-    });
+    const activityPlans = plans.filter((p) => p.category === "activity");
+    if (selectedCategory === "all") return activityPlans;
+    return activityPlans.filter((p) => (stripHtml(p.scheduledName) || "未分類") === selectedCategory);
   }, [plans, selectedCategory]);
 
-  // Stations state
   const [stationItems, setStationItems] = useState<StationItemState[]>([]);
 
-  // When filteredPlans change or modal opens, initialize station items
-  // PRESET: Default to checking the first 3 stations (or filteredPlans.length if fewer than 3)
   useEffect(() => {
     if (!isOpen) return;
     const initialItems: StationItemState[] = filteredPlans.map((p, idx) => {
@@ -126,7 +118,7 @@ export function SmartRotationWizardModal({
       const loc = p.location || "";
       return {
         planId: p.id,
-        checked: idx < 3, // Default check the first 3 stations!
+        checked: idx < 3,
         name: stripHtml(p.activityName) || "未命名關卡",
         location: loc,
         lead,
@@ -142,22 +134,12 @@ export function SmartRotationWizardModal({
 
   const checkedCount = stationItems.filter((s) => s.checked).length;
 
-  // Direct station count changer (e.g. user selects 3 stations)
   const handleStationCountChange = (count: number) => {
     setTargetStationCount(count);
-    setStationItems((prev) =>
-      prev.map((item, idx) => ({
-        ...item,
-        checked: idx < count,
-      }))
-    );
+    setStationItems((prev) => prev.map((item, idx) => ({ ...item, checked: idx < count })));
   };
 
-  const handleStationFieldChange = (
-    index: number,
-    field: "name" | "location" | "lead" | "assistant",
-    value: string
-  ) => {
+  const handleStationFieldChange = (index: number, field: "name" | "location" | "lead" | "assistant", value: string) => {
     setStationItems((prev) => {
       const next = [...prev];
       next[index] = { ...next[index], [field]: value };
@@ -169,8 +151,7 @@ export function SmartRotationWizardModal({
     setStationItems((prev) => {
       const next = [...prev];
       next[index] = { ...next[index], checked: !next[index].checked };
-      const currentChecked = next.filter((s) => s.checked).length;
-      setTargetStationCount(currentChecked);
+      setTargetStationCount(next.filter((s) => s.checked).length);
       return next;
     });
   };
@@ -178,38 +159,19 @@ export function SmartRotationWizardModal({
   const handleGenerate = async () => {
     const checked = stationItems.filter((s) => s.checked);
     if (checked.length === 0) return;
-
     setIsSubmitting(true);
     try {
       const schedule = generateRotationSchedule({
         tableTitle,
         day,
         teamCount,
-        matchupMode,
         stations: checked.map((s) => ({
-          planId: s.planId,
-          name: s.name,
-          location: s.location,
-          lead: s.lead,
-          assistant: s.assistant,
+          planId: s.planId, name: s.name, location: s.location, lead: s.lead, assistant: s.assistant,
         })),
       });
-
-      // Find plans that need global syncing
       const updatedPlans = checked
-        .filter(
-          (s) =>
-            s.location !== s.originalLocation ||
-            s.lead !== s.originalLead ||
-            s.assistant !== s.originalAssistant
-        )
-        .map((s) => ({
-          id: s.planId,
-          location: s.location,
-          lead: s.lead,
-          assistant: s.assistant,
-        }));
-
+        .filter((s) => s.location !== s.originalLocation || s.lead !== s.originalLead || s.assistant !== s.originalAssistant)
+        .map((s) => ({ id: s.planId, location: s.location, lead: s.lead, assistant: s.assistant }));
       await onGenerate(schedule, updatedPlans);
       onClose();
     } finally {
@@ -219,99 +181,79 @@ export function SmartRotationWizardModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 overflow-hidden rounded-3xl bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl">
-        {/* Header */}
-        <DialogHeader className="p-5 sm:p-6 pb-3 border-b border-stone-200/70 dark:border-white/10 bg-stone-50/50 dark:bg-white/[0.02]">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-2xl bg-orange-500/10 border border-orange-500/20 text-orange-600 flex items-center justify-center shrink-0">
-              <Zap className="w-4 h-4 fill-orange-500" />
-            </div>
-            <div>
-              <DialogTitle className="text-base sm:text-lg font-bold text-foreground flex items-center gap-2">
-                <span>智能排定闖關表</span>
-                <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20">
-                  {checkedCount} 關卡 · {teamCount} 小隊輪轉
-                </span>
-              </DialogTitle>
-              <DialogDescription className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
-                選擇天數與關卡數（預設 3 關），自動帶入主副關主與地點，並生成零撞關、不重複輪轉對戰表。
-              </DialogDescription>
-            </div>
-          </div>
+      <DialogContent className="max-w-xl max-h-[85vh] flex flex-col p-0 overflow-hidden rounded-2xl studio-sheet shadow-2xl">
+        {/* ── Header ── */}
+        <DialogHeader className="px-5 pt-5 pb-3">
+          <DialogTitle className="text-sm font-bold text-foreground flex items-center gap-2">
+            <Zap className="w-4 h-4 text-primary" />
+            <span>智能排關</span>
+            <span className="architectural-tag text-muted-foreground font-normal normal-case tracking-normal">
+              {checkedCount} 關 · {teamCount} 隊
+            </span>
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            自動排定闖關輪轉表
+          </DialogDescription>
         </DialogHeader>
 
-        {/* Scrollable Body */}
-        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 no-scrollbar">
-          {/* Section 1: Basic Parameters Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-stone-100/60 dark:bg-white/[0.02] p-3.5 rounded-2xl border border-stone-200/60 dark:border-white/5">
+        <div className="border-t hairline-divider" />
+
+        {/* ── Body ── */}
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 no-scrollbar">
+
+          {/* Parameters Row */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             {/* Day */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-mono font-medium text-stone-500 dark:text-stone-400 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-orange-500" />
-                <span>天數 (Day)</span>
-              </label>
+            <div className="space-y-1">
+              <span className="architectural-tag text-[10px]">天數</span>
               <Select value={day} onValueChange={setDay}>
-                <SelectTrigger className="h-9 rounded-xl font-mono text-xs bg-white dark:bg-white/5 border border-stone-200 dark:border-white/10 text-foreground">
+                <SelectTrigger className="h-8 rounded-xl text-xs bg-background border-border text-foreground cursor-pointer">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl border border-stone-200 dark:border-white/10 shadow-xl bg-white dark:bg-[#14191C]">
+                <SelectContent>
                   {["Day 1", "Day 2", "Day 3", "Day 4", "Day 5"].map((d) => (
-                    <SelectItem key={d} value={d} className="text-xs font-mono">
-                      {d}
-                    </SelectItem>
+                    <SelectItem key={d} value={d} className="text-xs">{d}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
             {/* Category */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-mono font-medium text-stone-500 dark:text-stone-400 flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-stone-400" />
-                <span>活動教案</span>
-              </label>
+            <div className="space-y-1">
+              <span className="architectural-tag text-[10px]">教案類型</span>
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="h-9 rounded-xl text-xs bg-white dark:bg-white/5 border border-stone-200 dark:border-white/10 text-foreground">
+                <SelectTrigger className="h-8 rounded-xl text-xs bg-background border-border text-foreground cursor-pointer">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl border border-stone-200 dark:border-white/10 shadow-xl bg-white dark:bg-[#14191C]">
-                  <SelectItem value="all" className="text-xs">
-                    全部活動教案
-                  </SelectItem>
-                  {distinctCategories.map((c) => (
-                    <SelectItem key={c} value={c} className="text-xs">
-                      {c}
+                <SelectContent>
+                  <SelectItem value="all" className="text-xs">全部 ({categoryStats.totalCount})</SelectItem>
+                  {categoryStats.categories.map((c) => (
+                    <SelectItem key={c.name} value={c.name} className="text-xs">
+                      {c.name} ({c.count})
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
-            {/* Team Count Stepper */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-mono font-medium text-stone-500 dark:text-stone-400 flex items-center gap-1.5">
-                <User className="w-3.5 h-3.5 text-stone-400" />
-                <span>參賽小隊數</span>
-              </label>
-              <div className="flex items-center gap-1.5">
+            {/* Team Count */}
+            <div className="space-y-1">
+              <span className="architectural-tag text-[10px]">小隊數</span>
+              <div className="flex items-center gap-1">
                 <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="h-9 w-8 rounded-xl border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 shrink-0"
+                  type="button" variant="outline" size="icon"
+                  className="h-8 w-7 rounded-xl shrink-0"
                   disabled={teamCount <= 2}
                   onClick={() => setTeamCount((prev) => Math.max(2, prev - 2))}
                 >
                   <Minus className="w-3 h-3" />
                 </Button>
-                <div className="flex-1 text-center font-mono font-bold text-xs py-1.5 px-1 bg-white dark:bg-white/5 rounded-xl border border-stone-200 dark:border-white/10 text-foreground">
-                  {teamCount} 隊
+                <div className="flex-1 text-center text-xs font-bold py-1.5 bg-background rounded-xl border border-border text-foreground">
+                  {teamCount}
                 </div>
                 <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="h-9 w-8 rounded-xl border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 shrink-0"
+                  type="button" variant="outline" size="icon"
+                  className="h-8 w-7 rounded-xl shrink-0"
                   disabled={teamCount >= 16}
                   onClick={() => setTeamCount((prev) => prev + 2)}
                 >
@@ -320,325 +262,151 @@ export function SmartRotationWizardModal({
               </div>
             </div>
 
-            {/* Station Count Selector */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-mono font-medium text-stone-500 dark:text-stone-400 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-orange-500" />
-                <span>關卡數量</span>
-              </label>
+            {/* Station Count */}
+            <div className="space-y-1">
+              <span className="architectural-tag text-[10px]">關卡數</span>
               <Select
                 value={String(checkedCount || targetStationCount)}
                 onValueChange={(val) => handleStationCountChange(parseInt(val, 10))}
               >
-                <SelectTrigger className="h-9 rounded-xl font-mono text-xs bg-white dark:bg-white/5 border border-stone-200 dark:border-white/10 text-foreground">
+                <SelectTrigger className="h-8 rounded-xl text-xs bg-background border-border text-foreground cursor-pointer">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl border border-stone-200 dark:border-white/10 shadow-xl bg-white dark:bg-[#14191C]">
+                <SelectContent>
                   {[2, 3, 4, 5, 6].map((num) => (
-                    <SelectItem key={num} value={String(num)} className="text-xs font-mono">
-                      {num} 關 {num === 3 ? "(推薦預設)" : ""}
+                    <SelectItem key={num} value={String(num)} disabled={num > stationItems.length} className="text-xs">
+                      {num} 關{num === 4 ? " ☕" : ""}
                     </SelectItem>
                   ))}
-                  {stationItems.length > 0 && stationItems.length !== 3 && (
-                    <SelectItem value={String(stationItems.length)} className="text-xs font-mono">
-                      全部 ({stationItems.length} 關)
-                    </SelectItem>
-                  )}
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          {/* Quick Station Count Buttons */}
-          <div className="flex items-center gap-1.5 flex-wrap px-1">
-            <span className="text-[11px] font-mono text-stone-400 mr-1 flex items-center gap-1">
-              <span>快速選擇關卡數:</span>
-            </span>
-            {[2, 3, 4, 5, 6].map((num) => {
-              const isAvailable = num <= stationItems.length;
-              const isSelected = checkedCount === num;
-              return (
-                <button
-                  key={num}
-                  type="button"
-                  disabled={!isAvailable}
-                  onClick={() => handleStationCountChange(num)}
-                  className={cn(
-                    "px-2.5 py-1 text-xs font-mono rounded-lg border transition-all cursor-pointer",
-                    isSelected
-                      ? "bg-orange-500 text-white border-orange-500 shadow-xs font-bold ring-2 ring-orange-500/20"
-                      : "bg-stone-50 dark:bg-white/5 border-stone-200 dark:border-white/10 text-stone-600 dark:text-stone-300 hover:border-orange-400",
-                    !isAvailable && "opacity-35 cursor-not-allowed"
-                  )}
-                >
-                  {num} 關 {num === 3 && "(預設)"}
-                </button>
-              );
-            })}
-            {stationItems.length > 0 && (
-              <button
-                type="button"
-                onClick={() => handleStationCountChange(stationItems.length)}
-                className={cn(
-                  "px-2.5 py-1 text-xs font-mono rounded-lg border transition-all cursor-pointer",
-                  checkedCount === stationItems.length
-                    ? "bg-orange-500 text-white border-orange-500 shadow-xs font-bold ring-2 ring-orange-500/20"
-                    : "bg-stone-50 dark:bg-white/5 border-stone-200 dark:border-white/10 text-stone-600 dark:text-stone-300 hover:border-orange-400"
-                )}
-              >
-                全部關卡 ({stationItems.length})
-              </button>
-            )}
-          </div>
+          {/* Optimization hint — single subtle line */}
+          <p className="text-[10px] text-muted-foreground architectural-tag normal-case tracking-normal leading-relaxed">
+            <Sparkles className="w-3 h-3 inline-block mr-1 text-primary align-[-2px]" />
+            自動最佳化：① 競爭隊伍不同 ② 零重複闖關 ③ 關主隔關輪休
+          </p>
 
-          {/* Matchup Mode Selector */}
-          <div className="flex items-center justify-between p-3 rounded-2xl bg-stone-100/60 dark:bg-white/[0.02] border border-stone-200/60 dark:border-white/5">
-            <div className="space-y-0.5">
-              <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5 text-orange-500" />
-                <span>小隊對戰模式</span>
-              </div>
-              <div className="text-[11px] text-stone-500 dark:text-stone-400">
-                {matchupMode === "fixed_pairs"
-                  ? "確保一隊只會在同一關一次（零重複關卡，玩遍各站）"
-                  : "每次闖關與不同小隊對抗（對手不重複，但會有小隊守主場）"}
-              </div>
-            </div>
-            <div className="flex items-center gap-1 bg-white dark:bg-white/5 p-1 rounded-xl border border-stone-200 dark:border-white/10 shrink-0">
-              <button
-                type="button"
-                onClick={() => setMatchupMode("fixed_pairs")}
-                className={cn(
-                  "px-3 py-1 text-xs font-mono rounded-lg transition-all cursor-pointer",
-                  matchupMode === "fixed_pairs"
-                    ? "bg-orange-500 text-white font-bold shadow-xs"
-                    : "text-stone-600 dark:text-stone-300 hover:text-foreground"
-                )}
-              >
-                零重複關卡 (預設)
-              </button>
-              <button
-                type="button"
-                onClick={() => setMatchupMode("rotate_opponents")}
-                className={cn(
-                  "px-3 py-1 text-xs font-mono rounded-lg transition-all cursor-pointer",
-                  matchupMode === "rotate_opponents"
-                    ? "bg-orange-500 text-white font-bold shadow-xs"
-                    : "text-stone-600 dark:text-stone-300 hover:text-foreground"
-                )}
-              >
-                每輪不同隊伍
-              </button>
-            </div>
-          </div>
+          {/* Table Title */}
+          <Input
+            value={tableTitle}
+            onChange={(e) => setTableTitle(e.target.value)}
+            className="h-8 rounded-xl text-xs bg-background border-border text-foreground"
+            placeholder="闖關表標題"
+          />
 
-          {/* Schedule Rule Summary Banner (Prominently Placed for Instant Feedback) */}
-          {checkedCount > 0 && (
-            <div className="p-3.5 rounded-2xl bg-orange-500/5 border border-orange-500/20 space-y-1.5 transition-all">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 text-xs font-bold text-orange-700 dark:text-orange-400">
-                  <Sparkles className="w-3.5 h-3.5 text-orange-500 shrink-0" />
-                  <span>
-                    賽程規則：{checkedCount} 關卡 · {teamCount} 小隊 · {matchupMode === "fixed_pairs" ? "零重複關卡（每關只進一次）" : "每輪不同隊伍交手"}
-                  </span>
-                </div>
-                {matchupMode === "fixed_pairs" && checkedCount === 4 && (
-                  <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
-                    ☕ 關主享輪休
-                  </span>
-                )}
-              </div>
-              <p className="text-[11px] text-stone-600 dark:text-stone-400 pl-5.5 leading-relaxed">
-                {matchupMode === "fixed_pairs" ? (
-                  checkedCount === 4 ? (
-                    <>
-                      <span className="font-semibold text-foreground">☕ 關主輪休保障：</span>關卡 1&2 與關卡 3&4 奇偶輪交替開關，<strong>關主每帶一輪即享有一整輪完整休息</strong>。<br />
-                      <span className="font-semibold text-foreground">✨ 零重複體驗：</span>4 隊皆跑滿 4 關，<strong>每隊每關只進 1 次</strong>，且中途成功換對手！
-                    </>
-                  ) : (
-                    `保證一隊只會在同一關出現一次（100% 零重複關卡）。全部小隊在 ${checkedCount} 回合中順序輪轉各站，完全玩遍各關卡教案。`
-                  )
-                ) : (
-                  `每輪安排兩小隊在同一關卡對戰。全部小隊每回合都與不同隊伍對決（四隊全員互戰），部分小隊會留守原關卡迎戰新挑戰者。`
-                )}
-              </p>
-            </div>
-          )}
-
-          {/* Table Title Input */}
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-mono font-medium text-stone-500 dark:text-stone-400">
-              表格標題 (Table Title)
-            </label>
-            <Input
-              value={tableTitle}
-              onChange={(e) => setTableTitle(e.target.value)}
-              className="h-9 rounded-xl text-xs bg-stone-50/50 dark:bg-white/[0.03] border-stone-200 dark:border-white/10 text-foreground"
-              placeholder="輸入闖關表標題..."
-            />
-          </div>
-
-          {/* Section 2: Stations Checklist & Master/Location Live Editor */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                <span>勾選當日關卡與確認關主/地點</span>
-                <span className="text-[10px] font-mono font-medium text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-md bg-orange-500/10 border border-orange-500/20">
-                  已選 {checkedCount} 關 · {matchupMode === "fixed_pairs" ? "每隊每關只進一次（零撞關）" : "每輪不同隊伍對決"}
-                </span>
-              </label>
-              <div className="text-[10px] font-mono text-stone-400 hidden sm:flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                <span>地點與關主修改將同步回寫教案</span>
-              </div>
-            </div>
-
+          {/* ── Stations Checklist ── */}
+          <div className="space-y-2">
             {stationItems.length === 0 ? (
-              <div className="p-8 text-center border border-dashed border-stone-200 dark:border-white/10 rounded-2xl bg-stone-50/50 dark:bg-white/[0.01]">
-                <p className="text-xs text-stone-400">在此分類下未找到活動教案，請切換活動類型。</p>
+              <div className="p-6 text-center border border-dashed border-border rounded-2xl">
+                <p className="text-xs text-muted-foreground">此分類無活動教案</p>
               </div>
             ) : (
-              <div className="space-y-2.5">
-                {stationItems.map((item, idx) => {
-                  const isLocationChanged = item.location !== item.originalLocation;
-                  const isLeadChanged = item.lead !== item.originalLead;
-                  const isAssistantChanged = item.assistant !== item.originalAssistant;
-                  const hasAnyChanges = isLocationChanged || isLeadChanged || isAssistantChanged;
+              stationItems.map((item, idx) => {
+                const hasChanges =
+                  item.location !== item.originalLocation ||
+                  item.lead !== item.originalLead ||
+                  item.assistant !== item.originalAssistant;
 
-                  return (
-                    <div
-                      key={item.planId}
-                      className={cn(
-                        "p-3 rounded-2xl border transition-all duration-200",
-                        item.checked
-                          ? "bg-white dark:bg-white/[0.03] border-stone-200/90 dark:border-white/15 shadow-2xs"
-                          : "opacity-45 bg-stone-50/60 dark:bg-white/[0.01] border-stone-200/50 dark:border-white/5"
-                      )}
-                    >
-                      {/* Top Checkbox & Station Name */}
-                      <div className="flex items-center justify-between gap-2 mb-2.5">
-                        <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                          <Checkbox
-                            id={`check-${item.planId}`}
-                            checked={item.checked}
-                            onCheckedChange={() => handleToggleCheck(idx)}
-                            className="rounded-md data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500"
-                          />
-                          <label
-                            htmlFor={`check-${item.planId}`}
-                            className="text-xs sm:text-sm font-bold text-foreground cursor-pointer truncate flex items-center gap-2"
-                          >
-                            <span className="text-[10px] font-mono text-orange-500 font-normal">
-                              #{idx + 1}
-                            </span>
-                            <span className="truncate">{item.name}</span>
-                          </label>
-                        </div>
-                        {hasAnyChanges && item.checked && (
-                          <span className="inline-flex items-center gap-1 text-[9px] font-mono font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
-                            🔗 全域同步
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Inputs Grid: Location, Lead, Assistant */}
-                      {item.checked && (
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-stone-100 dark:border-white/5">
-                          {/* Location */}
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-mono text-stone-500 dark:text-stone-400 flex items-center gap-1 font-medium">
-                              <MapPin className="w-3 h-3 text-stone-400" />
-                              <span>關卡地點</span>
-                            </label>
-                            <Input
-                              value={item.location}
-                              onChange={(e) =>
-                                handleStationFieldChange(idx, "location", e.target.value)
-                              }
-                              placeholder="例：禮堂、操場..."
-                              className={cn(
-                                "h-8 text-xs rounded-xl bg-stone-50 dark:bg-white/5 border-stone-200 dark:border-white/10",
-                                isLocationChanged && "border-emerald-500/60 ring-1 ring-emerald-500/20"
-                              )}
-                            />
-                          </div>
-
-                          {/* Lead */}
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-mono text-orange-600 dark:text-orange-400 flex items-center gap-1 font-medium">
-                              <User className="w-3 h-3 text-orange-500" />
-                              <span>主關主 (負責人)</span>
-                            </label>
-                            <Input
-                              value={item.lead}
-                              onChange={(e) =>
-                                handleStationFieldChange(idx, "lead", e.target.value)
-                              }
-                              placeholder="主關主姓名..."
-                              className={cn(
-                                "h-8 text-xs rounded-xl bg-stone-50 dark:bg-white/5 border-stone-200 dark:border-white/10",
-                                isLeadChanged && "border-emerald-500/60 ring-1 ring-emerald-500/20"
-                              )}
-                            />
-                          </div>
-
-                          {/* Assistant */}
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-mono text-stone-500 dark:text-stone-400 flex items-center gap-1 font-medium">
-                              <UserPlus className="w-3 h-3 text-stone-400" />
-                              <span>副關主 / 隊輔</span>
-                            </label>
-                            <Input
-                              value={item.assistant}
-                              onChange={(e) =>
-                                handleStationFieldChange(idx, "assistant", e.target.value)
-                              }
-                              placeholder="副關主姓名..."
-                              className={cn(
-                                "h-8 text-xs rounded-xl bg-stone-50 dark:bg-white/5 border-stone-200 dark:border-white/10",
-                                isAssistantChanged && "border-emerald-500/60 ring-1 ring-emerald-500/20"
-                              )}
-                            />
-                          </div>
-                        </div>
+                return (
+                  <div
+                    key={item.planId}
+                    className={cn(
+                      "rounded-xl border transition-all duration-150",
+                      item.checked
+                        ? "studio-sheet shadow-2xs p-3"
+                        : "opacity-40 border-border/50 p-3"
+                    )}
+                  >
+                    {/* Row: checkbox + name */}
+                    <div className="flex items-center gap-2.5">
+                      <Checkbox
+                        id={`s-${item.planId}`}
+                        checked={item.checked}
+                        onCheckedChange={() => handleToggleCheck(idx)}
+                        className="rounded-md data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                      />
+                      <label htmlFor={`s-${item.planId}`} className="text-xs font-semibold text-foreground cursor-pointer truncate flex-1">
+                        {item.name}
+                      </label>
+                      {hasChanges && item.checked && (
+                        <span className="text-[9px] text-emerald-600 dark:text-emerald-400 architectural-tag normal-case tracking-normal">已修改</span>
                       )}
                     </div>
-                  );
-                })}
-              </div>
+
+                    {/* Editable fields (only when checked) */}
+                    {item.checked && (
+                      <div className="grid grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t hairline-divider">
+                        <div className="space-y-0.5">
+                          <span className="text-[9px] text-muted-foreground flex items-center gap-1">
+                            <MapPin className="w-2.5 h-2.5" />地點
+                          </span>
+                          <Input
+                            value={item.location}
+                            onChange={(e) => handleStationFieldChange(idx, "location", e.target.value)}
+                            placeholder="地點"
+                            className={cn(
+                              "h-7 text-[11px] rounded-lg bg-background border-border",
+                              item.location !== item.originalLocation && "border-emerald-500/50"
+                            )}
+                          />
+                        </div>
+                        <div className="space-y-0.5">
+                          <span className="text-[9px] text-primary flex items-center gap-1">
+                            <User className="w-2.5 h-2.5" />主關主
+                          </span>
+                          <Input
+                            value={item.lead}
+                            onChange={(e) => handleStationFieldChange(idx, "lead", e.target.value)}
+                            placeholder="負責人"
+                            className={cn(
+                              "h-7 text-[11px] rounded-lg bg-background border-border",
+                              item.lead !== item.originalLead && "border-emerald-500/50"
+                            )}
+                          />
+                        </div>
+                        <div className="space-y-0.5">
+                          <span className="text-[9px] text-muted-foreground flex items-center gap-1">
+                            <UserPlus className="w-2.5 h-2.5" />副關主
+                          </span>
+                          <Input
+                            value={item.assistant}
+                            onChange={(e) => handleStationFieldChange(idx, "assistant", e.target.value)}
+                            placeholder="副手"
+                            className={cn(
+                              "h-7 text-[11px] rounded-lg bg-background border-border",
+                              item.assistant !== item.originalAssistant && "border-emerald-500/50"
+                            )}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
             )}
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="p-4 sm:p-5 border-t border-stone-200/70 dark:border-white/10 bg-stone-50/50 dark:bg-white/[0.02] flex items-center justify-between gap-3">
-          <div className="text-[11px] font-mono text-stone-500 dark:text-stone-400 hidden sm:block">
-            <span>
-              已選 {checkedCount} 關卡 · {teamCount} 隊伍 · {matchupMode === "fixed_pairs" ? "零重複關卡（每關只去一次）" : "每輪不同隊伍"}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="rounded-full text-xs font-mono px-4 h-9"
-            >
-              取消
-            </Button>
-
-            <Button
-              type="button"
-              onClick={handleGenerate}
-              disabled={isSubmitting || checkedCount === 0}
-              className="rounded-full text-xs font-mono font-medium px-5 h-9 bg-orange-600 hover:bg-orange-700 text-white gap-2 shadow-xs cursor-pointer"
-            >
-              <Zap className="w-3.5 h-3.5 fill-white" />
-              <span>{isSubmitting ? "正在生成並同步..." : "一鍵智能生成"}</span>
-            </Button>
-          </div>
+        {/* ── Footer ── */}
+        <div className="border-t hairline-divider" />
+        <div className="px-5 py-3 flex items-center justify-end gap-2">
+          <Button
+            type="button" variant="ghost" onClick={onClose} disabled={isSubmitting}
+            className="rounded-full text-xs h-8 px-4"
+          >
+            取消
+          </Button>
+          <Button
+            type="button" onClick={handleGenerate}
+            disabled={isSubmitting || checkedCount === 0}
+            className="rounded-full text-xs font-medium h-8 px-5 bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 btn-tactile cursor-pointer"
+          >
+            <Zap className="w-3 h-3" />
+            {isSubmitting ? "生成中..." : "生成"}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

@@ -9,6 +9,18 @@ export type VersionHistoryEntry = {
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
   {
+    id: "build-khdi873",
+    version: "1.0.38",
+    label: "更新項目",
+    date: "2026-09-27",
+    title: "營隊輪轉表設定介面優化，操作更直覺",
+    highlights: [
+      "「營隊輪轉表設定」視窗，已移除「分組對戰模式」選項。",
+      "「營隊輪轉表設定」視窗，活動類別將自動預選合適項目。",
+      "「營隊輪轉表設定」視窗中，活動類別篩選更精準，只顯示活動。"
+    ],
+  },
+  {
     id: "build-142lzvj",
     version: "1.0.37",
     label: "更新項目",
