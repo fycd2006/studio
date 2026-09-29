@@ -9,6 +9,18 @@ export type VersionHistoryEntry = {
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
   {
+    id: "build-ark9weq",
+    version: "1.0.39",
+    label: "更新項目",
+    date: "2026-09-29",
+    title: "管理員頁面權限提示與教案列表功能優化",
+    highlights: [
+      "管理員頁面中，組員嘗試修改時，不再彈出唯讀模式提示。",
+      "教案列表頁的搜尋功能，能更準確找到負責人或協辦人。",
+      "手機版教案列表頁，頁面頂部主要功能區塊不再顯示。"
+    ],
+  },
+  {
     id: "build-khdi873",
     version: "1.0.38",
     label: "更新項目",

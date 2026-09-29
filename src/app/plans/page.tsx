@@ -110,8 +110,10 @@ export default function PlansOverview() {
  const getPlanDisplayCategory = (plan: typeof plans[number]) =>
  toPlainText(plan.scheduledName) || "無分類";
  const getPlanDisplayMembers = (plan: typeof plans[number]) => {
-   if (plan.leadMember || plan.assistantMember) {
-     return [plan.leadMember, plan.assistantMember].filter(Boolean).join('、');
+   const lead = toPlainText(plan.leadMember);
+   const assistant = toPlainText(plan.assistantMember);
+   if (lead || assistant) {
+     return [lead, assistant].filter(Boolean).join('、');
    }
    return toPlainText(plan.members);
  };
@@ -226,8 +228,8 @@ export default function PlansOverview() {
  toPlainText(p.activityName).toLowerCase().includes(q) ||
  toPlainText(p.scheduledName).toLowerCase().includes(q) ||
  toPlainText(p.members).toLowerCase().includes(q) ||
- (p.leadMember && p.leadMember.toLowerCase().includes(q)) ||
- (p.assistantMember && p.assistantMember.toLowerCase().includes(q))
+ toPlainText(p.leadMember).toLowerCase().includes(q) ||
+ toPlainText(p.assistantMember).toLowerCase().includes(q)
  );
  }
  result = [...result].sort((a, b) => {
@@ -476,9 +478,9 @@ export default function PlansOverview() {
       onTouchStart={handleSwipeStart}
       onTouchEnd={handleSwipeEnd}
     >
-      <div className="max-w-[1720px] mx-auto pt-24 sm:pt-32 pb-28 sm:pb-24 px-4 sm:px-8 md:px-12 xl:px-16 touch-auto relative z-10 w-full">
-        {/* ── HEADER ─────────────── */}
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-6 border-b border-stone-200/80 dark:border-white/10 mb-8 relative z-10">
+      <div className="max-w-[1720px] mx-auto pt-16 sm:pt-32 pb-28 sm:pb-24 px-4 sm:px-8 md:px-12 xl:px-16 touch-auto relative z-10 w-full">
+        {/* ── HEADER (Desktop) ─────────────── */}
+        <div className="hidden md:flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-6 border-b border-stone-200/80 dark:border-white/10 mb-8 relative z-10">
           <div>
             <div className="flex items-center gap-2 mb-3">
               <span className="w-1.5 h-1.5 rotate-45 bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.8)] inline-block" />
@@ -497,7 +499,7 @@ export default function PlansOverview() {
             </p>
           </div>
 
-          {/* Actions Cluster (Desktop Only - Mobile is merged to side FAB) */}
+          {/* Actions Cluster (Desktop Only) */}
           <div className="hidden md:flex flex-wrap items-center gap-3 shrink-0">
             {/* Add Plan Button */}
             <DropdownMenu open={isAdding} onOpenChange={handleAddMenuOpenChange}>
@@ -658,57 +660,254 @@ export default function PlansOverview() {
           </div>
         </div>
 
-        {/* Mobile Compact Micro HUD Strip (drastically reduced footprint) */}
-        <div className="md:hidden grid grid-cols-4 gap-2 py-2 px-3 mb-4 rounded-xl bg-white/60 dark:bg-white/[0.02] border border-stone-200/80 dark:border-white/10 backdrop-blur-sm">
-          <div className="flex flex-col min-w-0">
-            <span className="text-[9px] font-mono tracking-tight text-fg-muted uppercase flex items-center gap-1 truncate">
-              <span className="w-1 h-1 rotate-45 bg-orange-500 shrink-0" />
-              01/PLANS
-            </span>
-            <div className="flex items-baseline gap-1 mt-0.5">
-              <span className="text-sm font-light font-mono text-foreground leading-none">
+        
+
+        {/* ── STICKY TOP APP BAR & GROUP TABS (Pinned on scroll, LINE Style) ── */}
+        <div className="sticky top-[56px] sm:top-[60px] z-30 -mx-4 px-4 sm:-mx-8 sm:px-8 md:-mx-12 md:px-12 xl:-mx-16 xl:px-16 bg-[#FAF8F5]/95 dark:bg-[#0B1012]/95 backdrop-blur-md border-b border-stone-200/80 dark:border-white/10 mb-4 sm:mb-6 overflow-hidden pt-2 transition-all shadow-2xs">
+          {/* Mobile Top Pinned Bar (Figure 2 Actions Row + Title) */}
+          <div className="flex md:hidden items-center justify-between gap-3 pb-2.5 pt-0.5 px-0.5 border-b border-stone-200/60 dark:border-white/10">
+            <div className="flex items-center gap-2 min-w-0">
+              <h1 className="text-xl font-bold tracking-tight text-foreground truncate">
+                {language === 'zh' ? '教案總覽' : 'Plans'}
+              </h1>
+              <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 font-semibold shrink-0">
                 {plans.length}
               </span>
-              <span className="text-[9px] font-mono text-fg-muted uppercase">REC</span>
+            </div>
+
+            {/* Pinned Action Icons (Figure 2) */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              {/* 1. View Mode Switcher */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className="w-9 h-9 rounded-full flex items-center justify-center text-stone-700 dark:text-stone-300 hover:text-foreground hover:bg-stone-200/50 dark:hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
+                    aria-label="切換檢視版型"
+                    title="切換檢視版型"
+                  >
+                    {viewType === "list" && <List className="w-5 h-5 text-foreground" />}
+                    {viewType === "grid" && <LayoutGrid className="w-5 h-5 text-foreground" />}
+                    {viewType === "board" && <Kanban className="w-5 h-5 text-foreground" />}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-2xl p-1.5 z-50">
+                  <div className="px-2.5 py-1 text-[10px] font-mono tracking-widest text-fg-muted uppercase flex items-center gap-1.5 mb-1">
+                    <span className="w-1.5 h-1.5 rotate-45 bg-orange-500" />
+                    檢視版型 VIEW
+                  </div>
+                  <DropdownMenuItem
+                    onSelect={() => setViewType("list")}
+                    className={cn(
+                      "flex items-center gap-2.5 px-3 py-2 text-xs font-mono rounded-xl cursor-pointer",
+                      viewType === "list" ? "bg-orange-500 text-white font-medium shadow-xs" : "hover:bg-stone-100 dark:hover:bg-white/5"
+                    )}
+                  >
+                    <List className="w-4 h-4" />
+                    <span>清單 List</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => setViewType("grid")}
+                    className={cn(
+                      "flex items-center gap-2.5 px-3 py-2 text-xs font-mono rounded-xl cursor-pointer",
+                      viewType === "grid" ? "bg-orange-500 text-white font-medium shadow-xs" : "hover:bg-stone-100 dark:hover:bg-white/5"
+                    )}
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                    <span>畫廊 Grid</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => setViewType("board")}
+                    className={cn(
+                      "flex items-center gap-2.5 px-3 py-2 text-xs font-mono rounded-xl cursor-pointer",
+                      viewType === "board" ? "bg-orange-500 text-white font-medium shadow-xs" : "hover:bg-stone-100 dark:hover:bg-white/5"
+                    )}
+                  >
+                    <Kanban className="w-4 h-4" />
+                    <span>看板 Board</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* 2. Sort Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className={cn(
+                      "w-9 h-9 rounded-full flex items-center justify-center active:scale-95 transition-all cursor-pointer relative",
+                      sortBy !== 'updatedAt' || sortDirection !== 'desc'
+                        ? "text-orange-500 bg-orange-500/10"
+                        : "text-stone-700 dark:text-stone-300 hover:text-foreground hover:bg-stone-200/50 dark:hover:bg-white/10"
+                    )}
+                    aria-label="排序方式"
+                    title="排序方式"
+                  >
+                    <ArrowUpDown className="w-5 h-5" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-2xl p-1.5 z-50">
+                  <div className="px-2.5 py-1 text-[10px] font-mono tracking-widest text-fg-muted uppercase flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rotate-45 bg-orange-500" />
+                      排序方式 SORT
+                    </div>
+                    {(sortBy !== 'updatedAt' || sortDirection !== 'desc') && (
+                      <button
+                        onClick={() => { setSortBy('updatedAt'); setSortDirection('desc'); }}
+                        className="text-[10px] text-orange-600 dark:text-orange-400 hover:underline cursor-pointer"
+                      >
+                        重設
+                      </button>
+                    )}
+                  </div>
+                  <DropdownMenuItem
+                    onSelect={(e) => { e.preventDefault(); handleSortClick('updatedAt'); }}
+                    className={cn(
+                      "flex items-center justify-between px-3 py-2 text-xs font-mono rounded-xl cursor-pointer",
+                      sortBy === 'updatedAt' ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium" : "hover:bg-stone-100 dark:hover:bg-white/5"
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>更新時間</span>
+                    </div>
+                    {sortBy === 'updatedAt' && (
+                      <span className="text-[10px] flex items-center gap-0.5 text-orange-500 font-mono">
+                        {sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+                        {sortDirection === 'asc' ? '升冪' : '降冪'}
+                      </span>
+                    )}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={(e) => { e.preventDefault(); handleSortClick('name'); }}
+                    className={cn(
+                      "flex items-center justify-between px-3 py-2 text-xs font-mono rounded-xl cursor-pointer",
+                      sortBy === 'name' ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium" : "hover:bg-stone-100 dark:hover:bg-white/5"
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>教案名稱</span>
+                    </div>
+                    {sortBy === 'name' && (
+                      <span className="text-[10px] flex items-center gap-0.5 text-orange-500 font-mono">
+                        {sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+                        {sortDirection === 'asc' ? 'A→Z' : 'Z→A'}
+                      </span>
+                    )}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={(e) => { e.preventDefault(); handleSortClick('category'); }}
+                    className={cn(
+                      "flex items-center justify-between px-3 py-2 text-xs font-mono rounded-xl cursor-pointer",
+                      sortBy === 'category' ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium" : "hover:bg-stone-100 dark:hover:bg-white/5"
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Filter className="w-3.5 h-3.5" />
+                      <span>分類組別</span>
+                    </div>
+                    {sortBy === 'category' && (
+                      <span className="text-[10px] flex items-center gap-0.5 text-orange-500 font-mono">
+                        {sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+                        {sortDirection === 'asc' ? '升冪' : '降冪'}
+                      </span>
+                    )}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* 3. Batch Download Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    disabled={isBatchDownloading || plans.length === 0}
+                    className={cn(
+                      "w-9 h-9 rounded-full flex items-center justify-center text-stone-700 dark:text-stone-300 hover:text-foreground hover:bg-stone-200/50 dark:hover:bg-white/10 active:scale-95 transition-all cursor-pointer",
+                      (isBatchDownloading || plans.length === 0) && "opacity-50 cursor-not-allowed"
+                    )}
+                    aria-label="批次匯出"
+                    title="批次匯出"
+                  >
+                    <Download className="w-5 h-5 text-orange-500" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-2xl p-1.5 z-50">
+                  <div className="px-2.5 py-1 text-[10px] font-mono tracking-widest text-fg-muted uppercase flex items-center gap-1.5 mb-1">
+                    <span className="w-1.5 h-1.5 rotate-45 bg-orange-500" />
+                    批次匯出 EXPORT
+                  </div>
+                  <DropdownMenuItem
+                    onSelect={(e) => { e.preventDefault(); void handleBatchDownload("word", "all"); }}
+                    className="flex items-center gap-2 px-3 py-2 text-xs font-mono rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 cursor-pointer"
+                  >
+                    <FileText className="w-4 h-4 text-orange-500" />
+                    <span>所有 Word (.docx)</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={(e) => { e.preventDefault(); void handleBatchDownload("pdf", "all"); }}
+                    className="flex items-center gap-2 px-3 py-2 text-xs font-mono rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 cursor-pointer"
+                  >
+                    <FileText className="w-4 h-4 text-rose-500" />
+                    <span>所有 PDF (.pdf)</span>
+                  </DropdownMenuItem>
+                  <div className="h-px bg-stone-200/60 dark:bg-white/10 my-1 mx-2" />
+                  <div className="px-2.5 py-1 text-[10px] font-mono tracking-widest text-fg-muted uppercase">
+                    目前篩選結果 (FILTERED)
+                  </div>
+                  <DropdownMenuItem
+                    onSelect={(e) => { e.preventDefault(); void handleBatchDownload("word", "filtered"); }}
+                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-mono rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 text-fg-secondary cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5 text-stone-400" />
+                    <span>僅限目前篩選 (Word)</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={(e) => { e.preventDefault(); void handleBatchDownload("pdf", "filtered"); }}
+                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-mono rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 text-fg-secondary cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5 text-stone-400" />
+                    <span>僅限目前篩選 (PDF)</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* 4. Add Plan Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    disabled={!isAdmin}
+                    className={cn(
+                      "w-9 h-9 rounded-full flex items-center justify-center bg-orange-500 hover:bg-orange-600 text-white shadow-[0_2px_8px_rgba(249,115,22,0.35)] active:scale-95 transition-all cursor-pointer shrink-0 ml-0.5",
+                      !isAdmin && "opacity-60 cursor-not-allowed"
+                    )}
+                    aria-label="新增教案"
+                    title="新增教案"
+                  >
+                    {!isAdmin ? <Lock className="w-4 h-4" /> : <Plus className="w-5 h-5 stroke-[2.5]" />}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-2xl p-1.5 z-50">
+                  <div className="px-2.5 py-1 text-[10px] font-mono tracking-widest text-fg-muted uppercase flex items-center gap-1.5 mb-1">
+                    <span className="w-1.5 h-1.5 rotate-45 bg-orange-500" />
+                    選擇組別 CREATE PLAN
+                  </div>
+                  {groups.map((group) => {
+                    const params = getUnifiedGroupBadgeParams(group.slug, group.nameZh);
+                    return (
+                      <DropdownMenuItem
+                        key={`m-top-add-${group.id}`}
+                        onSelect={() => handleCreatePlan(group.slug)}
+                        className="cursor-pointer font-medium text-xs py-2 px-2.5 rounded-xl hover:bg-orange-500/10 hover:text-orange-600 transition-colors flex items-center gap-2"
+                      >
+                        <span className={cn("w-2 h-2 rounded-full shadow-xs shrink-0", params.colorDot)} />
+                        <span>{language === 'zh' ? group.nameZh : group.nameEn}</span>
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
-
-          <div className="flex flex-col min-w-0">
-            <span className="text-[9px] font-mono tracking-tight text-fg-muted uppercase flex items-center gap-1 truncate">
-              <span className="w-1 h-1 rotate-45 bg-orange-500 shrink-0" />
-              02/CAMP
-            </span>
-            <span className="text-xs font-mono text-orange-600 dark:text-orange-400 truncate mt-0.5 leading-none">
-              {activeCamp?.name || "ALL"}
-            </span>
-          </div>
-
-          <div className="flex flex-col min-w-0">
-            <span className="text-[9px] font-mono tracking-tight text-fg-muted uppercase flex items-center gap-1 truncate">
-              <span className="w-1 h-1 rotate-45 bg-orange-500 shrink-0" />
-              03/TEAMS
-            </span>
-            <div className="flex items-baseline gap-1 mt-0.5">
-              <span className="text-sm font-light font-mono text-foreground leading-none">
-                {groups.length}
-              </span>
-              <span className="text-[9px] font-mono text-fg-muted uppercase">DIV</span>
-            </div>
-          </div>
-
-          <div className="flex flex-col min-w-0">
-            <span className="text-[9px] font-mono tracking-tight text-fg-muted uppercase flex items-center gap-1 truncate">
-              <span className="w-1 h-1 rotate-45 bg-orange-500 shrink-0" />
-              04/VIEW
-            </span>
-            <span className="text-xs font-mono font-medium text-foreground uppercase mt-0.5 leading-none truncate">
-              {viewType}
-            </span>
-          </div>
-        </div>
-
-        {/* ── TOP GROUP TABS (Google Play Style Sticky) ── */}
-        <div className="sticky top-[56px] sm:top-[60px] z-30 -mx-4 px-4 sm:-mx-8 sm:px-8 md:-mx-12 md:px-12 xl:-mx-16 xl:px-16 bg-[#FAF8F5]/95 dark:bg-[#0B1012]/95 backdrop-blur-md border-b border-stone-200/80 dark:border-white/10 mb-4 sm:mb-6 overflow-hidden pt-2 transition-all">
           <div className="group-tabs-scroll flex items-center gap-6 sm:gap-8 overflow-x-auto no-scrollbar px-1 pb-0">
             <button
               ref={(el) => { tabRefs.current['all'] = el; }}
@@ -877,399 +1076,7 @@ export default function PlansOverview() {
             </div>
           </div>
 
-        {/* ── MOBILE FIXED SIDE BAR (Vertical FABs) ─────────── */}
-        <div className="md:hidden">
-          <AnimatePresence>
-            {activeFab && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="fixed inset-0 z-[60]"
-                onClick={() => setActiveFab(null)}
-              />
-            )}
-          </AnimatePresence>
-
-          <FabStagger className="fixed bottom-20 right-3 z-[65] flex flex-col items-end gap-3 pointer-events-none [&>*]:pointer-events-auto">
-            {/* 01. View Mode Circle FAB */}
-            <div className="relative flex items-center justify-end">
-              <AnimatePresence>
-                {activeFab === 'view' && (
-                  <motion.div
-                    initial={{ opacity: 0, x: 20, scale: 0.95 }}
-                    animate={{ opacity: 1, x: 0, scale: 1 }}
-                    exit={{ opacity: 0, x: 10, scale: 0.95 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    className="absolute right-14 bg-white dark:bg-[#14191C] backdrop-blur-xl border border-stone-200/80 dark:border-white/10 rounded-2xl shadow-xl p-2 flex flex-col w-44 z-20"
-                  >
-                    <div className="px-2.5 py-1 text-[10px] font-mono tracking-widest text-fg-muted uppercase flex items-center gap-1.5 mb-1">
-                      <span className="w-1.5 h-1.5 rotate-45 bg-orange-500" />
-                      檢視版型 VIEW
-                    </div>
-                    <button
-                      onClick={() => { setViewType("list"); setActiveFab(null); }}
-                      className={cn(
-                        "flex items-center gap-2.5 px-3 py-2 text-xs font-mono rounded-xl transition-colors cursor-pointer",
-                        viewType === "list"
-                          ? "bg-orange-500 text-white font-medium shadow-xs"
-                          : "text-foreground hover:bg-stone-100 dark:hover:bg-white/5"
-                      )}
-                    >
-                      <List className="w-4 h-4" />
-                      <span>清單 List</span>
-                    </button>
-                    <button
-                      onClick={() => { setViewType("grid"); setActiveFab(null); }}
-                      className={cn(
-                        "flex items-center gap-2.5 px-3 py-2 text-xs font-mono rounded-xl transition-colors cursor-pointer",
-                        viewType === "grid"
-                          ? "bg-orange-500 text-white font-medium shadow-xs"
-                          : "text-foreground hover:bg-stone-100 dark:hover:bg-white/5"
-                      )}
-                    >
-                      <LayoutGrid className="w-4 h-4" />
-                      <span>畫廊 Grid</span>
-                    </button>
-                    <button
-                      onClick={() => { setViewType("board"); setActiveFab(null); }}
-                      className={cn(
-                        "flex items-center gap-2.5 px-3 py-2 text-xs font-mono rounded-xl transition-colors cursor-pointer",
-                        viewType === "board"
-                          ? "bg-orange-500 text-white font-medium shadow-xs"
-                          : "text-foreground hover:bg-stone-100 dark:hover:bg-white/5"
-                      )}
-                    >
-                      <Kanban className="w-4 h-4" />
-                      <span>看板 Board</span>
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={() => setActiveFab(activeFab === 'view' ? null : 'view')}
-                className={cn(
-                  "h-11 w-11 rounded-full shadow-lg border backdrop-blur-md flex items-center justify-center transition-colors relative z-10 focus:outline-none cursor-pointer",
-                  activeFab === 'view'
-                    ? "bg-orange-500 text-white border-transparent shadow-orange-500/30"
-                    : "bg-white/90 dark:bg-[#14191C]/90 border-stone-200/60 dark:border-white/10 text-foreground"
-                )}
-                title="切換檢視版型"
-              >
-                {viewType === "list" && <List className="w-4 h-4" />}
-                {viewType === "grid" && <LayoutGrid className="w-4 h-4" />}
-                {viewType === "board" && <Kanban className="w-4 h-4" />}
-              </motion.button>
-            </div>
-
-            {/* 02. Sort Order Circle FAB */}
-            <div className="relative flex items-center justify-end">
-              <AnimatePresence>
-                {activeFab === 'sort' && (
-                  <motion.div
-                    initial={{ opacity: 0, x: 20, scale: 0.95 }}
-                    animate={{ opacity: 1, x: 0, scale: 1 }}
-                    exit={{ opacity: 0, x: 10, scale: 0.95 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    className="absolute right-14 bg-white dark:bg-[#14191C] backdrop-blur-xl border border-stone-200/80 dark:border-white/10 rounded-2xl shadow-xl p-2 flex flex-col w-52 z-20"
-                  >
-                    <div className="px-2.5 py-1 text-[10px] font-mono tracking-widest text-fg-muted uppercase flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rotate-45 bg-orange-500" />
-                        排序方式 SORT
-                      </div>
-                      {(sortBy !== 'updatedAt' || sortDirection !== 'desc') && (
-                        <button
-                          onClick={() => { setSortBy('updatedAt'); setSortDirection('desc'); }}
-                          className="text-[10px] text-orange-600 dark:text-orange-400 hover:underline cursor-pointer"
-                        >
-                          重設
-                        </button>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => handleSortClick('updatedAt')}
-                      className={cn(
-                        "flex items-center justify-between px-3 py-2 text-xs font-mono rounded-xl transition-colors cursor-pointer",
-                        sortBy === 'updatedAt'
-                          ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium"
-                          : "text-foreground hover:bg-stone-100 dark:hover:bg-white/5"
-                      )}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>更新時間</span>
-                      </div>
-                      {sortBy === 'updatedAt' && (
-                        <span className="text-[10px] flex items-center gap-0.5 text-orange-500 font-mono">
-                          {sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
-                          {sortDirection === 'asc' ? '升冪' : '降冪'}
-                        </span>
-                      )}
-                    </button>
-                    <button
-                      onClick={() => handleSortClick('name')}
-                      className={cn(
-                        "flex items-center justify-between px-3 py-2 text-xs font-mono rounded-xl transition-colors cursor-pointer",
-                        sortBy === 'name'
-                          ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium"
-                          : "text-foreground hover:bg-stone-100 dark:hover:bg-white/5"
-                      )}
-                    >
-                      <div className="flex items-center gap-2">
-                        <FileText className="w-3.5 h-3.5" />
-                        <span>教案名稱</span>
-                      </div>
-                      {sortBy === 'name' && (
-                        <span className="text-[10px] flex items-center gap-0.5 text-orange-500 font-mono">
-                          {sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
-                          {sortDirection === 'asc' ? 'A→Z' : 'Z→A'}
-                        </span>
-                      )}
-                    </button>
-                    <button
-                      onClick={() => handleSortClick('category')}
-                      className={cn(
-                        "flex items-center justify-between px-3 py-2 text-xs font-mono rounded-xl transition-colors cursor-pointer",
-                        sortBy === 'category'
-                          ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium"
-                          : "text-foreground hover:bg-stone-100 dark:hover:bg-white/5"
-                      )}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Filter className="w-3.5 h-3.5" />
-                        <span>分類組別</span>
-                      </div>
-                      {sortBy === 'category' && (
-                        <span className="text-[10px] flex items-center gap-0.5 text-orange-500 font-mono">
-                          {sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
-                          {sortDirection === 'asc' ? '升冪' : '降冪'}
-                        </span>
-                      )}
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={() => setActiveFab(activeFab === 'sort' ? null : 'sort')}
-                className={cn(
-                  "h-11 w-11 rounded-full shadow-lg border backdrop-blur-md flex items-center justify-center transition-colors relative z-10 focus:outline-none cursor-pointer",
-                  activeFab === 'sort' || (sortBy !== 'updatedAt' || sortDirection !== 'desc')
-                    ? "bg-orange-500 text-white border-transparent shadow-orange-500/30"
-                    : "bg-white/90 dark:bg-[#14191C]/90 border-stone-200/60 dark:border-white/10 text-foreground"
-                )}
-                title="排序方式"
-              >
-                <ArrowUpDown className="w-4 h-4" />
-                {(sortBy !== 'updatedAt' || sortDirection !== 'desc') && activeFab !== 'sort' && (
-                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-orange-500 ring-2 ring-white dark:ring-[#14191C]" />
-                )}
-              </motion.button>
-            </div>
-
-            {/* 03. Group Filter Circle FAB */}
-            <div className="relative flex items-center justify-end">
-              <AnimatePresence>
-                {activeFab === 'filter' && (
-                  <motion.div
-                    initial={{ opacity: 0, x: 20, scale: 0.95 }}
-                    animate={{ opacity: 1, x: 0, scale: 1 }}
-                    exit={{ opacity: 0, x: 10, scale: 0.95 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    className="absolute right-14 bottom-0 bg-white dark:bg-[#14191C] backdrop-blur-xl border border-stone-200/80 dark:border-white/10 rounded-2xl shadow-xl p-2 flex flex-col w-56 max-h-[60vh] overflow-y-auto z-20"
-                  >
-                    <div className="px-2.5 py-1 text-[10px] font-mono tracking-widest text-fg-muted uppercase flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rotate-45 bg-orange-500" />
-                        分組篩選 GROUPS
-                      </div>
-                      <span className="text-[10px] text-foreground font-mono">{filteredPlans.length} 篇</span>
-                    </div>
-                    <button
-                      onClick={() => { setFilterGroup('all'); setActiveFab(null); }}
-                      className={cn(
-                        "w-full px-3 py-2 rounded-xl text-xs font-mono uppercase tracking-wider flex items-center justify-between transition-all cursor-pointer text-left",
-                        filterGroup === 'all'
-                          ? "bg-orange-500 text-white font-medium shadow-xs"
-                          : "text-foreground hover:bg-stone-100 dark:hover:bg-white/5"
-                      )}
-                    >
-                      <span>全部教案 ALL</span>
-                      <span className={cn(
-                        "text-[10px] px-2 py-0.5 rounded-full font-mono",
-                        filterGroup === 'all' ? "bg-white/20 text-white" : "bg-black/5 dark:bg-white/10 text-fg-muted"
-                      )}>
-                        {plans.length}
-                      </span>
-                    </button>
-                    {groups.map((group) => {
-                      const isActive = filterGroup === group.slug;
-                      const count = plans.filter((p) => getPlanGroup(p)?.slug === group.slug).length;
-                      const badgeParams = getUnifiedGroupBadgeParams(group.slug, group.nameZh);
-                      return (
-                        <button
-                          key={`fab-group-${group.id}`}
-                          onClick={() => { setFilterGroup(group.slug); setActiveFab(null); }}
-                          className={cn(
-                            "w-full px-3 py-2 rounded-xl text-xs font-mono uppercase tracking-wider flex items-center justify-between transition-all cursor-pointer text-left mt-0.5",
-                            isActive
-                              ? "bg-orange-500 text-white font-medium shadow-xs"
-                              : "text-foreground hover:bg-stone-100 dark:hover:bg-white/5"
-                          )}
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className={cn("w-2 h-2 rounded-full shrink-0 shadow-xs", isActive ? "bg-white" : badgeParams.colorDot)} />
-                            <span>{language === 'zh' ? group.nameZh : group.nameEn}</span>
-                          </div>
-                          <span className={cn(
-                            "text-[10px] px-2 py-0.5 rounded-full font-mono",
-                            isActive ? "bg-white/20 text-white" : "bg-black/5 dark:bg-white/10 text-fg-muted"
-                          )}>
-                            {count}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={() => setActiveFab(activeFab === 'filter' ? null : 'filter')}
-                className={cn(
-                  "h-11 w-11 rounded-full shadow-lg border backdrop-blur-md flex items-center justify-center transition-colors relative z-10 focus:outline-none cursor-pointer",
-                  activeFab === 'filter' || filterGroup !== 'all'
-                    ? "bg-orange-500 text-white border-transparent shadow-orange-500/30"
-                    : "bg-white/90 dark:bg-[#14191C]/90 border-stone-200/60 dark:border-white/10 text-foreground"
-                )}
-                title="分組篩選"
-              >
-                <Filter className="w-4 h-4" />
-                {filterGroup !== 'all' && activeFab !== 'filter' && (
-                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-orange-500 ring-2 ring-white dark:ring-[#14191C]" />
-                )}
-              </motion.button>
-            </div>
-
-            {/* 04. Batch Download Circle FAB */}
-            <div className="relative flex items-center justify-end">
-              <AnimatePresence>
-                {activeFab === 'download' && (
-                  <motion.div
-                    initial={{ opacity: 0, x: 20, scale: 0.95 }}
-                    animate={{ opacity: 1, x: 0, scale: 1 }}
-                    exit={{ opacity: 0, x: 10, scale: 0.95 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    className="absolute right-14 bottom-0 bg-white dark:bg-[#14191C] backdrop-blur-xl border border-stone-200/80 dark:border-white/10 rounded-2xl shadow-xl p-2 flex flex-col w-52 z-20"
-                  >
-                    <div className="px-2.5 py-1 text-[10px] font-mono tracking-widest text-fg-muted uppercase flex items-center gap-1.5 mb-1">
-                      <span className="w-1.5 h-1.5 rotate-45 bg-orange-500" />
-                      批次匯出 EXPORT
-                    </div>
-                    <button
-                      onClick={() => { void handleBatchDownload("word", "all"); setActiveFab(null); }}
-                      className="flex items-center px-3 py-2 text-left font-mono text-xs rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 transition-colors text-foreground cursor-pointer"
-                    >
-                      <FileText className="w-4 h-4 mr-2 text-orange-500" />
-                      <span>所有 Word (.docx)</span>
-                    </button>
-                    <button
-                      onClick={() => { void handleBatchDownload("pdf", "all"); setActiveFab(null); }}
-                      className="flex items-center px-3 py-2 text-left font-mono text-xs rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 transition-colors text-foreground cursor-pointer"
-                    >
-                      <FileText className="w-4 h-4 mr-2 text-rose-500" />
-                      <span>所有 PDF (.pdf)</span>
-                    </button>
-                    <div className="h-px w-full bg-stone-200/60 dark:bg-white/10 my-1" />
-                    <button
-                      onClick={() => { void handleBatchDownload("word", "filtered"); setActiveFab(null); }}
-                      className="flex items-center px-3 py-1.5 text-left font-mono text-xs rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 transition-colors text-fg-secondary cursor-pointer"
-                    >
-                      <Download className="w-3.5 h-3.5 mr-2 text-stone-400" />
-                      <span>僅限目前篩選 (Word)</span>
-                    </button>
-                    <button
-                      onClick={() => { void handleBatchDownload("pdf", "filtered"); setActiveFab(null); }}
-                      className="flex items-center px-3 py-1.5 text-left font-mono text-xs rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 transition-colors text-fg-secondary cursor-pointer"
-                    >
-                      <Download className="w-3.5 h-3.5 mr-2 text-stone-400" />
-                      <span>僅限目前篩選 (PDF)</span>
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                disabled={isBatchDownloading || plans.length === 0}
-                onClick={() => setActiveFab(activeFab === 'download' ? null : 'download')}
-                className={cn(
-                  "h-11 w-11 rounded-full shadow-lg border backdrop-blur-md flex items-center justify-center transition-colors relative z-10 focus:outline-none cursor-pointer",
-                  (isBatchDownloading || plans.length === 0) && "opacity-60 cursor-not-allowed",
-                  activeFab === 'download'
-                    ? "bg-orange-500 text-white border-transparent shadow-orange-500/30"
-                    : "bg-white/90 dark:bg-[#14191C]/90 border-stone-200/60 dark:border-white/10 text-foreground"
-                )}
-                title="批次匯出"
-              >
-                <Download className={cn("w-4 h-4", activeFab === 'download' ? "text-white" : "text-orange-500")} />
-              </motion.button>
-            </div>
-
-            {/* 05. Add Plan Circle FAB */}
-            <div className="relative flex items-center justify-end">
-              <AnimatePresence>
-                {activeFab === 'add' && (
-                  <motion.div
-                    initial={{ opacity: 0, x: 20, scale: 0.95 }}
-                    animate={{ opacity: 1, x: 0, scale: 1 }}
-                    exit={{ opacity: 0, x: 10, scale: 0.95 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    className="absolute right-14 bottom-0 bg-white dark:bg-[#14191C] backdrop-blur-xl border border-stone-200/80 dark:border-white/10 rounded-2xl shadow-xl p-2 flex flex-col w-56 max-h-[60vh] overflow-y-auto z-20"
-                  >
-                    <div className="px-2.5 py-1 text-[10px] font-mono tracking-widest text-fg-muted uppercase flex items-center gap-1.5 mb-1">
-                      <span className="w-1.5 h-1.5 rotate-45 bg-orange-500" />
-                      新增教案 CREATE PLAN
-                    </div>
-                    {groups.map((group) => {
-                      const params = getUnifiedGroupBadgeParams(group.slug, group.nameZh);
-                      return (
-                        <button
-                          key={`m-add-${group.id}`}
-                          onClick={() => { handleCreatePlan(group.slug); setActiveFab(null); }}
-                          className="px-3 py-2 text-left font-medium text-xs font-mono rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 transition-colors text-foreground flex items-center gap-2 cursor-pointer mt-0.5"
-                        >
-                          <span className={cn("w-2 h-2 rounded-full shadow-xs shrink-0", params.colorDot)} />
-                          <span>{language === 'zh' ? group.nameZh : group.nameEn}</span>
-                        </button>
-                      );
-                    })}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={() => {
-                  if (!isAdmin) { crewToast(); return; }
-                  setActiveFab(activeFab === 'add' ? null : 'add');
-                }}
-                className={cn(
-                  "h-12 w-12 rounded-full shadow-lg border-none flex items-center justify-center transition-all relative z-10 focus:outline-none cursor-pointer",
-                  !isAdmin
-                    ? "opacity-60 bg-stone-400 dark:bg-stone-700 text-white"
-                    : "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-orange-500/30"
-                )}
-                title="新增教案"
-              >
-                <motion.div animate={{ rotate: activeFab === 'add' ? 45 : 0 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
-                  <Plus className="w-5 h-5" />
-                </motion.div>
-              </motion.button>
-            </div>
-          </FabStagger>
-        </div>
+        {/* Mobile actions moved to top header (LINE style) */}
 
  {/* ── CONTENT ─────────────────────── */}
  <div className="relative overflow-hidden w-full touch-pan-y sm:min-h-[50vh] flex-1 sm:flex-none overflow-y-auto sm:overflow-y-visible pr-1 sm:pr-0">
@@ -1509,10 +1316,13 @@ export default function PlansOverview() {
                         <div
                           key={plan.id}
                           onClick={() => handleOpenPlan(plan.id)}
-                          className="group grid grid-cols-[48px_minmax(240px,2fr)_150px_160px_110px_48px] items-center gap-6 xl:gap-8 px-6 py-6.5 hover:bg-orange-500/[0.03] dark:hover:bg-orange-500/[0.04] transition-all duration-200 cursor-pointer"
+                          className="group grid grid-cols-[48px_minmax(240px,2fr)_150px_160px_110px_48px] items-center gap-6 xl:gap-8 px-6 py-5 hover:bg-orange-500/[0.03] dark:hover:bg-orange-500/[0.04] transition-all duration-200 cursor-pointer"
                         >
                           {/* 01: Monospace index */}
-                          <div className="font-mono text-xs text-fg-muted group-hover:text-orange-500 transition-colors">
+                          <div
+                            className="font-mono text-xs font-semibold transition-colors shrink-0"
+                            style={{ color: group ? groupBadge.uiBg : undefined }}
+                          >
                             {indexStr}
                           </div>
 
@@ -1526,7 +1336,7 @@ export default function PlansOverview() {
                             </div>
                             {category && (
                               <div className={cn(
-                                "text-xs font-mono tracking-tight truncate mt-1 transition-colors",
+                                "text-[12px] tracking-normal truncate mt-1.5 transition-colors",
                                 isUncategorized
                                   ? "text-stone-300 dark:text-stone-600 text-[11px]"
                                   : "text-fg-muted"
@@ -1589,12 +1399,15 @@ export default function PlansOverview() {
                         <div
                           key={plan.id}
                           onClick={() => handleOpenPlan(plan.id)}
-                          className="py-3 px-4 hover:bg-orange-500/[0.02] dark:hover:bg-orange-500/[0.04] transition-colors cursor-pointer"
+                          className="py-3.5 px-4 hover:bg-orange-500/[0.02] dark:hover:bg-orange-500/[0.04] transition-colors cursor-pointer"
                         >
                           {/* Row 1: Index + Plan Name + Division Badge */}
                           <div className="flex items-center justify-between gap-2.5">
                             <div className="flex items-center gap-2 min-w-0 flex-1">
-                              <span className="font-mono text-xs text-orange-500 font-semibold shrink-0">
+                              <span
+                                className="font-mono text-xs font-bold shrink-0"
+                                style={{ color: group ? groupBadge.uiBg : 'var(--fg-muted)' }}
+                              >
                                 {indexStr}
                               </span>
                               <h3 className="font-medium text-[15px] text-foreground truncate">

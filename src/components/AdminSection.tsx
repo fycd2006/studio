@@ -5,7 +5,7 @@ import { RotationTableData, LessonPlan, PropItem, Camp, CampItem, Group } from "
 import { AdminTimer } from "@/components/AdminTimer";
 import { AdminRotationTable } from "@/components/AdminRotationTable";
 import { Button } from "@/components/ui/button";
-import { Clock, Table as TableIcon, Plus, Lock, Unlock, Calendar, Undo2, Redo2, Package2, ZoomIn, ZoomOut, Maximize, MoreHorizontal, FileDown, Zap } from "lucide-react";
+import { Clock, Table as TableIcon, Plus, Lock, Unlock, Undo2, Redo2, Package2, ZoomIn, ZoomOut, Maximize, MoreHorizontal, FileDown, Zap, Calendar } from "lucide-react";
 import { SmartRotationWizardModal } from "@/components/SmartRotationWizardModal";
 import { GeneratedSchedule } from "@/lib/rotation-scheduler";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -26,7 +26,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn, stripHtml } from "@/lib/utils";
-import { FabStagger } from "@/components/FabStagger";
 import { useTranslation } from "@/lib/i18n-context";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/hooks/use-toast";
@@ -84,7 +83,6 @@ export function AdminSection({
   const [isLocked, setIsLocked] = useState(true);
   const [selectedDay, setSelectedDay] = useState<string>("Day 1");
   const [activeMainTab, setActiveMainTab] = useState<MainTab>('timer');
-  const [activeFab, setActiveFab] = useState<string | null>(null);
   const [activePropsTab, setActivePropsTab] = useState<'activity' | 'teaching' | 'all-props'>('activity');
   const [isWizardOpen, setIsWizardOpen] = useState(false);
 
@@ -95,11 +93,13 @@ export function AdminSection({
     onAddTable(schedule);
 
     updatedPlans.forEach((p) => {
-      const combined = [p.lead, p.assistant].filter(Boolean).join('、');
+      const cleanLead = stripHtml(p.lead);
+      const cleanAsst = stripHtml(p.assistant);
+      const combined = [cleanLead, cleanAsst].filter(Boolean).join('、');
       onUpdatePlan(p.id, {
         location: p.location,
-        leadMember: p.lead,
-        assistantMember: p.assistant,
+        leadMember: cleanLead,
+        assistantMember: cleanAsst,
         members: combined
       });
     });
@@ -845,336 +845,209 @@ export function AdminSection({
   return (
     <div className="flex flex-col bg-[#FAF8F5] dark:bg-[#0B1012] text-foreground animate-in fade-in duration-500 relative transition-colors font-sans min-h-screen">
       <main className="flex-1 min-w-0 w-full relative flex flex-col">
-        <div className={cn("w-full pt-20 sm:pt-24 pb-8 md:pb-12 transition-all duration-300 flex-1 flex flex-col", activeMainTab === 'props' ? "px-0 pt-16 sm:pt-20 pb-0" : "px-4 sm:px-6 md:px-8 lg:px-10")}>
+        <div className={cn("w-full pt-14 sm:pt-16 pb-8 md:pb-12 transition-all duration-300 flex-1 flex flex-col", activeMainTab === 'props' ? "px-0 pt-14 sm:pt-16 pb-0" : "px-4 sm:px-6 md:px-8 lg:px-10")}>
           <Tabs value={activeMainTab} onValueChange={handleMainTabChange} className={cn("w-full flex flex-col items-stretch flex-1", activeMainTab === 'props' ? "space-y-0" : "space-y-4 sm:space-y-6")}>
-            <header className={cn("relative z-20 no-print w-full transition-all duration-300", activeMainTab === 'props' ? "mb-0 pb-2 px-4 sm:px-6 md:px-8 lg:px-10" : "mb-4 sm:mb-8 pb-4 border-b border-stone-200/80 dark:border-white/10")}>
-              <div className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 transition-colors">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="architectural-tag">
-                      // EXECUTIVE GOVERNANCE //
-                    </span>
-                  </div>
-                  <h1 className="text-3xl sm:text-4xl font-normal tracking-tight text-foreground">
-                    {t('ADMIN_TITLE')}
-                  </h1>
-                  <p className="text-xs font-mono text-fg-muted uppercase tracking-widest mt-1">
-                    Control Center // Timing Synchronization // Props Logistics
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    if (isLocked) {
-                      if (role === 'admin') setIsLocked(false);
-                      else toast({ title: "權限不足", description: "僅管理員能解鎖行政中樞", variant: "destructive" });
-                    } else {
-                      setIsLocked(true);
-                    }
-                  }}
-                  className={cn(
-                    "hidden md:inline-flex items-center gap-2 h-9 px-4 rounded-full font-mono text-xs uppercase tracking-wider transition-all border",
-                    isLocked
-                      ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30 hover:bg-rose-500/20"
-                      : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
-                  )}
-                >
-                  <span className={cn("w-1.5 h-1.5 rounded-full shrink-0 shadow-xs", isLocked ? "bg-rose-500" : "bg-emerald-500 animate-pulse")} />
-                  {isLocked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
-                  <span>{isLocked ? "已鎖定 (唯讀)" : "已解鎖 (可編輯)"}</span>
-                </Button>
-              </div>
-            </header>
 
-            <ActionBar title="Admin Actions" className={cn("hidden md:!flex !flex-nowrap md:justify-center !items-center gap-2 overflow-x-auto scrollbar-hide", activeMainTab === 'props' && "px-4 sm:px-6 md:px-8")}>
-              <div className="order-1 flex w-full items-center gap-2 md:gap-3 md:w-auto md:flex-row md:items-center md:flex-nowrap min-w-max">
-                <TabsList className={cn("flex items-center p-1 rounded-xl shrink-0 h-9 w-auto max-w-full overflow-x-auto scrollbar-hide gap-1", actionBarTheme.clusterInset)}>
-                  <TabsTrigger value="timer" className={actionBarTheme.tabTrigger}>
-                    <Clock className="h-3 w-3" /> <span className="hidden md:inline">{t('TIMER_CONTROL')}</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="tables" className={actionBarTheme.tabTrigger}>
-                    <TableIcon className="h-3 w-3" /> <span className="hidden md:inline">{t('ROTATION_TABLE')}</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="props" className={actionBarTheme.tabTrigger}>
-                    <Package2 className="h-3 w-3" /> <span className="hidden md:inline">{t('PROPS_LIST')}</span>
-                  </TabsTrigger>
-                </TabsList>
-
-                <div className={cn(actionBarTheme.separator, "hidden md:block mx-0.5")} />
-
-                {activeMainTab === 'props' && (
-                  <div className={cn("hidden md:flex items-center gap-1 p-1 rounded-xl h-9 w-full md:w-auto overflow-x-auto scrollbar-hide", actionBarTheme.clusterInset)}>
-                    {['activity', 'teaching', 'all-props'].map((tab) => (
-                      <button
-                        key={tab}
-                        onClick={() => setActivePropsTab(tab as typeof activePropsTab)}
-                        className={cn(
-                          "px-3 h-7 rounded-lg text-[10px] font-mono tracking-wider uppercase transition-all",
-                          activePropsTab === tab
-                            ? "bg-white dark:bg-white/10 text-orange-600 dark:text-orange-400 font-medium shadow-xs"
-                            : "text-fg-muted hover:text-foreground"
-                        )}
-                      >
-                        {tab === 'activity' ? '活動' : tab === 'teaching' ? '教學' : '營期'}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="order-2 ml-auto hidden md:flex w-full items-center justify-end gap-1.5 md:w-auto md:ml-0">
-                <div className={cn(actionBarTheme.separator, "hidden md:block mx-0.5")} />
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+            {activeMainTab !== 'timer' && (
+              <ActionBar position="top" title="操作列" className="scrollbar-hide">
+                <div className="flex w-full items-center justify-between gap-1.5 sm:gap-3 flex-nowrap min-w-0">
+                  
+                  {/* Left Cluster: Lock & Contextual Controls */}
+                  <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+                    {/* Lock Toggle */}
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={() => {
+                        if (isLocked) {
+                          if (role === 'admin') setIsLocked(false);
+                          else toast({ title: "權限不足", description: "僅管理員能解鎖", variant: "destructive" });
+                        } else {
+                          setIsLocked(true);
+                        }
+                      }}
                       className={cn(
-                        actionBarTheme.control,
-                        "h-10 px-4 rounded-full font-mono text-xs tracking-wider uppercase bg-stone-200/60 dark:bg-white/10 hover:bg-stone-300/80 dark:hover:bg-white/15"
+                        "h-8 sm:h-9 px-2.5 sm:px-3 rounded-full font-mono text-xs gap-1.5 transition-all cursor-pointer",
+                        isLocked
+                          ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 border border-rose-500/20"
+                          : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20"
                       )}
-                      title="匯出"
+                      title={isLocked ? "點擊解鎖編輯" : "點擊鎖定"}
                     >
-                      <FileDown className="h-4 w-4 sm:mr-2" />
-                      <span className="hidden sm:inline">匯出</span>
+                      <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", isLocked ? "bg-rose-500" : "bg-emerald-500 animate-pulse")} />
+                      {isLocked ? <Lock className="h-3.5 w-3.5 shrink-0" /> : <Unlock className="h-3.5 w-3.5 shrink-0" />}
+                      <span className="hidden sm:inline font-medium">{isLocked ? "已鎖定" : "可編輯"}</span>
                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" sideOffset={8} className="w-48 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-2xl p-1.5">
-                    <DropdownMenuItem onSelect={handleExportExcel} className="cursor-pointer font-medium text-xs py-2 px-3 rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 transition-colors">
-                      匯出 Excel (.xlsx)
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={handlePrint} className="cursor-pointer font-medium text-xs py-2 px-3 rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 transition-colors">
-                      列印 / Print
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
 
-                <div className={cn(actionBarTheme.separator, "hidden md:block mx-0.5")} />
+                    <div className={cn(actionBarTheme.separator, "mx-0.5")} />
 
-                <Button variant="ghost" size="icon" onClick={onUndoTable} disabled={!canUndoTable || isLocked} className={cn(actionBarTheme.control, actionBarTheme.controlIcon, actionBarTheme.controlElevated)}>
-                  <Undo2 className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" onClick={onRedoTable} disabled={!canRedoTable || isLocked} className={cn(actionBarTheme.control, actionBarTheme.controlIcon, actionBarTheme.controlElevated)}>
-                  <Redo2 className="h-4 w-4" />
-                </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      disabled={activeMainTab === 'timer'}
-                      className={cn(actionBarTheme.control, "px-2.5 font-mono text-xs uppercase tracking-wider gap-1.5 h-10")}
-                      title="縮放表格 / Zoom Table"
-                    >
-                      <ZoomIn className="h-3.5 w-3.5 text-stone-600 dark:text-stone-300" />
-                      <span>{Math.round(zoom * 100)}%</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="center" sideOffset={8} className="w-40 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-2xl p-1.5">
-                    <DropdownMenuItem onClick={handleZoomIn} disabled={zoom >= 2} className="text-xs py-2 px-3 rounded-xl gap-2 cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 font-mono">
-                      <ZoomIn className="h-3.5 w-3.5" /> 放大 (Zoom In)
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleZoomOut} disabled={zoom <= 0.3} className="text-xs py-2 px-3 rounded-xl gap-2 cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 font-mono">
-                      <ZoomOut className="h-3.5 w-3.5" /> 縮小 (Zoom Out)
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleFitAll} className="text-xs py-2 px-3 rounded-xl gap-2 cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 font-mono">
-                      <Maximize className="h-3.5 w-3.5" /> 重設 (100%)
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </ActionBar>
+                    {/* Tables: Day selector + Wizard + Add table */}
+                    {activeMainTab === 'tables' && (
+                      <div className="flex items-center gap-1.5 sm:gap-2">
+                        {/* Day Selector */}
+                        <div className="flex items-center gap-1 bg-stone-200/60 dark:bg-white/10 rounded-full px-2 py-0.5 border border-stone-300/60 dark:border-white/10">
+                          <Calendar className="h-3.5 w-3.5 text-orange-500 shrink-0" />
+                          <Select value={selectedDay} onValueChange={setSelectedDay}>
+                            <SelectTrigger className="h-7 w-16 sm:w-20 border-0 bg-transparent shadow-none font-mono text-xs text-foreground focus:ring-0 p-0 text-center font-medium">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl border border-stone-200/80 dark:border-white/10 shadow-2xl bg-white dark:bg-[#14191C] font-mono text-xs p-1">
+                              {dayOptions.map(d => (
+                                <SelectItem key={d} value={d} className="rounded-lg text-xs cursor-pointer">{d}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
 
-            {/* Mobile Floating Controls (Vertical Side Alignment) */}
-            <div className="md:hidden">
-              <AnimatePresence>
-                {activeFab && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="fixed inset-0 z-[60]"
-                    onClick={() => setActiveFab(null)}
-                  />
-                )}
-              </AnimatePresence>
+                        {!isLocked && (
+                          <>
+                            <Button
+                              onClick={() => setIsWizardOpen(true)}
+                              size="sm"
+                              className="rounded-full font-mono text-xs uppercase tracking-wider gap-1.5 h-8 px-2.5 sm:px-3.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-xs cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
+                            >
+                              <Zap className="h-3.5 w-3.5 fill-white shrink-0" />
+                              <span className="hidden sm:inline">智能排關</span>
+                              <span className="sm:hidden">排關</span>
+                            </Button>
 
-              <FabStagger className={cn(
-                "fixed z-[65] flex flex-col items-end gap-3 pointer-events-none [&>*]:pointer-events-auto transition-all duration-300",
-                activeMainTab === 'props' ? "bottom-4 right-4 sm:bottom-6 sm:right-6 opacity-60 hover:opacity-100 scale-90 sm:scale-100" : "bottom-20 right-2"
-              )}>
-                
-                {/* Export FAB */}
-                <div className="relative flex items-center justify-end">
-                  <AnimatePresence>
-                    {activeFab === 'export' && (
-                      <motion.div
-                        initial={{ opacity: 0, x: 20, scale: 0.95 }}
-                        animate={{ opacity: 1, x: 0, scale: 1 }}
-                        exit={{ opacity: 0, x: 10, scale: 0.95 }}
-                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                        className="absolute right-14 bg-white/95 dark:bg-[#14191C]/95 backdrop-blur-xl border border-stone-200/80 dark:border-white/10 rounded-2xl shadow-xl p-1.5 flex flex-col w-44"
-                      >
-                        <button onClick={() => { handleExportExcel(); setActiveFab(null); }} className="px-3.5 py-2.5 text-left font-mono text-xs rounded-xl hover:bg-stone-500/10 dark:hover:bg-white/5 transition-colors text-foreground">
-                          匯出 Excel (.xlsx)
-                        </button>
-                        <button onClick={() => { handlePrint(); setActiveFab(null); }} className="px-3.5 py-2.5 text-left font-mono text-xs rounded-xl hover:bg-stone-500/10 dark:hover:bg-white/5 transition-colors text-foreground">
-                          列印 / Print
-                        </button>
-                      </motion.div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => onAddTable(selectedDay)}
+                              className="rounded-full font-mono text-xs uppercase tracking-wider gap-1 h-8 px-2.5 sm:px-3 border-stone-300 dark:border-white/10 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-white/5 shadow-2xs cursor-pointer"
+                              title="新增空白輪替表"
+                            >
+                              <Plus className="h-3.5 w-3.5 shrink-0" />
+                              <span className="hidden sm:inline">空白表</span>
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     )}
-                  </AnimatePresence>
-                  <motion.button
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setActiveFab(activeFab === 'export' ? null : 'export')}
-                    className={cn(
-                      "h-11 w-11 rounded-full shadow-lg border backdrop-blur-md flex items-center justify-center transition-colors relative z-10 focus:outline-none",
-                      activeFab === 'export' ? "bg-orange-500 text-white border-transparent" : "bg-white/90 dark:bg-[#14191C]/90 border-stone-200/80 dark:border-white/10 text-foreground"
-                    )}
-                    title="匯出"
-                  >
-                    <FileDown className="h-5 w-5" />
-                  </motion.button>
-                </div>
 
-                {/* Tools FAB */}
-                {activeMainTab !== 'timer' && (
-                  <div className="relative flex items-center justify-end">
-                    <AnimatePresence>
-                      {activeFab === 'tools' && (
-                        <motion.div
-                          initial={{ opacity: 0, x: 20, scale: 0.95 }}
-                          animate={{ opacity: 1, x: 0, scale: 1 }}
-                          exit={{ opacity: 0, x: 10, scale: 0.95 }}
-                          transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                          className="absolute right-14 bg-white/95 dark:bg-[#14191C]/95 backdrop-blur-xl border border-stone-200/80 dark:border-white/10 rounded-2xl shadow-xl p-2 flex flex-col gap-2"
-                        >
-                          <div className="flex items-center justify-between gap-1">
-                            <Button variant="ghost" size="icon" onClick={() => { onUndoTable?.(); setActiveFab(null); }} disabled={!canUndoTable || isLocked} className="h-9 w-9 rounded-xl text-foreground">
-                              <Undo2 className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => { onRedoTable?.(); setActiveFab(null); }} disabled={!canRedoTable || isLocked} className="h-9 w-9 rounded-xl text-foreground">
-                              <Redo2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                          <div className="h-px w-full bg-stone-200/80 dark:border-white/10 my-1" />
-                          <div className="flex items-center justify-between gap-1">
-                            <Button variant="ghost" size="icon" onClick={() => { handleZoomOut(); setActiveFab(null); }} disabled={zoom <= 0.3} className="h-9 w-9 rounded-xl text-foreground">
-                              <ZoomOut className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => { handleFitAll(); setActiveFab(null); }} className="h-9 w-9 rounded-xl text-foreground">
-                              <Maximize className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => { handleZoomIn(); setActiveFab(null); }} disabled={zoom >= 2} className="h-9 w-9 rounded-xl text-foreground">
-                              <ZoomIn className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                    <motion.button
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => setActiveFab(activeFab === 'tools' ? null : 'tools')}
-                      className={cn(
-                        "h-11 w-11 rounded-full shadow-lg border backdrop-blur-md flex items-center justify-center transition-colors relative z-10 focus:outline-none",
-                        activeFab === 'tools' ? "bg-orange-500 text-white border-transparent" : "bg-white/90 dark:bg-[#14191C]/90 border-stone-200/80 dark:border-white/10 text-foreground"
-                      )}
-                      title="工具"
-                    >
-                      <MoreHorizontal className="h-5 w-5" />
-                    </motion.button>
-                  </div>
-                )}
-
-                <div className="h-px w-6 bg-stone-200/80 dark:bg-white/10 my-1 mr-2.5" />
-
-                {/* Main Tabs as vertical FABs */}
-                <div className="relative flex items-center justify-end w-full">
-                  <AnimatePresence>
-                    {activeMainTab === 'props' && activeFab === 'props' && (
-                      <motion.div
-                        initial={{ opacity: 0, x: 20, scale: 0.95 }}
-                        animate={{ opacity: 1, x: 0, scale: 1 }}
-                        exit={{ opacity: 0, x: 10, scale: 0.95 }}
-                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                        className="absolute right-14 bg-white/95 dark:bg-[#14191C]/95 backdrop-blur-xl border border-stone-200/80 dark:border-white/10 rounded-full shadow-lg p-1 flex items-center gap-1"
-                      >
-                        {['activity', 'teaching', 'all-props'].map((tab) => (
+                    {/* Props: Sub-tabs */}
+                    {activeMainTab === 'props' && (
+                      <div className="flex items-center gap-1 p-0.5 sm:p-1 bg-stone-200/60 dark:bg-white/10 rounded-full border border-stone-300/60 dark:border-white/10">
+                        {(['activity', 'teaching', 'all-props'] as const).map((tab) => (
                           <button
-                            key={`mobile-${tab}`}
-                            onClick={() => { setActivePropsTab(tab as typeof activePropsTab); setActiveFab(null); }}
+                            key={tab}
+                            onClick={() => setActivePropsTab(tab)}
                             className={cn(
-                              "px-3.5 h-8 rounded-full text-xs font-mono uppercase tracking-wider transition-all whitespace-nowrap focus:outline-none",
+                              "px-2.5 sm:px-3.5 py-1 rounded-full text-xs font-mono tracking-wider transition-all cursor-pointer whitespace-nowrap",
                               activePropsTab === tab
-                                ? 'bg-orange-500 text-white shadow-xs'
-                                : 'text-fg-muted hover:text-foreground'
+                                ? "bg-white dark:bg-white/20 text-orange-600 dark:text-orange-400 font-semibold shadow-xs"
+                                : "text-stone-600 hover:text-foreground dark:text-stone-400"
                             )}
                           >
-                            {tab === 'activity' ? '活動' : tab === 'teaching' ? '教學' : '營期'}
+                            {tab === 'activity' ? '活動道具' : tab === 'teaching' ? '教學道具' : '全營期道具'}
                           </button>
                         ))}
-                      </motion.div>
+                      </div>
                     )}
-                  </AnimatePresence>
-                  <motion.button 
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => { handleMainTabChange('props'); setActiveFab(activeFab === 'props' ? null : 'props'); }} 
-                    className={cn("h-11 w-11 rounded-full shadow-lg border backdrop-blur-md flex items-center justify-center transition-colors relative z-10 focus:outline-none", 
-                      activeMainTab === 'props' 
-                        ? 'bg-orange-500 text-white border-transparent shadow-xs' 
-                        : 'bg-white/90 dark:bg-[#14191C]/90 border-stone-200/80 dark:border-white/10 text-fg-muted hover:text-foreground')}
-                  >
-                    <Package2 className="h-5 w-5" />
-                  </motion.button>
+                  </div>
+
+                  {/* Right Cluster: Tools & Export */}
+                  <div className="flex items-center gap-1 sm:gap-2 shrink-0 ml-auto">
+                    {/* Tables: Undo / Redo & Zoom */}
+                    {activeMainTab === 'tables' && (
+                      <>
+                        <div className="hidden sm:flex items-center bg-stone-200/60 dark:bg-white/10 rounded-full p-0.5 border border-stone-300/60 dark:border-white/10">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={onUndoTable} 
+                            disabled={!canUndoTable || isLocked} 
+                            className="h-7 w-7 rounded-full text-foreground hover:bg-white dark:hover:bg-white/10 disabled:opacity-30 cursor-pointer"
+                            title="復原 (Undo)"
+                          >
+                            <Undo2 className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={onRedoTable} 
+                            disabled={!canRedoTable || isLocked} 
+                            className="h-7 w-7 rounded-full text-foreground hover:bg-white dark:hover:bg-white/10 disabled:opacity-30 cursor-pointer"
+                            title="重做 (Redo)"
+                          >
+                            <Redo2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+
+                        {/* Zoom Dropdown (Desktop) */}
+                        <div className="hidden sm:block">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 px-2.5 rounded-full font-mono text-xs uppercase tracking-wider gap-1 bg-stone-200/60 dark:bg-white/10 border border-stone-300/60 dark:border-white/10 hover:bg-stone-300/80 dark:hover:bg-white/15"
+                                title="縮放表格"
+                              >
+                                <ZoomIn className="h-3.5 w-3.5 text-stone-600 dark:text-stone-300" />
+                                <span>{Math.round(zoom * 100)}%</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" sideOffset={6} className="w-36 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-xl p-1 font-mono text-xs">
+                              <DropdownMenuItem onClick={handleZoomIn} disabled={zoom >= 2} className="cursor-pointer gap-2 py-1.5 rounded-lg">
+                                <ZoomIn className="h-3.5 w-3.5" /> 放大 (+10%)
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={handleZoomOut} disabled={zoom <= 0.3} className="cursor-pointer gap-2 py-1.5 rounded-lg">
+                                <ZoomOut className="h-3.5 w-3.5" /> 縮小 (-10%)
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={handleFitAll} className="cursor-pointer gap-2 py-1.5 rounded-lg">
+                                <Maximize className="h-3.5 w-3.5" /> 重設 (100%)
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+
+                        <div className={cn(actionBarTheme.separator, "hidden sm:block mx-0.5")} />
+                      </>
+                    )}
+
+                    {/* Export Dropdown */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2.5 sm:px-3.5 rounded-full font-mono text-xs tracking-wider uppercase bg-stone-200/80 dark:bg-white/15 hover:bg-stone-300 dark:hover:bg-white/20 gap-1.5 text-foreground cursor-pointer"
+                          title="匯出"
+                        >
+                          <FileDown className="h-3.5 w-3.5" />
+                          <span className="hidden sm:inline">匯出</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" sideOffset={6} className="w-44 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-xl p-1.5 font-sans">
+                        <DropdownMenuItem onSelect={handleExportExcel} className="cursor-pointer font-medium text-xs py-2 px-3 rounded-lg hover:bg-stone-100 dark:hover:bg-white/5 transition-colors">
+                          匯出 Excel (.xlsx)
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={handlePrint} className="cursor-pointer font-medium text-xs py-2 px-3 rounded-lg hover:bg-stone-100 dark:hover:bg-white/5 transition-colors">
+                          列印 / Print
+                        </DropdownMenuItem>
+                        {/* On mobile, also expose Undo/Redo/Zoom in the dropdown */}
+                        {activeMainTab === 'tables' && (
+                          <div className="sm:hidden border-t border-stone-200 dark:border-white/10 mt-1 pt-1">
+                            <DropdownMenuItem onSelect={onUndoTable} disabled={!canUndoTable || isLocked} className="cursor-pointer font-medium text-xs py-1.5 px-3 rounded-lg gap-2">
+                              <Undo2 className="h-3.5 w-3.5" /> 復原 (Undo)
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={onRedoTable} disabled={!canRedoTable || isLocked} className="cursor-pointer font-medium text-xs py-1.5 px-3 rounded-lg gap-2">
+                              <Redo2 className="h-3.5 w-3.5" /> 重做 (Redo)
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={handleFitAll} className="cursor-pointer font-medium text-xs py-1.5 px-3 rounded-lg gap-2">
+                              <Maximize className="h-3.5 w-3.5" /> 縮放重設 (100%)
+                            </DropdownMenuItem>
+                          </div>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
                 </div>
-
-                <motion.button 
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => { handleMainTabChange('tables'); setActiveFab(null); }} 
-                  className={cn("h-11 w-11 rounded-full shadow-lg border backdrop-blur-md flex items-center justify-center transition-colors relative z-10 focus:outline-none", 
-                    activeMainTab === 'tables' 
-                      ? 'bg-orange-500 text-white border-transparent shadow-xs' 
-                      : 'bg-white/90 dark:bg-[#14191C]/90 border-stone-200/80 dark:border-white/10 text-fg-muted hover:text-foreground')}
-                >
-                  <TableIcon className="h-5 w-5" />
-                </motion.button>
-
-                {/* Lock FAB */}
-                <motion.button 
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => {
-                    if (isLocked) {
-                      if (role === 'admin') setIsLocked(false);
-                      else toast({ title: "權限不足", description: "僅管理員能解鎖", variant: "destructive" });
-                    } else {
-                      setIsLocked(true);
-                    }
-                    setActiveFab(null);
-                  }} 
-                  className={cn("h-11 w-11 rounded-full shadow-lg border backdrop-blur-md flex items-center justify-center transition-colors relative z-10 focus:outline-none", 
-                    isLocked 
-                      ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30' 
-                      : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30')}
-                >
-                  {isLocked ? <Lock className="h-5 w-5" /> : <Unlock className="h-5 w-5" />}
-                </motion.button>
-
-                <motion.button 
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => { handleMainTabChange('timer'); setActiveFab(null); }} 
-                  className={cn("h-11 w-11 rounded-full shadow-lg border backdrop-blur-md flex items-center justify-center transition-colors relative z-10 focus:outline-none", 
-                    activeMainTab === 'timer' 
-                      ? 'bg-orange-500 text-white border-transparent shadow-xs' 
-                      : 'bg-white/90 dark:bg-[#14191C]/90 border-stone-200/80 dark:border-white/10 text-fg-muted hover:text-foreground')}
-                >
-                  <Clock className="h-5 w-5" />
-                </motion.button>
-
-              </FabStagger>
-            </div>
+              </ActionBar>
+            )}
 
             <div className="w-full flex-1 relative">
               <TabsContent value="timer" className="m-0 h-full w-full">
@@ -1192,43 +1065,6 @@ export function AdminSection({
               </TabsContent>
 
               <TabsContent value="tables" className="m-0 data-[state=active]:flex flex-col space-y-6 md:space-y-8 pb-32">
-                <div className="bg-white/70 dark:bg-white/[0.02] border border-stone-200/80 dark:border-white/10 rounded-2xl p-4 shrink-0 flex flex-wrap md:flex-nowrap items-center justify-between gap-4 mt-2 backdrop-blur-md shadow-xs">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-orange-500 shrink-0" />
-                      <span className="text-xs font-mono text-fg-muted uppercase tracking-wider hidden sm:inline">天數 (Day)</span>
-                    </div>
-                    <Select value={selectedDay} onValueChange={setSelectedDay}>
-                      <SelectTrigger className="w-32 h-9 rounded-xl font-mono text-xs bg-white dark:bg-white/5 border border-stone-200/80 dark:border-white/10 text-foreground">
-                        <SelectValue placeholder="選擇" />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-2xl border border-stone-200/80 dark:border-white/10 shadow-2xl bg-white dark:bg-[#14191C] font-mono text-xs p-1">
-                        {dayOptions.map(day => (
-                          <SelectItem key={day} value={day} className="rounded-xl font-normal text-xs cursor-pointer">{day}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {!isLocked && (
-                    <div className="flex items-center gap-2">
-                      <Button
-                        onClick={() => setIsWizardOpen(true)}
-                        className="rounded-full font-mono text-xs uppercase tracking-wider gap-1.5 h-9 px-4.5 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-xs cursor-pointer"
-                      >
-                        <Zap className="h-3.5 w-3.5 fill-white" /> 智能排定精靈
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => onAddTable(selectedDay)}
-                        className="rounded-full font-mono text-xs uppercase tracking-wider gap-1.5 h-9 px-3.5 border-stone-300 dark:border-white/10 text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-white/5 shadow-2xs cursor-pointer"
-                        title="新增空白輪替表"
-                      >
-                        <Plus className="h-3.5 w-3.5" /> <span className="hidden sm:inline">空白表</span>
-                      </Button>
-                    </div>
-                  )}
-                </div>
 
                 <div
                   className="w-full flex flex-col space-y-12"

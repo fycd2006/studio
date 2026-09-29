@@ -38,20 +38,20 @@ export default function AdminPage() {
     <div className="min-h-screen relative bg-[#FAF8F5] dark:bg-[#0B1012] text-foreground transition-colors font-sans selection:bg-orange-500/20">
       <AdminSection
         tables={tables}
-        onAddTable={isAdmin ? addTable : () => toast({ title: "🔒 唯讀模式", description: "您目前的權限為組員，如需修改請聯繫管理員。" })}
-        onUpdateTable={isAdmin ? updateTable : () => toast({ title: "🔒 唯讀模式", description: "您目前的權限為組員，如需修改請聯繫管理員。" })}
-        onDeleteTable={isAdmin ? deleteTable : () => toast({ title: "🔒 唯讀模式", description: "您目前的權限為組員，如需修改請聯繫管理員。" })}
-        onUndoTable={isAdmin ? undoTable : () => {}}
-        onRedoTable={isAdmin ? redoTable : () => {}}
-        canUndoTable={isAdmin ? canUndoTable : false}
-        canRedoTable={isAdmin ? canRedoTable : false}
+        onAddTable={addTable}
+        onUpdateTable={updateTable}
+        onDeleteTable={deleteTable}
+        onUndoTable={undoTable}
+        onRedoTable={redoTable}
+        canUndoTable={canUndoTable}
+        canRedoTable={canRedoTable}
         timer={timer}
         plans={plans}
         groups={groups}
-        onUpdatePlan={isAdmin ? updatePlan : () => toast({ title: "🔒 唯讀模式", description: "您目前的權限為組員，如需修改請聯繫管理員。" })}
+        onUpdatePlan={updatePlan}
         camps={camps}
         activeCampId={activeCampId}
-        onUpdateCamp={isAdmin ? updateCamp : () => toast({ title: "🔒 唯讀模式", description: "您目前的權限為組員，如需修改請聯繫管理員。" })}
+        onUpdateCamp={updateCamp}
       />
     </div>
   );

@@ -11,9 +11,10 @@ interface ActionBarProps {
   title?: string;
   className?: string;
   tone?: "warm" | "plain";
+  position?: "bottom" | "top";
 }
 
-export function ActionBar({ children, title, className, tone = "warm" }: ActionBarProps) {
+export function ActionBar({ children, title, className, tone = "warm", position = "bottom" }: ActionBarProps) {
   const pathname = usePathname();
   const isNavbarVisible = useActionBarStore((s) => s.isNavbarVisible);
   const setIsNavbarVisible = useActionBarStore((s) => s.setIsNavbarVisible);
@@ -30,8 +31,10 @@ export function ActionBar({ children, title, className, tone = "warm" }: ActionB
     };
   }, [setHasActionBar, setIsNavbarVisible]);
 
-  // Mobile keyboard visual viewport tracking (iOS Notes / Notion style)
+  // Mobile keyboard visual viewport tracking (iOS Notes / Notion style) - only for bottom position
   useEffect(() => {
+    if (position !== "bottom") return;
+
     const handleViewportChange = () => {
       if (typeof window !== "undefined" && window.visualViewport && ref.current) {
         if (window.innerWidth < 768) {
@@ -58,13 +61,15 @@ export function ActionBar({ children, title, className, tone = "warm" }: ActionB
       window.visualViewport?.removeEventListener("resize", handleViewportChange);
       window.visualViewport?.removeEventListener("scroll", handleViewportChange);
     };
-  }, []);
+  }, [position]);
 
   return (
     <div
       ref={ref}
       className={cn(
-        "max-md:fixed max-md:bottom-0 max-md:inset-x-0 max-md:top-auto max-md:z-[35] max-md:pb-[max(0.25rem,env(safe-area-inset-bottom))] max-md:pt-1 max-md:px-2 max-md:bg-white/95 max-md:dark:bg-[#0B1012]/95 max-md:backdrop-blur-2xl max-md:border-t max-md:border-stone-200/80 max-md:dark:border-white/10 max-md:shadow-[0_-4px_20px_rgba(0,0,0,0.06)] md:sticky md:z-[40] md:top-20 md:py-1.5 md:px-6 md:mb-6 transition-all duration-300",
+        position === "top"
+          ? "max-md:sticky max-md:top-14 max-md:inset-x-0 max-md:z-[35] max-md:py-2 max-md:px-3 max-md:bg-[#FAF8F5]/90 max-md:dark:bg-[#0B1012]/90 max-md:backdrop-blur-xl max-md:border-b max-md:border-stone-200/80 max-md:dark:border-white/10 md:sticky md:z-[40] md:top-20 md:py-1.5 md:px-6 md:mb-6 transition-all duration-300"
+          : "max-md:fixed max-md:bottom-0 max-md:inset-x-0 max-md:top-auto max-md:z-[35] max-md:pb-[max(0.25rem,env(safe-area-inset-bottom))] max-md:pt-1 max-md:px-2 max-md:bg-white/95 max-md:dark:bg-[#0B1012]/95 max-md:backdrop-blur-2xl max-md:border-t max-md:border-stone-200/80 max-md:dark:border-white/10 max-md:shadow-[0_-4px_20px_rgba(0,0,0,0.06)] md:sticky md:z-[40] md:top-20 md:py-1.5 md:px-6 md:mb-6 transition-all duration-300",
         className
       )}
     >

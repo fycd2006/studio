@@ -43,7 +43,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import dynamic from "next/dynamic";
 import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { cn, getUnifiedGroupBadgeParams } from "@/lib/utils";
+import { cn, getUnifiedGroupBadgeParams, stripHtml } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { actionBarTheme } from "@/lib/actionbar-theme";
 import { useTranslation } from "@/lib/i18n-context";
@@ -424,6 +424,51 @@ export function PlanEditor({
 
   const currentPlan = isHistoryMode ? (previewPlan || plan) : localPlan;
   const isScriptMode = currentPlan.scheduledName === '劇本';
+
+  // Decoupled Lead and Assistant member handling
+  const parsedLegacyMembers = useMemo(() => {
+    const raw = stripHtml(currentPlan.members || '');
+    if (!raw) return { lead: '', assistant: '' };
+    const parts = raw.split('、').map(s => s.trim()).filter(Boolean);
+    return {
+      lead: parts[0] || '',
+      assistant: parts.slice(1).join('、')
+    };
+  }, [currentPlan.members]);
+
+  const leadDisplayValue = currentPlan.leadMember !== undefined
+    ? stripHtml(currentPlan.leadMember)
+    : parsedLegacyMembers.lead;
+
+  const assistantDisplayValue = currentPlan.assistantMember !== undefined
+    ? stripHtml(currentPlan.assistantMember)
+    : parsedLegacyMembers.assistant;
+
+  const handleLeadMemberChange = (val: string) => {
+    const cleanLead = stripHtml(val);
+    const currentAsst = currentPlan.assistantMember !== undefined
+      ? stripHtml(currentPlan.assistantMember)
+      : parsedLegacyMembers.assistant;
+    const combined = [cleanLead.trim(), currentAsst.trim()].filter(Boolean).join('、');
+    handlePlanUpdate({
+      leadMember: cleanLead,
+      assistantMember: currentAsst,
+      members: combined
+    });
+  };
+
+  const handleAssistantMemberChange = (val: string) => {
+    const cleanAsst = stripHtml(val);
+    const currentLead = currentPlan.leadMember !== undefined
+      ? stripHtml(currentPlan.leadMember)
+      : parsedLegacyMembers.lead;
+    const combined = [currentLead.trim(), cleanAsst.trim()].filter(Boolean).join('、');
+    handlePlanUpdate({
+      leadMember: currentLead,
+      assistantMember: cleanAsst,
+      members: combined
+    });
+  };
 
   // Auto-Save Trigger
   const autoSaveRef = useRef(onAutoSave);
@@ -842,8 +887,8 @@ export function PlanEditor({
                                     </div>
                                     <DiffHighlighter
                                       type="text"
-                                      oldValue={previousPlan?.leadMember || previousPlan?.members}
-                                      newValue={previewPlan?.leadMember || previewPlan?.members}
+                                      oldValue={stripHtml(previousPlan?.leadMember || previousPlan?.members)}
+                                      newValue={stripHtml(previewPlan?.leadMember || previewPlan?.members)}
                                     />
                                   </div>
                                   <div>
@@ -853,8 +898,8 @@ export function PlanEditor({
                                     </div>
                                     <DiffHighlighter
                                       type="text"
-                                      oldValue={previousPlan?.assistantMember}
-                                      newValue={previewPlan?.assistantMember}
+                                      oldValue={stripHtml(previousPlan?.assistantMember)}
+                                      newValue={stripHtml(previewPlan?.assistantMember)}
                                     />
                                   </div>
                                 </div>
@@ -866,20 +911,22 @@ export function PlanEditor({
                                       <span>{t('LEAD')}</span>
                                     </div>
                                     <FieldContainer field="leadMember" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
-                                      <O2RichEditor
-                                        value={currentPlan.leadMember ?? (currentPlan.members || '')}
-                                        onChange={(val) => {
-                                          const asst = currentPlan.assistantMember ?? '';
-                                          const combined = [val, asst].filter(Boolean).join('、');
-                                          handlePlanUpdate({ leadMember: val, members: combined });
-                                        }}
-                                        onFocus={() => handleFocus('leadMember')}
-                                        onBlur={() => handleBlur('leadMember')}
-                                        placeholder="主關主姓名 / Lead..."
-                                        minHeight="38px"
-                                        readOnly={isInteractionLocked}
-                                        simplified={true}
-                                      />
+                                      <div className={cn(
+                                        "w-full rounded-none md:rounded-lg border bg-white/50 dark:bg-slate-800/50 border-stone-200 dark:border-slate-700/50 shadow-2xs transition-all duration-300 relative group overflow-hidden",
+                                        "focus-within:ring-2 focus-within:ring-orange-500/20 focus-within:border-orange-500/40 dark:focus-within:border-amber-400/40 hover:border-stone-300 dark:hover:border-slate-600",
+                                        isInteractionLocked && "opacity-80 cursor-default"
+                                      )}>
+                                        <input
+                                          type="text"
+                                          value={leadDisplayValue}
+                                          onChange={(e) => handleLeadMemberChange(e.target.value)}
+                                          onFocus={() => handleFocus('leadMember')}
+                                          onBlur={() => handleBlur('leadMember')}
+                                          placeholder="主關主姓名 / Lead..."
+                                          disabled={isInteractionLocked}
+                                          className="w-full h-[38px] px-3 md:px-4 bg-transparent text-stone-800 dark:text-slate-100 outline-none text-[14px] placeholder:text-stone-400 dark:placeholder:text-slate-500 font-medium transition-colors"
+                                        />
+                                      </div>
                                     </FieldContainer>
                                   </div>
                                   <div>
@@ -888,20 +935,22 @@ export function PlanEditor({
                                       <span>{t('ASSISTANT')}</span>
                                     </div>
                                     <FieldContainer field="assistantMember" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
-                                      <O2RichEditor
-                                        value={currentPlan.assistantMember ?? ''}
-                                        onChange={(val) => {
-                                          const lead = currentPlan.leadMember ?? (currentPlan.members || '');
-                                          const combined = [lead, val].filter(Boolean).join('、');
-                                          handlePlanUpdate({ assistantMember: val, members: combined });
-                                        }}
-                                        onFocus={() => handleFocus('assistantMember')}
-                                        onBlur={() => handleBlur('assistantMember')}
-                                        placeholder="副關主姓名 / Assistant..."
-                                        minHeight="38px"
-                                        readOnly={isInteractionLocked}
-                                        simplified={true}
-                                      />
+                                      <div className={cn(
+                                        "w-full rounded-none md:rounded-lg border bg-white/50 dark:bg-slate-800/50 border-stone-200 dark:border-slate-700/50 shadow-2xs transition-all duration-300 relative group overflow-hidden",
+                                        "focus-within:ring-2 focus-within:ring-orange-500/20 focus-within:border-orange-500/40 dark:focus-within:border-amber-400/40 hover:border-stone-300 dark:hover:border-slate-600",
+                                        isInteractionLocked && "opacity-80 cursor-default"
+                                      )}>
+                                        <input
+                                          type="text"
+                                          value={assistantDisplayValue}
+                                          onChange={(e) => handleAssistantMemberChange(e.target.value)}
+                                          onFocus={() => handleFocus('assistantMember')}
+                                          onBlur={() => handleBlur('assistantMember')}
+                                          placeholder="副關主姓名 / Assistant..."
+                                          disabled={isInteractionLocked}
+                                          className="w-full h-[38px] px-3 md:px-4 bg-transparent text-stone-800 dark:text-slate-100 outline-none text-[14px] placeholder:text-stone-400 dark:placeholder:text-slate-500 font-medium transition-colors"
+                                        />
+                                      </div>
                                     </FieldContainer>
                                   </div>
                                 </div>

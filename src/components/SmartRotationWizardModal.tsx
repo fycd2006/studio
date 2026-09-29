@@ -15,7 +15,8 @@ import {
   UserPlus, 
   Plus, 
   Minus, 
-  Sparkles
+  Sparkles,
+  Coffee
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n-context";
@@ -58,6 +59,7 @@ export function SmartRotationWizardModal({
   const [day, setDay] = useState(defaultDay);
   const [teamCount, setTeamCount] = useState(4);
   const [targetStationCount, setTargetStationCount] = useState(3);
+  const [firstRoundRestPlanIds, setFirstRoundRestPlanIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Category stats
@@ -113,8 +115,8 @@ export function SmartRotationWizardModal({
   useEffect(() => {
     if (!isOpen) return;
     const initialItems: StationItemState[] = filteredPlans.map((p, idx) => {
-      const lead = p.leadMember || stripHtml(p.members).split("、")[0] || stripHtml(p.members) || "";
-      const assistant = p.assistantMember || "";
+      const lead = stripHtml(p.leadMember) || stripHtml(p.members).split("、")[0] || stripHtml(p.members) || "";
+      const assistant = stripHtml(p.assistantMember) || "";
       const loc = p.location || "";
       return {
         planId: p.id,
@@ -132,7 +134,34 @@ export function SmartRotationWizardModal({
     setTargetStationCount(Math.min(3, Math.max(1, filteredPlans.length)));
   }, [filteredPlans, isOpen]);
 
-  const checkedCount = stationItems.filter((s) => s.checked).length;
+  const checkedStations = useMemo(() => stationItems.filter((s) => s.checked), [stationItems]);
+  const checkedCount = checkedStations.length;
+  const activeMatches = Math.floor(teamCount / 2);
+  const maxRestCount = Math.max(0, checkedCount - activeMatches);
+
+  // Sync and limit firstRoundRestPlanIds
+  useEffect(() => {
+    setFirstRoundRestPlanIds((prev) => {
+      const validCheckedIds = new Set(stationItems.filter((s) => s.checked).map((s) => s.planId));
+      const filtered = prev.filter((id) => validCheckedIds.has(id));
+      if (filtered.length > maxRestCount) {
+        return filtered.slice(0, maxRestCount);
+      }
+      return filtered;
+    });
+  }, [stationItems, maxRestCount]);
+
+  const handleToggleRestStation = (planId: string) => {
+    setFirstRoundRestPlanIds((prev) => {
+      if (prev.includes(planId)) {
+        return prev.filter((id) => id !== planId);
+      }
+      if (prev.length >= maxRestCount) {
+        return prev;
+      }
+      return [...prev, planId];
+    });
+  };
 
   const handleStationCountChange = (count: number) => {
     setTargetStationCount(count);
@@ -165,6 +194,7 @@ export function SmartRotationWizardModal({
         tableTitle,
         day,
         teamCount,
+        firstRoundRestStationIds: firstRoundRestPlanIds,
         stations: checked.map((s) => ({
           planId: s.planId, name: s.name, location: s.location, lead: s.lead, assistant: s.assistant,
         })),
@@ -297,6 +327,99 @@ export function SmartRotationWizardModal({
             placeholder="闖關表標題"
           />
 
+          {/* ── 第一輪輪空選擇 (Round 1 BYE / Rest Selection) ── */}
+          {maxRestCount > 0 ? (
+            <div className="rounded-xl border border-border/80 studio-sheet p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Coffee className="w-3.5 h-3.5 text-amber-500" />
+                  <span className="text-xs font-semibold text-foreground">第一輪輪空關卡</span>
+                  <span className="text-[10px] text-muted-foreground architectural-tag normal-case tracking-normal">
+                    自由指定第 1 輪休息關卡
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {firstRoundRestPlanIds.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setFirstRoundRestPlanIds([])}
+                      className="text-[10px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                    >
+                      清空
+                    </button>
+                  )}
+                  <span
+                    className={cn(
+                      "text-[10px] px-2 py-0.5 rounded-full font-medium transition-colors",
+                      firstRoundRestPlanIds.length >= maxRestCount
+                        ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30"
+                        : "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    已選 {firstRoundRestPlanIds.length} / 上限 {maxRestCount} 關
+                    {firstRoundRestPlanIds.length >= maxRestCount && " (已達上限)"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Station chips */}
+              <div className="flex flex-wrap gap-1.5 pt-0.5">
+                {checkedStations.map((item, idx) => {
+                  const isResting = firstRoundRestPlanIds.includes(item.planId);
+                  const isLimitReached = firstRoundRestPlanIds.length >= maxRestCount;
+                  const isDisabled = !isResting && isLimitReached;
+
+                  return (
+                    <button
+                      key={item.planId}
+                      type="button"
+                      disabled={isDisabled}
+                      onClick={() => handleToggleRestStation(item.planId)}
+                      className={cn(
+                        "text-xs px-2.5 py-1.5 rounded-lg border transition-all flex items-center gap-1.5 text-left",
+                        isResting
+                          ? "bg-amber-500/15 border-amber-500/40 text-amber-800 dark:text-amber-200 font-medium shadow-2xs cursor-pointer"
+                          : isDisabled
+                          ? "opacity-40 border-border/60 bg-muted/30 text-muted-foreground cursor-not-allowed"
+                          : "bg-background border-border hover:border-primary/40 hover:bg-accent/50 text-foreground cursor-pointer"
+                      )}
+                      title={isDisabled ? `已達第一輪輪空上限 (${maxRestCount} 關)` : undefined}
+                    >
+                      <span className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 bg-black/5 dark:bg-white/10">
+                        {idx + 1}
+                      </span>
+                      <span className="truncate max-w-[130px]">{item.name}</span>
+                      {isResting ? (
+                        <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold shrink-0 ml-0.5">
+                          輪空 ✓
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground/60 shrink-0">
+                          出賽
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                {firstRoundRestPlanIds.length === 0
+                  ? `* 未選取時，系統將自動指定後續 ${maxRestCount} 關輪休。`
+                  : firstRoundRestPlanIds.length < maxRestCount
+                  ? `* 尚可指定 ${maxRestCount - firstRoundRestPlanIds.length} 關，未指定名額由系統自動指派。`
+                  : `* 已選滿 ${maxRestCount} 關，第一輪由上述標記關卡輪空休息。`}
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-border/60 bg-muted/20 px-3 py-2 flex items-center justify-between text-xs text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <Coffee className="w-3.5 h-3.5 text-muted-foreground/70" />
+                第一輪輪空：所有關卡全開出賽（{teamCount} 隊同時對抗）
+              </span>
+              <span className="architectural-tag text-[9px]">全開運作</span>
+            </div>
+          )}
+
           {/* ── Stations Checklist ── */}
           <div className="space-y-2">
             {stationItems.length === 0 ? (
@@ -331,6 +454,11 @@ export function SmartRotationWizardModal({
                       <label htmlFor={`s-${item.planId}`} className="text-xs font-semibold text-foreground cursor-pointer truncate flex-1">
                         {item.name}
                       </label>
+                      {item.checked && firstRoundRestPlanIds.includes(item.planId) && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 architectural-tag normal-case tracking-normal font-semibold">
+                          第 1 輪輪空
+                        </span>
+                      )}
                       {hasChanges && item.checked && (
                         <span className="text-[9px] text-emerald-600 dark:text-emerald-400 architectural-tag normal-case tracking-normal">已修改</span>
                       )}
