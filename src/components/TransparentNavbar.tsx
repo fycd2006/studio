@@ -260,6 +260,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
       {/* ── 1. TOP MINIMALIST ARCHITECTURAL HEADER (Logo on top) ── */}
       <header className={cn(
         "fixed top-0 left-0 w-full z-40 px-4 sm:px-8 py-3 sm:py-3.5 pointer-events-none transition-all duration-300",
+        isPlanDetail && "hidden",
         isScrolled
           ? "bg-[#FAF8F5]/90 dark:bg-[#0B1012]/90 backdrop-blur-md border-b border-stone-200/60 dark:border-white/10 shadow-2xs"
           : "bg-transparent border-b border-transparent"

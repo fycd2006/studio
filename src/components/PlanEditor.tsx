@@ -37,7 +37,10 @@ import {
   Smartphone,
   Check,
   Pencil,
-  Palette
+  Palette,
+  ChevronUp,
+  ChevronDown,
+  Cloud
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -53,11 +56,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { VersionHistorySidebar } from "./VersionHistorySidebar";
 import { DiffHighlighter } from "./DiffHighlighter";
 import { getChangedFields } from "@/lib/text-diff";
 import { exportToDocx, exportToPdf } from "@/lib/export-utils";
-import { ActionBar } from "@/components/ActionBar";
 import { usePresence } from "@/hooks/use-presence";
 
 const FabricCanvas = dynamic(
@@ -195,10 +198,63 @@ export function PlanEditor({
   const [isMobilePrintView, setIsMobilePrintView] = useState(false);
   const [isEditingMode, setIsEditingMode] = useState(true);
 
-  // Mobile defaults to read-only; desktop stays unlocked
+  // Mobile defaults to read-only; desktop stays unlocked (like Google Docs mobile)
   useEffect(() => {
     if (isMobile) setIsEditingMode(false);
   }, [isMobile]);
+  const mobileToolbarRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleViewportChange = () => {
+      if (typeof window !== "undefined" && window.visualViewport && mobileToolbarRef.current) {
+        if (window.innerWidth < 768) {
+          const offset = window.innerHeight - (window.visualViewport.height + window.visualViewport.offsetTop);
+          const keyboardOffset = Math.max(0, offset);
+          mobileToolbarRef.current.style.bottom = `${keyboardOffset}px`;
+          if (keyboardOffset > 10) {
+            mobileToolbarRef.current.style.paddingBottom = "4px";
+          } else {
+            mobileToolbarRef.current.style.paddingBottom = "max(0.4rem, env(safe-area-inset-bottom))";
+          }
+        } else {
+          mobileToolbarRef.current.style.bottom = "";
+          mobileToolbarRef.current.style.paddingBottom = "";
+        }
+      }
+    };
+
+    window.visualViewport?.addEventListener("resize", handleViewportChange);
+    window.visualViewport?.addEventListener("scroll", handleViewportChange);
+    handleViewportChange();
+
+    return () => {
+      window.visualViewport?.removeEventListener("resize", handleViewportChange);
+      window.visualViewport?.removeEventListener("scroll", handleViewportChange);
+    };
+  }, []);
+
+  // Google Docs style top bar collapse state (persisted)
+  const [isTopBarCollapsed, setIsTopBarCollapsed] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        return localStorage.getItem("plan-editor-topbar-collapsed") === "true";
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  });
+
+  const toggleTopBar = (collapsed: boolean) => {
+    setIsTopBarCollapsed(collapsed);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("plan-editor-topbar-collapsed", String(collapsed));
+      } catch {
+        // ignore
+      }
+    }
+  };
   const [isFabVisible, setIsFabVisible] = useState(true);
   const isPrintMode = !isMobile || isMobilePrintView;
   const isReadOnlyMode = isMobile && !isEditingMode;
@@ -585,183 +641,279 @@ export function PlanEditor({
       "flex flex-row font-body transition-colors relative w-full min-h-[100dvh] bg-background text-foreground"
     )}>
       <div className="flex-1 min-w-0 relative flex flex-col">
-        <div className={cn(
-          "w-full flex flex-col items-center",
-          isPrintMode ? "pt-24 px-4 md:px-0" : "pt-24 md:pt-28 pb-0 px-4"
-        )}>
-          <div className="w-full md:max-w-[860px] flex flex-col">
-            <header className="relative z-20 flex-none w-full mb-3 md:mb-6 transition-all">
-              <div className="w-full max-w-full flex justify-between items-start gap-4">
-                <div className="flex flex-col w-full text-left">
-                  {/* Top Back Navigation Button */}
-                  <div className="mb-2.5">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (typeof window !== "undefined" && window.history.length > 1) {
-                          router.back();
-                        } else {
-                          router.push('/plans');
-                        }
-                      }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono font-medium text-stone-600 dark:text-stone-300 bg-stone-100/90 dark:bg-white/5 hover:bg-stone-200/90 dark:hover:bg-white/10 border border-stone-200/80 dark:border-white/10 transition-all cursor-pointer group shadow-2xs w-fit"
-                      aria-label="返回上一頁"
-                    >
-                      <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5 text-orange-500" />
-                      <span>返回上一頁</span>
-                    </button>
-                  </div>
+        {/* ── GOOGLE DOCS STYLE STICKY TOP DOCK (100% Solid / Opaque, No Transparency) ── */}
+        <TooltipProvider delayDuration={200}>
+          <div className="sticky top-0 z-40 w-full bg-[#FAF8F5] dark:bg-[#0B1012] border-b border-stone-200/80 dark:border-white/10 shadow-2xs select-none">
+            {/* Row 1: Document Info & Global Actions (Collapsible) */}
+            <div
+              className={cn(
+                "w-full px-3 sm:px-6 flex items-center justify-between gap-2 sm:gap-4 transition-all duration-200 ease-in-out overflow-hidden bg-[#FAF8F5] dark:bg-[#0B1012]",
+                isTopBarCollapsed
+                  ? "max-h-0 opacity-0 py-0 border-b-0 pointer-events-none"
+                  : "max-h-20 opacity-100 py-1.5 sm:py-2 border-b border-stone-200/60 dark:border-white/5"
+              )}
+            >
+              {/* Left: Navigation, Badge, Title Input, Cloud Status */}
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof window !== "undefined" && window.history.length > 1) {
+                      router.back();
+                    } else {
+                      router.push('/plans');
+                    }
+                  }}
+                  className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-mono font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-200/70 dark:hover:bg-white/10 transition-colors cursor-pointer group shrink-0"
+                  title="返回上一頁"
+                  aria-label="返回上一頁"
+                >
+                  <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5 text-orange-500" />
+                  <span className="hidden sm:inline">返回</span>
+                </button>
 
-                  <div className="flex items-center gap-2 mb-2">
-                    {(() => {
-                      const params = getUnifiedGroupBadgeParams(currentGroup?.slug || currentPlan.category, currentGroup?.nameZh || '');
-                      return (
-                        <span className={cn(
-                          "inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[10px] font-mono font-medium tracking-wider uppercase border",
-                          params.softBg,
-                          params.softText,
-                          params.softBorder
-                        )}>
-                          <span className={cn("w-1.5 h-1.5 rounded-full shrink-0 shadow-xs", params.colorDot)} />
-                          <span>{currentGroupLabel}</span>
-                        </span>
-                      );
-                    })()}
-                    <span className="architectural-tag text-[10px]">
-                      CURRICULUM SPECIFICATION
+                <div className="w-px h-4 bg-stone-200 dark:bg-white/10 shrink-0" />
+
+                {/* Group Badge */}
+                {(() => {
+                  const params = getUnifiedGroupBadgeParams(currentGroup?.slug || currentPlan.category, currentGroup?.nameZh || '');
+                  return (
+                    <span className={cn(
+                      "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium tracking-wider uppercase border shrink-0",
+                      params.softBg,
+                      params.softText,
+                      params.softBorder
+                    )}>
+                      <span className={cn("w-1.5 h-1.5 rounded-full shrink-0 shadow-xs", params.colorDot)} />
+                      <span>{currentGroupLabel}</span>
                     </span>
-                  </div>
-                  <input
-                    value={(currentPlan.activityName || "").replace(/<[^>]*>?/gm, '')}
-                    onChange={(e) => handlePlanUpdate({ activityName: e.target.value })}
-                    className="text-2xl sm:text-3xl md:text-5xl font-headline font-extrabold tracking-tight bg-transparent focus:ring-0 focus:outline-none text-foreground w-full px-0 transition-colors placeholder:text-muted-foreground/40"
-                    placeholder={t('ENTER_TITLE')}
-                    readOnly={isInteractionLocked}
-                  />
+                  );
+                })()}
+
+                {/* Editable Document Title (Google Docs style) */}
+                <input
+                  value={(currentPlan.activityName || "").replace(/<[^>]*>?/gm, '')}
+                  onChange={(e) => handlePlanUpdate({ activityName: e.target.value })}
+                  className="text-sm sm:text-base font-bold font-headline tracking-tight bg-transparent hover:bg-stone-200/50 dark:hover:bg-white/5 focus:bg-white dark:focus:bg-stone-900 border border-transparent hover:border-stone-300/70 dark:hover:border-white/15 focus:border-orange-500/50 rounded-lg px-2 py-0.5 transition-all text-foreground truncate max-w-[140px] sm:max-w-[240px] md:max-w-[380px] lg:max-w-[500px] focus:outline-none placeholder:text-muted-foreground/40"
+                  placeholder={t('ENTER_TITLE')}
+                  readOnly={isInteractionLocked}
+                  title="教案名稱 (點擊修改)"
+                />
+
+                {/* Cloud Save Status */}
+                <div className="flex items-center gap-1.5 shrink-0 pl-1">
+                  {isSaving ? (
+                    <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span className="hidden md:inline font-mono text-[11px]">儲存中...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5 text-xs text-stone-400 dark:text-stone-500" title="所有變更已自動儲存至雲端">
+                      <Cloud className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500" />
+                      <span className="hidden lg:inline text-[11px] font-mono">已儲存至雲端</span>
+                    </div>
+                  )}
                 </div>
               </div>
-            </header>
-          </div>
-        </div>
 
-        <ActionBar title="STUDIO COMMAND" tone="plain" className={cn(
-          "transition-all duration-300 ease-out",
-          isEditingMode ? "translate-y-0 opacity-100 pointer-events-auto" : "max-md:translate-y-full max-md:opacity-0 max-md:pointer-events-none"
-        )}>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsEditingMode(false)}
-            className={cn(
-              actionBarTheme.control,
-              actionBarTheme.controlIcon,
-              actionBarTheme.controlElevated,
-              "bg-orange-600/10 text-orange-600 hover:bg-orange-600/20 dark:bg-amber-400/15 dark:text-amber-400 dark:hover:bg-amber-400/25 md:hidden"
-            )}
-            title="完成編輯"
-          >
-            <Check className="h-4 w-4" />
-          </Button>
+              {/* Right: History, Export, and Collapse Chevron */}
+              <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  title="版本紀錄"
+                  onClick={() => {
+                    const willOpen = !isSidebarOpen;
+                    setIsSidebarOpen(willOpen);
+                    if (!willOpen && !selectedVersion) setIsHistoryMode(false);
+                  }}
+                  className={cn(
+                    "h-8 px-2.5 rounded-lg text-xs font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-200/70 dark:hover:bg-white/10 gap-1.5",
+                    isSidebarOpen && "bg-stone-200 dark:bg-white/15 text-orange-600 dark:text-orange-400"
+                  )}
+                >
+                  <History className="w-4 h-4" />
+                  <span className="hidden sm:inline">版本紀錄</span>
+                </Button>
 
-          <div className={cn("flex flex-row items-center px-1", actionBarTheme.cluster)}>
-            <MarkdownToolbar className="bg-transparent border-none sm:border-none px-0" />
-          </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2.5 rounded-lg text-xs font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-200/70 dark:hover:bg-white/10 gap-1.5"
+                    >
+                      <FileDown className="w-4 h-4" />
+                      <span className="hidden sm:inline">匯出</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-36 rounded-2xl border border-stone-200/80 dark:border-white/10 bg-white dark:bg-[#14191C] shadow-2xl p-1.5 z-[60]">
+                    <DropdownMenuItem onClick={handlePrint} className="text-xs font-mono py-2 px-3 rounded-xl cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-rose-500" />
+                      <span>PDF (.pdf)</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleExportWord} className="text-xs font-mono py-2 px-3 rounded-xl cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-orange-500" />
+                      <span>WORD (.docx)</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
-          <div className={cn(actionBarTheme.separator, "hidden sm:block mx-1")} />
+                <div className="w-px h-4 bg-stone-200 dark:bg-white/10 mx-0.5" />
 
-          <Button
-            variant="ghost"
-            size="sm"
-            title="版本紀錄"
-            onClick={() => {
-              const willOpen = !isSidebarOpen;
-              setIsSidebarOpen(willOpen);
-              if (!willOpen && !selectedVersion) setIsHistoryMode(false);
-            }}
-            className={cn(
-              "p-0 font-bold text-xs",
-              actionBarTheme.controlGhost,
-              actionBarTheme.controlIcon,
-              actionBarTheme.controlElevated,
-              isSidebarOpen && "bg-stone-200 dark:bg-white/15"
-            )}
-          >
-            <History className="w-4 h-4" />
-          </Button>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className={cn(actionBarTheme.controlGhost, "px-4 font-bold text-xs transition-all shadow-sm hover:shadow-md")}>
-                <FileDown className="w-4 h-4 sm:mr-1.5" />
-                <span className="hidden sm:inline">匯出</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-36 rounded-2xl border border-stone-200/80 dark:border-white/10 bg-white dark:bg-[#14191C] shadow-2xl p-1.5">
-              <DropdownMenuItem onClick={handlePrint} className="text-xs font-mono py-2 px-3 rounded-xl cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2">
-                <FileText className="w-4 h-4 text-rose-500" />
-                <span>PDF (.pdf)</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportWord} className="text-xs font-mono py-2 px-3 rounded-xl cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2">
-                <FileText className="w-4 h-4 text-orange-500" />
-                <span>WORD (.docx)</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <div className={cn(actionBarTheme.separator, "mx-1 hidden sm:block")}></div>
-
-          {isSaving && (
-            <div className="flex items-center justify-center gap-1.5 px-2 h-9 text-amber-600 dark:text-amber-500 opacity-70">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span className="text-xs font-bold font-headline hidden sm:inline-block md:hidden lg:inline-block">儲存中...</span>
+                {/* Collapse Top Row Button (Desktop only) */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => toggleTopBar(true)}
+                      className="hidden md:inline-flex h-8 w-8 rounded-lg text-stone-500 hover:text-foreground hover:bg-stone-200/70 dark:hover:bg-white/10 shrink-0"
+                      aria-label="收闔頂部列"
+                    >
+                      <ChevronUp className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">收闔頂部列 (只留工具列)</TooltipContent>
+                </Tooltip>
+              </div>
             </div>
-          )}
 
-          <div className={cn(actionBarTheme.separator, "hidden sm:block mx-1")} />
+            {/* Row 2: Formatting Toolbar (Desktop only: Sticks flush to top: 0 when Row 1 is collapsed, Hidden on mobile) */}
+            <div className="hidden md:flex w-full px-2 sm:px-4 py-1 items-center justify-between gap-1 overflow-x-auto scrollbar-hide bg-[#FAF8F5] dark:bg-[#0B1012]">
+              <div className="flex items-center gap-1 sm:gap-1.5 flex-nowrap shrink-0">
+                {/* Mobile Done Button */}
+                {isMobile && isEditingMode && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsEditingMode(false)}
+                    className="h-8 w-8 rounded-lg bg-orange-600/10 text-orange-600 hover:bg-orange-600/20 dark:bg-amber-400/15 dark:text-amber-400 shrink-0"
+                    title="完成編輯"
+                  >
+                    <Check className="h-4 w-4" />
+                  </Button>
+                )}
 
-          <Button variant="ghost" size="icon" onClick={handleLocalUndo} disabled={localHistory.past.length === 0 || isHistoryMode} className={cn(actionBarTheme.controlGhost, actionBarTheme.controlIcon, "hover:shadow-sm")}>
-            <Undo2 className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={handleLocalRedo} disabled={localHistory.future.length === 0 || isHistoryMode} className={cn(actionBarTheme.controlGhost, actionBarTheme.controlIcon, "hover:shadow-sm")}>
-            <Redo2 className="h-4 w-4" />
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className={cn(actionBarTheme.controlGhost, "px-2.5 font-bold text-xs shadow-sm hover:shadow-md gap-1.5")}
-                title="縮放頁面 / Page Zoom"
-              >
-                <ZoomIn className="h-3.5 w-3.5 text-fg-muted" />
-                <span className="font-fira-code">{Math.round(pageZoom * 100)}%</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="center" className="w-44 rounded-2xl border border-stone-200/80 dark:border-white/10 bg-white dark:bg-[#14191C] shadow-2xl p-1.5">
-              <DropdownMenuItem onClick={handleZoomIn} disabled={pageZoom >= 2} className="text-xs py-2 px-3 rounded-xl gap-2 cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 font-mono">
-                <ZoomIn className="h-3.5 w-3.5" /> 放大 (Zoom In)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleZoomOut} disabled={pageZoom <= 0.3} className="text-xs py-2 px-3 rounded-xl gap-2 cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 font-mono">
-                <ZoomOut className="h-3.5 w-3.5" /> 縮小 (Zoom Out)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleFitAll} className="text-xs py-2 px-3 rounded-xl gap-2 cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 font-mono">
-                <Maximize className="h-3.5 w-3.5" /> 重設 (100%)
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                {/* Studio Command Tag */}
+                <div className="hidden lg:flex items-center gap-1.5 pl-1 pr-2 text-[10px] font-mono font-bold tracking-wider text-stone-400 dark:text-stone-500 uppercase select-none shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-orange-500 inline-block" />
+                  <span>COMMAND</span>
+                </div>
 
-          <div className={cn(actionBarTheme.separator, "hidden sm:block mx-1")} />
+                {/* Undo / Redo */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleLocalUndo}
+                      disabled={localHistory.past.length === 0 || isHistoryMode}
+                      className="h-8 w-8 rounded-lg text-stone-600 dark:text-stone-300 hover:bg-stone-200/70 dark:hover:bg-white/10 shrink-0 disabled:opacity-40"
+                      aria-label="復原"
+                    >
+                      <Undo2 className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">復原 (Ctrl+Z)</TooltipContent>
+                </Tooltip>
 
-          {isMobile && (
-            <>
-              <Button variant="ghost" size="icon" onClick={() => setIsMobilePrintView(!isMobilePrintView)} className={cn(actionBarTheme.control, actionBarTheme.controlIcon, actionBarTheme.controlElevated)} title="切換檢視模式">
-                {isMobilePrintView ? <Smartphone className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
-              </Button>
-            </>
-          )}
-        </ActionBar>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleLocalRedo}
+                      disabled={localHistory.future.length === 0 || isHistoryMode}
+                      className="h-8 w-8 rounded-lg text-stone-600 dark:text-stone-300 hover:bg-stone-200/70 dark:hover:bg-white/10 shrink-0 disabled:opacity-40"
+                      aria-label="重做"
+                    >
+                      <Redo2 className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">重做 (Ctrl+Y)</TooltipContent>
+                </Tooltip>
 
-        <div className="w-full flex flex-col items-center px-0 sm:px-4 md:px-6 xl:px-8">
+                <div className="w-px h-4 bg-stone-200 dark:bg-white/10 mx-0.5 shrink-0" />
+
+                {/* Zoom Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 rounded-lg text-xs font-fira-code text-stone-600 dark:text-stone-300 hover:bg-stone-200/70 dark:hover:bg-white/10 gap-1 shrink-0"
+                      title="縮放頁面"
+                    >
+                      <span>{Math.round(pageZoom * 100)}%</span>
+                      <ChevronDown className="h-3 w-3 text-stone-400" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-40 rounded-2xl border border-stone-200/80 dark:border-white/10 bg-white dark:bg-[#14191C] shadow-2xl p-1.5 z-[60]">
+                    <DropdownMenuItem onClick={handleZoomIn} disabled={pageZoom >= 2} className="text-xs py-2 px-3 rounded-xl gap-2 cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 font-mono">
+                      <ZoomIn className="h-3.5 w-3.5" /> 放大 (Zoom In)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleZoomOut} disabled={pageZoom <= 0.3} className="text-xs py-2 px-3 rounded-xl gap-2 cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 font-mono">
+                      <ZoomOut className="h-3.5 w-3.5" /> 縮小 (Zoom Out)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleFitAll} className="text-xs py-2 px-3 rounded-xl gap-2 cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 font-mono">
+                      <Maximize className="h-3.5 w-3.5" /> 重設 (100%)
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <div className="w-px h-4 bg-stone-200 dark:bg-white/10 mx-0.5 shrink-0" />
+
+                {/* Rich Text Markdown Formatting Toolbar */}
+                <MarkdownToolbar className="bg-transparent border-none px-0" />
+              </div>
+
+              {/* Right actions: Mobile print view & Expand/Collapse Toggle */}
+              <div className="flex items-center gap-1 shrink-0 pl-2">
+                {isMobile && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsMobilePrintView(!isMobilePrintView)}
+                    className="h-8 w-8 rounded-lg text-stone-600 dark:text-stone-300 hover:bg-stone-200/70 dark:hover:bg-white/10"
+                    title="切換檢視模式"
+                  >
+                    {isMobilePrintView ? <Smartphone className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
+                  </Button>
+                )}
+
+                {/* Google Docs-style Collapse / Expand Chevron on the right of toolbar */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => toggleTopBar(!isTopBarCollapsed)}
+                      className={cn(
+                        "h-8 w-8 rounded-lg shrink-0 transition-colors",
+                        isTopBarCollapsed
+                          ? "text-orange-600 dark:text-orange-400 bg-orange-500/10 hover:bg-orange-500/20"
+                          : "text-stone-500 hover:text-foreground hover:bg-stone-200/70 dark:hover:bg-white/10"
+                      )}
+                      aria-label={isTopBarCollapsed ? "展開頂部列" : "收闔頂部列"}
+                    >
+                      {isTopBarCollapsed ? (
+                        <ChevronDown className="w-4 h-4" />
+                      ) : (
+                        <ChevronUp className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">
+                    {isTopBarCollapsed ? "展開頂部列" : "收闔頂部列 (只留工具列)"}
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            </div>
+          </div>
+        </TooltipProvider>
+
+        <div className="w-full flex flex-col items-center px-0 sm:px-4 md:px-6 xl:px-8 pt-3 sm:pt-6">
           <div className="w-full md:max-w-none flex flex-col items-center">
             <main className="flex-1 w-full flex flex-col items-center relative shrink-0 overflow-visible pb-32 sm:pb-40">
               <div
@@ -1197,6 +1349,107 @@ export function PlanEditor({
       </div>
 
 
+      {/* ── MOBILE BOTTOM TOOLBAR (100% Solid / Opaque, Fixed at Bottom) ── */}
+      <TooltipProvider delayDuration={200}>
+        <div
+          ref={mobileToolbarRef}
+          className={cn(
+            "md:hidden fixed bottom-0 inset-x-0 z-40 w-full bg-[#FAF8F5] dark:bg-[#0B1012] border-t border-stone-200/80 dark:border-white/10 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] select-none pt-1 px-2 pb-[max(0.4rem,env(safe-area-inset-bottom))] transition-all duration-300 ease-out",
+            isEditingMode
+              ? "translate-y-0 opacity-100 pointer-events-auto"
+              : "translate-y-full opacity-0 pointer-events-none"
+          )}
+        >
+          <div className="flex items-center justify-between gap-1 overflow-x-auto scrollbar-hide py-0.5">
+            <div className="flex items-center gap-1 flex-nowrap shrink-0">
+              {/* Mobile Done Editing Button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsEditingMode(false)}
+                className="h-8 px-2.5 rounded-lg text-xs font-bold gap-1 shrink-0 transition-colors bg-orange-600/10 text-orange-600 hover:bg-orange-600/20 dark:bg-amber-400/15 dark:text-amber-400"
+                title="完成編輯"
+              >
+                <Check className="h-3.5 w-3.5" />
+                <span>完成</span>
+              </Button>
+
+              <div className="w-px h-4 bg-stone-200 dark:bg-white/10 mx-0.5 shrink-0" />
+
+              {/* Undo / Redo */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleLocalUndo}
+                disabled={localHistory.past.length === 0 || isHistoryMode}
+                className="h-8 w-8 rounded-lg text-stone-600 dark:text-stone-300 hover:bg-stone-200/70 dark:hover:bg-white/10 shrink-0 disabled:opacity-40"
+                aria-label="復原"
+              >
+                <Undo2 className="h-4 w-4" />
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleLocalRedo}
+                disabled={localHistory.future.length === 0 || isHistoryMode}
+                className="h-8 w-8 rounded-lg text-stone-600 dark:text-stone-300 hover:bg-stone-200/70 dark:hover:bg-white/10 shrink-0 disabled:opacity-40"
+                aria-label="重做"
+              >
+                <Redo2 className="h-4 w-4" />
+              </Button>
+
+              <div className="w-px h-4 bg-stone-200 dark:bg-white/10 mx-0.5 shrink-0" />
+
+              {/* Zoom Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2 rounded-lg text-xs font-fira-code text-stone-600 dark:text-stone-300 hover:bg-stone-200/70 dark:hover:bg-white/10 gap-1 shrink-0"
+                    title="縮放頁面"
+                  >
+                    <span>{Math.round(pageZoom * 100)}%</span>
+                    <ChevronDown className="h-3 w-3 text-stone-400" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-40 rounded-2xl border border-stone-200/80 dark:border-white/10 bg-white dark:bg-[#14191C] shadow-2xl p-1.5 z-[60]">
+                  <DropdownMenuItem onClick={handleZoomIn} disabled={pageZoom >= 2} className="text-xs py-2 px-3 rounded-xl gap-2 cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 font-mono">
+                    <ZoomIn className="h-3.5 w-3.5" /> 放大 (Zoom In)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleZoomOut} disabled={pageZoom <= 0.3} className="text-xs py-2 px-3 rounded-xl gap-2 cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 font-mono">
+                    <ZoomOut className="h-3.5 w-3.5" /> 縮小 (Zoom Out)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleFitAll} className="text-xs py-2 px-3 rounded-xl gap-2 cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 font-mono">
+                    <Maximize className="h-3.5 w-3.5" /> 重設 (100%)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <div className="w-px h-4 bg-stone-200 dark:bg-white/10 mx-0.5 shrink-0" />
+
+              {/* Rich Text Markdown Formatting Toolbar */}
+              <MarkdownToolbar className="bg-transparent border-none px-0" />
+            </div>
+
+            {/* Right controls: Mobile print view switch */}
+            <div className="flex items-center gap-1 shrink-0 pl-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsMobilePrintView(!isMobilePrintView)}
+                className="h-8 w-8 rounded-lg text-stone-600 dark:text-stone-300 hover:bg-stone-200/70 dark:hover:bg-white/10 shrink-0"
+                title="切換檢視模式"
+              >
+                {isMobilePrintView ? <Smartphone className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </TooltipProvider>
+
+      {/* Floating Action Button (FAB) for entering edit mode on mobile (Google Docs mobile style) */}
       <Button
         type="button"
         variant="ghost"
