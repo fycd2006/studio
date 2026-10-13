@@ -9,6 +9,18 @@ export type VersionHistoryEntry = {
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
   {
+    id: "build-51t5d3k",
+    version: "1.0.40",
+    label: "更新項目",
+    date: "2026-10-13",
+    title: "教案編輯體驗與檔案匯出功能升級",
+    highlights: [
+      "教案編輯頁的工具列現在會固定在畫面頂端，捲動時不會消失。",
+      "在手機上，教案編輯工具列會自動避開鍵盤，保持底部可見。",
+      "教案頁面新增「匯出」按鈕，可將教案儲存為 PDF 或 Word 檔案。"
+    ],
+  },
+  {
     id: "build-ark9weq",
     version: "1.0.39",
     label: "更新項目",
