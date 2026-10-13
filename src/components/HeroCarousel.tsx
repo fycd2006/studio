@@ -74,7 +74,7 @@ export function HeroCarousel() {
  alt={`Camp Highlights ${idx + 1}`} 
  loading={idx === 0 ? "eager" : "lazy"}
  referrerPolicy="no-referrer"
- className="w-full h-full object-cover select-none transition-transform duration-[10000ms] ease-linear hover:scale-110"
+ className="w-full h-full object-cover select-none transition-transform [transition-duration:10000ms] ease-linear hover:scale-110"
  />
  </SwiperSlide>
  ))}

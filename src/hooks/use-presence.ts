@@ -194,5 +194,19 @@ export function usePresence(planId: string | null) {
     return null;
   }, [presenceData, user]);
 
-  return { lockField, unlockField, isLockedByOther, getLockInfo, presenceData, activeViewers };
+  const forceTakeoverField = useCallback((fieldName: string) => {
+    if (!db || !user || !planId) return;
+    const docRef = doc(db, 'planPresence', planId);
+    const myName = getMyName();
+    lockedFieldsRef.current.add(fieldName);
+    setDocumentNonBlocking(docRef, {
+      [fieldName]: {
+        uid: user.uid,
+        name: myName,
+        timestamp: Date.now(),
+      }
+    }, { merge: true });
+  }, [db, user, planId, getMyName]);
+
+  return { lockField, unlockField, forceTakeoverField, isLockedByOther, getLockInfo, presenceData, activeViewers };
 }

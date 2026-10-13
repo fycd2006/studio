@@ -9,6 +9,18 @@ export type VersionHistoryEntry = {
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
   {
+    id: "build-dt214uj",
+    version: "1.0.41",
+    label: "更新項目",
+    date: "2026-10-13",
+    title: "提升平台穩定度與操作流暢性",
+    highlights: [
+      "所有頁面操作更穩定，減少異常情況發生。",
+      "整體頁面載入速度加快，使用體驗更流暢。",
+      "優化部分頁面文字顯示，避免特殊符號錯誤。"
+    ],
+  },
+  {
     id: "build-51t5d3k",
     version: "1.0.40",
     label: "更新項目",

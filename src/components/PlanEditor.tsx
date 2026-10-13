@@ -80,12 +80,14 @@ const FieldContainer = ({
   children,
   field,
   isLockedByOther,
-  getLockInfo
+  getLockInfo,
+  onTakeover
 }: {
   children: React.ReactNode,
   field: string,
   isLockedByOther: (f: string) => boolean,
-  getLockInfo: (f: string) => any
+  getLockInfo: (f: string) => any,
+  onTakeover?: (f: string) => void
 }) => {
   const locked = isLockedByOther(field);
   const info = getLockInfo(field);
@@ -104,10 +106,23 @@ const FieldContainer = ({
         return (
           <div 
             style={{ backgroundColor: `hsl(${hue}, 72%, 42%)` }}
-            className="absolute -top-3 right-2 z-10 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md pointer-events-none flex items-center gap-1.5 animate-in fade-in-30 zoom-in-95 duration-200"
+            className="absolute -top-3 right-2 z-10 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md flex items-center gap-1.5 animate-in fade-in-30 zoom-in-95 duration-200 pointer-events-auto"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-            {info.name} 編輯中...
+            <span>{info.name} 編輯中</span>
+            {onTakeover && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onTakeover(field);
+                }}
+                className="ml-1 px-1.5 py-0.5 bg-black/30 hover:bg-black/50 active:scale-95 text-[9px] font-medium rounded transition-all cursor-pointer underline hover:no-underline"
+                title="若對方意外斷線或未釋放，可點擊強制接管編輯"
+              >
+                強制接管
+              </button>
+            )}
           </div>
         );
       })()}
@@ -163,7 +178,15 @@ export function PlanEditor({
   const { t, language } = useTranslation();
   const router = useRouter();
   const { toast } = useToast();
-  const { lockField, unlockField, isLockedByOther, getLockInfo } = usePresence(plan.id);
+  const { lockField, unlockField, forceTakeoverField, isLockedByOther, getLockInfo } = usePresence(plan.id);
+
+  const handleTakeover = useCallback((field: string) => {
+    forceTakeoverField(field);
+    toast({
+      title: "已接管欄位編輯權",
+      description: "您已成功接管該欄位，可直接開始編輯。",
+    });
+  }, [forceTakeoverField, toast]);
 
   // History Mode State
   const [isHistoryMode, setIsHistoryMode] = useState(false);
@@ -1139,7 +1162,7 @@ export function PlanEditor({
                               {isHistoryMode ? (
                                 <DiffHighlighter type="text" oldValue={previousPlan?.activityName} newValue={previewPlan?.activityName} />
                               ) : (
-                                <FieldContainer field="activityName" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+                                <FieldContainer field="activityName" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
                                   <O2RichEditor
                                     value={currentPlan.activityName}
                                     onChange={(val) => handlePlanUpdate({ activityName: val })}
@@ -1190,7 +1213,7 @@ export function PlanEditor({
                                       <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
                                       <span>{t('LEAD')}</span>
                                     </div>
-                                    <FieldContainer field="leadMember" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+                                    <FieldContainer field="leadMember" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
                                       <div className={cn(
                                         "w-full rounded-none md:rounded-lg border bg-white/50 dark:bg-slate-800/50 border-stone-200 dark:border-slate-700/50 shadow-2xs transition-all duration-300 relative group overflow-hidden",
                                         "focus-within:ring-2 focus-within:ring-orange-500/20 focus-within:border-orange-500/40 dark:focus-within:border-amber-400/40 hover:border-stone-300 dark:hover:border-slate-600",
@@ -1214,7 +1237,7 @@ export function PlanEditor({
                                       <span className="w-1.5 h-1.5 rounded-full bg-stone-400" />
                                       <span>{t('ASSISTANT')}</span>
                                     </div>
-                                    <FieldContainer field="assistantMember" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+                                    <FieldContainer field="assistantMember" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
                                       <div className={cn(
                                         "w-full rounded-none md:rounded-lg border bg-white/50 dark:bg-slate-800/50 border-stone-200 dark:border-slate-700/50 shadow-2xs transition-all duration-300 relative group overflow-hidden",
                                         "focus-within:ring-2 focus-within:ring-orange-500/20 focus-within:border-orange-500/40 dark:focus-within:border-amber-400/40 hover:border-stone-300 dark:hover:border-slate-600",
@@ -1243,7 +1266,7 @@ export function PlanEditor({
                             {isHistoryMode ? (
                               <DiffHighlighter type="markdown" oldValue={previousPlan?.purpose} newValue={previewPlan?.purpose} />
                             ) : (
-                              <FieldContainer field="purpose" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+                              <FieldContainer field="purpose" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
                                 <O2RichEditor
                                   value={currentPlan.purpose || ""}
                                   onChange={(val) => handlePlanUpdate({ purpose: val })}
@@ -1264,7 +1287,7 @@ export function PlanEditor({
                                 {isHistoryMode ? (
                                   <DiffHighlighter type="text" oldValue={previousPlan?.time} newValue={previewPlan?.time} />
                                 ) : (
-                                  <FieldContainer field="time" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+                                  <FieldContainer field="time" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
                                     <O2RichEditor
                                       value={currentPlan.time}
                                       onChange={(val) => handlePlanUpdate({ time: val })}
@@ -1283,7 +1306,7 @@ export function PlanEditor({
                                 {isHistoryMode ? (
                                   <DiffHighlighter type="text" oldValue={previousPlan?.location} newValue={previewPlan?.location} />
                                 ) : (
-                                  <FieldContainer field="location" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+                                  <FieldContainer field="location" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
                                     <O2RichEditor
                                       value={currentPlan.location}
                                       onChange={(val) => handlePlanUpdate({ location: val })}
@@ -1306,7 +1329,7 @@ export function PlanEditor({
                               {isHistoryMode ? (
                                 <DiffHighlighter type="markdown" oldValue={previousPlan?.process} newValue={previewPlan?.process} />
                               ) : (
-                                <FieldContainer field="process" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+                                <FieldContainer field="process" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
                                   <O2RichEditor
                                     value={currentPlan.process}
                                     onChange={(val) => handlePlanUpdate({ process: val })}
@@ -1357,7 +1380,7 @@ export function PlanEditor({
                              </div>
 
                              {blueprintMode === 'text' ? (
-                               <FieldContainer field="content" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+                               <FieldContainer field="content" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
                                  <O2RichEditor
                                    value={currentPlan.content}
                                    onChange={(val) => handlePlanUpdate({ content: val })}
@@ -1383,7 +1406,7 @@ export function PlanEditor({
                                      )}
                                    </div>
                                  ) : (
-                                   <FieldContainer field="canvasData" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+                                   <FieldContainer field="canvasData" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
                                      <div 
                                        className="w-full rounded-2xl border border-stone-200/80 dark:border-white/10 overflow-hidden bg-white/80 dark:bg-white/[0.03]"
                                        onFocus={() => handleFocus('canvasData')}
@@ -1413,7 +1436,7 @@ export function PlanEditor({
                               <DiffHighlighter type="table" oldValue={previousPlan?.props} newValue={previewPlan?.props} />
                             ) : (
                               <div className="w-full">
-                                <FieldContainer field="props" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+                                <FieldContainer field="props" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
                                   <PropsTable
                                     value={currentPlan.props}
                                     onChange={(val) => handlePlanUpdate({ props: val })}
@@ -1432,7 +1455,7 @@ export function PlanEditor({
                               {isHistoryMode ? (
                                 <DiffHighlighter type="markdown" oldValue={previousPlan?.openingClosingRemarks} newValue={previewPlan?.openingClosingRemarks} />
                               ) : (
-                                <FieldContainer field="openingClosingRemarks" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+                                <FieldContainer field="openingClosingRemarks" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
                                   <O2RichEditor
                                     value={currentPlan.openingClosingRemarks || ""}
                                     onChange={(val) => handlePlanUpdate({ openingClosingRemarks: val })}
@@ -1452,7 +1475,7 @@ export function PlanEditor({
                             {isHistoryMode ? (
                               <DiffHighlighter type="markdown" oldValue={previousPlan?.remarks} newValue={previewPlan?.remarks} />
                             ) : (
-                              <FieldContainer field="remarks" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo}>
+                              <FieldContainer field="remarks" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
                                 <O2RichEditor
                                   value={currentPlan.remarks || ""}
                                   onChange={(val) => handlePlanUpdate({ remarks: val })}

@@ -1546,7 +1546,7 @@ export function O2RichEditor({
             onKeyDown={handleKeyDown}
             style={{ minHeight }}
             className={cn(
-              "relative w-full max-w-full h-auto p-3 md:p-4 bg-transparent text-stone-800 dark:text-slate-100 outline-none prose prose-p:bg-transparent prose-li:bg-transparent prose-sm text-[14px] transition-all duration-[300ms]",
+              "relative w-full max-w-full h-auto p-3 md:p-4 bg-transparent text-stone-800 dark:text-slate-100 outline-none prose prose-p:bg-transparent prose-li:bg-transparent prose-sm text-[14px] transition-all duration-300",
               "dark:prose-invert break-words whitespace-pre-wrap",
               readOnly && "cursor-default",
               "focus:ring-0",
