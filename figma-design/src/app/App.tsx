@@ -14,7 +14,8 @@ import { plans as seed, type Plan, type Role, type Route } from "./data/mock";
 const ROUTES: Route[] = ["login", "home", "plans", "editor", "timer", "tables", "props", "settings"];
 
 function readHash(): { route: Route; id?: string } {
-  const [r, id] = window.location.hash.replace(/^#\/?/, "").split("/");
+  // Plain tokens only (#plans, #editor-p1): artifact viewers drop hashes with "/" or "=".
+  const [r, id] = window.location.hash.replace(/^#\/?/, "").split(/[-/]/);
   return { route: (ROUTES as string[]).includes(r) ? (r as Route) : "login", id };
 }
 
@@ -23,7 +24,10 @@ export default function App() {
   const [route, setRoute] = useState<Route>(initial.route);
   const [planId, setPlanId] = useState<string | undefined>(initial.id);
   const [role, setRole] = useState<Role | null>(initial.route === "login" ? null : "admin");
-  const [dark, setDark] = useState(() => window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const [dark, setDark] = useState(() => {
+    const t = document.documentElement.dataset.theme;
+    return t ? t === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+  });
   const [plans, setPlans] = useState<Plan[]>(seed);
   const [broadcast, setBroadcast] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -44,7 +48,7 @@ export default function App() {
   }, []);
 
   const go = useCallback((r: Route, id?: string) => {
-    window.location.hash = id ? `/${r}/${id}` : `/${r}`;
+    window.location.hash = id ? `${r}-${id}` : r;
     setRoute(r);
     setPlanId(id);
     window.scrollTo({ top: 0 });

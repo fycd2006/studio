@@ -14,20 +14,20 @@ npm run build      # static build in dist/
 ```
 
 Sign in with username `admin` (full access) or `crew` (read-only) — any password.
-Screens can also be opened directly by hash, e.g. `#/plans`, `#/editor/p1`, `#/tables`.
+Screens can also be opened directly by hash, e.g. `#plans`, `#editor-p1`, `#tables`.
 
 ## Screens
 
 | Route | Screen |
 | --- | --- |
-| `#/login` | Sign-in over the camp photo wall |
-| `#/home` | Hero, stage timeline, division directory, activity stream |
-| `#/plans` | Plan directory: list / gallery / board views, search, sort, row menu, delete confirm |
-| `#/editor/:id` | Docs-style plan editor, collapsible toolbar, props table, version drawer, history mode, mobile edit mode |
-| `#/timer` | Synced countdown, broadcast console, round controller, screen-saver mode |
-| `#/tables` | Rotation table with lock / unlock and the Smart Rotation wizard |
-| `#/props` | Props checklist sheet (activity / teaching / whole camp) |
-| `#/settings` | Account, workspace (camps, milestones, groups, tags), preferences, version, danger zone |
+| `#login` | Sign-in over the camp photo wall |
+| `#home` | Hero, stage timeline, division directory, activity stream |
+| `#plans` | Plan directory: list / gallery / board views, search, sort, row menu, delete confirm |
+| `#editor-<id>` | Docs-style plan editor, collapsible toolbar, props table, version drawer, history mode, mobile edit mode |
+| `#timer` | Synced countdown, broadcast console, round controller, screen-saver mode |
+| `#tables` | Rotation table with lock / unlock and the Smart Rotation wizard |
+| `#props` | Props checklist sheet (activity / teaching / whole camp) |
+| `#settings` | Account, workspace (camps, milestones, groups, tags), preferences, version, danger zone |
 
 ## Structure
 
