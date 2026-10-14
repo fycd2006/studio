@@ -457,7 +457,15 @@ export default function PlansOverview() {
           {isAdmin && (
             <DropdownMenuItem
               onSelect={(e) => {
-                e.preventDefault();
+                // ⚠️ 這裡刻意**不呼叫** e.preventDefault()。
+                // Radix 的 onSelect 一旦 preventDefault，選單就不會關閉；
+                // 選單是 modal layer，會在 <body> 留下 pointer-events: none
+                // （data-scroll-locked="1"），而下面的刪除確認對話框不在那個
+                // layer 裡 → 整張對話框吃不到指標事件。
+                // 實測：對話框跳出來後 document.elementFromPoint 打在輸入框
+                // 正中央回傳的是 <html>，使用者的第一下點擊會被「還開著的選單」
+                // 吃掉去關閉它，要再點第二下才真的進得去輸入框。
+                // 讓選單正常關閉就沒有這個問題。
                 e.stopPropagation();
                 handleDeletePlan(plan.id, getPlanDisplayName(plan));
               }}
