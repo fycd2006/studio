@@ -174,6 +174,7 @@ export default function LoginPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }}
+        data-testid="login-card"
         className="relative z-10 mx-auto flex min-h-screen w-full max-w-sm flex-col items-center justify-center px-4 py-8"
       >
         <div className="mb-6 flex flex-col items-center">
@@ -198,6 +199,7 @@ export default function LoginPage() {
               <div className="relative flex items-center">
                 <Mail className="absolute left-3.5 h-4 w-4 text-fg-muted" strokeWidth={1.5} />
                 <input 
+                  data-testid="login-username-input"
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
@@ -213,6 +215,7 @@ export default function LoginPage() {
               <div className="relative flex items-center">
                 <Lock className="absolute left-3.5 h-4 w-4 text-fg-muted" strokeWidth={1.5} />
                 <input 
+                  data-testid="login-password-input"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -221,6 +224,7 @@ export default function LoginPage() {
                   required
                 />
                 <button
+                  data-testid="login-password-reveal"
                   type="button"
                   className="absolute right-3 text-fg-muted hover:text-foreground transition-colors p-1"
                   onMouseDown={() => setShowPassword(true)}
@@ -240,6 +244,7 @@ export default function LoginPage() {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
+                  data-testid="login-error"
                   className="rounded-xl bg-rose-500/10 border border-rose-500/20 p-2.5 text-center text-xs font-mono text-rose-600 dark:text-rose-400"
                 >
                   帳號或密碼錯誤，請重新輸入。
@@ -248,6 +253,7 @@ export default function LoginPage() {
             </AnimatePresence>
 
             <button
+              data-testid="login-submit"
               type="submit"
               disabled={isSubmitting}
               className="w-full h-11 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-mono text-xs uppercase tracking-wider transition-all disabled:opacity-50 shadow-xs flex items-center justify-center cursor-pointer mt-2"
