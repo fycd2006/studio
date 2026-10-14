@@ -1,0 +1,153 @@
+/*
+ * Design tokens — "Fluid Glass / architectural studio".
+ * Light: warm paper ground. Dark: obsidian ground. One orange accent.
+ * Text colors are chosen to pass WCAG AA (4.5:1) on their ground.
+ */
+:root {
+  --background: #faf8f5;
+  --foreground: #1c1917;
+  --card: #ffffff;
+  --card-foreground: #1c1917;
+  --muted: #f1eee9;
+  --muted-foreground: #5f646a;
+  --border: rgba(28, 25, 23, 0.1);
+  --border-strong: rgba(28, 25, 23, 0.2);
+  --primary: #c2410c;
+  --primary-foreground: #ffffff;
+  --accent: #f97316;
+  --accent-soft: #ffedd5;
+  --accent-ink: #9a3412;
+  --danger: #b91c1c;
+  --success: #047857;
+  --glass: rgba(255, 255, 255, 0.82);
+  --overlay: rgba(28, 25, 23, 0.45);
+  --timer: #0b1012;
+  --timer-foreground: #f5f3ef;
+}
+
+.dark {
+  --background: #0b1012;
+  --foreground: #f2f0ec;
+  --card: #14191c;
+  --card-foreground: #f2f0ec;
+  --muted: #1c2023;
+  --muted-foreground: #a2a8ad;
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --primary: #fb923c;
+  --primary-foreground: #0b1012;
+  --accent: #fb923c;
+  --accent-soft: rgba(251, 146, 60, 0.14);
+  --accent-ink: #fdba74;
+  --danger: #f87171;
+  --success: #34d399;
+  --glass: rgba(15, 18, 20, 0.72);
+  --overlay: rgba(0, 0, 0, 0.6);
+  --timer: #050708;
+  --timer-foreground: #f5f3ef;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-glass: var(--glass);
+  --color-overlay: var(--overlay);
+  --color-timer: var(--timer);
+  --color-timer-foreground: var(--timer-foreground);
+
+  --font-sans: "Inter", "Noto Sans TC", system-ui, sans-serif;
+  --font-display: "Space Grotesk", "Noto Sans TC", system-ui, sans-serif;
+  --font-mono: "Fira Code", ui-monospace, monospace;
+
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    margin: 0;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Mono "architectural" label: // SECTION // */
+  .tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+  .glass {
+    background: var(--glass);
+    backdrop-filter: blur(18px) saturate(1.4);
+    -webkit-backdrop-filter: blur(18px) saturate(1.4);
+    border: 1px solid var(--border);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+  }
+  .hairline {
+    border-color: var(--border);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-rise {
+  animation: rise 0.35s ease-out both;
+}
+.animate-marquee {
+  animation: marquee 22s linear infinite;
+}
