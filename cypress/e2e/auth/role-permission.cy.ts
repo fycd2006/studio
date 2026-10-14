@@ -12,7 +12,7 @@
  * 對應實作：src/app/plans/page.tsx（isAdmin / crewToast / renderPlanActions）
  */
 
-import type { CampScenario } from '../plugins/firestore';
+import type { CampScenario } from '../../plugins/firestore';
 
 describe('組員唯讀權限 (crew)', () => {
   let scenario: CampScenario;

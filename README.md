@@ -61,7 +61,7 @@ npm run dev
 
 ```bash
 npm run e2e                                      # 全部
-npm run e2e -- --spec cypress/e2e/login.cy.ts    # 單一支
+npm run e2e -- --spec cypress/e2e/auth/login.cy.ts    # 單一支
 npm run e2e:open                                 # GUI
 ```
 
@@ -74,7 +74,7 @@ npm run e2e:open                                 # GUI
 
 | 路徑 | 內容 |
 | :--- | :--- |
-| `cypress/e2e/` | 測試本體（登入與權限閘門、教案總覽、建立與刪除、組員唯讀權限） |
+| `cypress/e2e/<功能>/` | 測試本體，依功能分資料夾（目前 `auth/` `plans/`，20 個測試）。完整規劃與待補清單見下方 skill |
 | `cypress/support/commands.ts` | 共用指令（`cy.loginAs` / `cy.setupCampScenario` / `cy.visitApp` …）—— 寫新測試前先看這份 |
 | `cypress/plugins/firestore.ts` | node 端 fixture：清空 / 建 scenario / 清 scenario（含清乾淨自證） |
 | `src/firebase/emulator.ts` | emulator 連線判斷（正式環境永遠不接） |

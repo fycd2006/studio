@@ -13,7 +13,7 @@
  *          src/lib/plans-context.tsx（addPlan / deletePlan）
  */
 
-import type { CampScenario } from '../plugins/firestore';
+import type { CampScenario } from '../../plugins/firestore';
 
 interface PlanDoc {
   id: string;

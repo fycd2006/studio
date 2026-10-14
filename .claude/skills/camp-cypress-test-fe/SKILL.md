@@ -23,7 +23,7 @@ description: Use when planning, writing, reviewing, or debugging Cypress E2E tes
 
 ```bash
 npm run e2e                                        # 全部
-npm run e2e -- --spec cypress/e2e/login.cy.ts      # 單一支
+npm run e2e -- --spec cypress/e2e/auth/login.cy.ts      # 單一支
 npm run e2e:open                                   # 開 GUI
 npm run typecheck                                  # app + cypress 兩份 tsconfig 都檢
 ```
@@ -545,19 +545,119 @@ server 層？測試有沒有斷言**那個變化**真的發生，而不是只驗
 
 ---
 
-## 目前的測試地圖
+## 測試地圖（依功能分資料夾）
 
-| spec | 守什麼 |
+`specPattern` 是 `cypress/e2e/**/*.cy.ts`，所以新增資料夾不用改設定。
+**一個資料夾 = 一個功能面**；資料夾裡再依「使用者在做什麼」切檔，不要依元件切。
+
+✅ = 已有且綠　⬜ = 還沒寫　P0/P1/P2 = 建議優先序
+
+```
+cypress/e2e/
+├── auth/                         身分與權限閘門
+│   ├── login.cy.ts               ✅ 5 個
+│   ├── role-permission.cy.ts     ✅ 5 個
+│   ├── route-guard.cy.ts         ⬜ P1
+│   └── logout.cy.ts              ⬜ P1
+│
+├── plans/                        教案總覽
+│   ├── overview.cy.ts            ✅ 6 個
+│   ├── create-delete.cy.ts       ✅ 4 個
+│   ├── group-change.cy.ts        ⬜ P1
+│   ├── sort-and-view.cy.ts       ⬜ P1
+│   ├── batch-export.cy.ts        ⬜ P1
+│   ├── reorder.cy.ts             ⬜ P2
+│   └── deep-link.cy.ts           ⬜ P2
+│
+├── editor/                       教案編輯器
+│   ├── field-persistence.cy.ts   ⬜ P0
+│   ├── rich-text.cy.ts           ⬜ P0
+│   ├── props-table.cy.ts         ⬜ P1
+│   ├── undo-redo.cy.ts           ⬜ P1
+│   ├── export-single.cy.ts       ⬜ P1
+│   ├── blueprint.cy.ts           ⬜ P2
+│   └── topbar.cy.ts              ⬜ P2
+│
+├── versions/                     版本歷程
+│   ├── save-restore.cy.ts        ⬜ P0
+│   ├── naming.cy.ts              ⬜ P2
+│   └── diff.cy.ts                ⬜ P2
+│
+├── admin/                        行政中心
+│   ├── timer.cy.ts               ⬜ P0
+│   ├── rotation-table.cy.ts      ⬜ P1
+│   ├── rotation-wizard.cy.ts     ⬜ P1
+│   ├── props-inventory.cy.ts     ⬜ P1
+│   └── tab-routing.cy.ts         ⬜ P2
+│
+├── settings/                     系統設定
+│   ├── camps.cy.ts               ⬜ P1
+│   ├── groups.cy.ts              ⬜ P1
+│   ├── activity-types.cy.ts      ⬜ P2
+│   ├── preferences.cy.ts         ⬜ P2
+│   ├── identity.cy.ts            ⬜ P2
+│   └── danger-zone.cy.ts         ⬜ P2
+│
+├── navbar/                       導覽與系統選單
+│   ├── system-menu.cy.ts         ⬜ P2
+│   ├── broadcast.cy.ts           ⬜ P2
+│   └── mobile-tabbar.cy.ts       ⬜ P2
+│
+├── collaboration/                協作
+│   ├── presence.cy.ts            ⬜ P2
+│   └── history-log.cy.ts         ⬜ P2
+│
+├── api/                          純 API（不經 UI，用 cy.request）
+│   ├── export.cy.ts              ⬜ P0
+│   ├── auth.cy.ts                ⬜ P1
+│   ├── hero-images.cy.ts         ⬜ P2
+│   └── version.cy.ts             ⬜ P2
+│
+├── security/                     安全回歸
+│   ├── xss.cy.ts                 ⬜ P0
+│   ├── role-escalation.cy.ts     ⬜ P0
+│   └── firestore-rules.cy.ts     ⬜ P1
+│
+└── responsive/                   跨斷點與鍵盤
+    ├── breakpoints.cy.ts         ⬜ P2
+    └── keyboard.cy.ts            ⬜ P2
+```
+
+### P0 —— 先補這六支（風險最高 / 完全沒覆蓋）
+
+| spec | 守什麼 | 為什麼是 P0 |
+|---|---|---|
+| `security/xss.cy.ts` | 教案欄位塞 `<script>` / `<img onerror>` / `javascript:` → 存檔重載後**不該執行**，也不該出現在 DOM 裡 | `O2RichEditor.tsx:205` 與 `MarkdownArea.tsx:51` 把資料庫內容寫進 `innerHTML`，而 `sanitizeHtml` 只在貼上時跑、而且是黑名單式。這是已知的 stored XSS 風險，沒有回歸測試就不會知道修好了沒 |
+| `security/role-escalation.cy.ts` | 手改 `localStorage.studio_role = 'admin'` 之後，crew 身分**實際上**還能不能寫入 | 權限目前只做在前端（`auth-context`），沒有 middleware、Firestore 規則只檢查 `request.auth != null`。這支測試會把「目前擋不住」這件事**寫成會紅的斷言**，而不是停留在報告裡 |
+| `api/export.cy.ts` | `/api/export` 的 docx / pdf / zip 輸出、空 body、超大輸入；以及**不帶任何身分就能呼叫** | 這支 API 沒有驗證也沒有輸入大小限制。先用測試把現況釘住，修的時候才知道有沒有改壞輸出 |
+| `editor/field-persistence.cy.ts` | 每個欄位打字 → Firestore 真的存 → 重載還在；`updatedAt` 有更新 | 編輯器是這個產品的核心，目前**一行測試都沒有**。而且寫入是 fire-and-forget（反模式 5），正是最容易無聲失敗的地方 |
+| `editor/rich-text.cy.ts` | 粗體 / 斜體 / 清單 / 連結 / 貼上外部 HTML → 存回去的內容正確 | `O2RichEditor` 1528 行、`MarkdownToolbar` 672 行，全靠手測 |
+| `versions/save-restore.cy.ts` | 存版本 → 改內容 → 還原 → 欄位回到舊值、Firestore 同步、`planVersions` 筆數對 | `restorePlanVersion` 牽涉 snapshot / patch 兩種型別與 jsondiffpatch 還原鏈，壞掉等於使用者的歷史版本救不回來 |
+
+### P1 —— 接著補
+
+`admin/timer.cy.ts`（設定時長 / 開始 / 暫停 / 歸零 → `userSettings` 同步 → **另一個分頁也要跟著動**，
+`targetEndTime` 的跨裝置對齊最容易壞；音效解鎖 `camp-audio-unlocked`）、
+`admin/rotation-table.cy.ts`（建表 / 關卡 / 隊伍 / 日期切換 / undo-redo）、
+`admin/rotation-wizard.cy.ts`（智慧排班精靈走完 → 產出的表不衝突，`rotation-scheduler.ts` 的輸出要驗不變量）、
+`admin/props-inventory.cy.ts`（道具總表彙整、打包勾選、匯出）、
+`settings/camps.cy.ts`（建 / 改名 / 刪 / 切換 / 鎖定，切換會 `window.location.reload()`）、
+`settings/groups.cy.ts`（組別增刪改 → 教案分頁與下拉**同步變動**）、
+`plans/group-change.cy.ts`、`plans/sort-and-view.cy.ts`、`plans/batch-export.cy.ts`、
+`auth/route-guard.cy.ts`（逐條驗 `/admin` `/settings` `/history` `/plans/[id]` 未登入都會被導走）、
+`auth/logout.cy.ts`、`editor/props-table.cy.ts`、`editor/undo-redo.cy.ts`、`editor/export-single.cy.ts`、
+`security/firestore-rules.cy.ts`（直接對 emulator 驗規則，把現況釘住）。
+
+### 不該用 Cypress 測的（要補的話是單元測試，不是 E2E）
+
+| 模組 | 為什麼 |
 |---|---|
-| `cypress/e2e/login.cy.ts` | 權限閘門（未登入被導走）、帳密錯誤要說出來、兩種身分都進得去且重載後還在 |
-| `cypress/e2e/plans-overview.cy.ts` | 列表顯示所選營隊的教案、搜尋（含人員）、組別分頁、空狀態、營隊間不互相污染 |
-| `cypress/e2e/plan-create-delete.cy.ts` | 新增（畫面 + 資料庫 + 重載）、依組別建立、刪除防呆與真的刪掉、取消不動資料 |
-| `cypress/e2e/role-permission.cy.ts` | crew 唯讀：黑名單（沒有刪除 / 更換組別 / 新增入口）+ 同一個 testid admin 必須有 |
+| `src/lib/rotation-scheduler.ts`（15k） | 純演算法。邊界條件要幾十組輸入，用 E2E 跑等於拿瀏覽器當計算機。E2E 只需一條「精靈走完 → 產出的表不衝突」 |
+| `src/lib/text-diff.ts` | 純函式 |
+| `src/lib/export-utils.ts` / `export-excel.ts` 的格式化 | 純函式；E2E 只驗「下載真的被觸發 + 檔名對」 |
 
-**還沒有測試覆蓋的地方**（要補的話照上面的規範寫）：
-教案編輯器（`PlanEditor` / `O2RichEditor`）、闖關輪替表（`AdminRotationTable` / 智慧排班）、
-計時器（`AdminTimer` + `userSettings` 同步）、道具表、版本歷程與還原、`/api/export`、
-匯出檔案內容、協作在線狀態（`use-presence`）。
+本專案目前**沒有單元測試環境**（沒有 vitest / jest）。要補上面這些就得先裝一套 ——
+那是另一件事，不要混進 Cypress 裡。
 
 ---
 

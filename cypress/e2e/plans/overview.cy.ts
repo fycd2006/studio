@@ -8,7 +8,7 @@
  *          src/lib/plans-context.tsx（lessonPlans where campId == activeCampId）
  */
 
-import type { CampScenario } from '../plugins/firestore';
+import type { CampScenario } from '../../plugins/firestore';
 
 describe('教案總覽 (Plans Overview)', () => {
   let scenario: CampScenario;
