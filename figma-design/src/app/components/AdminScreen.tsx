@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  CalendarDays,
+  BellRing,
+  Calendar,
   ChevronLeft,
   ChevronRight,
-  Download,
+  FileDown,
   Lock,
   Megaphone,
   Minus,
@@ -13,13 +14,13 @@ import {
   Plus,
   Redo2,
   RotateCcw,
-  Shield,
   Trash2,
   Undo2,
   Unlock,
   Volume2,
   VolumeX,
   Zap,
+  ZoomIn,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card, Dialog, Field, Segmented, Tag, inputClass } from "./ui/primitives";
@@ -51,21 +52,46 @@ export function AdminScreen({ tab, role, plansData, broadcast, setBroadcast, not
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-8">
+    <div className={cn("w-full pt-14 sm:pt-16", tab === "props" ? "px-0 pb-0" : "px-4 pb-8 sm:px-6 md:px-8 md:pb-12 lg:px-10")}>
       {tab !== "timer" && (
-        <div role="toolbar" aria-label="操作列" className="glass sticky top-[72px] z-20 flex flex-wrap items-center justify-between gap-2 rounded-3xl p-2 sm:rounded-full">
-          <div className="flex flex-wrap items-center gap-2">
-            <Tag className="hidden px-3 sm:inline">● 操作列</Tag>
-            <Button size="sm" variant={editable ? "inverse" : "secondary"} onClick={toggleLock} aria-pressed={editable}>
-              {editable ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+        <div className={cn("sticky top-14 z-20", tab === "props" && "px-4 sm:px-6 md:px-8 lg:px-10")}>
+          <div
+            role="toolbar"
+            aria-label="操作列"
+            className="glass mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-1 rounded-2xl px-1.5 py-0.5 shadow-lg sm:gap-3 sm:rounded-full sm:px-5 sm:py-1.5"
+          >
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5 sm:gap-2.5">
+            <Tag className="hidden items-center gap-2 pr-1 sm:inline-flex">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" />
+              操作列
+            </Tag>
+            {/* Production tints the lock chip rose when locked and emerald (pulsing) when editable. */}
+            <button
+              type="button"
+              onClick={toggleLock}
+              aria-pressed={editable}
+              title={editable ? "點擊鎖定" : "點擊解鎖編輯"}
+              className={cn(
+                "inline-flex h-8 items-center gap-1.5 rounded-full border px-2.5 font-mono text-xs font-medium transition sm:h-9 sm:px-3",
+                editable
+                  ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400"
+                  : "border-rose-500/20 bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 dark:text-rose-400",
+              )}
+            >
+              <span
+                className={cn("h-1.5 w-1.5 shrink-0 rounded-full", editable ? "animate-pulse bg-emerald-500" : "bg-rose-500")}
+                aria-hidden="true"
+              />
+              {editable ? <Unlock className="h-3.5 w-3.5" aria-hidden="true" /> : <Lock className="h-3.5 w-3.5" aria-hidden="true" />}
               {editable ? "可編輯" : "已鎖定"}
-            </Button>
+            </button>
+            <span className="mx-0.5 hidden h-6 w-px bg-border-strong sm:block" aria-hidden="true" />
             {tab === "tables" ? (
               <>
-                <label className="inline-flex h-9 items-center gap-1.5 rounded-full border bg-card px-3 text-[13px]">
-                  <CalendarDays className="h-4 w-4" aria-hidden="true" />
+                <label className="inline-flex items-center gap-1 rounded-full border bg-muted px-2 py-0.5 font-mono text-xs">
+                  <Calendar className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
                   <span className="sr-only">日期</span>
-                  <select value={day} onChange={(e) => setDay(e.target.value)} className="bg-transparent outline-none">
+                  <select value={day} onChange={(e) => setDay(e.target.value)} className="bg-transparent py-1 outline-none">
                     {[1, 2, 3, 4, 5].map((d) => <option key={d}>Day {d}</option>)}
                   </select>
                 </label>
@@ -79,6 +105,7 @@ export function AdminScreen({ tab, role, plansData, broadcast, setBroadcast, not
             ) : (
               <Segmented
                 label="道具分類"
+                tone="accent"
                 value={propsTab}
                 onChange={setPropsTab}
                 options={[
@@ -89,21 +116,34 @@ export function AdminScreen({ tab, role, plansData, broadcast, setBroadcast, not
               />
             )}
           </div>
-          <div className="flex items-center gap-1">
+          <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
             {tab === "tables" && (
               <>
-                <Button size="icon" variant="ghost" aria-label="復原" className="h-9 w-9"><Undo2 className="h-4 w-4" /></Button>
-                <Button size="icon" variant="ghost" aria-label="重做" className="h-9 w-9"><Redo2 className="h-4 w-4" /></Button>
-                <span className="tag px-2">100%</span>
+                <div className="hidden items-center rounded-full border bg-muted p-0.5 sm:flex">
+                  <Button size="icon" variant="ghost" aria-label="復原" className="h-7 w-7"><Undo2 className="h-3.5 w-3.5" /></Button>
+                  <Button size="icon" variant="ghost" aria-label="重做" className="h-7 w-7"><Redo2 className="h-3.5 w-3.5" /></Button>
+                </div>
+                <span className="hidden h-8 items-center gap-1 rounded-full border bg-muted px-2.5 font-mono text-xs tracking-wider uppercase sm:inline-flex">
+                  <ZoomIn className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+                  100%
+                </span>
+                <span className="mx-0.5 hidden h-6 w-px bg-border-strong sm:block" aria-hidden="true" />
               </>
             )}
-            <Button size="sm" onClick={() => notify("匯出 Excel（設計稿示範）")}><Download className="h-4 w-4" /> 匯出</Button>
+            <button
+              type="button"
+              onClick={() => notify("匯出 Excel（設計稿示範）")}
+              className="inline-flex h-8 items-center gap-1.5 rounded-full bg-muted px-2.5 font-mono text-xs tracking-wider uppercase transition hover:brightness-110 sm:px-3.5"
+            >
+              <FileDown className="h-3.5 w-3.5" aria-hidden="true" /> 匯出
+            </button>
+          </div>
           </div>
         </div>
       )}
 
-      <div className="mt-6">
-        {tab === "timer" && <TimerTab isAdmin={isAdmin} unlocked={editable} unlock={toggleLock} broadcast={broadcast} setBroadcast={setBroadcast} />}
+      <div className={cn("mt-4 sm:mt-6", tab === "props" && "mt-2 sm:mt-2")}>
+        {tab === "timer" && <TimerTab unlocked={editable} broadcast={broadcast} setBroadcast={setBroadcast} />}
         {tab === "tables" && <TablesTab editable={editable} day={day} />}
         {tab === "props" && <PropsTab plansData={plansData} kind={propsTab} editable={editable} />}
       </div>
@@ -118,15 +158,11 @@ export function AdminScreen({ tab, role, plansData, broadcast, setBroadcast, not
 /* ---------------- Timer ---------------- */
 
 function TimerTab({
-  isAdmin,
   unlocked,
-  unlock,
   broadcast,
   setBroadcast,
 }: {
-  isAdmin: boolean;
   unlocked: boolean;
-  unlock: () => void;
   broadcast: string | null;
   setBroadcast: (s: string | null) => void;
 }) {
@@ -154,23 +190,44 @@ function TimerTab({
   const critical = left <= 60;
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="flex flex-wrap items-center gap-3 rounded-3xl border bg-card px-5 py-3">
-        {audio ? <Volume2 className="h-5 w-5 text-success" aria-hidden="true" /> : <VolumeX className="h-5 w-5 text-muted-foreground" aria-hidden="true" />}
-        <span className="font-semibold">{audio ? "音效已解鎖" : "音效未解鎖"}</span>
-        <span className="flex-1 text-sm text-muted-foreground">{audio ? "● 語音廣播與警報音效已就緒" : "○ 點擊右側按鈕以解除瀏覽器音訊限制"}</span>
-        <Button size="sm" onClick={() => setAudio((a) => !a)}>{audio ? "Disable audio" : "Test & Unlock"}</Button>
+    // Production centres the whole timer column in a max-w-5xl frame (AdminTimer.tsx:574).
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-10 py-6">
+      <div
+        className={cn(
+          "flex flex-col items-center justify-between gap-6 rounded-3xl border p-6 shadow-xs backdrop-blur-md sm:p-8 md:flex-row",
+          audio ? "border-success/30 bg-success/[0.06]" : "bg-card",
+        )}
+      >
+        <div className="flex items-center gap-5 text-center md:text-left">
+          <span
+            className={cn(
+              "flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl",
+              audio ? "bg-success text-white" : "bg-muted text-muted-foreground",
+            )}
+          >
+            {audio ? <Volume2 className="h-6 w-6" aria-hidden="true" /> : <VolumeX className="h-6 w-6" aria-hidden="true" />}
+          </span>
+          <span>
+            <span className="block text-base">{audio ? "音效已解鎖" : "音效未解鎖"}</span>
+            <span className="mt-0.5 block font-mono text-xs text-muted-foreground">
+              {audio ? "● 語音廣播與警報音效已就緒" : "○ 點擊右側按鈕以解除瀏覽器音訊限制"}
+            </span>
+          </span>
+        </div>
+        <Button
+          size="sm"
+          variant={audio ? "secondary" : "primary"}
+          className="h-10 rounded-full px-8 font-mono text-xs tracking-wider uppercase"
+          onClick={() => setAudio((a) => !a)}
+        >
+          {audio ? "Disable Audio" : "Test & Unlock"}
+        </Button>
       </div>
 
-      {isAdmin && !unlocked && (
-        <Card className="flex flex-wrap items-center justify-between gap-3 border-dashed p-5">
-          <span className="flex items-center gap-3 text-sm">
-            <Shield className="h-5 w-5 text-accent-ink" aria-hidden="true" />
-            解鎖後可設定時間、發布公告與控制輪次。
-          </span>
-          <Button size="sm" variant="primary" onClick={unlock}><Unlock className="h-4 w-4" /> 解鎖行政控制</Button>
-        </Card>
-      )}
+      {/* Production hides every unlock affordance on the timer tab — AdminSection.tsx:851 renders
+          the ActionBar only when `activeMainTab !== 'timer'`, so admins unlock from 總表/道具.
+          (The wireframe review flagged this as a UX gap; restore the dashed unlock card here
+          if that fix is ever adopted upstream.) */}
 
       {unlocked && (
         <>
@@ -236,21 +293,39 @@ function TimerTab({
 
       <section aria-label="同步計時器" className="relative overflow-hidden rounded-[2.5rem] bg-timer p-6 text-timer-foreground sm:p-10">
         <div className="flex items-center justify-between">
-          <span>
-            <span className="tag block text-stone-400">同步中樞</span>
-            <span className="text-sm">Status：{running ? "運行中" : "待機中"}</span>
+          <span className="flex items-center gap-4">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
+              <BellRing className="h-6 w-6 text-amber-500" aria-hidden="true" />
+            </span>
+            <span>
+              <span className="tag block text-timer-foreground">同步中樞</span>
+              <span className={cn("mt-1 block font-mono text-[10px] tracking-wider uppercase", running ? "text-emerald-400" : "text-amber-400/90")}>
+                Status: {running ? "運行中" : "待機中"}
+              </span>
+            </span>
           </span>
-          <button type="button" onClick={() => setSaver(true)} className="inline-flex h-10 items-center gap-2 rounded-full border border-white/20 px-4 text-sm hover:bg-white/10">
+          <button type="button" onClick={() => setSaver(true)} className="inline-flex h-11 items-center gap-2 rounded-full border border-white/15 bg-white/5 px-6 font-mono text-xs tracking-wider uppercase hover:bg-white/10">
             <Moon className="h-4 w-4" aria-hidden="true" /> 省電模式
           </button>
         </div>
-        <p className="tag mt-8 text-center text-stone-400">{left === 0 ? "時間到" : "剩餘時間"}</p>
-        <p className={cn("text-center font-mono text-[clamp(88px,18vw,224px)] leading-none tracking-tight tabular-nums", critical && "text-rose-400")} aria-live="off">
+        <p className={cn("mb-4 text-center font-mono text-xs tracking-[0.3em] uppercase", critical ? "animate-pulse text-rose-400" : "text-stone-400")}>
+          {left === 0 ? "時間到" : "剩餘時間"}
+        </p>
+        <p
+          className={cn(
+            "text-center font-mono text-[clamp(72px,20vw,224px)] leading-none font-light tracking-tight tabular-nums",
+            critical ? "animate-pulse text-rose-400" : "text-white",
+          )}
+          aria-live="off"
+        >
           {mm}:{ss}
         </p>
-        <p className="tag mt-2 text-center text-stone-400">{clock}</p>
-        <div className="mt-8 h-1.5 rounded-full bg-white/10">
-          <div className="h-full rounded-full bg-orange-300 transition-all" style={{ width: `${total ? (left / total) * 100 : 0}%` }} />
+        <p className="mt-4 text-center font-mono text-xs tracking-widest text-stone-400 sm:text-sm">{clock}</p>
+        <div className="mx-auto mt-8 h-2 w-full max-w-2xl overflow-hidden rounded-full bg-white/10">
+          <div
+            className={cn("h-full rounded-full transition-all duration-1000", critical ? "bg-rose-500" : "bg-gradient-to-r from-orange-500 to-amber-400")}
+            style={{ width: `${total ? (left / total) * 100 : 0}%` }}
+          />
         </div>
       </section>
 
@@ -330,14 +405,16 @@ function PropsTab({ plansData, kind, editable }: { plansData: Plan[]; kind: "act
   const rows = useMemo(() => plansData.filter((p) => (kind === "all" ? true : p.group === kind)), [plansData, kind]);
   const [state, setState] = useState<Record<string, { packed: boolean; checked: boolean }>>({});
   const key = (pid: string, i: number) => `${pid}-${i}`;
-  const cell = "border px-3 py-2.5 text-left align-top";
+  const cell = "border px-4 py-3 text-left align-top";
 
   return (
-    <div className="overflow-x-auto rounded-3xl border bg-card">
-      <table className="w-full min-w-[960px] border-collapse text-sm">
-        <thead>
-          <tr className="bg-muted">
-            {["分類", "教案名稱", "指定人員", "物品名稱", "Qty", "Unit", "備註", "已打包", "已核核"].map((h) => <th key={h} className={cn(cell, "font-medium")}>{h}</th>)}
+    <div className="w-full overflow-x-auto rounded-3xl border bg-card/60 backdrop-blur-md">
+      <table className="w-full min-w-[760px] border-collapse text-left text-sm md:min-w-[1000px]">
+        <thead className="border-b bg-card/90 text-center font-mono text-[11px] tracking-[0.2em] text-muted-foreground uppercase backdrop-blur-xl">
+          <tr>
+            {["分類", "教案名稱", "指定人員", "物品名稱", "Qty", "Unit", "備註", "已打包", "已核核"].map((h) => (
+              <th key={h} className="border-r px-4 py-3 last:border-r-0">{h}</th>
+            ))}
           </tr>
         </thead>
         <tbody>

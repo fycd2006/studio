@@ -3,9 +3,10 @@ import {
   ArrowDown,
   ArrowUp,
   Clock,
-  Columns3,
   Download,
   FileText,
+  Filter,
+  Kanban,
   LayoutGrid,
   List,
   Lock,
@@ -15,9 +16,10 @@ import {
   Trash2,
   Users,
   X,
+  type LucideIcon,
 } from "lucide-react";
 import { Button } from "./ui/button";
-import { Card, Dialog, GroupBadge, Segmented, Tag, inputClass } from "./ui/primitives";
+import { Card, DiamondMark, Dialog, GroupBadge, Tag, inputClass } from "./ui/primitives";
 import { camp, formatLong, formatShort, groups, type Plan, type Role } from "../data/mock";
 import { cn } from "./ui/utils";
 
@@ -59,34 +61,47 @@ export function PlansScreen({ role, plans, openPlan, createPlan, deletePlan, not
     createPlan(group);
   };
 
-  const sortBtn = (k: SortKey, label: string) => (
-    <Button
-      size="sm"
-      variant={sort === k ? "inverse" : "ghost"}
+  /** Sort chips mirror the production toolbar: leading icon, mono label, accent tint when active. */
+  const sortBtn = (k: SortKey, label: string, Icon: LucideIcon) => (
+    <button
+      type="button"
       onClick={() => (sort === k ? setAsc((a) => !a) : (setSort(k), setAsc(k !== "time")))}
       aria-label={`依${label}排序`}
+      className={cn(
+        "flex items-center gap-1.5 rounded-full px-3 py-1.5 font-mono text-xs transition",
+        sort === k ? "bg-accent-soft font-medium text-accent-ink" : "text-muted-foreground hover:text-foreground",
+      )}
     >
+      <Icon className="h-3.5 w-3.5" aria-hidden="true" />
       {label}
-      {sort === k && (asc ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />)}
-    </Button>
+      {sort === k && (asc ? <ArrowUp className="h-3 w-3 text-accent" /> : <ArrowDown className="h-3 w-3 text-accent" />)}
+    </button>
   );
 
   return (
-    <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-8 sm:pt-10">
+    <div className="mx-auto w-full max-w-[1720px] px-4 pt-16 pb-28 sm:px-8 sm:pt-32 sm:pb-24 md:px-12 xl:px-16">
       {/* Header */}
-      <div className="flex flex-wrap items-end justify-between gap-5">
+      <div className="mb-8 flex flex-col justify-between gap-6 border-b pb-6 lg:flex-row lg:items-end">
         <div>
-          <Tag tone="accent">{camp.name} // Curriculum directory</Tag>
-          <h1 className="mt-2 font-display text-4xl sm:text-5xl">
-            教案總覽 <Tag className="align-middle">Curriculum directory</Tag>
+          <div className="mb-3 flex items-center gap-2">
+            <DiamondMark className="shadow-[0_0_8px_rgba(249,115,22,0.8)]" />
+            <span className="font-mono text-xs font-medium tracking-widest text-accent-ink uppercase">
+              {camp.name} // Curriculum directory
+            </span>
+          </div>
+          <h1 className="font-display text-3xl leading-[0.96] font-normal tracking-[-0.03em] uppercase sm:text-5xl md:text-6xl">
+            教案總覽
+            <span className="ml-3 text-lg font-light text-fg-muted sm:text-2xl">Curriculum directory</span>
           </h1>
-          <p className="mt-2 text-sm text-muted-foreground">營隊核心教案架構、即時同步修訂與分工總覽。</p>
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed font-light text-muted-foreground sm:text-base">
+            營隊核心教案架構、即時同步修訂與分工總覽。
+          </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex shrink-0 flex-wrap items-center gap-3">
           <MenuButton
             label={
               <>
-                {isAdmin ? <Plus className="h-4 w-4" /> : <Lock className="h-4 w-4" />} 新增檔案
+                {isAdmin ? <Plus className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />} 新增檔案
               </>
             }
             variant="primary"
@@ -96,7 +111,7 @@ export function PlansScreen({ role, plans, openPlan, createPlan, deletePlan, not
           <MenuButton
             label={
               <>
-                <Download className="h-4 w-4" /> 批次匯出
+                <Download className="h-3.5 w-3.5 text-accent" /> 批次匯出
               </>
             }
             heading="全部教案匯出 (All plans)"
@@ -111,24 +126,37 @@ export function PlansScreen({ role, plans, openPlan, createPlan, deletePlan, not
       </div>
 
       {/* HUD */}
-      <dl className="mt-8 hidden grid-cols-4 gap-6 border-y py-5 md:grid">
+      <dl className="mb-8 hidden grid-cols-4 gap-4 border-b pb-6 sm:gap-6 md:grid">
         {[
-          ["01 / Total plans", String(plans.length), "Records"],
-          ["02 / Active camp", camp.name, ""],
-          ["03 / Divisions", String(groups.length), "Teams"],
-          ["04 / View mode", `[ ${view.toUpperCase()} ]`, ""],
-        ].map(([k, v, u]) => (
-          <div key={k}>
-            <dt className="tag">{k}</dt>
-            <dd className="mt-1 font-display text-2xl font-light">
-              {v} {u && <span className="tag">{u}</span>}
+          ["01 / Total plans", String(plans.length), "Records", "num"],
+          ["02 / Active camp", camp.name, "", "accent"],
+          ["03 / Divisions", String(groups.length), "Teams", "num"],
+          ["04 / View mode", `[ ${view.toUpperCase()} ]`, "", "mode"],
+        ].map(([k, v, u, kind]) => (
+          <div key={k} className="flex flex-col">
+            <dt className="mb-1 flex items-center gap-1.5 font-mono text-[10px] tracking-widest text-fg-muted uppercase">
+              <DiamondMark className="h-1 w-1" />
+              {k}
+            </dt>
+            <dd className="flex items-baseline gap-2">
+              <span
+                className={cn(
+                  "truncate font-mono",
+                  kind === "num" && "text-2xl font-light tracking-tight sm:text-3xl",
+                  kind === "accent" && "text-base font-normal tracking-tight text-accent-ink sm:text-xl",
+                  kind === "mode" && "text-base font-medium tracking-wider uppercase sm:text-xl",
+                )}
+              >
+                {v}
+              </span>
+              {u && <span className="font-mono text-xs text-fg-muted uppercase">{u}</span>}
             </dd>
           </div>
         ))}
       </dl>
 
       {/* Group tabs */}
-      <div role="tablist" aria-label="組別" className="sticky top-16 z-20 -mx-4 mt-6 flex gap-6 overflow-x-auto border-b bg-background/90 px-4 backdrop-blur sm:mx-0 sm:px-0">
+      <div role="tablist" aria-label="組別" className="sticky top-14 z-20 -mx-4 mb-4 flex gap-6 overflow-x-auto border-b bg-background/95 px-4 pt-2 backdrop-blur-md sm:top-[60px] sm:mb-6 sm:gap-8 sm:px-4">
         {[{ slug: "all", nameZh: "全部 ALL" }, ...groups].map((g) => {
           const count = g.slug === "all" ? plans.length : plans.filter((p) => p.group === g.slug).length;
           const on = tab === g.slug;
@@ -140,43 +168,64 @@ export function PlansScreen({ role, plans, openPlan, createPlan, deletePlan, not
               aria-selected={on}
               onClick={() => setTab(g.slug)}
               className={cn(
-                "-mb-px h-12 shrink-0 border-b-[3px] text-sm whitespace-nowrap transition",
-                on ? "border-accent font-semibold" : "border-transparent text-muted-foreground hover:text-foreground",
+                "relative flex shrink-0 items-center gap-1.5 pt-1 pb-3 text-sm whitespace-nowrap transition-colors select-none sm:text-base",
+                on ? "font-bold text-foreground" : "font-normal text-muted-foreground hover:text-foreground",
               )}
             >
-              {g.nameZh} ({count})
+              <span>{g.nameZh}</span>
+              <span className="font-mono text-xs font-normal opacity-75">({count})</span>
+              {on && (
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-x-0 bottom-0 h-[3px] rounded-full bg-accent shadow-[0_1px_6px_rgba(249,115,22,0.4)]"
+                />
+              )}
             </button>
           );
         })}
       </div>
 
       {/* Toolbar */}
-      <div className="mt-5 flex flex-wrap items-center gap-3">
-        <label className="relative min-w-[240px] flex-1">
+      <div className="mb-6 flex flex-wrap items-center gap-3 sm:mb-12">
+        <label className="group relative min-w-[240px] flex-1">
           <span className="sr-only">搜尋教案</span>
-          <Search className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="請搜尋教案名稱、類別或人員..." className={cn(inputClass, "pl-10 pr-24")} />
+          <Search className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-accent sm:h-5 sm:w-5" aria-hidden="true" />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="請搜尋教案名稱、類別或人員..." className={cn(inputClass, "h-12 rounded-2xl pl-11 pr-24 sm:text-base")} />
           {query && (
             <button type="button" onClick={() => setQuery("")} className="tag absolute top-1/2 right-3 flex -translate-y-1/2 items-center gap-1 hover:text-foreground">
               <X className="h-3 w-3" aria-hidden="true" /> Clear
             </button>
           )}
         </label>
-        <div className="flex gap-1">
-          {sortBtn("time", "時間")}
-          {sortBtn("name", "名稱")}
-          {sortBtn("category", "類別")}
+        <div className="flex items-center gap-1 rounded-full border bg-muted p-1">
+          {sortBtn("time", "時間", Clock)}
+          {sortBtn("name", "名稱", FileText)}
+          {sortBtn("category", "類別", Filter)}
         </div>
-        <Segmented<View>
-          label="檢視版型"
-          value={view}
-          onChange={setView}
-          options={[
-            { value: "list", label: <><List className="h-4 w-4" aria-hidden="true" />清單</> },
-            { value: "grid", label: <><LayoutGrid className="h-4 w-4" aria-hidden="true" />畫廊</> },
-            { value: "board", label: <><Columns3 className="h-4 w-4" aria-hidden="true" />看板</> },
-          ]}
-        />
+        {/* Icon-only view switcher — matches the production plans toolbar. */}
+        <div role="radiogroup" aria-label="檢視版型" className="inline-flex items-center gap-1 rounded-full border bg-muted p-1">
+          {([
+            { value: "list", icon: List, title: "清單視圖 (List)" },
+            { value: "grid", icon: LayoutGrid, title: "畫廊視圖 (Grid)" },
+            { value: "board", icon: Kanban, title: "看板視圖 (Board)" },
+          ] as { value: View; icon: typeof List; title: string }[]).map(({ value, icon: Icon, title }) => (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={view === value}
+              aria-label={title}
+              title={title}
+              onClick={() => setView(value)}
+              className={cn(
+                "rounded-full p-2 transition",
+                view === value ? "bg-accent text-white shadow-sm" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Views */}
@@ -358,9 +407,20 @@ function MenuButton({
   const ref = useDismiss(open, () => setOpen(false));
   return (
     <div ref={ref} className="relative">
-      <Button variant={variant} aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+      {/* Production header actions are mono pills, not sans buttons (src/app/plans/page.tsx). */}
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className={cn(
+          "inline-flex items-center gap-2.5 rounded-full py-3 font-mono text-xs font-medium tracking-wider uppercase transition-all duration-200 hover:-translate-y-0.5",
+          variant === "primary"
+            ? "bg-gradient-to-r from-orange-500 to-orange-600 px-6 text-white shadow-[0_4px_16px_rgba(249,115,22,0.3)] hover:from-orange-600 hover:to-orange-700 hover:shadow-[0_8px_24px_rgba(249,115,22,0.4)] sm:px-7"
+            : "glass px-5 text-foreground/80 hover:text-foreground",
+        )}
+      >
         {label}
-      </Button>
+      </button>
       {open && (
         <div role="menu" className="animate-rise absolute top-full right-0 z-30 mt-2 w-60 rounded-2xl border bg-card p-1.5 shadow-xl">
           <span className="tag block px-3 pt-2 pb-1">{heading}</span>

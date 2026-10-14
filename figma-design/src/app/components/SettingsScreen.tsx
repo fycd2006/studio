@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, ChevronRight, Clock, Globe, LayoutGrid, Lock, LogOut, Moon, Pencil, Plus, Shield, ShieldAlert, Sun, Trash2, Unlock, User, X } from "lucide-react";
+import { Check, ChevronRight, Clock, Globe, Layout, Lock, LogOut, Moon, Pencil, Plus, Shield, ShieldAlert, ShieldCheck, Sun, Trash2, Unlock, User, X } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card, Field, Tag, inputClass } from "./ui/primitives";
 import { activityTypes, camp, groups, stages, type Role } from "../data/mock";
@@ -9,59 +9,93 @@ type Tab = "account" | "workspace" | "prefs" | "version" | "danger";
 
 export function SettingsScreen({ role, dark, setDark, logout, notify }: { role: Role; dark: boolean; setDark: (d: boolean) => void; logout: () => void; notify: (m: string) => void }) {
   const isAdmin = role === "admin";
-  const [tab, setTab] = useState<Tab>("workspace");
+  const [tab, setTab] = useState<Tab>("account");
   const tabs: { id: Tab; label: string; icon: typeof User; admin?: boolean }[] = [
     { id: "account", label: "帳號", icon: User },
-    { id: "workspace", label: "工作區", icon: LayoutGrid },
+    { id: "workspace", label: "工作區", icon: Layout },
     { id: "prefs", label: "偏好", icon: Globe },
     { id: "version", label: "版本", icon: Clock },
     { id: "danger", label: "風險", icon: ShieldAlert, admin: true },
   ];
 
   return (
-    <div className="mx-auto max-w-5xl px-4 pt-6 sm:px-8 sm:pt-10">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <Tag tone="accent">// System governance //</Tag>
-          <h1 className="mt-2 font-display text-4xl sm:text-5xl">系統設定</h1>
-          <Tag className="mt-1 block">Configuration // Workspace // Protocol security</Tag>
+    <div className="mx-auto max-w-5xl px-4 pt-24 pb-12 sm:px-6 sm:pt-28 sm:pb-20 md:px-8">
+      <div className="mb-8 flex flex-col justify-between gap-4 border-b pb-6 sm:mb-12 sm:flex-row sm:items-center">
+        <div className="min-w-0 flex-1">
+          <Tag className="mb-2 block">// System governance //</Tag>
+          <h1 className="font-display text-3xl font-normal tracking-tight sm:text-4xl">系統設定</h1>
+          <p className="mt-1 font-mono text-xs tracking-widest text-fg-muted uppercase">
+            Configuration // Workspace // Protocol security
+          </p>
         </div>
-        <Button onClick={logout}><LogOut className="h-4 w-4" /> 登出系統</Button>
+        <button
+          type="button"
+          onClick={logout}
+          className="inline-flex h-10 shrink-0 items-center gap-2 self-start rounded-xl border px-4 font-mono text-xs text-muted-foreground transition-all hover:border-danger/30 hover:bg-danger/10 hover:text-danger sm:self-center"
+        >
+          <LogOut className="h-4 w-4" /> 登出系統
+        </button>
       </div>
 
-      <div role="tablist" aria-label="設定分類" className="mt-8 grid grid-cols-2 gap-1 rounded-3xl border bg-muted p-1 sm:grid-cols-3 md:grid-cols-5 md:rounded-full">
-        {tabs.filter((t) => !t.admin || isAdmin).map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            aria-selected={tab === id}
-            onClick={() => setTab(id)}
-            className={cn(
-              "flex h-11 items-center justify-center gap-2 rounded-full text-sm font-medium transition",
-              tab === id ? "bg-card shadow-sm dark:bg-white/12" : "text-muted-foreground hover:text-foreground",
-              id === "danger" && "text-danger",
-            )}
-          >
-            <Icon className="h-4 w-4" aria-hidden="true" />
-            {label}
-          </button>
-        ))}
+      <div
+        role="tablist"
+        aria-label="設定分類"
+        className="glass mb-10 grid grid-cols-2 gap-1.5 rounded-2xl p-1.5 sm:grid-cols-3 lg:grid-cols-5"
+      >
+        {tabs.filter((t) => !t.admin || isAdmin).map(({ id, label, icon: Icon }) => {
+          const active = tab === id;
+          const danger = id === "danger";
+          return (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => setTab(id)}
+              className={cn(
+                "flex items-center gap-2.5 rounded-xl border px-3.5 py-2.5 text-left font-mono text-xs transition-all duration-200",
+                active
+                  ? danger
+                    ? "border-danger/30 bg-danger/15 font-medium text-danger shadow-sm"
+                    : "border-border-strong bg-card font-medium text-accent-ink shadow-sm dark:bg-white/10"
+                  : "border-transparent bg-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+              )}
+            >
+              <Icon className={cn("h-4 w-4 shrink-0", active ? (danger ? "text-danger" : "text-accent") : "text-muted-foreground")} aria-hidden="true" />
+              <span className="truncate">{label}</span>
+            </button>
+          );
+        })}
       </div>
 
-      <div className="mt-6 flex flex-col gap-5">
+      <div className="flex flex-col gap-10">
         {tab === "account" && (
-          <Card className="grid gap-6 p-6 md:grid-cols-2">
-            <div className="md:col-span-2"><Tag>01</Tag> <span className="font-semibold">身分識別</span></div>
+          <section className="flex flex-col gap-6">
+            <div className="flex items-center gap-2">
+              <Tag>01</Tag>
+              <h2 className="flex items-center gap-2 font-mono text-sm font-medium tracking-widest text-foreground uppercase">
+                <User className="h-4 w-4 text-accent" aria-hidden="true" />
+                身分識別
+              </h2>
+            </div>
+            <Card className="grid gap-8 p-6 sm:p-8 md:grid-cols-2 md:items-center">
             <Field label="Identity designation" hint="當前會話顯示名稱，用於記錄變更與修訂者辨識。">
               <input defaultValue={isAdmin ? "STUDIO_ADMIN" : "CREW_MEMBER"} className={inputClass} />
             </Field>
-            <div className="rounded-2xl border bg-muted p-4">
-              <Tag>Clearance level</Tag>
-              <p className="mt-1 text-lg font-semibold">{isAdmin ? "管理員 Admin" : "組員 Crew"}</p>
-              <p className="text-sm text-muted-foreground">{isAdmin ? "● 擁有完整系統編輯權限" : "○ 唯讀瀏覽權限"}</p>
+            <div className="flex items-center gap-5 rounded-2xl border bg-muted p-6">
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-accent/20 bg-accent/10">
+                <ShieldCheck className="h-7 w-7 text-accent-ink" aria-hidden="true" />
+              </span>
+              <span>
+                <Tag>Clearance level</Tag>
+                <p className="mt-0.5 text-xl tracking-tight uppercase">{role}</p>
+                <span className="mt-1 block font-mono text-[10px] text-success">
+                  {isAdmin ? "● 擁有完整系統編輯權限" : "○ 唯讀瀏覽權限"}
+                </span>
+              </span>
             </div>
-          </Card>
+            </Card>
+          </section>
         )}
 
         {tab === "workspace" && <Workspace isAdmin={isAdmin} notify={notify} />}

@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
-  BatteryLow,
   BookOpen,
   ChevronDown,
   Home,
   Megaphone,
   Menu,
+  Monitor,
   Moon,
   Package,
   Plus,
@@ -53,42 +53,43 @@ export function Shell({ route, go, dark, toggleDark, broadcast, clearBroadcast, 
   return (
     <div className="min-h-screen bg-background pb-28 text-foreground">
       {!hideChrome && (
-        <header
-          className={cn(
-            "sticky top-0 z-40 transition",
-            scrolled ? "glass border-x-0 border-t-0 shadow-none" : "border-b border-transparent",
-          )}
-        >
-          <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-8">
-            <button type="button" onClick={() => go("home")} className="flex items-center gap-2.5 rounded-full text-left">
-              <img src={logo} alt="" className="h-8 w-8 rounded-full border bg-card object-cover" />
-              <span className="leading-tight">
-                <span className="block text-sm font-semibold">北科崇德</span>
-                <span className="tag block text-[10px]">NTUT CD CLUB</span>
-              </span>
-            </button>
-            <div className="flex items-center gap-3">
-              <span className="hidden items-center gap-2 rounded-full border border-accent/30 bg-accent-soft px-3.5 py-1.5 text-[13px] font-medium text-accent-ink sm:inline-flex">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-60" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
+        <>
+          {/* Production: a fixed, click-through navbar that floats over the hero and
+              only turns to glass once the page scrolls (TransparentNavbar.tsx). */}
+          <header
+            className={cn(
+              "pointer-events-none fixed top-0 left-0 z-40 w-full px-4 py-3 transition-all duration-300 sm:px-8 sm:py-3.5",
+              scrolled ? "glass border-x-0 border-t-0 shadow-none" : "border-b border-transparent bg-transparent",
+            )}
+          >
+            <div className="mx-auto flex max-w-[1720px] items-center justify-between">
+              <button type="button" onClick={() => go("home")} className="pointer-events-auto flex items-center gap-3 rounded-full text-left">
+                <img src={logo} alt="" className="h-8 w-8 shrink-0 rounded-full border bg-card object-cover p-0.5" />
+                <span className="flex flex-col leading-tight">
+                  <span className="text-xs font-bold tracking-wider whitespace-nowrap">北科崇德</span>
+                  <span className="tag text-[10px] whitespace-nowrap">NTUT CD CLUB</span>
                 </span>
-                {camp.name}
-              </span>
-              {(route === "editor" || route === "plans") && (
-                <span className="hidden -space-x-2 md:flex" aria-label="協作者">
-                  {members.map((m) => (
-                    <span key={m.initials} className={cn("flex h-8 w-8 items-center justify-center rounded-full border-2 border-background text-xs font-medium text-white", m.color)}>
-                      {m.initials}
-                    </span>
-                  ))}
+              </button>
+              <div className="pointer-events-auto flex items-center gap-2 sm:gap-3">
+                <span className="hidden items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 font-mono text-[11px] tracking-wider text-primary sm:inline-flex">
+                  <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
+                  <span className="max-w-[140px] truncate uppercase">{camp.name}</span>
                 </span>
-              )}
-              <SystemMenu go={go} dark={dark} toggleDark={toggleDark} onQuickCreate={onQuickCreate} />
+                {(route === "editor" || route === "plans") && (
+                  <span className="hidden -space-x-1.5 md:flex" aria-label="協作者">
+                    {members.map((m) => (
+                      <span key={m.initials} className={cn("flex h-6 w-6 items-center justify-center rounded-full border border-background text-[9px] font-bold text-white", m.color)}>
+                        {m.initials}
+                      </span>
+                    ))}
+                  </span>
+                )}
+                <SystemMenu go={go} dark={dark} toggleDark={toggleDark} onQuickCreate={onQuickCreate} />
+              </div>
             </div>
-          </div>
+          </header>
           {broadcast && (
-            <div className="flex h-9 items-center overflow-hidden bg-primary text-[13px] font-medium text-primary-foreground">
+            <div className="fixed inset-x-0 top-14 z-[45] flex h-8 items-center overflow-hidden bg-gradient-to-r from-orange-600 via-amber-500 to-orange-500 text-xs font-bold tracking-widest text-white uppercase shadow-md select-none">
               <div className="flex min-w-0 flex-1 overflow-hidden">
                 <div className="animate-marquee flex shrink-0 gap-16 pl-6 whitespace-nowrap">
                   {[0, 1].map((i) => (
@@ -99,12 +100,12 @@ export function Shell({ route, go, dark, toggleDark, broadcast, clearBroadcast, 
                   ))}
                 </div>
               </div>
-              <button type="button" aria-label="關閉公告" onClick={clearBroadcast} className="flex h-9 w-11 items-center justify-center hover:bg-black/10">
-                <X className="h-4 w-4" />
+              <button type="button" aria-label="關閉公告" onClick={clearBroadcast} className="flex h-8 w-8 shrink-0 items-center justify-center hover:bg-white/10">
+                <X className="h-3.5 w-3.5" />
               </button>
             </div>
           )}
-        </header>
+        </>
       )}
 
       <main key={route} className="animate-rise">
@@ -190,8 +191,8 @@ function SystemMenu({
   onQuickCreate: (group: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [quick, setQuick] = useState(true);
-  const [sound, setSound] = useState(true);
+  const [quick, setQuick] = useState(false);
+  const [sound, setSound] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -206,7 +207,7 @@ function SystemMenu({
     };
   }, [open]);
 
-  const item = "flex h-11 w-full items-center gap-3 rounded-xl px-3 text-sm text-left hover:bg-muted";
+  const item = "flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-left text-sm font-medium transition-all hover:bg-muted";
 
   return (
     <div ref={ref} className="relative">
@@ -215,15 +216,15 @@ function SystemMenu({
         aria-label="系統選單"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className="glass flex h-11 w-11 items-center justify-center rounded-full"
+        className="glass flex h-8 w-8 items-center justify-center rounded-full"
       >
-        <Menu className="h-[18px] w-[18px]" />
+        <Menu className="h-4 w-4" />
       </button>
       {open && (
-        <div role="menu" className="glass animate-rise absolute top-full right-0 mt-2 w-80 rounded-2xl bg-card p-2 shadow-xl">
-          <div className="rounded-xl border p-1.5">
+        <div role="menu" className="glass animate-rise absolute top-full right-0 mt-2 flex w-[320px] flex-col gap-2.5 rounded-2xl bg-card p-3 shadow-2xl">
+          <div className="rounded-xl border bg-muted/60 p-1.5">
             <button type="button" className={item} onClick={() => setQuick((q) => !q)} aria-expanded={quick}>
-              <Plus className="h-4 w-4 text-accent-ink" aria-hidden="true" />
+              <Plus className="h-4 w-4 text-accent" aria-hidden="true" />
               <span className="flex-1 font-medium">快速新增教案</span>
               <ChevronDown className={cn("h-4 w-4 transition", quick && "rotate-180")} aria-hidden="true" />
             </button>
@@ -247,27 +248,32 @@ function SystemMenu({
             )}
           </div>
           <button type="button" role="menuitem" className={item} onClick={() => setSound((s) => !s)}>
-            <Volume2 className="h-4 w-4" aria-hidden="true" />
+            <Volume2 className="h-4 w-4 text-accent" aria-hidden="true" />
             <span className="flex-1">{sound ? "關閉音效" : "音效解鎖"}</span>
             <span className="tag">{sound ? "已開啟" : "已關閉"}</span>
           </button>
           <button type="button" role="menuitem" className={item} onClick={() => { go("timer"); setOpen(false); }}>
-            <BatteryLow className="h-4 w-4" aria-hidden="true" />
+            <Monitor className="h-4 w-4 text-accent" aria-hidden="true" />
             進入省電模式
           </button>
           <button type="button" role="menuitem" className={item} onClick={() => { go("settings"); setOpen(false); }}>
-            <Settings className="h-4 w-4" aria-hidden="true" />
+            <Settings className="h-4 w-4 text-accent" aria-hidden="true" />
             系統設定
           </button>
-          <div className="flex h-11 items-center justify-between px-3 text-sm">
-            主題
-            <button type="button" aria-label={dark ? "切換為淺色" : "切換為深色"} onClick={toggleDark} className="flex h-9 w-9 items-center justify-center rounded-full border hover:bg-muted">
-              {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          <div className="flex items-center justify-between rounded-xl border bg-muted/60 px-3 py-2">
+            <span className="text-xs font-medium">主題</span>
+            <button
+              type="button"
+              aria-label={dark ? "切換為淺色" : "切換為深色"}
+              onClick={toggleDark}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border bg-card hover:bg-muted"
+            >
+              {dark ? <Moon className="h-4 w-4 text-accent" /> : <Sun className="h-4 w-4 text-accent" />}
             </button>
           </div>
-          <div className="mt-1 border-t px-3 pt-3 pb-2">
+          <div className="-mt-1.5 px-1">
             <span className="tag">目前營隊</span>
-            <span className="mt-0.5 block text-sm font-semibold">{camp.name}</span>
+            <span className="mt-0.5 block truncate text-xs font-semibold">{camp.name}</span>
           </div>
         </div>
       )}

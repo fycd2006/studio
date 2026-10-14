@@ -10,13 +10,14 @@
   --card-foreground: #1c1917;
   --muted: #f1eee9;
   --muted-foreground: #5f646a;
+  --fg-muted: #5a6065;
   --border: rgba(28, 25, 23, 0.1);
   --border-strong: rgba(28, 25, 23, 0.2);
-  --primary: #c2410c;
+  --primary: #f97316;
   --primary-foreground: #ffffff;
   --accent: #f97316;
   --accent-soft: #ffedd5;
-  --accent-ink: #9a3412;
+  --accent-ink: #ea580c;
   --danger: #b91c1c;
   --success: #047857;
   --glass: rgba(255, 255, 255, 0.82);
@@ -31,14 +32,15 @@
   --card: #14191c;
   --card-foreground: #f2f0ec;
   --muted: #1c2023;
-  --muted-foreground: #a2a8ad;
+  --muted-foreground: #8e9498;
+  --fg-muted: #5a6065;
   --border: rgba(255, 255, 255, 0.09);
   --border-strong: rgba(255, 255, 255, 0.18);
-  --primary: #fb923c;
-  --primary-foreground: #0b1012;
-  --accent: #fb923c;
-  --accent-soft: rgba(251, 146, 60, 0.14);
-  --accent-ink: #fdba74;
+  --primary: #ff6b1a;
+  --primary-foreground: #ffffff;
+  --accent: #ff6b1a;
+  --accent-soft: rgba(249, 115, 22, 0.12);
+  --accent-ink: #fb923c;
   --danger: #f87171;
   --success: #34d399;
   --glass: rgba(15, 18, 20, 0.72);
@@ -54,6 +56,7 @@
   --color-card-foreground: var(--card-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-fg-muted: var(--fg-muted);
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
   --color-primary: var(--primary);
@@ -70,7 +73,15 @@
 
   --font-sans: "Inter", "Noto Sans TC", system-ui, sans-serif;
   --font-display: "Space Grotesk", "Noto Sans TC", system-ui, sans-serif;
-  --font-mono: "Fira Code", ui-monospace, monospace;
+  /* Production uses Tailwind's default `font-mono` stack for its HUD labels;
+     Fira Code is reserved for the `.tag` eyebrow (production `.architectural-tag`). */
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  /* tailwind.config.ts letterSpacing overrides from the production app */
+  --tracking-tighter: -0.04em;
+  --tracking-tight: -0.02em;
+  --tracking-technical: 0.08em;
+  --tracking-widest: 0.15em;
 
 }
 
@@ -100,11 +111,13 @@
 @layer components {
   /* Mono "architectural" label: // SECTION // */
   .tag {
-    font-family: var(--font-mono);
-    font-size: 11px;
+    /* production: .architectural-tag */
+    font-family: "Fira Code", var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 500;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--muted-foreground);
+    color: var(--fg-muted);
   }
   .glass {
     background: var(--glass);
