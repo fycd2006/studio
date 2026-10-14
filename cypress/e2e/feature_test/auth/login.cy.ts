@@ -1,10 +1,13 @@
 /**
- * 登入與權限閘門
+ * 登入表單
  *
  * 守的業務行為：
- *  1. 沒有身分的人進任何頁面都會被導到 /login（src/lib/auth-context.tsx 的 effect）
- *  2. 帳密錯誤要留在原地並**說出來**，不是靜靜地什麼都沒發生
- *  3. admin / crew 兩種身分都登得進去，且身分真的被記下來（重載後還在）
+ *  1. 帳密錯誤要留在原地並**說出來**，不是靜靜地什麼都沒發生
+ *  2. admin / crew 兩種身分都能從**表單**登入（不是只有 API 登入會動）
+ *  3. 身分真的被記下來（localStorage + cookie 都要有，重載後不會被踢回 /login）
+ *
+ * 「未登入進各頁面會被導走」那一類在 e2e/access_page/route-guard.cy.ts ——
+ * 那是頁面可及性的掃描，不是登入功能。
  *
  * 對應實作：
  *  - src/app/api/auth/login/route.ts（帳密比對 + 設 studio_role cookie）
@@ -12,21 +15,12 @@
  *  - src/app/login/page.tsx（表單）
  */
 
-describe('登入與權限閘門', () => {
+describe('登入表單 (feature_test)', () => {
   beforeEach(() => {
     cy.resetDb();
     // 身分存在 localStorage + cookie，兩邊都要清，否則上一支測試的身分會漏過來
     cy.clearLocalStorage();
     cy.clearCookies();
-  });
-
-  it('未登入進 /plans 應被導回 /login', () => {
-    cy.visit('/plans');
-
-    cy.location('pathname', { timeout: 15000 }).should('eq', '/login');
-    cy.getByTestId('login-submit').should('be.visible');
-    // 黑名單：教案頁的東西一個都不該出現
-    cy.getByTestId('plans-search-input').should('not.exist');
   });
 
   it('帳密錯誤應顯示錯誤訊息且留在 /login', () => {
@@ -85,13 +79,5 @@ describe('登入與權限閘門', () => {
 
     cy.location('pathname', { timeout: 20000 }).should('eq', '/');
     cy.getCookie('studio_role').should('have.property', 'value', 'crew');
-  });
-
-  it('已登入再進 /login 應被導回首頁', () => {
-    cy.visit('/login');
-    cy.loginAs('admin');
-
-    cy.visit('/login');
-    cy.location('pathname', { timeout: 15000 }).should('eq', '/');
   });
 });

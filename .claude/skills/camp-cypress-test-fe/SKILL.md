@@ -23,7 +23,7 @@ description: Use when planning, writing, reviewing, or debugging Cypress E2E tes
 
 ```bash
 npm run e2e                                        # 全部
-npm run e2e -- --spec cypress/e2e/auth/login.cy.ts      # 單一支
+npm run e2e -- --spec cypress/e2e/feature_test/auth/login.cy.ts   # 單一支
 npm run e2e:open                                   # 開 GUI
 npm run typecheck                                  # app + cypress 兩份 tsconfig 都檢
 ```
@@ -40,6 +40,95 @@ npm run typecheck                                  # app + cypress 兩份 tsconf
 - `cypress/screenshots/` 截圖、`cypress/videos/` 錄影
 - `cypress/logs/dev-server.log`（Next.js 編譯錯誤都在這）
 - `cypress/logs/emulator.log`（emulator 沒起來、port 被占用）
+
+---
+
+## 目錄分類原則（決定測試放哪個資料夾）
+
+**型別在前，功能在後。** 先決定這支是什麼型別的測試，再放進該型別底下的功能資料夾。
+型別層的意義是「規則掛得住」—— 例如「不准 mock」只對 `feature_test/` 成立，
+把它跟允許 mock 的測試放在一起，規則就無處可掛。
+
+| 資料夾 | 用途 | 規則 |
+|---|---|---|
+| `cypress/e2e/feature_test/<功能>/` | UI 整合測試 | **必須**透過畫面操作（click / type）驗證功能；**禁止** mock API 回應；**禁止**只有 `cy.request` |
+| `cypress/e2e/api/` | 純 API 測試 | 用 `cy.request()` 直接打，不碰 UI |
+| `cypress/e2e/access_page/` | 頁面可及性 / 權限閘門 | 「這個身分進不進得去這一頁」的掃描式測試，不操作功能 |
+| `cypress/e2e/edge_cases/` | 邊界與錯誤處理 | 壞輸入、極端值、後端掛掉時的畫面 |
+| `cypress/e2e_fixture/` | 允許 mock 的測試 | **只有這裡**可以 `cy.intercept(..., { body })` |
+
+**判斷依據**
+- 有 `cy.visit()` + UI 操作 → `feature_test/<功能>/`
+- 只有 `cy.request()` → `api/`
+- 只驗「進不進得去」、不操作功能 → `access_page/`
+- 需要假資料隔離（例如驗後端壞掉時的 UI）→ `e2e_fixture/`
+
+⚠️ `e2e_fixture/` 刻意放在 `e2e/` **外面**，讓「可以 mock」與「不可以 mock」在檔案系統上就分開。
+`specPattern` 因此是 `cypress/{e2e,e2e_fixture}/**/*.cy.ts` —— 寫成 `cypress/e2e/**`
+會讓整個 `e2e_fixture/` 被**靜默略過**（不會報錯，只是那些測試再也不跑）。
+
+> 本專案沒有 `integration/`（跨應用 E2E）—— 只有一個前端，沒有第二個 app 可以跨。
+> 真的要驗「設計稿原型 ↔ 線上站」那種跨來源的事，用 `camp-live-mcp-verify` 那份 skill。
+
+---
+
+## 環境 Fail Fast（跑任何測試之前的三道擋板）
+
+`cypress/support/e2e.ts` 的 `before()` 會先確認三件事，不符就當場停並直接說要改哪裡：
+
+1. **受測網址必須是本機**（`localhost` / `127.0.0.1` / `[::1]`）
+2. **`CYPRESS_firestoreEmulatorHost` 必須有值**
+3. **前端必須真的接在 emulator 上** —— 不是猜，是攔 `console.log` 看 app 自己有沒有印出
+   `[Firebase Emulator] Firestore → host:port`（`src/firebase/index.ts` 的 `getSdks()` 印的）
+
+為什麼這三道比一般專案重要：每支測試的 `beforeEach` 都會 `cy.resetDb()` **清空整個資料庫**。
+BASE_URL 被指到線上站、或 dev server 沒帶 emulator 設定就起來了，測試會一邊清 emulator、
+一邊對著**真的 Firebase 專案**操作 —— 而且不會有任何錯誤訊息。
+
+兩道都實測過會擋下來（鑑別力驗證）：
+
+```
+# 可連得到但不是本機的 hostname
+CYPRESS_BASE_URL=http://0.0.0.0:3100 npx cypress run ...
+  → ❌ 受測網址不是本機，E2E 拒絕執行！  0 passing
+
+# 本機網址，但 dev server 沒帶 NEXT_PUBLIC_USE_FIREBASE_EMULATOR
+CYPRESS_BASE_URL=http://localhost:3200 npx cypress run ...
+  → ❌ 前端沒有接到 Firebase emulator！  0 passing
+```
+
+**新增擋板時要連鑑別力一起驗** —— 一道永遠不會紅的擋板等於沒有擋板。
+
+---
+
+## How to debug test
+
+依序看這四個，第四個最常被忘記但最有用：
+
+1. `cypress/screenshots/` 截圖、`cypress/videos/` 錄影
+2. `cypress/logs/dev-server.log` —— Next.js 的編譯錯誤都在這
+3. `cypress/logs/emulator.log` —— emulator 沒起來、port 被占用
+4. **API input/output** —— 截圖和錄影都答不出「送了什麼、回了什麼」：
+
+```bash
+CYPRESS_ENABLE_API_LOG=true npm run e2e -- --spec cypress/e2e/feature_test/plans/create-delete.cy.ts
+# 讀 cypress/reports/<spec>-<測試名>-api-log.json
+```
+
+本專案的寫入是 fire-and-forget（反模式 5），更需要這份紀錄：
+「畫面沒變」到底是請求沒送出、送錯了、還是後端回了錯，**光看畫面分不出來**。
+
+實作在 `cypress/support/api-log.ts`，預設關閉（全站 intercept 有成本）。
+它踩過兩個坑，都寫在檔案註解裡，改它之前先讀：
+
+| 坑 | 症狀 | 正解 |
+|---|---|---|
+| 用模組層旗標「只註冊一次」intercept | Cypress 每個測試前會清掉所有路由 → 只有該 spec 的**第一個測試**收得到紀錄，其餘默默是空的（實測 3 個測試只產出 1 份 json） | 每個測試都重新註冊，不要加旗標 |
+| middleware 處理器裡呼叫 `req.continue()` | 等於結束整個路由鏈 → spec 自己設的 `.as('xxx')` 再也對不到，報「`cy.wait('@xxx')` ... No request ever occurred」，看起來像請求根本沒送出 | 處理器直接 `return`，讓請求繼續往下一個相符的路由走 |
+
+另外它只記 API 類流量並對 response body 設上限 —— 不過濾的話 Next.js dev server 的
+JS chunk / HMR / 字型 / 圖片會連完整 body 一起吞進去，**一個測試吐 22MB 的 json**。
+報告裡的 `Authorization` / `Cookie` 會被遮成 `[REDACTED]`。
 
 ---
 
@@ -545,108 +634,132 @@ server 層？測試有沒有斷言**那個變化**真的發生，而不是只驗
 
 ---
 
-## 測試地圖（依功能分資料夾）
-
-`specPattern` 是 `cypress/e2e/**/*.cy.ts`，所以新增資料夾不用改設定。
-**一個資料夾 = 一個功能面**；資料夾裡再依「使用者在做什麼」切檔，不要依元件切。
+## 測試地圖（型別在前，功能在後）
 
 ✅ = 已有且綠　⬜ = 還沒寫　P0/P1/P2 = 建議優先序
 
 ```
-cypress/e2e/
-├── auth/                         身分與權限閘門
-│   ├── login.cy.ts               ✅ 5 個
-│   ├── role-permission.cy.ts     ✅ 5 個
-│   ├── route-guard.cy.ts         ⬜ P1
-│   └── logout.cy.ts              ⬜ P1
+cypress/
+├── e2e/
+│   ├── feature_test/                    UI 整合測試（禁 mock、禁純 cy.request）
+│   │   ├── auth/
+│   │   │   ├── login.cy.ts              ✅ 3   表單登入、帳密錯誤、身分持久化
+│   │   │   ├── role-permission.cy.ts    ✅ 5   crew 唯讀黑名單 + admin 對照
+│   │   │   └── logout.cy.ts             ⬜ P1
+│   │   ├── plans/
+│   │   │   ├── overview.cy.ts           ✅ 6   列表/搜尋/組別分頁/空狀態
+│   │   │   ├── create-delete.cy.ts      ✅ 4   新增與刪除（四層驗證）
+│   │   │   ├── group-change.cy.ts       ⬜ P1
+│   │   │   ├── sort-and-view.cy.ts      ⬜ P1
+│   │   │   ├── batch-export.cy.ts       ⬜ P1
+│   │   │   └── reorder.cy.ts            ⬜ P2
+│   │   ├── editor/
+│   │   │   ├── field-persistence.cy.ts  ⬜ P0
+│   │   │   ├── rich-text.cy.ts          ⬜ P0
+│   │   │   ├── props-table.cy.ts        ⬜ P1
+│   │   │   ├── undo-redo.cy.ts          ⬜ P1
+│   │   │   ├── export-single.cy.ts      ⬜ P1
+│   │   │   ├── blueprint.cy.ts          ⬜ P2
+│   │   │   └── topbar.cy.ts             ⬜ P2
+│   │   ├── versions/
+│   │   │   ├── save-restore.cy.ts       ⬜ P0
+│   │   │   ├── naming.cy.ts             ⬜ P2
+│   │   │   └── diff.cy.ts               ⬜ P2
+│   │   ├── admin/
+│   │   │   ├── timer.cy.ts              ⬜ P1（接近 P0，見下）
+│   │   │   ├── rotation-table.cy.ts     ⬜ P1
+│   │   │   ├── rotation-wizard.cy.ts    ⬜ P1
+│   │   │   ├── props-inventory.cy.ts    ⬜ P1
+│   │   │   └── tab-routing.cy.ts        ⬜ P2
+│   │   ├── settings/
+│   │   │   ├── camps.cy.ts              ⬜ P1
+│   │   │   ├── groups.cy.ts             ⬜ P1
+│   │   │   ├── activity-types.cy.ts     ⬜ P2
+│   │   │   ├── preferences.cy.ts        ⬜ P2
+│   │   │   ├── identity.cy.ts           ⬜ P2
+│   │   │   └── danger-zone.cy.ts        ⬜ P2
+│   │   ├── navbar/
+│   │   │   ├── system-menu.cy.ts        ⬜ P2
+│   │   │   ├── broadcast.cy.ts          ⬜ P2
+│   │   │   └── mobile-tabbar.cy.ts      ⬜ P2
+│   │   └── collaboration/
+│   │       ├── presence.cy.ts           ⬜ P2
+│   │       └── history-log.cy.ts        ⬜ P2
+│   │
+│   ├── access_page/                     頁面可及性 / 權限閘門（不操作功能）
+│   │   └── route-guard.cy.ts            ✅ 9   每一頁未登入都被導走 + 登入後對照組
+│   │
+│   ├── api/                             純 API（cy.request，不碰 UI）
+│   │   ├── export.cy.ts                 ⬜ P0
+│   │   ├── auth.cy.ts                   ⬜ P1
+│   │   ├── hero-images.cy.ts            ⬜ P2
+│   │   └── version.cy.ts                ⬜ P2
+│   │
+│   └── edge_cases/                      邊界與錯誤處理
+│       ├── xss.cy.ts                    ⬜ P0
+│       ├── role-escalation.cy.ts        ⬜ P0
+│       ├── firestore-rules.cy.ts        ⬜ P1
+│       └── breakpoints.cy.ts            ⬜ P2
 │
-├── plans/                        教案總覽
-│   ├── overview.cy.ts            ✅ 6 個
-│   ├── create-delete.cy.ts       ✅ 4 個
-│   ├── group-change.cy.ts        ⬜ P1
-│   ├── sort-and-view.cy.ts       ⬜ P1
-│   ├── batch-export.cy.ts        ⬜ P1
-│   ├── reorder.cy.ts             ⬜ P2
-│   └── deep-link.cy.ts           ⬜ P2
-│
-├── editor/                       教案編輯器
-│   ├── field-persistence.cy.ts   ⬜ P0
-│   ├── rich-text.cy.ts           ⬜ P0
-│   ├── props-table.cy.ts         ⬜ P1
-│   ├── undo-redo.cy.ts           ⬜ P1
-│   ├── export-single.cy.ts       ⬜ P1
-│   ├── blueprint.cy.ts           ⬜ P2
-│   └── topbar.cy.ts              ⬜ P2
-│
-├── versions/                     版本歷程
-│   ├── save-restore.cy.ts        ⬜ P0
-│   ├── naming.cy.ts              ⬜ P2
-│   └── diff.cy.ts                ⬜ P2
-│
-├── admin/                        行政中心
-│   ├── timer.cy.ts               ⬜ P0
-│   ├── rotation-table.cy.ts      ⬜ P1
-│   ├── rotation-wizard.cy.ts     ⬜ P1
-│   ├── props-inventory.cy.ts     ⬜ P1
-│   └── tab-routing.cy.ts         ⬜ P2
-│
-├── settings/                     系統設定
-│   ├── camps.cy.ts               ⬜ P1
-│   ├── groups.cy.ts              ⬜ P1
-│   ├── activity-types.cy.ts      ⬜ P2
-│   ├── preferences.cy.ts         ⬜ P2
-│   ├── identity.cy.ts            ⬜ P2
-│   └── danger-zone.cy.ts         ⬜ P2
-│
-├── navbar/                       導覽與系統選單
-│   ├── system-menu.cy.ts         ⬜ P2
-│   ├── broadcast.cy.ts           ⬜ P2
-│   └── mobile-tabbar.cy.ts       ⬜ P2
-│
-├── collaboration/                協作
-│   ├── presence.cy.ts            ⬜ P2
-│   └── history-log.cy.ts         ⬜ P2
-│
-├── api/                          純 API（不經 UI，用 cy.request）
-│   ├── export.cy.ts              ⬜ P0
-│   ├── auth.cy.ts                ⬜ P1
-│   ├── hero-images.cy.ts         ⬜ P2
-│   └── version.cy.ts             ⬜ P2
-│
-├── security/                     安全回歸
-│   ├── xss.cy.ts                 ⬜ P0
-│   ├── role-escalation.cy.ts     ⬜ P0
-│   └── firestore-rules.cy.ts     ⬜ P1
-│
-└── responsive/                   跨斷點與鍵盤
-    ├── breakpoints.cy.ts         ⬜ P2
-    └── keyboard.cy.ts            ⬜ P2
+└── e2e_fixture/                         唯一允許 mock 的地方
+    ├── firestore-offline.cy.ts          ⬜ P1   後端掛掉時畫面不該白屏
+    └── api-error-states.cy.ts           ⬜ P2   /api/* 回 500 時的錯誤呈現
 ```
+
+目前 **27 個測試全綠**（route-guard 9、login 3、role-permission 5、create-delete 4、overview 6）。
+
+### 新增 spec 前必做：先查既有的該不該擴充
+
+反射性「新 feature → 新檔」會造成兩個問題：重複的 scenario setup/cleanup boilerplate，
+以及功能明明相關卻散在兩支、各自跑一輪 emulator 清空（2x 時間）。
+
+| 寫新 spec 前 | 怎麼檢查 |
+|---|---|
+| 同功能資料夾裡有沒有已經在測相近流程的 spec？ | `ls cypress/e2e/feature_test/<功能>/` 並讀它的檔頭 docstring |
+| 既有 spec 的 scenario 是不是已經建好我要的資料？ | 看它的 `beforeEach`。是 → 加一條 `it` 進去，不要新開檔 |
+| 這是「同一條使用者旅程的下一段」嗎？ | 是 → 擴充既有 spec（例如建立→編輯→存版本→還原屬於同一條） |
+| 這是「同一個畫面的另一個獨立功能」嗎？ | 是 → 開新檔 |
 
 ### P0 —— 先補這六支（風險最高 / 完全沒覆蓋）
 
 | spec | 守什麼 | 為什麼是 P0 |
 |---|---|---|
-| `security/xss.cy.ts` | 教案欄位塞 `<script>` / `<img onerror>` / `javascript:` → 存檔重載後**不該執行**，也不該出現在 DOM 裡 | `O2RichEditor.tsx:205` 與 `MarkdownArea.tsx:51` 把資料庫內容寫進 `innerHTML`，而 `sanitizeHtml` 只在貼上時跑、而且是黑名單式。這是已知的 stored XSS 風險，沒有回歸測試就不會知道修好了沒 |
-| `security/role-escalation.cy.ts` | 手改 `localStorage.studio_role = 'admin'` 之後，crew 身分**實際上**還能不能寫入 | 權限目前只做在前端（`auth-context`），沒有 middleware、Firestore 規則只檢查 `request.auth != null`。這支測試會把「目前擋不住」這件事**寫成會紅的斷言**，而不是停留在報告裡 |
+| `edge_cases/xss.cy.ts` | 教案欄位塞 `<script>` / `<img onerror>` / `javascript:` → 存檔重載後**不該執行**，也不該出現在 DOM 裡 | `O2RichEditor.tsx:205` 與 `MarkdownArea.tsx:51` 把資料庫內容寫進 `innerHTML`，而 `sanitizeHtml` 只在貼上時跑、而且是黑名單式。這是已知的 stored XSS 風險，沒有回歸測試就不會知道修好了沒 |
+| `edge_cases/role-escalation.cy.ts` | 手改 `localStorage.studio_role = 'admin'` 之後，crew 身分**實際上**還能不能寫入 | 權限目前只做在前端（`auth-context`），沒有 middleware、Firestore 規則只檢查 `request.auth != null`。這支會把「目前擋不住」這件事**寫成會紅的斷言**，而不是停留在報告裡。⚠️ `access_page/route-guard.cy.ts` 只驗前端導向，證明不了後端擋得住 |
 | `api/export.cy.ts` | `/api/export` 的 docx / pdf / zip 輸出、空 body、超大輸入；以及**不帶任何身分就能呼叫** | 這支 API 沒有驗證也沒有輸入大小限制。先用測試把現況釘住，修的時候才知道有沒有改壞輸出 |
-| `editor/field-persistence.cy.ts` | 每個欄位打字 → Firestore 真的存 → 重載還在；`updatedAt` 有更新 | 編輯器是這個產品的核心，目前**一行測試都沒有**。而且寫入是 fire-and-forget（反模式 5），正是最容易無聲失敗的地方 |
-| `editor/rich-text.cy.ts` | 粗體 / 斜體 / 清單 / 連結 / 貼上外部 HTML → 存回去的內容正確 | `O2RichEditor` 1528 行、`MarkdownToolbar` 672 行，全靠手測 |
-| `versions/save-restore.cy.ts` | 存版本 → 改內容 → 還原 → 欄位回到舊值、Firestore 同步、`planVersions` 筆數對 | `restorePlanVersion` 牽涉 snapshot / patch 兩種型別與 jsondiffpatch 還原鏈，壞掉等於使用者的歷史版本救不回來 |
+| `feature_test/editor/field-persistence.cy.ts` | 每個欄位打字 → Firestore 真的存 → 重載還在；`updatedAt` 有更新 | 編輯器是這個產品的核心，目前**一行測試都沒有**。而且寫入是 fire-and-forget（反模式 5），正是最容易無聲失敗的地方 |
+| `feature_test/editor/rich-text.cy.ts` | 粗體 / 斜體 / 清單 / 連結 / 貼上外部 HTML → 存回去的內容正確 | `O2RichEditor` 1528 行、`MarkdownToolbar` 672 行，全靠手測 |
+| `feature_test/versions/save-restore.cy.ts` | 存版本 → 改內容 → 還原 → 欄位回到舊值、Firestore 同步、`planVersions` 筆數對 | `restorePlanVersion` 牽涉 snapshot / patch 兩種型別與 jsondiffpatch 還原鏈，壞掉等於使用者的歷史版本救不回來 |
 
 ### P1 —— 接著補
 
-`admin/timer.cy.ts`（設定時長 / 開始 / 暫停 / 歸零 → `userSettings` 同步 → **另一個分頁也要跟著動**，
-`targetEndTime` 的跨裝置對齊最容易壞；音效解鎖 `camp-audio-unlocked`）、
-`admin/rotation-table.cy.ts`（建表 / 關卡 / 隊伍 / 日期切換 / undo-redo）、
-`admin/rotation-wizard.cy.ts`（智慧排班精靈走完 → 產出的表不衝突，`rotation-scheduler.ts` 的輸出要驗不變量）、
-`admin/props-inventory.cy.ts`（道具總表彙整、打包勾選、匯出）、
-`settings/camps.cy.ts`（建 / 改名 / 刪 / 切換 / 鎖定，切換會 `window.location.reload()`）、
-`settings/groups.cy.ts`（組別增刪改 → 教案分頁與下拉**同步變動**）、
-`plans/group-change.cy.ts`、`plans/sort-and-view.cy.ts`、`plans/batch-export.cy.ts`、
-`auth/route-guard.cy.ts`（逐條驗 `/admin` `/settings` `/history` `/plans/[id]` 未登入都會被導走）、
-`auth/logout.cy.ts`、`editor/props-table.cy.ts`、`editor/undo-redo.cy.ts`、`editor/export-single.cy.ts`、
-`security/firestore-rules.cy.ts`（直接對 emulator 驗規則，把現況釘住）。
+`feature_test/admin/timer.cy.ts` 雖然標 P1 但很接近 P0：它要驗的是 `targetEndTime` 的
+**跨分頁同步**（A 分頁按開始，B 分頁要跟著動），那是「狀態存在 Firestore 的計時器」
+最容易壞的地方；另含音效解鎖（`camp-audio-unlocked`）。
+
+其餘：`admin/rotation-table`（建表 / 關卡 / 隊伍 / 日期切換 / undo-redo）、
+`admin/rotation-wizard`（精靈走完 → 產出的表不衝突）、`admin/props-inventory`、
+`settings/camps`（建 / 改名 / 刪 / 切換 / 鎖定，切換會 `window.location.reload()`）、
+`settings/groups`（組別增刪改 → 教案分頁與下拉**同步變動**）、
+`plans/group-change`、`plans/sort-and-view`、`plans/batch-export`、
+`auth/logout`、`editor/props-table`、`editor/undo-redo`、`editor/export-single`、
+`api/auth`、`edge_cases/firestore-rules`（直接對 emulator 驗規則，把現況釘住）、
+`e2e_fixture/firestore-offline`。
+
+### Bad Example 15：改了欄位必填性，`api/` 要同步改
+
+`cypress/e2e/api/` 是 API 合約的最後防線。feature 新增必填欄位、改變必填條件、
+或調整 POST/PATCH body 結構時，`feature_test/` 通常會跟著更新，但 `api/` 常常被遺漏 ——
+導致 api test 已無法反映真實合約，甚至在 CI 靜默通過一個「用舊邏輯送出的請求」。
+
+| 改動類型 | 必須同步更新的 `api/` 測試 |
+|---|---|
+| 新增必填欄位 | 相關 POST/PATCH test 要加入該欄位 + body 驗證 |
+| 欄位從選填改必填 | api/ 的表單操作要補上填寫步驟，否則送出會被擋 |
+| API 回應新增欄位 | 補 `expect(response.body).to.have.property(...)` |
+| 移除欄位或選項 | 移除對應步驟，避免因選項消失而 fail |
+
+**每次實作新功能或改動欄位必填性，都要打開 `cypress/e2e/api/` 對應檔案確認是否需要更新。**
 
 ### 不該用 Cypress 測的（要補的話是單元測試，不是 E2E）
 

@@ -53,6 +53,7 @@ ui-debug.log
 /cypress/screenshots/
 /cypress/downloads/
 /cypress/logs/
+/cypress/reports/
 
 # Image processing cache
 .cache/

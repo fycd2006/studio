@@ -34,7 +34,10 @@ const firestoreEnv: FirestoreEnv = {
 export default defineConfig({
   e2e: {
     baseUrl: BASE_URL,
-    specPattern: 'cypress/e2e/**/*.cy.ts',
+    // ⚠️ 不可寫成 'cypress/e2e/**' —— e2e_fixture/ 刻意放在 e2e/ **外面**
+    //    （允許 mock 的測試與不允許 mock 的測試在檔案系統上就分開，
+    //      規則才掛得住），寫死在 e2e/ 底下會讓那整個資料夾被靜默略過。
+    specPattern: 'cypress/{e2e,e2e_fixture}/**/*.cy.ts',
     supportFile: 'cypress/support/e2e.ts',
     fixturesFolder: 'cypress/fixtures',
     videosFolder: 'cypress/videos',

@@ -108,8 +108,14 @@ Cypress.Commands.add('resetDb', () =>
     const dirty = Object.entries(remaining).filter(([, n]) => Number(n) > 0);
     expect(
       dirty,
-      `清空 emulator 後仍有殘留：${JSON.stringify(dirty)}。` +
-        'emulator 可能沒在跑或連錯 port —— 修它，不要放它過去',
+      '❌ 清空 emulator 之後仍有殘留！\n' +
+        `   殘留內容: ${JSON.stringify(dirty)}\n` +
+        '   可能原因: emulator 沒在跑、連錯 port、或有別的程序正在寫入\n' +
+        '   解決方案:\n' +
+        '     1. 確認用的是 ./scripts/e2e.sh 啟動（它會等 emulator 就緒才開跑）\n' +
+        '     2. 看 cypress/logs/emulator.log 有沒有 port 被占用\n' +
+        '     3. 檢查 cypress/plugins/firestore.ts 的 COLLECTIONS 是否漏了新集合\n' +
+        '   ⚠️ 不要放它過去：殘留會累積，後續測試會撈到上一支留下的資料',
     ).to.deep.equal([]);
     return cy.wrap(remaining, { log: false });
   }),
@@ -117,10 +123,25 @@ Cypress.Commands.add('resetDb', () =>
 
 Cypress.Commands.add('setupCampScenario', (options: CampScenarioOptions = {}) =>
   cy.task<CampScenario>('db:setupCampScenario', options).then((scenario) => {
-    // Fail Fast：fixture 不完整就當場停，別讓它在下游偽裝成功能壞掉
-    expect(scenario?.campId, 'scenario 應回傳 campId').to.be.a('string');
+    // Fail Fast：fixture 不完整就當場停。
+    // 不這樣做的話，下游會以一個不完整的世界為前提跑下去，
+    // 然後紅在某個找不到元素的斷言上 —— 而那個訊息跟真正的原因毫無關係。
+    expect(
+      scenario?.campId,
+      '❌ scenario 沒有回傳 campId！\n' +
+        '   解決方案: 檢查 cypress/plugins/firestore.ts 的 setupCampScenario 是否真的寫入了 camps',
+    ).to.be.a('string');
+
     const wanted = options.plans?.length ?? options.planCount ?? 0;
-    expect(scenario.planIds, `scenario 應建 ${wanted} 筆教案`).to.have.length(wanted);
+    expect(
+      scenario.planIds,
+      `❌ scenario 建出來的教案筆數不對！\n` +
+        `   期望: ${wanted} 筆\n` +
+        `   實際: ${scenario.planIds?.length ?? 0} 筆\n` +
+        '   解決方案: 確認 options.plans / options.planCount 傳對了；\n' +
+        '             並檢查 setupCampScenario 的 batch.commit() 有沒有被例外中斷',
+    ).to.have.length(wanted);
+
     return cy.wrap(scenario, { log: false });
   }),
 );
@@ -135,8 +156,13 @@ Cypress.Commands.add('cleanupCampScenario', (scenarioId: string) => {
     const dirty = Object.entries(remaining).filter(([, n]) => Number(n) > 0);
     expect(
       dirty,
-      `cleanup 沒清乾淨，殘留：${JSON.stringify(dirty)}。` +
-        '比對鍵可能在測試過程中被改掉了 —— 修 cleanup，不要放它過去',
+      '❌ cleanup 沒清乾淨！\n' +
+        `   殘留內容: ${JSON.stringify(dirty)}\n` +
+        '   最常見原因: cleanup 的比對鍵在測試過程中被改掉了，所以比對不到\n' +
+        '               （例如用名稱當鍵，而測試把名稱改了）\n' +
+        '   解決方案: 改用測試動不到的鍵（id / campId），見\n' +
+        '             cypress/plugins/firestore.ts 的 cleanupCampScenario\n' +
+        '   ⚠️ 不要放它過去：每跑一次多一筆，累積後會咬死其他 spec',
     ).to.deep.equal([]);
   });
 });
