@@ -1,0 +1,9 @@
+/*
+ * Font families match the production app: Inter (body), Space Grotesk (display),
+ * Fira Code (mono labels). Noto Sans TC covers Traditional Chinese glyphs.
+ * The Google Fonts stylesheet is linked from index.html so it loads before
+ * Tailwind's inlined CSS (a CSS @import url() must be the first rule).
+ */
+.font-display {
+  font-feature-settings: "ss01";
+}
