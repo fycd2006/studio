@@ -208,8 +208,20 @@ export function O2RichEditor({
 
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  /**
+   * 使用者最後打出來的內容。
+   *
+   * 為什麼要多一個 ref：卸載時 React **會先把 editorRef 設回 null**，才執行
+   * effect 的清理函式（實測 2026-10-15：清理函式裡看到 `timer=true el=false`）。
+   * 只靠 editorRef.current 補送的話，條件永遠不成立 —— 補送的程式碼看起來有寫，
+   * 實際上一次都沒跑過，而使用者的字就這樣沒了。
+   */
+  const latestHtmlRef = useRef<string | null>(null);
+
   const handleInput = useCallback(() => {
     if (readOnly) return;
+    // 同步記下來（不是等 debounce）—— 卸載補送就是靠這一行
+    if (editorRef.current) latestHtmlRef.current = editorRef.current.innerHTML;
     setIsSaving(true);
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(() => {
@@ -221,9 +233,54 @@ export function O2RichEditor({
     }, 350);
   }, [onChange, readOnly]);
 
-  // Cleanup debounce timer on unmount
+  /**
+   * 卸載 / 關頁前把「還在 debounce 等著送」的內容補送出去。
+   *
+   * 原本這裡只是 clearTimeout —— 等於**把使用者剛打的字丟掉**：
+   * handleInput 要等 350ms 才呼叫 onChange，而卸載時把那個 timer 清掉之後，
+   * 父層 PlanEditor 的卸載 flush 根本沒收到這段文字（它的 pendingUpdates 是空的），
+   * 於是 Firestore 裡那個欄位還是舊值，畫面上卻一直寫著「已儲存至雲端」。
+   *
+   * 實測（2026-10-15，cypress 探測）：在目標欄位打字後立刻離開編輯器，
+   * 2.5 秒後讀資料庫 → purpose 仍是 ""。使用者會以為存好了。
+   * 對應測試：cypress/e2e/feature_test/editor/field-persistence.cy.ts
+   *           「打完字立刻按返回，內容不該掉」
+   *
+   * ⚠️ 這個 effect 的清理函式必須是「補送」而不是「丟掉」。改回 clearTimeout
+   *    就會把上面那個 bug 放回去。
+   */
+  const flushPendingInput = useCallback(() => {
+    if (!debounceTimer.current) return;
+    clearTimeout(debounceTimer.current);
+    debounceTimer.current = null;
+    // editorRef 在卸載時已經是 null，所以這裡要能退回 latestHtmlRef
+    const html = editorRef.current?.innerHTML ?? latestHtmlRef.current;
+    if (html === null) return;
+    isInternalChange.current = true;
+    onChange(html);
+    setIsSaving(false);
+  }, [onChange]);
+
+  // 用 ref 轉一手，讓下面那個 effect 的依賴可以是 []。
+  // ⚠️ 不要把 flushPendingInput 直接當依賴：onChange 是父層每次 render 都重建的
+  //    行內箭頭函式（PlanEditor 的 `onChange={(val) => handlePlanUpdate({...})}`），
+  //    所以 flushPendingInput 的 identity 每次 render 都變 → effect 每次 render
+  //    都重跑 → 它的清理函式也每次都跑 → debounce 等於**每次 render 都被提前結算**。
+  //    這個專案的其他地方（PlanEditor 的 onUpdateRef / autoSaveRef）也是這樣處理的。
+  const flushPendingInputRef = useRef(flushPendingInput);
   useEffect(() => {
-    return () => { if (debounceTimer.current) clearTimeout(debounceTimer.current); };
+    flushPendingInputRef.current = flushPendingInput;
+  }, [flushPendingInput]);
+
+  useEffect(() => {
+    // 關整個分頁走的是 beforeunload（卸載清理函式不保證會跑），
+    // 用 router 換頁走的是下面的清理函式 —— 兩條路都要補送。
+    const handleBeforeUnload = () => flushPendingInputRef.current();
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      flushPendingInputRef.current();
+    };
   }, []);
 
   // Listen to native input events (crucial for detached toolbars that dispatch native events)

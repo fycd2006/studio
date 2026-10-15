@@ -398,6 +398,15 @@ export function PlanEditor({
   }, [flushPendingUpdates]);
 
   const handlePlanUpdate = (updates: Partial<LessonPlan>) => {
+    // 卸載進行中（父層的清理函式**先於**子層執行，實測確認）：
+    // 這時候再排一個 400ms 的 debounce，等於把子層卸載時補送上來的內容
+    // 交給一個沒人會再結算的計時器。直接寫出去。
+    if (isUnmountingRef.current) {
+      pendingUpdatesRef.current = { ...pendingUpdatesRef.current, ...updates };
+      onUpdateRef.current(planIdRef.current, pendingUpdatesRef.current);
+      pendingUpdatesRef.current = {};
+      return;
+    }
     // Update local UI immediately
     if (Object.keys(pendingUpdatesRef.current).length === 0) {
       // Record snapshot right before a new burst of typing
@@ -535,6 +544,8 @@ export function PlanEditor({
 
   const onUpdateRef = useRef(onUpdate);
   const planIdRef = useRef(plan.id);
+  /** 卸載是否已經開始（父層清理函式一跑就是 true，子層的卸載補送會晚於它）。 */
+  const isUnmountingRef = useRef(false);
 
 
   useEffect(() => {
@@ -543,6 +554,14 @@ export function PlanEditor({
   }, [onUpdate, plan.id]);
 
   useEffect(() => {
+    // ⚠️ 一定要在這裡重設回 false。
+    // React 的嚴格模式（dev）會 mount → 跑清理函式 → 再 mount，所以下面那個
+    // `isUnmountingRef.current = true` 在**畫面剛開好時**就會被設成 true。
+    // 不重設的話它會一直是 true → 每一次打字都走「立即寫入」那條路
+    // → 父層每個字都重新 render → 受控的 input 把後面的字吃掉。
+    // 實測症狀：在主關主欄位打「王小明」，資料庫裡只存到「小明」。
+    isUnmountingRef.current = false;
+
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       // Flush pending updates before unload
       if (Object.keys(pendingUpdatesRef.current).length > 0) {
@@ -556,6 +575,7 @@ export function PlanEditor({
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      isUnmountingRef.current = true;
       // Flush pending on unmount
       if (Object.keys(pendingUpdatesRef.current).length > 0) {
         onUpdateRef.current(planIdRef.current, pendingUpdatesRef.current);
