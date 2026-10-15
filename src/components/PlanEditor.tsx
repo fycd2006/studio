@@ -90,7 +90,7 @@ const FieldContainer = ({
   const locked = isLockedByOther(field);
   const info = getLockInfo(field);
   return (
-    <div className="relative group">
+    <div className="relative group" data-testid={`editor-field-${field}`}>
       <div className={cn("transition-opacity", locked && "opacity-50 pointer-events-none")}>
         {children}
       </div>
@@ -657,6 +657,7 @@ export function PlanEditor({
               <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                 <button
                   type="button"
+                  data-testid="editor-back"
                   onClick={() => {
                     if (typeof window !== "undefined" && window.history.length > 1) {
                       router.back();
@@ -692,6 +693,7 @@ export function PlanEditor({
 
                 {/* Editable Document Title (Google Docs style) */}
                 <input
+                  data-testid="editor-title-input"
                   value={(currentPlan.activityName || "").replace(/<[^>]*>?/gm, '')}
                   onChange={(e) => handlePlanUpdate({ activityName: e.target.value })}
                   className="text-sm sm:text-base font-bold font-headline tracking-tight bg-transparent hover:bg-stone-200/50 dark:hover:bg-white/5 focus:bg-white dark:focus:bg-stone-900 border border-transparent hover:border-stone-300/70 dark:hover:border-white/15 focus:border-orange-500/50 rounded-lg px-2 py-0.5 transition-all text-foreground truncate max-w-[140px] sm:max-w-[240px] md:max-w-[380px] lg:max-w-[500px] focus:outline-none placeholder:text-muted-foreground/40"
@@ -701,7 +703,7 @@ export function PlanEditor({
                 />
 
                 {/* Cloud Save Status */}
-                <div className="flex items-center gap-1.5 shrink-0 pl-1">
+                <div className="flex items-center gap-1.5 shrink-0 pl-1" data-testid="editor-save-status">
                   {isSaving ? (
                     <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -722,6 +724,7 @@ export function PlanEditor({
                   variant="ghost"
                   size="sm"
                   title="版本紀錄"
+                  data-testid="editor-history-trigger"
                   onClick={() => {
                     const willOpen = !isSidebarOpen;
                     setIsSidebarOpen(willOpen);
