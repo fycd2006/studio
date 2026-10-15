@@ -54,8 +54,18 @@ describe('路由權限閘門 (access_page)', () => {
   it('/lesson-plans/<組別> 會轉到 /plans?group=<組別>（未登入時仍被閘門擋下）', () => {
     cy.visit('/lesson-plans/activity');
 
-    // 這條路由是 server-side redirect（src/app/lesson-plans/[slug]/page.tsx），
-    // 先轉到 /plans 再被前端閘門導去 /login —— 最終落點才是使用者看到的
+    // 這條抓到過真 bug，別把它改寬鬆。
+    //
+    // 原本 src/app/lesson-plans/[slug]/page.tsx 用 next/navigation 的 redirect()，
+    // 而那在初次文件請求時回的是 HTTP 200 + RSC payload（夾一段
+    // NEXT_REDIRECT;replace;...;307;），**沒有 Location header** —— 跳轉是客戶端
+    // router 做的。實測 12 次有 6 次客戶端沒執行，使用者就被留在
+    // /lesson-plans/<組別> 看**完全空白**的頁面（innerText 長度 0、沒有任何錯誤）。
+    // 已改成 next.config.ts 的 redirects()，現在是請求進到 React 之前就發出的
+    // 真 307（curl 實測有 Location）。
+    //
+    // 先 307 到 /plans?group=<組別>，再被前端閘門導去 /login —— 最終落點才是
+    // 使用者看到的
     cy.location('pathname', { timeout: 15000 }).should('eq', '/login');
   });
 

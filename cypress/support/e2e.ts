@@ -8,9 +8,44 @@ import 'cypress-real-events';
  * ⚠️ 只忽略這一種。其他 uncaught exception 一律讓測試紅 ——
  *    把它們一起吞掉等於把「頁面炸了」偽裝成「測試通過」。
  */
+/**
+ * app 端丟出來的 uncaught exception 一律記下來（但**不吞**）。
+ *
+ * 為什麼需要：`src/components/FirebaseErrorListener.tsx` 是全站掛著的隱形元件，
+ * 收到任何 Firestore permission error 就 `throw` 在 render 裡 —— 整個 client
+ * tree 會爆掉。爆掉之後的外觀是「router 不跳轉」「列表不出現」這類**指不到原因**
+ * 的訊息，而 Cypress 只會把 exception 歸給當下那條測試。記下來才能把兩件事對上。
+ * 見 skill「尚未定案的間歇失敗」。
+ */
+const appExceptions: { test: string; message: string; pathname: string }[] = [];
+
 Cypress.on('uncaught:exception', (err) => {
   if (err.message.includes('ResizeObserver')) return false;
+  let pathname = '(未知)';
+  try {
+    pathname = (cy as unknown as { state: (k: string) => Window | undefined }).state('window')
+      ?.location?.pathname ?? '(未知)';
+  } catch {
+    // 取不到就算了，不能讓記錄本身弄壞測試
+  }
+  appExceptions.push({
+    test: Cypress.currentTest?.title ?? '(不在測試中)',
+    message: err.message.split('\n')[0].slice(0, 300),
+    pathname,
+  });
   return undefined;
+});
+
+afterEach(() => {
+  if (appExceptions.length === 0) return;
+  const batch = appExceptions.splice(0, appExceptions.length);
+  batch.forEach((e) => {
+    cy.task(
+      'log',
+      `⚠️ app 丟出 uncaught exception｜測試="${e.test}"｜pathname=${e.pathname}\n   ${e.message}`,
+      { log: false },
+    );
+  });
 });
 
 // ─────────────────────────────────────────────────────────────
