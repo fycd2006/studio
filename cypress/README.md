@@ -73,6 +73,15 @@ curl -X POST http://localhost:3100/api/auth/login \
 `cypress.config.ts` 的 `specPattern` 因此是 `cypress/{e2e,e2e_fixture}/**/*.cy.ts` ——
 寫成 `cypress/e2e/**` 會讓整個 `e2e_fixture/` 被靜默略過。
 
+## 跑測試時的兩個地雷（都會產生看起來很像產品壞掉的失敗）
+
+| 做了什麼 | 會看到什麼 |
+|---|---|
+| **同時跑兩個 `npm run e2e`** | 第二個的 dev server 起不來（`EADDRINUSE :::3100`），於是它接到**另一個 run 的** server，兩個 Next dev 共用同一份 `.next` → 畫面報 `SyntaxError: Invalid or unexpected token`，看起來像 app 壞了 |
+| **測試跑到一半改 `src/` 底下的檔案** | Next 會即時重編譯，那段時間 server 沒有回應 → `cy.request()` 對 `/api/auth/login` 逾時 15 秒、或某頁載入逾時。失敗會落在跟你的改動完全無關的測試上 |
+
+兩個都實測過（2026-10-15）。要改程式碼就先等這一輪跑完。
+
 ## 測試紅了怎麼查
 
 1. `cypress/screenshots/` 截圖、`cypress/videos/` 錄影
@@ -83,7 +92,14 @@ curl -X POST http://localhost:3100/api/auth/login \
    `support/e2e.ts` 會把 app 丟出的 uncaught exception **記錄下來但不吞掉**，
    紅的時候 log 裡會有「⚠️ app 丟出 uncaught exception｜測試=…｜pathname=…」。
    目前還有兩個症狀沒定案，見 skill 反模式 13 —— 動手前先讀，別重走已排除的路。
-5. **API input/output**（截圖與錄影都答不出「送了什麼、回了什麼」）：
+5. ⚠️ **「做完就立刻離開」是獨立的一題**。打字 → 馬上按返回 / 關分頁，資料還在嗎？
+   編輯器就是這樣抓到資料遺失的（打的字永遠不會進資料庫，但畫面寫著「已儲存至雲端」）。
+   見 skill 反模式 14。
+6. **想知道元件內部的執行順序**（哪個清理函式先跑、ref 還在不在）時，
+   在元件裡臨時 `console.log('[PROBE] …')`，並在 spec 的 `cy.visitApp` 用
+   `onBeforeLoad` 攔 `win.console.log` 收進 `win.__probeLogs`，測完再 `cy.task('log')` 印出來。
+   前端換頁（router.push / back）不會換掉 window，所以換頁後還讀得到。查完記得把 log 拿掉。
+7. **API input/output**（截圖與錄影都答不出「送了什麼、回了什麼」）：
 
 ```bash
 CYPRESS_ENABLE_API_LOG=true npm run e2e -- --spec cypress/e2e/feature_test/plans/create-delete.cy.ts
@@ -91,6 +107,17 @@ CYPRESS_ENABLE_API_LOG=true npm run e2e -- --spec cypress/e2e/feature_test/plans
 ```
 
 預設關閉（全站 intercept 有成本）。報告裡的 Authorization / Cookie 會被遮成 `[REDACTED]`。
+
+## 編輯器類的 spec 要注意兩件事
+
+1. **`afterEach` 先離開編輯器頁，再 `cleanupCampScenario`。**
+   人還留在 `/plans/<id>` 上時刪掉教案 → 頁面切到「找不到教案」→ `PlanEditor` 卸載
+   → 卸載處理器補寫一筆 `planVersions` → 那筆在 cleanup 第一輪刪完之後才長出來，
+   報成「cleanup 沒清乾淨」。離開時只要 `cy.location('pathname').should('eq', '/plans')`，
+   **不要**等 `/plans` 上的元素（那會把 cleanup 綁上「app 載入成功」這個條件）。
+2. **打字用 `cy.typeInEditorField(欄位, 文字)`**，不要自己串
+   `.click().type('{selectall}{del}').type(text)` —— 清空會讓富文字編輯器重新渲染，
+   串起來的第二個 `type` 會拿到已經從 DOM 卸下的元素。
 
 ## 寫測試前
 
