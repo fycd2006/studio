@@ -193,7 +193,7 @@ afterEach(() => {
 
 ---
 
-## 反模式（12 條，逐條比對）
+## 反模式（13 條，逐條比對）
 
 ### 比對順序：先原則，後條目
 
@@ -206,8 +206,9 @@ Bad Example 是按「情境」寫的，情境對不上就會被打勾放行。**
 | 3 | 使用者真正要完成的動作，**走完了嗎**？ | 反模式 9 |
 | 4 | 測試建的資料**清掉了嗎**？清不掉會不會被發現？ | 反模式 11 |
 | 5 | 這支測試**在守什麼業務行為**？講得出來嗎？ | 反模式 12 |
+| 6 | 間歇失敗的那一刻，**使用者看到什麼**？（白屏算 bug，不算測試不穩） | 反模式 13 |
 
-任一題答不出來 → 即使 12 條全對不上，也要上報，標「原則層命中、無對應條目」。
+任一題答不出來 → 即使 13 條全對不上，也要上報，標「原則層命中、無對應條目」。
 
 ---
 
@@ -614,6 +615,53 @@ cy.toastText().should((text) => {
 3. 目的不確定 → 問使用者，而且要附上**檔案路徑**與**你認為的測試目的（白話）**。
 4. **鑑別力驗證**：修綠之後，把「真正該讓它紅的實作」改壞 → 測試必須變紅。
    本次反模式 3 就是這樣驗的：把 `e.preventDefault()` 加回去，那條測試立刻紅回原來的訊息。
+
+---
+
+### 反模式 13：把間歇失敗當成「測試寫壞了」（這條抓到真 bug）
+
+整套 27 支一開始在本機有 ~1/3 的間歇失敗率，而且**紅的位置會換**。很容易直接
+當成測試不穩、然後用 `retries` 或調大 timeout 收尾 —— 那會把一個**使用者會遇到
+的白屏 bug** 永久埋掉。
+
+**實際結果：症狀 1 是產品 bug。**
+
+| | |
+| :--- | :--- |
+| 症狀 | `route-guard` 的 `/lesson-plans/activity`：pathname 一直停在原地，沒走到 `/login` |
+| 真因 | `src/app/lesson-plans/[slug]/page.tsx` 用 `next/navigation` 的 `redirect()`。那在**初次文件請求**回的是 **HTTP 200 + RSC payload**（夾一段 `NEXT_REDIRECT;replace;/plans?group=activity;307;`），**沒有 Location header** —— 跳轉是**客戶端 router** 做的 |
+| 使用者看到什麼 | 連跑 12 次，**6 次**客戶端沒執行跳轉，使用者被留在 `/lesson-plans/<組別>` 看**完全空白**的頁面：`document.body.innerText` 長度 **0**、沒有錯誤、沒有 overlay。因為那個 page 只負責 redirect、不 render 任何東西，跳轉沒發生就是白屏 |
+| 修法 | 改用 `next.config.ts` 的 `redirects()` —— 請求進到 React 之前就發真 307。`curl -D -` 實測有 `Location: /plans?group=activity` |
+
+**這個查錯過程裡被推翻的三個假設**（別再走一遍）：
+
+| 假設 | 怎麼排除的 |
+| :--- | :--- |
+| `next dev` 的逐路由編譯吃掉 timeout | 在 `scripts/e2e.sh` 加全路由預熱，實測三輪**每個路由都 <3s 已編譯完**，照樣 2/3 紅 |
+| 冷快取（剛跑過 `npm run build`） | `rm -rf .next` 之後跑兩輪都全綠 |
+| `FirebaseErrorListener` 把 client tree 炸掉 | 加了「記錄但不吞」的 uncaught exception 收集器，route-guard 單獨跑六輪（2 輪紅）**uncaught 全部是 0** |
+
+**方法論**：間歇失敗要先回答「**卡住的時候使用者看到什麼**」。寫一支一次性
+probe，重複同一個動作 10+ 次，**不斷言**、只記錄 pathname + `body.innerText`
+長度 + title。這一步直接把「測試不穩」翻成「6/12 白屏」，後面才有東西可修。
+
+### ⚠️ 還有兩個症狀沒定案
+
+同一輪觀察到的另外兩個，出現率都是 1/10，**還沒找到原因**：
+
+| 紅在哪 | 訊息 |
+| :--- | :--- |
+| `role-permission` 第一條 | `Expected to find element: [data-testid="plan-row-…"], but never found it` |
+| `create-delete` 的 `after each` + 下一個 `before each` | `FirebaseError: Missing or insufficient permissions`（`userSettings/global`，`method: get`，而 dump 裡 `auth.uid` 是**有值的**） |
+
+查第二個時要知道：`firestore.rules` 只要求 `request.auth != null`，所以「有 uid
+卻被拒」本身就不合理，這個矛盾還沒解釋。`userSettings/global` 的 listener 在
+`timer-context.tsx:30`，是**全站 provider**，連 `/login` 都掛著。
+
+而且要記得事實：`src/components/FirebaseErrorListener.tsx` 收到任何
+`permission-error` 就 `throw` 在 render 裡 —— 所以一個短暫的 permission error
+會讓整個 client tree 爆掉，外觀是「列表不出現」這種指不到原因的訊息。
+`support/e2e.ts` 的 uncaught exception 收集器（記錄但不吞）就是為了把這兩件事對上。
 
 ---
 

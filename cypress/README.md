@@ -78,7 +78,12 @@ curl -X POST http://localhost:3100/api/auth/login \
 1. `cypress/screenshots/` 截圖、`cypress/videos/` 錄影
 2. `cypress/logs/dev-server.log` —— Next.js 的編譯錯誤都在這
 3. `cypress/logs/emulator.log` —— emulator 沒起來、port 被占用
-4. **API input/output**（截圖與錄影都答不出「送了什麼、回了什麼」）：
+4. ⚠️ **間歇失敗先問「卡住的時候使用者看到什麼」**，不要直接當成測試不穩。
+   本專案就是這樣抓到 `/lesson-plans/<組別>` 的白屏 bug（12 次有 6 次整頁空白）。
+   `support/e2e.ts` 會把 app 丟出的 uncaught exception **記錄下來但不吞掉**，
+   紅的時候 log 裡會有「⚠️ app 丟出 uncaught exception｜測試=…｜pathname=…」。
+   目前還有兩個症狀沒定案，見 skill 反模式 13 —— 動手前先讀，別重走已排除的路。
+5. **API input/output**（截圖與錄影都答不出「送了什麼、回了什麼」）：
 
 ```bash
 CYPRESS_ENABLE_API_LOG=true npm run e2e -- --spec cypress/e2e/feature_test/plans/create-delete.cy.ts
