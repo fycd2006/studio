@@ -23,6 +23,18 @@ npm run e2e:open                                             # GUI
 `support/e2e.ts` 的 `before()` 有三道擋板（受測網址必須是本機、
 emulator 位址必須有、前端必須真的接上 emulator），不符就當場停並告訴你改哪裡。
 
+### 為什麼 repo 裡沒有 `.firebaserc`
+
+因為那會讓 `camp-plan-studio-test` 變成整個 repo 的**預設 Firebase 專案**，
+之後有人在根目錄下 `firebase deploy --only firestore:rules` 就會打到測試專案。
+project id 一律由 `scripts/e2e.sh` 和 `npm run e2e:emu` 用 `--project` 明確帶。
+
+手動起 emulator 時也要自己帶：
+
+```bash
+npx firebase emulators:start --only auth,firestore --project camp-plan-studio-test
+```
+
 ## 測試帳號
 
 只存在於本機 dev server，**不是正式環境那組**。

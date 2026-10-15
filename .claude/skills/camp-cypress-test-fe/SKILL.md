@@ -143,7 +143,7 @@ JS chunk / HMR / 字型 / 圖片會連完整 body 一起吞進去，**一個測�
 
 | 檔案 | 作用 |
 |---|---|
-| `firebase.json` / `.firebaserc` | emulator port（firestore 8080 / auth 9099）與 project id `camp-plan-studio-test` |
+| `firebase.json` | emulator port（firestore 8080 / auth 9099）。**刻意沒有 `.firebaserc`** —— project id 由 `scripts/e2e.sh` 與 `npm run e2e:emu` 用 `--project` 明確帶，repo 不留「預設 Firebase 專案」，免得有人在根目錄下 `firebase deploy` 時打到測試專案 |
 | `src/firebase/emulator.ts` | 判斷要不要接 emulator（`NEXT_PUBLIC_USE_FIREBASE_EMULATOR=1`）。`NODE_ENV === 'production'` 時**永遠不接** |
 | `src/firebase/index.ts` `getSdks()` | 接 emulator 時改用 `getFirestore`（**不開** persistentLocalCache，原因見反模式 6） |
 | `cypress/plugins/firestore.ts` | node 端 admin SDK：清空 / 建 scenario / 清 scenario / 讀文件 |
