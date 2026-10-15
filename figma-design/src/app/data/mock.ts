@@ -50,6 +50,8 @@ export interface Stage {
   label: string;
   start: string;
   end?: string;
+  /** lucide icon name used for the stage card badge; mirrors the production timeline. */
+  icon: "clock" | "file" | "users" | "pin" | "tent";
 }
 
 export const camp = {
@@ -73,7 +75,7 @@ export const groups: Group[] = [
   {
     slug: "admin",
     nameZh: "行政組",
-    nameEn: "Admin",
+    nameEn: "Administrative",
     tone: { dot: "bg-blue-500", badge: "bg-blue-500/10 text-blue-800 dark:text-blue-300 border-blue-500/25" },
   },
 ];
@@ -81,12 +83,12 @@ export const groups: Group[] = [
 export const activityTypes = ["劇本", "大地遊戲", "科學闖關", "科學實驗", "手作課程", "相見歡", "起床遊戲"];
 
 export const stages: Stage[] = [
-  { code: "M1", label: "一收", start: "2026/06/02" },
-  { code: "M2", label: "二收", start: "2026/06/16" },
-  { code: "M3", label: "三收", start: "2026/06/30" },
-  { code: "TR", label: "集訓", start: "2026/07/05", end: "07/09" },
-  { code: "OS", label: "駐站", start: "2026/07/12" },
-  { code: "LIVE", label: "營期", start: "2026/07/20", end: "07/24" },
+  { code: "M1", label: "一收", start: "2026/06/02", icon: "clock" },
+  { code: "M2", label: "二收", start: "2026/06/16", icon: "file" },
+  { code: "M3", label: "三收", start: "2026/06/30", icon: "clock" },
+  { code: "TR", label: "集訓", start: "2026/07/05", end: "07/09", icon: "users" },
+  { code: "OS", label: "駐站", start: "2026/07/12", icon: "pin" },
+  { code: "LIVE", label: "營期", start: "2026/07/20", end: "07/24", icon: "tent" },
 ];
 export const currentStageIndex = 3;
 

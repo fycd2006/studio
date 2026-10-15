@@ -2,8 +2,13 @@
 
 import { firebaseConfig, hasUsableFirebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
+import { connectAuthEmulator, getAuth } from 'firebase/auth';
+import { connectFirestoreEmulator, getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
+import {
+  connectAuthToEmulator,
+  connectFirestoreToEmulator,
+  isEmulatorEnabled,
+} from '@/firebase/emulator';
 
 // IMPORTANT: DO NOT MODIFY THIS FUNCTION
 export function initializeFirebase() {
@@ -38,21 +43,37 @@ export function initializeFirebase() {
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
+  // 本機 E2E（Cypress）走 emulator —— 見 src/firebase/emulator.ts 的說明。
+  // 刻意**不開離線持久化**：persistentLocalCache 會把資料存進 IndexedDB，
+  // 於是「清空 emulator」之後畫面仍可能先畫出上一支測試的舊資料（同一個
+  // 瀏覽器 profile 跨 cy.visit 共用 IndexedDB），讓已經修好的東西看起來還是壞的。
+  const useEmulator = isEmulatorEnabled();
+
   let firestore;
-  try {
-    // Enable offline persistence for faster initial loads
-    firestore = initializeFirestore(firebaseApp, {
-      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
-    });
-    console.log('[Firebase Init] Firestore persistence enabled');
-  } catch (e) {
-    // Fallback if already initialized (common during Fast Refresh)
+  if (useEmulator) {
     firestore = getFirestore(firebaseApp);
+    connectFirestoreToEmulator(firestore, connectFirestoreEmulator);
+  } else {
+    try {
+      // Enable offline persistence for faster initial loads
+      firestore = initializeFirestore(firebaseApp, {
+        localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+      });
+      console.log('[Firebase Init] Firestore persistence enabled');
+    } catch (e) {
+      // Fallback if already initialized (common during Fast Refresh)
+      firestore = getFirestore(firebaseApp);
+    }
+  }
+
+  const auth = getAuth(firebaseApp);
+  if (useEmulator) {
+    connectAuthToEmulator(auth, connectAuthEmulator);
   }
 
   return {
     firebaseApp,
-    auth: getAuth(firebaseApp),
+    auth,
     firestore
   };
 }

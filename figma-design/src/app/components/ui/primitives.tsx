@@ -3,6 +3,11 @@ import { X } from "lucide-react";
 import { cn } from "./utils";
 import { groupBySlug } from "../../data/mock";
 
+/** Small rotated square that prefixes every accent eyebrow in the production app. */
+export function DiamondMark({ className }: { className?: string }) {
+  return <span aria-hidden="true" className={cn("inline-block h-1.5 w-1.5 rotate-45 bg-accent", className)} />;
+}
+
 /** `// LABEL //` mono tag used for section eyebrows. */
 export function Tag({ children, className, tone = "muted" }: { children: ReactNode; className?: string; tone?: "muted" | "accent" | "danger" }) {
   return (
@@ -39,12 +44,15 @@ export function Segmented<T extends string>({
   onChange,
   label,
   className,
+  tone = "default",
 }: {
   options: { value: T; label: ReactNode }[];
   value: T;
   onChange: (v: T) => void;
   label: string;
   className?: string;
+  /** `accent` mirrors the production props sub-tabs: mono label, orange when active. */
+  tone?: "default" | "accent";
 }) {
   return (
     <div role="radiogroup" aria-label={label} className={cn("inline-flex rounded-full border bg-muted p-1", className)}>
@@ -56,8 +64,13 @@ export function Segmented<T extends string>({
           aria-checked={value === o.value}
           onClick={() => onChange(o.value)}
           className={cn(
-            "inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-[13px] font-medium transition whitespace-nowrap",
-            value === o.value ? "bg-card text-foreground shadow-sm dark:bg-white/12" : "text-muted-foreground hover:text-foreground",
+            "inline-flex h-9 items-center gap-1.5 rounded-full px-4 transition whitespace-nowrap",
+            tone === "accent" ? "font-mono text-xs tracking-wider" : "text-[13px] font-medium",
+            value === o.value
+              ? tone === "accent"
+                ? "bg-card font-semibold text-accent-ink shadow-sm dark:bg-white/20"
+                : "bg-card text-foreground shadow-sm dark:bg-white/12"
+              : "text-muted-foreground hover:text-foreground",
           )}
         >
           {o.label}
@@ -79,16 +92,17 @@ export function Field({
   children: ReactNode;
 }) {
   return (
-    <label className={cn("flex flex-col gap-1.5 text-[13px] font-medium", className)}>
-      {label}
+    <label className={cn("flex flex-col gap-3", className)}>
+      {/* Production form labels are mono micro-caps (src/app/settings/page.tsx). */}
+      <span className="block font-mono text-xs tracking-wider text-muted-foreground uppercase">{label}</span>
       {children}
-      {hint && <span className="text-xs font-normal text-muted-foreground">{hint}</span>}
+      {hint && <span className="font-mono text-[11px] text-muted-foreground">{hint}</span>}
     </label>
   );
 }
 
 export const inputClass =
-  "h-11 w-full rounded-xl border border-border-strong bg-card px-3.5 text-sm font-normal text-foreground placeholder:text-muted-foreground outline-none transition focus:border-accent";
+  "w-full rounded-xl border border-border-strong bg-muted/60 px-4 py-3 text-sm font-normal text-foreground placeholder:text-muted-foreground outline-none transition focus:border-accent";
 
 export function Dialog({
   open,

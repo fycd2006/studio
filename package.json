@@ -7,7 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "release": "node scripts/generate-changelog.js"
+    "release": "node scripts/generate-changelog.js",
+    "e2e": "./scripts/e2e.sh",
+    "e2e:open": "./scripts/e2e.sh --open",
+    "e2e:emu": "firebase emulators:start --only auth,firestore --project camp-plan-studio-test",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p cypress/tsconfig.json"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
@@ -66,9 +70,14 @@
     "@types/node": "^20",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "cypress": "^15.6.0",
+    "cypress-real-events": "^1.15.1",
     "eslint": "9.39.4",
     "eslint-config-next": "16.1.6",
+    "firebase-admin": "^13.6.0",
+    "firebase-tools": "^14.24.0",
     "postcss": "^8",
+    "start-server-and-test": "^2.1.4",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
   }

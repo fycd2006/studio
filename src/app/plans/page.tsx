@@ -392,6 +392,7 @@ export default function PlansOverview() {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
+            data-testid={`plan-actions-${plan.id}`}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
             className="h-8 w-8 inline-flex items-center justify-center rounded-full text-stone-400 hover:text-foreground hover:bg-stone-200/60 dark:hover:bg-white/10 transition-colors cursor-pointer"
@@ -456,8 +457,18 @@ export default function PlansOverview() {
           )}
           {isAdmin && (
             <DropdownMenuItem
+              data-testid={`plan-action-delete-${plan.id}`}
               onSelect={(e) => {
-                e.preventDefault();
+                // ⚠️ 這裡刻意**不呼叫** e.preventDefault()。
+                // Radix 的 onSelect 一旦 preventDefault，選單就不會關閉；
+                // 選單是 modal layer，會在 <body> 留下 pointer-events: none
+                // （data-scroll-locked="1"），而下面的刪除確認對話框不在那個
+                // layer 裡 → 整張對話框吃不到指標事件。
+                // 實測（cypress/e2e/plans/create-delete.cy.ts）：對話框跳出來後
+                // document.elementFromPoint 打在輸入框正中央回傳的是 <html>，
+                // 使用者的第一下點擊會被「還開著的選單」吃掉去關閉它，
+                // 要再點第二下才真的進得去輸入框。
+                // 讓選單正常關閉就沒有這個問題。
                 e.stopPropagation();
                 handleDeletePlan(plan.id, getPlanDisplayName(plan));
               }}
@@ -505,6 +516,7 @@ export default function PlansOverview() {
             <DropdownMenu open={isAdding} onOpenChange={handleAddMenuOpenChange}>
               <DropdownMenuTrigger asChild>
                 <button
+                  data-testid="plans-add-trigger"
                   className={cn(
                     "group inline-flex items-center gap-2.5 px-6 sm:px-7 py-3 rounded-full text-xs font-mono font-medium uppercase tracking-wider text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-[0_4px_16px_rgba(249,115,22,0.3)] hover:shadow-[0_8px_24px_rgba(249,115,22,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 cursor-pointer",
                     !isAdmin && "opacity-60 cursor-not-allowed"
@@ -524,6 +536,7 @@ export default function PlansOverview() {
                   return (
                     <DropdownMenuItem
                       key={group.id}
+                      data-testid={`plans-add-group-${group.slug}`}
                       onSelect={() => handleCreatePlan(group.slug)}
                       className="cursor-pointer font-medium text-xs py-2.5 px-3 rounded-xl hover:bg-orange-500/10 hover:text-orange-600 transition-colors flex items-center gap-2"
                     >
@@ -875,6 +888,7 @@ export default function PlansOverview() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
+                    data-testid="plans-add-trigger-mobile"
                     disabled={!isAdmin}
                     className={cn(
                       "w-9 h-9 rounded-full flex items-center justify-center bg-orange-500 hover:bg-orange-600 text-white shadow-[0_2px_8px_rgba(249,115,22,0.35)] active:scale-95 transition-all cursor-pointer shrink-0 ml-0.5",
@@ -896,6 +910,7 @@ export default function PlansOverview() {
                     return (
                       <DropdownMenuItem
                         key={`m-top-add-${group.id}`}
+                        data-testid={`plans-add-group-mobile-${group.slug}`}
                         onSelect={() => handleCreatePlan(group.slug)}
                         className="cursor-pointer font-medium text-xs py-2 px-2.5 rounded-xl hover:bg-orange-500/10 hover:text-orange-600 transition-colors flex items-center gap-2"
                       >
@@ -910,6 +925,7 @@ export default function PlansOverview() {
           </div>
           <div className="group-tabs-scroll flex items-center gap-6 sm:gap-8 overflow-x-auto no-scrollbar px-1 pb-0">
             <button
+              data-testid="plans-group-tab-all"
               ref={(el) => { tabRefs.current['all'] = el; }}
               onClick={() => {
                 const currentIndex = groupOrder.indexOf(filterGroup);
@@ -941,6 +957,7 @@ export default function PlansOverview() {
               return (
                 <button
                   key={group.id}
+                  data-testid={`plans-group-tab-${group.slug}`}
                   ref={(el) => { tabRefs.current[group.slug] = el; }}
                   onClick={() => {
                     const currentIndex = groupOrder.indexOf(filterGroup);
@@ -976,6 +993,7 @@ export default function PlansOverview() {
           <div className="relative flex-1 group">
             <Search className="w-4 h-4 sm:w-5 sm:h-5 absolute left-4 top-1/2 -translate-y-1/2 text-stone-500 dark:text-stone-400 group-focus-within:text-orange-500 transition-colors pointer-events-none z-10" />
             <input
+              data-testid="plans-search-input"
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -1090,7 +1108,7 @@ export default function PlansOverview() {
  className="w-full"
  >
  {filteredPlans.length === 0 ? (
-              <div className="border border-stone-200/80 dark:border-white/10 bg-white/40 dark:bg-white/[0.02] backdrop-blur-md rounded-3xl p-12 sm:p-24 flex flex-col items-center justify-center text-center shadow-xs min-h-[420px] relative overflow-hidden">
+              <div data-testid="plans-empty-state" className="border border-stone-200/80 dark:border-white/10 bg-white/40 dark:bg-white/[0.02] backdrop-blur-md rounded-3xl p-12 sm:p-24 flex flex-col items-center justify-center text-center shadow-xs min-h-[420px] relative overflow-hidden">
                 <div className="text-[10px] font-mono tracking-widest text-fg-muted uppercase mb-4 flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
                   // NO MATCHING PLANS FOUND //
@@ -1108,6 +1126,7 @@ export default function PlansOverview() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button
+                        data-testid="plans-empty-add-trigger"
                         onClick={(e) => {
                           if (groups.length === 0) {
                             e.preventDefault();
@@ -1135,6 +1154,7 @@ export default function PlansOverview() {
                         return (
                           <DropdownMenuItem
                             key={group.id}
+                            data-testid={`plans-empty-add-group-${group.slug}`}
                             onSelect={() => handleCreatePlan(group.slug)}
                             className="cursor-pointer font-medium text-xs py-2.5 px-3 rounded-xl hover:bg-orange-500/10 hover:text-orange-600 transition-colors flex items-center gap-2"
                           >
@@ -1315,6 +1335,7 @@ export default function PlansOverview() {
                       return (
                         <div
                           key={plan.id}
+                          data-testid={`plan-row-${plan.id}`}
                           onClick={() => handleOpenPlan(plan.id)}
                           className="group grid grid-cols-[48px_minmax(240px,2fr)_150px_160px_110px_48px] items-center gap-6 xl:gap-8 px-6 py-5 hover:bg-orange-500/[0.03] dark:hover:bg-orange-500/[0.04] transition-all duration-200 cursor-pointer"
                         >
@@ -1398,6 +1419,7 @@ export default function PlansOverview() {
                       return (
                         <div
                           key={plan.id}
+                          data-testid={`plan-card-mobile-${plan.id}`}
                           onClick={() => handleOpenPlan(plan.id)}
                           className="py-3.5 px-4 hover:bg-orange-500/[0.02] dark:hover:bg-orange-500/[0.04] transition-colors cursor-pointer"
                         >
@@ -1472,6 +1494,7 @@ export default function PlansOverview() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               transition={{ duration: 0.15 }}
+              data-testid="plan-delete-dialog"
               className="bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 p-8 rounded-3xl max-w-sm w-full relative space-y-6 shadow-2xl"
             >
               <div className="space-y-2">
@@ -1485,6 +1508,7 @@ export default function PlansOverview() {
                 </p>
               </div>
               <input
+                data-testid="plan-delete-input"
                 type="text"
                 value={deleteInput}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDeleteInput(e.target.value)}
@@ -1493,12 +1517,14 @@ export default function PlansOverview() {
               />
               <div className="flex justify-end gap-3 pt-2">
                 <button
+                  data-testid="plan-delete-cancel"
                   onClick={() => setDeleteTarget(null)}
                   className="px-4 py-2 rounded-full text-xs font-mono text-fg-muted hover:text-foreground hover:bg-stone-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
                 >
                   取消 CANCEL
                 </button>
                 <button
+                  data-testid="plan-delete-confirm"
                   onClick={confirmDelete}
                   disabled={deleteInput !== "delete"}
                   className="px-5 py-2 rounded-full text-xs font-mono font-medium text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-rose-600/20 transition-all cursor-pointer"

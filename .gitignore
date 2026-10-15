@@ -45,6 +45,15 @@ next-env.d.ts
 # firebase
 firebase-debug.log
 firestore-debug.log
+ui-debug.log
+.firebase/
+
+# cypress（產出物不進版控，spec 與 support 要）
+/cypress/videos/
+/cypress/screenshots/
+/cypress/downloads/
+/cypress/logs/
+/cypress/reports/
 
 # Image processing cache
 .cache/

@@ -50,8 +50,50 @@ npm run dev
 | `npm run build` | 執行 Next.js 生產環境打包編譯 |
 | `npm run start` | 啟動生產打包後之伺服器 |
 | `npm run lint` | 執行 ESLint 程式碼檢查 |
-| `npx tsc --noEmit` | 執行 TypeScript 型別檢查（交接與發 PR 前必備） |
+| `npm run typecheck` | 型別檢查（主專案 + cypress 兩份 tsconfig，交接與發 PR 前必備） |
+| `npm run e2e` | 跑 Cypress E2E（自動起 Firebase emulator 與專用 dev server） |
+| `npm run e2e:open` | 同上，但開 Cypress GUI |
 | `npm run release` | 自動產生版更日誌 (Changelog) |
+
+---
+
+## 🧪 E2E 測試 (Cypress)
+
+```bash
+npm run e2e                                      # 全部
+npm run e2e -- --spec cypress/e2e/feature_test/auth/login.cy.ts   # 單一支
+npm run e2e:open                                 # GUI
+```
+
+**E2E 一律跑在 Firebase emulator 上，不會碰到任何真實的 Firebase 專案。**
+`scripts/e2e.sh` 會依序起 emulator（firestore 8080 / auth 9099）→ 專用 dev server（port 3100，
+帶測試專用帳密與 emulator 連線設定）→ Cypress，結束時自動收掉。
+
+⚠️ 不要直接 `npx cypress run`：一般的 `npm run dev` 讀 `.env.local`，會連到**真的** Firebase 專案，
+而測試每支開始前都會清空資料庫。`cypress/support/e2e.ts` 的 `before()` 有三道擋板
+（受測網址必須是本機、emulator 位址必須有、前端必須真的接上 emulator），不符就當場停。
+
+查 API 的 input/output（截圖和錄影都答不出「送了什麼、回了什麼」）：
+
+```bash
+CYPRESS_ENABLE_API_LOG=true npm run e2e -- --spec <那一支>
+# 讀 cypress/reports/<spec>-<測試名>-api-log.json
+```
+
+| 路徑 | 內容 |
+| :--- | :--- |
+| `cypress/e2e/feature_test/<功能>/` | UI 整合測試（禁 mock、禁純 `cy.request`） |
+| `cypress/e2e/access_page/` | 頁面可及性 / 權限閘門掃描 |
+| `cypress/e2e/api/` | 純 API 測試 |
+| `cypress/e2e/edge_cases/` | 邊界與錯誤處理 |
+| `cypress/e2e_fixture/` | **唯一**允許 mock API 回應的地方 |
+| `cypress/README.md` | 測試帳號、資料夾分類、紅了怎麼查 |
+| `cypress/support/commands.ts` | 共用指令（`cy.loginAs` / `cy.setupCampScenario` / `cy.visitApp` …）—— 寫新測試前先看這份 |
+| `cypress/plugins/firestore.ts` | node 端 fixture：清空 / 建 scenario / 清 scenario（含清乾淨自證） |
+| `src/firebase/emulator.ts` | emulator 連線判斷（正式環境永遠不接） |
+| `.claude/skills/camp-cypress-test-fe/` | 測試規範：12 個實測踩過的反模式與 fixture 契約 |
+
+需要 Java（Firestore emulator 是 jar）。`firebase-tools` 已在 devDependencies，不需要全域安裝。
 
 ---
 
