@@ -219,6 +219,39 @@ JSON.stringify({ fontSize: s.fontSize, lineHeight: s.lineHeight, letterSpacing: 
 
 ---
 
+## 另一種用途：驗「本機剛修好的東西，使用者實際操作起來對不對」
+
+不是每次進這份 skill 都是比設計稿。使用者說「驗 LOCAL 代碼庫修的是否正常」時，
+要做的是**在真的瀏覽器裡照著使用者的操作順序走一遍**，而不是再跑一次 cypress。
+
+環境（不要用 `npm run dev`，那需要 `.env.local` 且會連到真的 Firebase）：
+
+```bash
+# emulator + 指向 emulator 的 dev server（port 3100），參數照 scripts/e2e.sh
+npx firebase emulators:start --only auth,firestore --project camp-plan-studio-test &
+NEXT_PUBLIC_USE_FIREBASE_EMULATOR=1 NEXT_PUBLIC_FIREBASE_EMULATOR_HOST=127.0.0.1 NEXT_PUBLIC_FIREBASE_EMULATOR_FIRESTORE_PORT=8080 NEXT_PUBLIC_FIREBASE_EMULATOR_AUTH_PORT=9099 NEXT_PUBLIC_FIREBASE_API_KEY=demo-e2e-api-key ... npx next dev --port 3100 &
+```
+
+造資料與查資料用 node + `firebase-admin`，`FIRESTORE_EMULATOR_HOST=127.0.0.1:8080`
+就會打到 emulator。**查資料庫是這類驗證的重點** —— 這個產品的寫入是 fire-and-forget，
+畫面說成功不等於真的寫進去了。
+
+🔑 **2026-10-16 的收穫：整套 43 條 cypress 全綠，用瀏覽器實跑還是抓到一個真 bug。**
+「儲存版本」在內容跟最後一筆版本相同時會靜默不存，而畫面照跳「版本已儲存」。
+cypress 抓不到是因為測試都寫成「打字 → 存版本」，永遠有差異；而真人是
+「進來 → 看一看 → 直接按儲存」。**所以這類驗證要刻意走「什麼都不改就按下去」
+那條路**，那是自動化測試最容易漏的形狀。
+
+踩到的三件事（都會拖慢你）：
+
+| 狀況 | 怎麼辦 |
+|---|---|
+| 編輯器剛載入時第一次點頂欄按鈕沒反應 | 再點一次。這是產品本身的狀態，不是 MCP 失靈 |
+| 刪除版本會跳 `window.confirm`，**原生對話框會凍住整個 MCP session** | 點之前先 `window.confirm = () => true`（javascript_tool），並在回報裡說明 |
+| 改了 `src/` 之後畫面還是舊行為 | dev server 要重新編譯，重新導航一次該頁再測 |
+
+---
+
 ## 修改哪一邊
 
 使用者說「**改設計稿**」= 以**線上站為準**，把 `figma-design/` 改成跟線上站一致。

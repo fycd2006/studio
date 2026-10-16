@@ -108,7 +108,7 @@ CYPRESS_ENABLE_API_LOG=true npm run e2e -- --spec cypress/e2e/feature_test/plans
 
 預設關閉（全站 intercept 有成本）。報告裡的 Authorization / Cookie 會被遮成 `[REDACTED]`。
 
-## 編輯器類的 spec 要注意兩件事
+## 編輯器類的 spec 要注意五件事
 
 1. **`afterEach` 先離開編輯器頁，再 `cleanupCampScenario`。**
    人還留在 `/plans/<id>` 上時刪掉教案 → 頁面切到「找不到教案」→ `PlanEditor` 卸載
@@ -118,6 +118,22 @@ CYPRESS_ENABLE_API_LOG=true npm run e2e -- --spec cypress/e2e/feature_test/plans
 2. **打字用 `cy.typeInEditorField(欄位, 文字)`**，不要自己串
    `.click().type('{selectall}{del}').type(text)` —— 清空會讓富文字編輯器重新渲染，
    串起來的第二個 `type` 會拿到已經從 DOM 卸下的元素。
+   而且**打字前要先等欄位把舊內容顯示出來**：富文字編輯器會在 `value` 變動時把
+   `innerHTML` 整個覆寫回去，內容還沒到就先清空的話，清完之後舊值又被塞回來，
+   結果是「舊值＋新值」黏在一起。
+3. **要觸發「離開編輯器時的自動存檔」，一定要走應用內的換頁**（按 `editor-back`，
+   走 `router.back()`）。用 `cy.visit()` 做整頁導航的話**一筆自動存檔都不會產生** ——
+   `saveNewVersion` 要先 `await` 一次 Firestore 讀取才寫得出版本，而整頁導航會在那個
+   await 回來之前就把 JS context 拆掉。實測：返回鈕 → +1 筆；`cy.visit` → 0 筆。
+   （順帶一提，這代表**使用者直接關分頁或重新整理時，離開前的自動存檔是無效的**。）
+4. **剛載入的前幾秒，頂欄按鈕的第一次點擊會被整個吞掉。** 按鈕看得到、點得下去、
+   Cypress 沒有任何錯誤，但什麼都不會發生；過幾秒再點就正常。
+   連「Firestore 的內容已經長出來了」都不是足夠的就緒訊號（實測過）。
+   `versions/save-restore.cy.ts` 的 `openSidebar` 用的是「點了沒開就再點一次」的
+   有上限重試，不是 `cy.wait` 猜秒數 —— 要在別的頁面做同樣的事就照抄那個寫法。
+5. **dev 模式下，光是進編輯器就會多一筆版本紀錄。** React Strict Mode 在 dev 會把
+   effect 跑成 mount → cleanup → mount，而「卸載時自動存檔」就掛在那個 cleanup 上。
+   正式環境沒有這一筆。所以**版本相關的斷言不要寫死總筆數**，改用 type／name 去找。
 
 ## 寫測試前
 

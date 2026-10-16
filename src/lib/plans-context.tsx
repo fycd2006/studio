@@ -116,10 +116,13 @@ interface PlansContextType {
   addPlan: (categoryOrSlug: PlanCategory | string) => string | undefined;
   reorderPlans: (category: PlanCategory, startIndex: number, endIndex: number) => void;
   activePlanVersions: PlanVersion[];
-  savePlanVersion: (name: string, isAuto?: boolean) => Promise<void>;
-  restorePlanVersion: (versionId: string) => Promise<void>;
+  /** 回傳 true 代表真的建了一筆版本（讓呼叫端能分辨成功與「其實沒存」）。 */
+  savePlanVersion: (name: string, isAuto?: boolean) => Promise<boolean>;
+  /** 回傳還原後的完整狀態；還原不了就回傳 null（讓呼叫端能分辨成功與失敗）。 */
+  restorePlanVersion: (versionId: string) => Promise<LessonPlan | null>;
   updatePlanVersionName: (versionId: string, versionName: string) => void;
-  deletePlanVersion: (versionId: string) => void;
+  /** 回傳 true 代表真的刪掉了；false 代表沒刪（例如刪了會讓後面的歷史救不回來）。 */
+  deletePlanVersion: (versionId: string) => Promise<boolean>;
   autoSaveCurrentState: () => void;
   getFullVersionState: (version: PlanVersion) => Promise<LessonPlan>;
   undoPlan: () => void;
@@ -498,7 +501,15 @@ export function PlansProvider({ children }: { children: ReactNode }) {
     const versionsList = snapshot.docs.map(d => d.data() as PlanVersion);
     
     const snapshotIdx = versionsList.findIndex(v => v.type === 'snapshot');
-    if (snapshotIdx === -1) return allPlans.find(p => p.id === activePlanId)!;
+    if (snapshotIdx === -1) {
+      // 重建不出來就要說出來。
+      //
+      // 原本這裡是 `return allPlans.find(p => p.id === activePlanId)!` —— 回傳
+      // **目前這份教案**。那個值會被 restorePlanVersion 原封不動寫回去，於是
+      // 「還原」變成什麼都沒做，而呼叫端照樣跳「已還原版本」：使用者以為歷史
+      // 救回來了，其實一個字都沒變。寧可讓呼叫端收到錯誤、老實告訴使用者。
+      throw new Error(`版本 ${version.id} 找不到可重建的基準快照（patch 鏈斷了）`);
+    }
 
     let state = JSON.parse(JSON.stringify(versionsList[snapshotIdx].snapshot));
     for (let i = snapshotIdx - 1; i >= 0; i--) {
@@ -515,22 +526,50 @@ export function PlansProvider({ children }: { children: ReactNode }) {
     return state;
   }, [db, activePlanId, allPlans]);
 
-  const saveNewVersion = useCallback(async (currentPlan: LessonPlan, now: number, name: string, isAuto: boolean) => {
-    if (!db || !user || !activePlanId) return;
+  /** 回傳 true 代表真的建了一筆版本；false 代表沒有（呼叫端要據此決定提示什麼）。 */
+  const saveNewVersion = useCallback(async (currentPlan: LessonPlan, now: number, name: string, isAuto: boolean): Promise<boolean> => {
+    if (!db || !user || !activePlanId) return false;
     const latestVersion = activePlanVersions[0];
 
     let precomputedDelta: any = undefined;
+    // 前一版重建不出來（版本鏈斷了）時，改存一份完整快照 —— 見下面的 catch
+    let mustBeSnapshot = false;
 
     if (latestVersion) {
-      const previousState = await getFullVersionState(latestVersion);
-      precomputedDelta = jdp.diff(previousState, currentPlan);
-      if (!precomputedDelta) {
-        console.log("No changes detected in Auto-Save. Skipping version creation.");
-        return;
+      let previousState: LessonPlan | null = null;
+      try {
+        previousState = await getFullVersionState(latestVersion);
+      } catch (err) {
+        // getFullVersionState 在找不到基準快照時會 throw（刻意的，見該函式的註解）。
+        // 這裡**不能讓它往外跑** —— 這條路徑是「離開編輯器時的自動存檔」，
+        // 往外跑會變成 unhandled promise rejection，而 FirebaseErrorListener 之外
+        // 沒有人接得住，使用者看到的是整頁掛掉。
+        // 而且「鏈斷了」正是最需要存檔的時候：存一份完整快照反而把鏈接回去，
+        // 之後的 patch 就有基準可以重建了。
+        console.warn('[saveNewVersion] 無法重建前一版，改存完整快照:', err);
+        mustBeSnapshot = true;
+      }
+
+      if (previousState) {
+        precomputedDelta = jdp.diff(previousState, currentPlan);
+        if (!precomputedDelta) {
+          if (isAuto) {
+            // 自動存檔沒變化就不要洗版，這是對的
+            console.log("No changes detected in Auto-Save. Skipping version creation.");
+            return false;
+          }
+          // 但**手動存檔不一樣**：使用者是在對目前這份內容下一個書籤，
+          // 「跟上一筆自動存檔一模一樣」不是不存的理由 —— 他要的是那個名字。
+          // 而且離開編輯器時會自動存一筆，所以「現況等於最後一筆版本」其實是常態：
+          // 照原本的寫法，使用者進來看一看就按儲存，十之八九會靜默失敗。
+          // 實測 2026-10-16（瀏覽器）：畫面跳「版本已儲存」，planVersions 一筆都沒多。
+          mustBeSnapshot = true;
+        }
       }
     }
 
-    const shouldBeSnapshot = activePlanVersions.length === 0 || 
+    const shouldBeSnapshot = mustBeSnapshot ||
+                           activePlanVersions.length === 0 || 
                            activePlanVersions.length % SNAPSHOT_INTERVAL === 0 ||
                            !isAuto;
 
@@ -553,13 +592,14 @@ export function PlansProvider({ children }: { children: ReactNode }) {
     }
 
     setDocumentNonBlocking(doc(db, 'planVersions', versionId), newVersion, { merge: true });
+    return true;
   }, [db, user, activePlanId, activePlanVersions, getFullVersionState]);
 
-  const savePlanVersion = useCallback(async (name: string, isAuto: boolean = false) => {
-    if (!db || !user || !activePlanId) return;
+  const savePlanVersion = useCallback(async (name: string, isAuto: boolean = false): Promise<boolean> => {
+    if (!db || !user || !activePlanId) return false;
     const currentPlan = allPlans.find(p => p.id === activePlanId);
-    if (!currentPlan) return;
-    
+    if (!currentPlan) return false;
+
     const now = Date.now();
     return saveNewVersion(currentPlan, now, name, isAuto);
   }, [db, user, activePlanId, allPlans, saveNewVersion]);
@@ -568,14 +608,17 @@ export function PlansProvider({ children }: { children: ReactNode }) {
     savePlanVersion('Auto Save (Exit)', true);
   }, [savePlanVersion]);
 
-  const restorePlanVersion = useCallback(async (versionId: string) => {
-    if (!db || !activePlanId) return;
+  const restorePlanVersion = useCallback(async (versionId: string): Promise<LessonPlan | null> => {
+    if (!db || !activePlanId) return null;
     const versionToRestore = activePlanVersions.find(v => v.id === versionId);
-    if (!versionToRestore) return;
-    
+    if (!versionToRestore) return null;
+
+    // 重建不出來時 getFullVersionState 會 throw —— 刻意不在這裡吞掉，
+    // 呼叫端要能分辨「還原成功」與「還原失敗」才有辦法對使用者說實話。
     const fullState = await getFullVersionState(versionToRestore);
     const { id: _planId, updatedAt, ...snapshotData } = fullState;
     updatePlan(activePlanId, snapshotData);
+    return fullState;
   }, [db, activePlanId, activePlanVersions, updatePlan, getFullVersionState]);
 
   const updatePlanVersionName = useCallback((versionId: string, versionName: string) => {
@@ -583,10 +626,47 @@ export function PlansProvider({ children }: { children: ReactNode }) {
     updateDocumentNonBlocking(doc(db, 'planVersions', versionId), { versionName });
   }, [db]);
 
-  const deletePlanVersion = useCallback((versionId: string) => {
-    if (!db) return;
+  /**
+   * 刪一筆版本紀錄。
+   *
+   * ⚠️ 不能只刪掉就算了。patch 型的版本只存「跟前一版的差異」，重建時要往回找到
+   *    最近的 snapshot 當基準（見 getFullVersionState）。直接刪掉一個 snapshot，
+   *    它後面那些 patch 就再也重建不出來 —— 而使用者的意圖只是「清掉一筆紀錄」，
+   *    不是「讓後面每一筆都變成還原不回來的廢資料」。
+   *
+   *    所以刪 snapshot 之前，先把「時間上的下一筆 patch」實體化成 snapshot，
+   *    讓鏈接得回去。實體化一定要在刪除**之前**做，因為重建本身要讀到這個 snapshot。
+   *
+   * ⚠️ 接不回去時會**取消刪除**，而「取消了」一定要回報給呼叫端（回傳 false）。
+   *    這個函式第一版只是 `return`，呼叫端（PlanEditor 的 handleDeleteVersion）
+   *    照樣跳「已刪除版本」—— 使用者看到成功提示、那一列還在面板上，
+   *    只會以為畫面壞了。那正是本專案反模式 16 的樣子，而且是修 bug 時自己種下的。
+   */
+  const deletePlanVersion = useCallback(async (versionId: string): Promise<boolean> => {
+    if (!db) return false;
+    const list = activePlanVersions || [];   // createdAt 由新到舊
+    const idx = list.findIndex(v => v.id === versionId);
+    const toDelete = idx >= 0 ? list[idx] : undefined;
+    const newer = idx > 0 ? list[idx - 1] : undefined;
+
+    if (toDelete?.type === 'snapshot' && newer?.type === 'patch') {
+      try {
+        const materialized = await getFullVersionState(newer);
+        setDocumentNonBlocking(
+          doc(db, 'planVersions', newer.id),
+          { type: 'snapshot', snapshot: sanitizeForFirestore(JSON.parse(JSON.stringify(materialized))) },
+          { merge: true },
+        );
+      } catch (err) {
+        // 接不回去就不要刪 —— 刪了會讓後面整段歷史變成廢資料
+        console.error('[deletePlanVersion] 無法把下一筆 patch 實體化，取消刪除:', err);
+        return false;
+      }
+    }
+
     deleteDocumentNonBlocking(doc(db, 'planVersions', versionId));
-  }, [db]);
+    return true;
+  }, [db, activePlanVersions, getFullVersionState]);
 
   const reorderPlans = useCallback((category: PlanCategory, startIndex: number, endIndex: number) => {
     if (!db || !activeCampId) return;

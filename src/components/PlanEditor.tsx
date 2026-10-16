@@ -144,9 +144,12 @@ interface PlanEditorProps {
   canUndo?: boolean;
   canRedo?: boolean;
   versions?: PlanVersion[];
-  onSaveVersion?: (name: string, isAuto?: boolean) => void;
-  onRestoreVersion?: (versionId: string) => void;
-  onDeleteVersion?: (versionId: string) => void;
+  /** 回傳 true 代表真的建了一筆版本；false 代表沒有。 */
+  onSaveVersion?: (name: string, isAuto?: boolean) => Promise<boolean>;
+  /** 回傳還原後的完整狀態；null 代表還原失敗（內容沒有被改動）。 */
+  onRestoreVersion?: (versionId: string) => Promise<LessonPlan | null>;
+  /** 回傳 true 代表真的刪掉了；false 代表沒刪（取消刪除）。 */
+  onDeleteVersion?: (versionId: string) => Promise<boolean>;
   onAutoSave?: () => void;
   getFullVersionState?: (version: PlanVersion) => Promise<LessonPlan>;
   onUpdateVersionName?: (versionId: string, versionName: string) => void;
@@ -608,7 +611,19 @@ export function PlanEditor({
           setPreviousPlan(null);
         }
       } catch (err) {
+        // ⚠️ 這裡只 console.error 的話，使用者看到的是「欄位全部空白的歷史檢視」，
+        //    而且畫面上沒有任何東西說明發生了什麼（實測 2026-10-16，瀏覽器實際操作）。
+        //    重建不出來（基準快照被刪掉或資料壞掉）是真的會發生的事，要講出來。
+        //    刻意**留在歷史模式**：橫幅上的「取消」還在，使用者可以自己退出或換一個
+        //    版本看，也還能按還原（還原會再報一次它自己的失敗）。
         console.error("Failed to load version preview:", err);
+        setPreviewPlan(null);
+        setPreviousPlan(null);
+        toast({
+          title: "這個版本打不開",
+          description: "它的重建基準已經不在了，所以沒辦法顯示當時的內容。",
+          variant: "destructive",
+        });
       } finally {
         setIsLoadingPreview(false);
       }
@@ -616,7 +631,7 @@ export function PlanEditor({
     load();
   }, [selectedVersion, getFullVersionState, versions]);
 
-  const handleSaveVersion = (name?: string) => {
+  const handleSaveVersion = async (name?: string) => {
     // Flush pending updates immediately before saving version
     if (Object.keys(pendingUpdatesRef.current).length > 0) {
       onUpdateRef.current(planIdRef.current, pendingUpdatesRef.current);
@@ -629,24 +644,112 @@ export function PlanEditor({
       toast({ title: "請輸入版本名稱", variant: "destructive" });
       return;
     }
-    onSaveVersion?.(nameToSave.trim());
+    // ⚠️ 要等它存完才知道存不存得成。存檔會在「內容跟最後一筆版本一樣」時
+    //    什麼都不做（plans-context 的 saveNewVersion），而那在這個產品裡是常態 ——
+    //    離開編輯器會自動存一筆，所以進來看一看就按儲存的話，現況往往等於最後一筆。
+    //    原本這裡不 await 也不看結果就跳「版本已儲存」，使用者會以為書籤存好了。
+    let saved = false;
+    try {
+      saved = (await onSaveVersion?.(nameToSave.trim())) ?? false;
+    } catch (err) {
+      console.error('[PlanEditor] 儲存版本失敗:', err);
+      saved = false;
+    }
+
+    if (!saved) {
+      toast({
+        title: "版本沒有存成",
+        description: "請稍後再試一次；目前的內容沒有受到影響。",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setNewVersionName("");
     toast({ title: "版本已儲存" });
   };
 
-  const handleRestoreVersion = (versionId: string) => {
-    onRestoreVersion?.(versionId);
+  /**
+   * 還原到某一個版本。
+   *
+   * 原本這裡是「呼叫 → 不 await → 無條件跳『已還原版本』」，造成兩個後果：
+   *
+   *   1. 重建失敗（例如基準快照被刪掉了）時畫面照樣說成功，而資料一個字都沒變。
+   *      使用者以為救回來了，然後在舊內容上繼續編輯。
+   *   2. 還原成功了，但 localPlan 還停在還原前的草稿。退出歷史模式時那些欄位編輯器
+   *      會重新掛上，並在 350ms 後把草稿寫回 Firestore，把剛還原的內容蓋掉。
+   *      實測 2026-10-16：資料庫先變成舊版內容，接著又被改回還原前的草稿。
+   *
+   * 所以：等它結束 → 用它回傳的狀態把本地草稿換掉 → 才退出歷史模式並報成功。
+   * 失敗就留在歷史模式並說實話，不要讓使用者在「以為已還原」的狀態下繼續打字。
+   */
+  const handleRestoreVersion = async (versionId: string) => {
+    let restored: LessonPlan | null | undefined;
+    try {
+      restored = await onRestoreVersion?.(versionId);
+    } catch (err) {
+      console.error('[PlanEditor] 還原版本失敗:', err);
+      restored = null;
+    }
+
+    if (!restored) {
+      toast({
+        title: "還原失敗",
+        description: "這個版本重建不出來（基準快照可能已被刪除），目前的內容沒有被改動。",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // 丟掉還沒送出的草稿 —— 「還原」的語意就是「不要現在這一份」
+    pendingUpdatesRef.current = {};
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    setLocalPlan(restored);
+
     setIsHistoryMode(false);
     setSelectedVersion(null);
     toast({ title: "已還原版本" });
   };
 
-  const handleDeleteVersion = (versionId: string) => {
-    if (confirm("確定要刪除此版本嗎？")) {
-      onDeleteVersion?.(versionId);
-      if (selectedVersion?.id === versionId) setSelectedVersion(null);
-      toast({ title: "已刪除版本" });
+  /**
+   * 刪一筆版本紀錄。
+   *
+   * ⚠️ 兩件事都不能省：
+   *
+   * 1. **要等結果再提示。** plans-context 的 deletePlanVersion 在「刪了會讓後面的
+   *    歷史救不回來」時會取消刪除並回傳 false。原本這裡不 await、無條件跳
+   *    「已刪除版本」—— 使用者看到成功提示、那一列還在，只會以為畫面壞了。
+   *
+   * 2. **刪掉的是正在預覽的那一筆時，要一起離開歷史模式。** 只清 selectedVersion
+   *    的話，isHistoryMode 還是 true → 欄位全部停在唯讀的 DiffHighlighter、
+   *    而橫幅上的「取消」鈕掛在 `selectedVersion &&` 底下、此時不存在
+   *    → 畫面卡在空白的歷史檢視，只能從面板的「目前狀態」那一列繞回來。
+   */
+  const handleDeleteVersion = async (versionId: string) => {
+    if (!confirm("確定要刪除此版本嗎？")) return;
+
+    let deleted = false;
+    try {
+      deleted = (await onDeleteVersion?.(versionId)) ?? false;
+    } catch (err) {
+      console.error('[PlanEditor] 刪除版本失敗:', err);
+      deleted = false;
     }
+
+    if (!deleted) {
+      toast({
+        title: "版本沒有刪掉",
+        description: "這一筆是後面版本的重建基準，而那些版本接不回去；為了不讓歷史變成救不回來的廢資料，這次沒有刪除。",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (selectedVersion?.id === versionId) {
+      setSelectedVersion(null);
+      setIsHistoryMode(false);
+    }
+    toast({ title: "已刪除版本" });
   };
 
   const currentGroup = groups.find(group => group.id === currentPlan.groupId)
@@ -977,7 +1080,7 @@ export function PlanEditor({
                         isPrintMode ? "px-6 md:px-10 py-10 space-y-6 md:space-y-8" : "px-4 sm:px-8 md:px-12 py-8 sm:py-10 space-y-8"
                       )}>
                         {isHistoryMode && (
-                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 bg-orange-50/80 backdrop-blur-xl dark:bg-amber-900/10 border border-orange-200/50 dark:border-amber-700/30 rounded-2xl mb-8 gap-4 shadow-[0_4px_24px_-8px_rgba(249,115,22,0.15)]">
+                          <div data-testid="editor-history-banner" className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 bg-orange-50/80 backdrop-blur-xl dark:bg-amber-900/10 border border-orange-200/50 dark:border-amber-700/30 rounded-2xl mb-8 gap-4 shadow-[0_4px_24px_-8px_rgba(249,115,22,0.15)]">
                             <div className="flex items-center gap-3">
                               <div className="w-2 h-8 bg-gradient-to-b from-orange-400 to-orange-600 rounded-full shadow-inner" />
                               <div>
@@ -993,6 +1096,7 @@ export function PlanEditor({
                               <div className="flex items-center gap-2 w-full sm:w-auto">
                                 <Button
                                   variant="ghost"
+                                  data-testid="editor-version-cancel"
                                   onClick={() => {
                                     setSelectedVersion(null);
                                     setIsHistoryMode(false);
@@ -1003,6 +1107,7 @@ export function PlanEditor({
                                   取消 / Cancel
                                 </Button>
                                 <Button
+                                  data-testid="editor-version-restore"
                                   onClick={() => handleRestoreVersion(selectedVersion.id)}
                                   className="h-10 px-7 rounded-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-black text-[11px] uppercase tracking-[0.2em] shadow-lg shadow-orange-500/25 border-none flex-1 sm:flex-none transition-all hover:scale-105 active:scale-95"
                                 >
@@ -1491,6 +1596,7 @@ export function PlanEditor({
         <button
           type="button"
           aria-label="Close version history"
+          data-testid="version-sidebar-overlay"
           className="fixed inset-0 z-[95] bg-black/20 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
           onClick={() => setIsSidebarOpen(false)}
         />

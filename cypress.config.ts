@@ -8,6 +8,7 @@ import {
   disposeFirestore,
   getDocs,
   patchDoc,
+  deleteDocById,
   resetFirestore,
   setupCampScenario,
   type CampScenarioOptions,
@@ -91,6 +92,10 @@ export default defineConfig({
         /** 繞過 UI 改一筆資料 —— 只用於造「UI 做不到的狀態」。 */
         'db:patchDoc': (args: { collection: CollectionName; id: string; data: Record<string, unknown> }) =>
           patchDoc(firestoreEnv, args),
+
+        /** 繞過 UI 刪一筆資料 —— 只用於造「UI 做不到的壞狀態」（找不到要刪的就 throw）。 */
+        'db:deleteDoc': (args: { collection: CollectionName; id: string }) =>
+          deleteDocById(firestoreEnv, args),
 
         /**
          * src/data/version-history.ts 的第一筆 id。

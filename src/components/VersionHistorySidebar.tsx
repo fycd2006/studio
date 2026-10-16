@@ -26,12 +26,12 @@ interface VersionHistorySidebarProps {
  versions: PlanVersion[];
  selectedVersionId: string | null;
  onSelectVersion: (version: PlanVersion | null) => void;
- onDelete?: (versionId: string) => void;
+ onDelete?: (versionId: string) => void | Promise<void>;
  showNamedOnly: boolean;
  onToggleFilter: () => void;
  onBackToCurrent: () => void;
  onUpdateVersionName?: (versionId: string, newName: string) => void;
- onSaveVersion?: (name: string) => void;
+ onSaveVersion?: (name: string) => void | Promise<void>;
  onClose: () => void;
  className?: string;
 }
@@ -91,7 +91,7 @@ export function VersionHistorySidebar({
  }, [versions]);
 
  return (
- <div className={cn("fixed top-0 right-0 h-[100dvh] w-full sm:w-96 z-[100] flex flex-col bg-white/95 backdrop-blur-xl dark:bg-[#14191C]/95 border-l border-stone-200/80 dark:border-white/10 shadow-2xl transition-all duration-300", className)}>
+ <div data-testid="version-sidebar" className={cn("fixed top-0 right-0 h-[100dvh] w-full sm:w-96 z-[100] flex flex-col bg-white/95 backdrop-blur-xl dark:bg-[#14191C]/95 border-l border-stone-200/80 dark:border-white/10 shadow-2xl transition-all duration-300", className)}>
  <div className="px-6 pb-4 pt-[calc(env(safe-area-inset-top,1.5rem))]">
  <div className="flex items-center justify-between mb-4">
  <h2 className="text-[15px] font-black tracking-widest text-foreground uppercase flex items-center gap-2.5">
@@ -138,6 +138,7 @@ export function VersionHistorySidebar({
 										: "bg-white/40 dark:bg-white/[0.03] border-transparent hover:border-stone-200/80 dark:hover:border-white/15 hover:bg-white/80 dark:hover:bg-white/[0.06] hover:shadow-sm"
 								)}
  onClick={onBackToCurrent}
+								data-testid="version-current-row"
  >
  <div className="flex items-start gap-3">
  <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white bg-gradient-to-br from-orange-400 to-orange-600 shadow-md ring-2 ring-white dark:ring-[#0B1012]">
@@ -149,6 +150,7 @@ export function VersionHistorySidebar({
  <div className="flex items-center gap-1 w-full" onClick={e => e.stopPropagation()}>
  <Input 
  placeholder="儲存當前版本..."
+											data-testid="version-save-input"
  value={editName}
  onChange={e => setEditName(e.target.value)}
  className="h-7 text-xs px-2 py-0 font-bold"
@@ -163,7 +165,7 @@ export function VersionHistorySidebar({
  if (e.key === 'Escape') setEditingId(null);
  }}
  />
- <Button size="icon" variant="ghost" className="h-6 w-6 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 shrink-0 border-none rounded-full" onClick={(e) => {
+ <Button size="icon" variant="ghost" className="h-6 w-6 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 shrink-0 border-none rounded-full" data-testid="version-save-confirm" onClick={(e) => {
  e.stopPropagation();
  if (editName.trim() && onSaveVersion) {
  onSaveVersion(editName.trim());
@@ -190,7 +192,7 @@ export function VersionHistorySidebar({
  
  <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
  {editingId !== 'current' && onSaveVersion && (
- <Button 
+ <Button data-testid="version-save-trigger" 
  variant="ghost" 
  size="icon" 
  className="h-7 w-7 text-stone-400 hover:text-orange-600 hover:bg-orange-100 dark:hover:bg-amber-400/20 dark:hover:text-amber-400 rounded-full transition-colors"
@@ -223,6 +225,7 @@ export function VersionHistorySidebar({
 									: "bg-white/40 dark:bg-white/[0.03] border-transparent hover:border-stone-200/80 dark:hover:border-white/15 hover:bg-white/80 dark:hover:bg-white/[0.06] hover:shadow-sm"
 							)}
  onClick={() => onSelectVersion(version)}
+									data-testid={`version-row-${version.id}`}
  >
  <div className="flex items-start gap-3">
  <div 
@@ -285,7 +288,7 @@ export function VersionHistorySidebar({
  </Button>
  )}
  {onDelete && selectedVersionId === version.id && editingId !== version.id && (
- <Button 
+ <Button data-testid={`version-delete-${version.id}`} 
  variant="ghost" 
  size="icon" 
  className="h-7 w-7 text-stone-400 hover:text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-500/10 dark:hover:text-rose-400 rounded-full transition-colors"
