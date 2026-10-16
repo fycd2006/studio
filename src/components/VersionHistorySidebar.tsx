@@ -26,7 +26,7 @@ interface VersionHistorySidebarProps {
  versions: PlanVersion[];
  selectedVersionId: string | null;
  onSelectVersion: (version: PlanVersion | null) => void;
- onDelete?: (versionId: string) => void;
+ onDelete?: (versionId: string) => void | Promise<void>;
  showNamedOnly: boolean;
  onToggleFilter: () => void;
  onBackToCurrent: () => void;

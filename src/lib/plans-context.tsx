@@ -121,7 +121,8 @@ interface PlansContextType {
   /** 回傳還原後的完整狀態；還原不了就回傳 null（讓呼叫端能分辨成功與失敗）。 */
   restorePlanVersion: (versionId: string) => Promise<LessonPlan | null>;
   updatePlanVersionName: (versionId: string, versionName: string) => void;
-  deletePlanVersion: (versionId: string) => Promise<void>;
+  /** 回傳 true 代表真的刪掉了；false 代表沒刪（例如刪了會讓後面的歷史救不回來）。 */
+  deletePlanVersion: (versionId: string) => Promise<boolean>;
   autoSaveCurrentState: () => void;
   getFullVersionState: (version: PlanVersion) => Promise<LessonPlan>;
   undoPlan: () => void;
@@ -635,9 +636,14 @@ export function PlansProvider({ children }: { children: ReactNode }) {
    *
    *    所以刪 snapshot 之前，先把「時間上的下一筆 patch」實體化成 snapshot，
    *    讓鏈接得回去。實體化一定要在刪除**之前**做，因為重建本身要讀到這個 snapshot。
+   *
+   * ⚠️ 接不回去時會**取消刪除**，而「取消了」一定要回報給呼叫端（回傳 false）。
+   *    這個函式第一版只是 `return`，呼叫端（PlanEditor 的 handleDeleteVersion）
+   *    照樣跳「已刪除版本」—— 使用者看到成功提示、那一列還在面板上，
+   *    只會以為畫面壞了。那正是本專案反模式 16 的樣子，而且是修 bug 時自己種下的。
    */
-  const deletePlanVersion = useCallback(async (versionId: string) => {
-    if (!db) return;
+  const deletePlanVersion = useCallback(async (versionId: string): Promise<boolean> => {
+    if (!db) return false;
     const list = activePlanVersions || [];   // createdAt 由新到舊
     const idx = list.findIndex(v => v.id === versionId);
     const toDelete = idx >= 0 ? list[idx] : undefined;
@@ -654,11 +660,12 @@ export function PlansProvider({ children }: { children: ReactNode }) {
       } catch (err) {
         // 接不回去就不要刪 —— 刪了會讓後面整段歷史變成廢資料
         console.error('[deletePlanVersion] 無法把下一筆 patch 實體化，取消刪除:', err);
-        return;
+        return false;
       }
     }
 
     deleteDocumentNonBlocking(doc(db, 'planVersions', versionId));
+    return true;
   }, [db, activePlanVersions, getFullVersionState]);
 
   const reorderPlans = useCallback((category: PlanCategory, startIndex: number, endIndex: number) => {

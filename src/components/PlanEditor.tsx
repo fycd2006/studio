@@ -148,7 +148,8 @@ interface PlanEditorProps {
   onSaveVersion?: (name: string, isAuto?: boolean) => Promise<boolean>;
   /** 回傳還原後的完整狀態；null 代表還原失敗（內容沒有被改動）。 */
   onRestoreVersion?: (versionId: string) => Promise<LessonPlan | null>;
-  onDeleteVersion?: (versionId: string) => void;
+  /** 回傳 true 代表真的刪掉了；false 代表沒刪（取消刪除）。 */
+  onDeleteVersion?: (versionId: string) => Promise<boolean>;
   onAutoSave?: () => void;
   getFullVersionState?: (version: PlanVersion) => Promise<LessonPlan>;
   onUpdateVersionName?: (versionId: string, versionName: string) => void;
@@ -610,7 +611,19 @@ export function PlanEditor({
           setPreviousPlan(null);
         }
       } catch (err) {
+        // ⚠️ 這裡只 console.error 的話，使用者看到的是「欄位全部空白的歷史檢視」，
+        //    而且畫面上沒有任何東西說明發生了什麼（實測 2026-10-16，瀏覽器實際操作）。
+        //    重建不出來（基準快照被刪掉或資料壞掉）是真的會發生的事，要講出來。
+        //    刻意**留在歷史模式**：橫幅上的「取消」還在，使用者可以自己退出或換一個
+        //    版本看，也還能按還原（還原會再報一次它自己的失敗）。
         console.error("Failed to load version preview:", err);
+        setPreviewPlan(null);
+        setPreviousPlan(null);
+        toast({
+          title: "這個版本打不開",
+          description: "它的重建基準已經不在了，所以沒辦法顯示當時的內容。",
+          variant: "destructive",
+        });
       } finally {
         setIsLoadingPreview(false);
       }
@@ -698,12 +711,45 @@ export function PlanEditor({
     toast({ title: "已還原版本" });
   };
 
-  const handleDeleteVersion = (versionId: string) => {
-    if (confirm("確定要刪除此版本嗎？")) {
-      onDeleteVersion?.(versionId);
-      if (selectedVersion?.id === versionId) setSelectedVersion(null);
-      toast({ title: "已刪除版本" });
+  /**
+   * 刪一筆版本紀錄。
+   *
+   * ⚠️ 兩件事都不能省：
+   *
+   * 1. **要等結果再提示。** plans-context 的 deletePlanVersion 在「刪了會讓後面的
+   *    歷史救不回來」時會取消刪除並回傳 false。原本這裡不 await、無條件跳
+   *    「已刪除版本」—— 使用者看到成功提示、那一列還在，只會以為畫面壞了。
+   *
+   * 2. **刪掉的是正在預覽的那一筆時，要一起離開歷史模式。** 只清 selectedVersion
+   *    的話，isHistoryMode 還是 true → 欄位全部停在唯讀的 DiffHighlighter、
+   *    而橫幅上的「取消」鈕掛在 `selectedVersion &&` 底下、此時不存在
+   *    → 畫面卡在空白的歷史檢視，只能從面板的「目前狀態」那一列繞回來。
+   */
+  const handleDeleteVersion = async (versionId: string) => {
+    if (!confirm("確定要刪除此版本嗎？")) return;
+
+    let deleted = false;
+    try {
+      deleted = (await onDeleteVersion?.(versionId)) ?? false;
+    } catch (err) {
+      console.error('[PlanEditor] 刪除版本失敗:', err);
+      deleted = false;
     }
+
+    if (!deleted) {
+      toast({
+        title: "版本沒有刪掉",
+        description: "這一筆是後面版本的重建基準，而那些版本接不回去；為了不讓歷史變成救不回來的廢資料，這次沒有刪除。",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (selectedVersion?.id === versionId) {
+      setSelectedVersion(null);
+      setIsHistoryMode(false);
+    }
+    toast({ title: "已刪除版本" });
   };
 
   const currentGroup = groups.find(group => group.id === currentPlan.groupId)
