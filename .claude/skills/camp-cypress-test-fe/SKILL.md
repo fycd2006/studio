@@ -1,9 +1,9 @@
 ---
 name: camp-cypress-test-fe
-description: Use when planning, writing, reviewing, or debugging Cypress E2E tests for 北科崇德營隊教案平台 (camp-plan-studio, Next.js 15 + Firebase Firestore). Triggered by requests like "寫 cypress test"、"加 E2E"、"測試規劃"、"修測試"、"cypress 紅了"、"補 data-testid"、"測權限"、"驗持久化", or any task touching `cypress/` 底下的檔案、`cypress.config.ts`、`scripts/e2e.sh`、`src/firebase/emulator.ts`。此 skill 記錄本專案 12 個實測踩過的反模式與 emulator fixture 契約，寫測試前必須逐條比對。NOT for 比對線上站與設計稿的人眼驗證（那用 camp-live-mcp-verify）。
+description: Use when planning, writing, reviewing, or debugging Cypress E2E tests for 北科崇德營隊教案平台 (camp-plan-studio, Next.js 15 + Firebase Firestore). Triggered by requests like "寫 cypress test"、"加 E2E"、"測試規劃"、"修測試"、"cypress 紅了"、"補 data-testid"、"測權限"、"驗持久化", or any task touching `cypress/` 底下的檔案、`cypress.config.ts`、`scripts/e2e.sh`、`src/firebase/emulator.ts`。此 skill 記錄本專案 17 個實測踩過的反模式與 emulator fixture 契約，寫測試前必須逐條比對。NOT for 比對線上站與設計稿的人眼驗證（那用 camp-live-mcp-verify）。
 ---
 
-# Camp Cypress Test FE — 測試規範（15 個反模式 + emulator fixture 契約）
+# Camp Cypress Test FE — 測試規範（17 個反模式 + emulator fixture 契約）
 
 本專案 E2E 的規範手冊。**任何時候規劃、撰寫、修改、debug cypress test，都必須先讀完這一份**。
 
@@ -14,7 +14,7 @@ description: Use when planning, writing, reviewing, or debugging Cypress E2E tes
 ## 核心原則（三句話）
 
 1. **E2E 一律跑在 Firebase emulator 上，資料自己建自己清** — 絕不指向真實 Firebase 專案。
-2. **測試紅了先假設抓到 bug，不是測試寫錯** — 已經這樣抓到四個真的（反模式 3、13、14、15）。
+2. **測試紅了先假設抓到 bug，不是測試寫錯** — 已經這樣抓到六個真的（反模式 3、13、14、15、16、17）。
 3. **寫新測試前先看 `cypress/support/commands.ts`** — 不要自己重寫登入 / 清資料 / 等寫入落地的邏輯。
 
 ---
@@ -146,7 +146,7 @@ JS chunk / HMR / 字型 / 圖片會連完整 body 一起吞進去，**一個測�
 | `firebase.json` | emulator port（firestore 8080 / auth 9099）。**刻意沒有 `.firebaserc`** —— project id 由 `scripts/e2e.sh` 與 `npm run e2e:emu` 用 `--project` 明確帶，repo 不留「預設 Firebase 專案」，免得有人在根目錄下 `firebase deploy` 時打到測試專案 |
 | `src/firebase/emulator.ts` | 判斷要不要接 emulator（`NEXT_PUBLIC_USE_FIREBASE_EMULATOR=1`）。`NODE_ENV === 'production'` 時**永遠不接** |
 | `src/firebase/index.ts` `getSdks()` | 接 emulator 時改用 `getFirestore`（**不開** persistentLocalCache，原因見反模式 6） |
-| `cypress/plugins/firestore.ts` | node 端 admin SDK：清空 / 建 scenario / 清 scenario / 讀文件 |
+| `cypress/plugins/firestore.ts` | node 端 admin SDK：清空 / 建 scenario / 清 scenario / 讀文件 / 改一筆 / 刪一筆 |
 | `cypress.config.ts` | 把上面那些包成 `db:*` task |
 | `cypress/support/commands.ts` | 瀏覽器端的 custom commands |
 
@@ -219,11 +219,11 @@ cleanup 自己報 remaining 1 筆」，看起來像比對鍵寫錯（反模式 1
 
 ---
 
-## 反模式（15 條，逐條比對）
+## 反模式（17 條，逐條比對）
 
 ### 比對順序：先原則，後條目
 
-Bad Example 是按「情境」寫的，情境對不上就會被打勾放行。**先對每支測試問這 5 題**：
+Bad Example 是按「情境」寫的，情境對不上就會被打勾放行。**先對每支測試問這 10 題**：
 
 | # | 問題 | 大致對應 |
 |---|---|---|
@@ -235,8 +235,10 @@ Bad Example 是按「情境」寫的，情境對不上就會被打勾放行。**
 | 6 | 間歇失敗的那一刻，**使用者看到什麼**？（白屏算 bug，不算測試不穩） | 反模式 13 |
 | 7 | 使用者**做完就立刻離開**（按返回 / 關分頁）時，這個功能還成立嗎？ | 反模式 14 |
 | 8 | 這個 Firestore 訂閱**等匿名登入完成了嗎**？（`useMemoFirebase` 的依賴有沒有 `user`） | 反模式 15 |
+| 9 | 成功提示是**等動作真的完成**才跳的嗎？還是按下去就跳？ | 反模式 16 |
+| 10 | 這個動作改了資料之後，畫面的本地草稿**也跟著換掉了嗎**？（不然它會寫回來） | 反模式 17 |
 
-任一題答不出來 → 即使 15 條全對不上，也要上報，標「原則層命中、無對應條目」。
+任一題答不出來 → 即使 17 條全對不上，也要上報，標「原則層命中、無對應條目」。
 
 ---
 
@@ -763,6 +765,97 @@ FirebaseError: Missing or insufficient permissions
 
 ---
 
+### 反模式 16：非同步動作沒等它做完就跳成功提示（這條抓到真 bug）
+
+🔒 實測 2026-10-16，寫 `versions/save-restore.cy.ts` 時抓到，**已修**。
+
+```tsx
+// ❌ 原始碼（已修掉）—— PlanEditor.tsx 的「還原版本」
+const handleRestoreVersion = (versionId: string) => {
+  onRestoreVersion?.(versionId);     // ← async，但沒有 await、也沒看回傳值
+  setIsHistoryMode(false);
+  setSelectedVersion(null);
+  toast({ title: "已還原版本" });     // ← 無條件
+};
+```
+
+而 `restorePlanVersion` 那端，重建不出舊版狀態時原本是**偷偷回傳目前這份教案**：
+
+```ts
+// plans-context.tsx:501（已修掉）
+if (snapshotIdx === -1) return allPlans.find(p => p.id === activePlanId)!;
+```
+
+兩個加起來 = 「還原」把現況原封不動寫回去、畫面跳「已還原版本」、**資料一個字都沒變**。
+使用者以為歷史救回來了，然後在舊內容上繼續編輯。
+
+```ts
+// ✅ 修法：讓那一端能回報成敗，呼叫端等它、分辨它
+restorePlanVersion: (versionId) => Promise<LessonPlan | null>   // 失敗回 null / throw
+// 呼叫端
+const restored = await onRestoreVersion?.(versionId);
+if (!restored) { toast({ title: "還原失敗", variant: "destructive" }); return; }  // 留在原畫面
+```
+
+**檢查清單**
+
+| 情況 | 動作 |
+|---|---|
+| 任何 `onXxx?.(...)` 後面緊接著成功 toast | 問「這個函式是 async 嗎」。是 → 要 await 並依結果決定提示 |
+| 某個函式在「做不到」的時候回傳一個看起來正常的值 | 那是在把失敗偽裝成成功。寧可 throw 或回 null |
+| 失敗時要不要退出目前的模式 | **不要**。退出去會讓人以為動作生效了 |
+
+⚠️ 改成 throw 之後要把**每一個呼叫點**都看過。本次就因此多修一個地方：
+`saveNewVersion` 也會呼叫 `getFullVersionState`，鏈斷掉時那個 throw 變成
+unhandled promise rejection → 整頁掛掉。那條路徑改成「重建不出前一版就存一份
+完整快照」—— 既不會炸，又順手把鏈接回去。測試是 `edge_cases/version-chain-broken.cy.ts`
+抓到的（它在修好之前報的是 uncaught exception，不是斷言失敗）。
+
+---
+
+### 反模式 17：卸載時的「補送」把舊草稿蓋回剛寫進去的新值（這條抓到真 bug）
+
+🔒 實測 2026-10-16，**這是反模式 14 那個修法自己帶出來的後遺症**，已修。
+
+反模式 14 把「卸載時丟掉還在 debounce 的內容」改成「補送出去」。但補送的判斷條件是
+
+```ts
+if (!debounceTimer.current) return;   // ← debounce 跑完之後，這個 ref 從來沒有被設回 null
+```
+
+而 `handleInput` 的 `setTimeout` 回呼裡**沒有把它清掉**，所以第一次打字之後它**永遠為真** ——
+於是每一次卸載都會把 `latestHtmlRef` 再送一遍。寫回同樣的值時看不出來，但只要這期間
+有別人寫過這個欄位，補送就會把舊草稿蓋回去。
+
+實際撞到的樣子：按「還原版本」→ 進歷史模式會**卸載**富文字欄位的編輯器 → 補送舊草稿
+→ 資料庫先被還原成舊版內容，350ms 後又被草稿改回去。探針紀錄長這樣：
+
+```
+[RESTORE] writing nKeys=22 purpose="目標一…"     ← 還原確實寫進去了
+[UPDATEPLAN] nKeys=22 purpose="目標一…"
+[RESTORE] done
+[UPDATEPLAN] nKeys=1  purpose="目標二…"          ← 緊接著被補送蓋回去
+```
+
+```ts
+// ✅ 修法：送出去了就不再算「還在等著送」
+debounceTimer.current = setTimeout(() => {
+  debounceTimer.current = null;
+  ...
+}, 350);
+```
+
+**怎麼測得到**：這類多餘寫入不會改變內容，只會改變 `updatedAt`。
+對應測試是「**只預覽歷史版本、沒按還原 → `updatedAt` 不能動**」
+（`versions/save-restore.cy.ts`）—— 用 `updatedAt` 當探針，是唯一能分辨
+「沒寫入」與「寫了同樣的值」的辦法。
+
+**同類風險**：任何「卸載時補做一件事」的邏輯。問兩句：
+1. 這個「還沒做完」的旗標，做完之後有沒有被清掉？
+2. 如果補送的時候資料已經被**別人**改過，補送會不會把它蓋掉？
+
+---
+
 ### ⚠️ 還有一個症狀沒定案
 
 | 紅在哪 | 訊息 |
@@ -792,6 +885,23 @@ isLoading: isUserLoading || campsData === null || (!!activeCampId && rawPlansDat
 `permission-error` 就 `throw` 在 render 裡 —— 所以一個短暫的 permission error
 會讓整個 client tree 爆掉，外觀是「列表不出現」這種指不到原因的訊息。
 `support/e2e.ts` 的 uncaught exception 收集器（記錄但不吞）就是為了把這兩件事對上。
+
+**2026-10-16 新增的一筆觀測 —— 這次拿到了比較具體的方向。**
+全套跑 42 條時 `plans/create-delete` 的「選教學組新增」紅了一次（單獨重跑兩次都綠）。
+訊息是「資料庫應出現新教案：expected false to equal true」，而**截圖裡畫面上那一列
+好好地在**（總覽顯示 2 筆、新教案掛在教學組）。也就是：
+
+> 本地視圖有了、伺服器端沒有 —— 而 `dbDocsUntil` 輪詢 12 秒都還是沒有。
+
+截圖的網路面板裡，Firestore 的 **Write channel**
+（`/google.firestore.v1.Firestore/Write/channel`）是紅的；旁邊的 Listen channel 正常 200。
+Firestore 的延遲補償會讓本地先畫出來，所以 Write channel 卡住的外觀就是
+「畫面有、資料庫沒有」，而且**不會有任何錯誤提示**（寫入是 fire-and-forget，反模式 5）。
+
+這跟上面兩個症狀可以串起來：都是某一條 Firestore channel 偶發沒通
+（Listen 沒通 → 列表不出現／一直轉圈；Write 沒通 → 畫面有但資料庫沒有）。
+下一步：下次再紅時，從 `cypress/logs/emulator.log` 對時間戳，確認是 emulator 端
+把連線切掉還是 client 端重連失敗。**在定案之前，不要用 `retries` 把它蓋掉。**
 
 ---
 
@@ -840,7 +950,7 @@ cypress/
 │   │   │   ├── blueprint.cy.ts          ⬜ P2
 │   │   │   └── topbar.cy.ts             ⬜ P2
 │   │   ├── versions/
-│   │   │   ├── save-restore.cy.ts       ⬜ P0
+│   │   │   ├── save-restore.cy.ts       ✅ 5   存檔/還原/還原鏈/刪基準後仍救得回/預覽不寫入
 │   │   │   ├── naming.cy.ts             ⬜ P2
 │   │   │   └── diff.cy.ts               ⬜ P2
 │   │   ├── admin/
@@ -874,6 +984,7 @@ cypress/
 │   │   └── version.cy.ts                ⬜ P2
 │   │
 │   └── edge_cases/                      邊界與錯誤處理
+│       ├── version-chain-broken.cy.ts   ✅ 1   基準快照不在時，還原要說實話且不動到現況
 │       ├── xss.cy.ts                    ⬜ P0
 │       ├── role-escalation.cy.ts        ⬜ P0
 │       ├── firestore-rules.cy.ts        ⬜ P1
@@ -885,8 +996,11 @@ cypress/
     └── api-error-states.cy.ts           ⬜ P2   /api/* 回 500 時的錯誤呈現
 ```
 
-目前 **36 個測試全綠**（route-guard 9、login 3、role-permission 5、create-delete 4、overview 6、
-field-persistence 5、rich-text 2、auth-race 2）。
+目前 **42 個測試**（route-guard 9、login 3、role-permission 5、create-delete 4、overview 6、
+field-persistence 5、rich-text 2、save-restore 5、version-chain-broken 1、auth-race 2）。
+
+⚠️ 最後一次全套：41/42 —— 紅的那一條是上面那個還沒定案的 Firestore channel 症狀
+（`create-delete`「選教學組新增」，單獨重跑兩次都綠）。**不要把它讀成「只是不穩」**。
 
 ### 新增 spec 前必做：先查既有的該不該擴充
 
@@ -900,7 +1014,7 @@ field-persistence 5、rich-text 2、auth-race 2）。
 | 這是「同一條使用者旅程的下一段」嗎？ | 是 → 擴充既有 spec（例如建立→編輯→存版本→還原屬於同一條） |
 | 這是「同一個畫面的另一個獨立功能」嗎？ | 是 → 開新檔 |
 
-### P0 —— 六支裡已完成兩支（editor 那兩支，各自抓到／守住一個真 bug）
+### P0 —— 六支裡已完成三支（editor 兩支 + versions 一支，各自抓到真 bug）
 
 | spec | 守什麼 | 為什麼是 P0 |
 |---|---|---|
@@ -909,7 +1023,7 @@ field-persistence 5、rich-text 2、auth-race 2）。
 | `api/export.cy.ts` | `/api/export` 的 docx / pdf / zip 輸出、空 body、超大輸入；以及**不帶任何身分就能呼叫** | 這支 API 沒有驗證也沒有輸入大小限制。先用測試把現況釘住，修的時候才知道有沒有改壞輸出 |
 | ~~`feature_test/editor/field-persistence.cy.ts`~~ ✅ | 六個富文字欄位 + 人員欄位落地、`updatedAt` 更新、劇本模式切換、**打完字立刻離開不掉字**、改名與總覽同步 | 已完成（5 條）。寫的過程抓到反模式 14 那個資料遺失的真 bug |
 | ~~`feature_test/editor/rich-text.cy.ts`~~ ✅ | Cmd/Ctrl+B 的粗體存成 HTML 且重載還在；貼上外部 HTML 時 `<script>` / `on*` / `javascript:` 被 `sanitizeHtml` 清掉 | 已完成（2 條）。⚠️ 編輯器**沒有顯示工具列**（`hideToolbar` 預設 true），清單 / 連結 / 標題這些只能從工具列進去的功能目前在 UI 上碰不到，所以沒測 |
-| `feature_test/versions/save-restore.cy.ts` | 存版本 → 改內容 → 還原 → 欄位回到舊值、Firestore 同步、`planVersions` 筆數對 | `restorePlanVersion` 牽涉 snapshot / patch 兩種型別與 jsondiffpatch 還原鏈，壞掉等於使用者的歷史版本救不回來 |
+| ~~`feature_test/versions/save-restore.cy.ts`~~ ✅ | 存版本 → 改內容 → 還原（三層驗證）／還原 patch 型版本要走 jsondiffpatch 鏈／刪掉基準快照後仍救得回／只預覽不該寫入／沒打名稱不產生版本 | 已完成（5 條）＋`edge_cases/version-chain-broken.cy.ts`（1 條）。寫的過程抓到三個真 bug：還原被舊草稿蓋回去（反模式 17）、還原失敗卻報成功（反模式 16）、刪一筆 snapshot 會讓後面所有 patch 永遠還原不回來 |
 
 ### P1 —— 接著補
 
