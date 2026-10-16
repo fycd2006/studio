@@ -144,7 +144,8 @@ interface PlanEditorProps {
   canUndo?: boolean;
   canRedo?: boolean;
   versions?: PlanVersion[];
-  onSaveVersion?: (name: string, isAuto?: boolean) => void;
+  /** 回傳 true 代表真的建了一筆版本；false 代表沒有。 */
+  onSaveVersion?: (name: string, isAuto?: boolean) => Promise<boolean>;
   /** 回傳還原後的完整狀態；null 代表還原失敗（內容沒有被改動）。 */
   onRestoreVersion?: (versionId: string) => Promise<LessonPlan | null>;
   onDeleteVersion?: (versionId: string) => void;
@@ -617,7 +618,7 @@ export function PlanEditor({
     load();
   }, [selectedVersion, getFullVersionState, versions]);
 
-  const handleSaveVersion = (name?: string) => {
+  const handleSaveVersion = async (name?: string) => {
     // Flush pending updates immediately before saving version
     if (Object.keys(pendingUpdatesRef.current).length > 0) {
       onUpdateRef.current(planIdRef.current, pendingUpdatesRef.current);
@@ -630,7 +631,27 @@ export function PlanEditor({
       toast({ title: "請輸入版本名稱", variant: "destructive" });
       return;
     }
-    onSaveVersion?.(nameToSave.trim());
+    // ⚠️ 要等它存完才知道存不存得成。存檔會在「內容跟最後一筆版本一樣」時
+    //    什麼都不做（plans-context 的 saveNewVersion），而那在這個產品裡是常態 ——
+    //    離開編輯器會自動存一筆，所以進來看一看就按儲存的話，現況往往等於最後一筆。
+    //    原本這裡不 await 也不看結果就跳「版本已儲存」，使用者會以為書籤存好了。
+    let saved = false;
+    try {
+      saved = (await onSaveVersion?.(nameToSave.trim())) ?? false;
+    } catch (err) {
+      console.error('[PlanEditor] 儲存版本失敗:', err);
+      saved = false;
+    }
+
+    if (!saved) {
+      toast({
+        title: "版本沒有存成",
+        description: "請稍後再試一次；目前的內容沒有受到影響。",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setNewVersionName("");
     toast({ title: "版本已儲存" });
   };

@@ -116,7 +116,8 @@ interface PlansContextType {
   addPlan: (categoryOrSlug: PlanCategory | string) => string | undefined;
   reorderPlans: (category: PlanCategory, startIndex: number, endIndex: number) => void;
   activePlanVersions: PlanVersion[];
-  savePlanVersion: (name: string, isAuto?: boolean) => Promise<void>;
+  /** 回傳 true 代表真的建了一筆版本（讓呼叫端能分辨成功與「其實沒存」）。 */
+  savePlanVersion: (name: string, isAuto?: boolean) => Promise<boolean>;
   /** 回傳還原後的完整狀態；還原不了就回傳 null（讓呼叫端能分辨成功與失敗）。 */
   restorePlanVersion: (versionId: string) => Promise<LessonPlan | null>;
   updatePlanVersionName: (versionId: string, versionName: string) => void;
@@ -524,8 +525,9 @@ export function PlansProvider({ children }: { children: ReactNode }) {
     return state;
   }, [db, activePlanId, allPlans]);
 
-  const saveNewVersion = useCallback(async (currentPlan: LessonPlan, now: number, name: string, isAuto: boolean) => {
-    if (!db || !user || !activePlanId) return;
+  /** 回傳 true 代表真的建了一筆版本；false 代表沒有（呼叫端要據此決定提示什麼）。 */
+  const saveNewVersion = useCallback(async (currentPlan: LessonPlan, now: number, name: string, isAuto: boolean): Promise<boolean> => {
+    if (!db || !user || !activePlanId) return false;
     const latestVersion = activePlanVersions[0];
 
     let precomputedDelta: any = undefined;
@@ -550,8 +552,17 @@ export function PlansProvider({ children }: { children: ReactNode }) {
       if (previousState) {
         precomputedDelta = jdp.diff(previousState, currentPlan);
         if (!precomputedDelta) {
-          console.log("No changes detected in Auto-Save. Skipping version creation.");
-          return;
+          if (isAuto) {
+            // 自動存檔沒變化就不要洗版，這是對的
+            console.log("No changes detected in Auto-Save. Skipping version creation.");
+            return false;
+          }
+          // 但**手動存檔不一樣**：使用者是在對目前這份內容下一個書籤，
+          // 「跟上一筆自動存檔一模一樣」不是不存的理由 —— 他要的是那個名字。
+          // 而且離開編輯器時會自動存一筆，所以「現況等於最後一筆版本」其實是常態：
+          // 照原本的寫法，使用者進來看一看就按儲存，十之八九會靜默失敗。
+          // 實測 2026-10-16（瀏覽器）：畫面跳「版本已儲存」，planVersions 一筆都沒多。
+          mustBeSnapshot = true;
         }
       }
     }
@@ -580,13 +591,14 @@ export function PlansProvider({ children }: { children: ReactNode }) {
     }
 
     setDocumentNonBlocking(doc(db, 'planVersions', versionId), newVersion, { merge: true });
+    return true;
   }, [db, user, activePlanId, activePlanVersions, getFullVersionState]);
 
-  const savePlanVersion = useCallback(async (name: string, isAuto: boolean = false) => {
-    if (!db || !user || !activePlanId) return;
+  const savePlanVersion = useCallback(async (name: string, isAuto: boolean = false): Promise<boolean> => {
+    if (!db || !user || !activePlanId) return false;
     const currentPlan = allPlans.find(p => p.id === activePlanId);
-    if (!currentPlan) return;
-    
+    if (!currentPlan) return false;
+
     const now = Date.now();
     return saveNewVersion(currentPlan, now, name, isAuto);
   }, [db, user, activePlanId, allPlans, saveNewVersion]);

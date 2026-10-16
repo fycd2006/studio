@@ -463,7 +463,46 @@ describe('教案編輯器：版本存檔與還原 (admin)', () => {
     });
   });
 
-  // ── 5. 防呆：沒給名稱不該產生版本，也不該謊稱存好了 ──────────
+  // ── 5. 內容沒變也要存得下具名版本 ───────────────────────────
+
+  it('內容跟最後一筆版本一樣時，手動存檔仍然要建立具名版本（不可以只跳提示）', () => {
+    // 造出「現況 === 最後一筆版本」的狀態：打字 → 離開（自動存一筆捕捉到這個內容）→ 再進來。
+    // ⚠️ 這在真實使用上是**常態**，不是邊界：離開編輯器一定會自動存一筆，所以使用者
+    //    下次進來看一看就按「儲存版本」時，現況幾乎總是等於最後一筆版本。
+    openEditor();
+    typePurpose(V1);
+    leaveEditor();
+    patchesUntil(1, '離開編輯器應該自動存一筆，讓最後一筆版本的內容等於現況');
+
+    openEditor();
+    cy.editorField('purpose').should('contain.text', V1);
+
+    // 一個字都不改，直接存一個具名版本
+    saveNamedVersion('定稿版');
+
+    // 這一句才是重點。修好之前：toast 照跳「版本已儲存」，但 planVersions 一筆都沒多 ——
+    // saveNewVersion 比對不出差異就直接 return（plans-context.tsx 的 jdp.diff 分支），
+    // 而呼叫端不 await 也不看結果。使用者的書籤靜默消失。
+    //
+    // 手動存檔的語意是「我要幫現在這份內容下一個書籤」，跟上一筆一不一樣無關。
+    cy.dbDocsUntil<VersionDoc>(
+      'planVersions',
+      (docs) => docs.some((v) => v.name === '定稿版'),
+      { reason: '內容沒變也要存得下具名版本（這是使用者按下去真正要的東西）' },
+    ).then((docs) => {
+      const saved = docs.find((v) => v.name === '定稿版')!;
+      expect(saved.type, '手動存檔要存成整份快照').to.eq('snapshot');
+      expect(String(saved.snapshot?.purpose ?? ''), '快照內容要是當下的內容').to.include(V1);
+    });
+
+    // 重載後版本還在（不是只存在於這一次的 client state）
+    cy.reload();
+    cy.getByTestId('editor-title-input', { timeout: 20000 }).should('be.visible');
+    openSidebar();
+    cy.getByTestId('version-sidebar').should('contain.text', '定稿版');
+  });
+
+  // ── 6. 防呆：沒給名稱不該產生版本，也不該謊稱存好了 ──────────
 
   it('存檔沒打名稱就按確定 → 不產生具名版本，也不該出現「版本已儲存」', () => {
     openEditor();

@@ -235,7 +235,7 @@ Bad Example 是按「情境」寫的，情境對不上就會被打勾放行。**
 | 6 | 間歇失敗的那一刻，**使用者看到什麼**？（白屏算 bug，不算測試不穩） | 反模式 13 |
 | 7 | 使用者**做完就立刻離開**（按返回 / 關分頁）時，這個功能還成立嗎？ | 反模式 14 |
 | 8 | 這個 Firestore 訂閱**等匿名登入完成了嗎**？（`useMemoFirebase` 的依賴有沒有 `user`） | 反模式 15 |
-| 9 | 成功提示是**等動作真的完成**才跳的嗎？還是按下去就跳？ | 反模式 16 |
+| 9 | 成功提示是**等動作真的完成**才跳的嗎？還是按下去就跳？使用者**什麼都沒改**就按下去呢？ | 反模式 16 |
 | 10 | 這個動作改了資料之後，畫面的本地草稿**也跟著換掉了嗎**？（不然它會寫回來） | 反模式 17 |
 
 任一題答不出來 → 即使 17 條全對不上，也要上報，標「原則層命中、無對應條目」。
@@ -797,11 +797,23 @@ const restored = await onRestoreVersion?.(versionId);
 if (!restored) { toast({ title: "還原失敗", variant: "destructive" }); return; }  // 留在原畫面
 ```
 
+**第二個實例（2026-10-16，用瀏覽器實跑才抓到）**：同一支檔案的「儲存版本」也一樣。
+`handleSaveVersion` 不 await、無條件跳「版本已儲存」，而 `saveNewVersion` 在
+「內容跟最後一筆版本沒有差異」時會直接 `return`。因為離開編輯器一定會自動存一筆，
+**「現況等於最後一筆版本」在這個產品裡是常態** —— 使用者下次進來看一看就按儲存，
+十之八九會靜默失敗。修法有兩段：手動存檔不因為「沒差異」而跳過（它的語意是書籤，
+不是 diff），而且 `savePlanVersion` 回傳 boolean 讓呼叫端據實提示。
+
+> ⚠️ 這一條**整套 cypress 全綠的情況下沒被抓到**，因為測試都是「打字 → 存版本」，
+> 永遠有差異。是照著使用者的真實操作順序（進來 → 什麼都沒改 → 存）才踩到的。
+> 寫測試時要特別想一次「**使用者什麼都沒改就按下去**會怎樣」。
+
 **檢查清單**
 
 | 情況 | 動作 |
 |---|---|
 | 任何 `onXxx?.(...)` 後面緊接著成功 toast | 問「這個函式是 async 嗎」。是 → 要 await 並依結果決定提示 |
+| 某個寫入函式有「沒變化就不做」的分支 | 問「使用者**主動**按下去時，這個分支該不該成立」。通常不該 |
 | 某個函式在「做不到」的時候回傳一個看起來正常的值 | 那是在把失敗偽裝成成功。寧可 throw 或回 null |
 | 失敗時要不要退出目前的模式 | **不要**。退出去會讓人以為動作生效了 |
 
@@ -950,7 +962,7 @@ cypress/
 │   │   │   ├── blueprint.cy.ts          ⬜ P2
 │   │   │   └── topbar.cy.ts             ⬜ P2
 │   │   ├── versions/
-│   │   │   ├── save-restore.cy.ts       ✅ 5   存檔/還原/還原鏈/刪基準後仍救得回/預覽不寫入
+│   │   │   ├── save-restore.cy.ts       ✅ 6   存檔/還原/還原鏈/刪基準後仍救得回/預覽不寫入/沒改也存得下
 │   │   │   ├── naming.cy.ts             ⬜ P2
 │   │   │   └── diff.cy.ts               ⬜ P2
 │   │   ├── admin/
@@ -996,8 +1008,8 @@ cypress/
     └── api-error-states.cy.ts           ⬜ P2   /api/* 回 500 時的錯誤呈現
 ```
 
-目前 **42 個測試**（route-guard 9、login 3、role-permission 5、create-delete 4、overview 6、
-field-persistence 5、rich-text 2、save-restore 5、version-chain-broken 1、auth-race 2）。
+目前 **43 個測試**（route-guard 9、login 3、role-permission 5、create-delete 4、overview 6、
+field-persistence 5、rich-text 2、save-restore 6、version-chain-broken 1、auth-race 2）。
 
 ⚠️ 最後一次全套：41/42 —— 紅的那一條是上面那個還沒定案的 Firestore channel 症狀
 （`create-delete`「選教學組新增」，單獨重跑兩次都綠）。**不要把它讀成「只是不穩」**。

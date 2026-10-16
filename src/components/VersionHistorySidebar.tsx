@@ -31,7 +31,7 @@ interface VersionHistorySidebarProps {
  onToggleFilter: () => void;
  onBackToCurrent: () => void;
  onUpdateVersionName?: (versionId: string, newName: string) => void;
- onSaveVersion?: (name: string) => void;
+ onSaveVersion?: (name: string) => void | Promise<void>;
  onClose: () => void;
  className?: string;
 }
