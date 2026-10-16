@@ -225,6 +225,15 @@ export function O2RichEditor({
     setIsSaving(true);
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(() => {
+      // 送出去了就不再算「還在等著送」。
+      //
+      // ⚠️ 少了這一行，debounceTimer.current 在第一次打字之後就**永遠是真值** ——
+      //    下面的 flushPendingInput 於是會在「每一次卸載」都把 latestHtmlRef 再送
+      //    一遍。平常看起來沒事（寫回同樣的值），但只要這期間有別人寫過這個欄位，
+      //    這個補送就會把舊草稿蓋回去。實測 2026-10-16：按「還原版本」之後資料庫
+      //    先變成舊版內容，350ms 後又被改回還原前的草稿 —— 還原等於被悄悄抹掉。
+      //    （進入歷史模式會卸載這個編輯器，補送就是在那一刻發生的。）
+      debounceTimer.current = null;
       if (editorRef.current) {
         isInternalChange.current = true;
         onChange(editorRef.current.innerHTML);
