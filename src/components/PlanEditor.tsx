@@ -145,7 +145,8 @@ interface PlanEditorProps {
   canRedo?: boolean;
   versions?: PlanVersion[];
   onSaveVersion?: (name: string, isAuto?: boolean) => void;
-  onRestoreVersion?: (versionId: string) => void;
+  /** 回傳還原後的完整狀態；null 代表還原失敗（內容沒有被改動）。 */
+  onRestoreVersion?: (versionId: string) => Promise<LessonPlan | null>;
   onDeleteVersion?: (versionId: string) => void;
   onAutoSave?: () => void;
   getFullVersionState?: (version: PlanVersion) => Promise<LessonPlan>;
@@ -634,8 +635,43 @@ export function PlanEditor({
     toast({ title: "版本已儲存" });
   };
 
-  const handleRestoreVersion = (versionId: string) => {
-    onRestoreVersion?.(versionId);
+  /**
+   * 還原到某一個版本。
+   *
+   * 原本這裡是「呼叫 → 不 await → 無條件跳『已還原版本』」，造成兩個後果：
+   *
+   *   1. 重建失敗（例如基準快照被刪掉了）時畫面照樣說成功，而資料一個字都沒變。
+   *      使用者以為救回來了，然後在舊內容上繼續編輯。
+   *   2. 還原成功了，但 localPlan 還停在還原前的草稿。退出歷史模式時那些欄位編輯器
+   *      會重新掛上，並在 350ms 後把草稿寫回 Firestore，把剛還原的內容蓋掉。
+   *      實測 2026-10-16：資料庫先變成舊版內容，接著又被改回還原前的草稿。
+   *
+   * 所以：等它結束 → 用它回傳的狀態把本地草稿換掉 → 才退出歷史模式並報成功。
+   * 失敗就留在歷史模式並說實話，不要讓使用者在「以為已還原」的狀態下繼續打字。
+   */
+  const handleRestoreVersion = async (versionId: string) => {
+    let restored: LessonPlan | null | undefined;
+    try {
+      restored = await onRestoreVersion?.(versionId);
+    } catch (err) {
+      console.error('[PlanEditor] 還原版本失敗:', err);
+      restored = null;
+    }
+
+    if (!restored) {
+      toast({
+        title: "還原失敗",
+        description: "這個版本重建不出來（基準快照可能已被刪除），目前的內容沒有被改動。",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // 丟掉還沒送出的草稿 —— 「還原」的語意就是「不要現在這一份」
+    pendingUpdatesRef.current = {};
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    setLocalPlan(restored);
+
     setIsHistoryMode(false);
     setSelectedVersion(null);
     toast({ title: "已還原版本" });
