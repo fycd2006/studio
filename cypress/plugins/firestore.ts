@@ -117,6 +117,27 @@ export async function patchDoc(
 // 要什麼狀態就在這裡加參數，讓 scenario 永遠是一次成形的完整世界。
 // ─────────────────────────────────────────────────────────────
 
+/**
+ * 繞過 UI 刪掉一筆文件 —— 只用於造「UI 做不到的壞狀態」。
+ *
+ * 例如版本鏈斷掉的情境：產品端刪 snapshot 時會先把下一筆 patch 實體化
+ * （plans-context.tsx 的 deletePlanVersion），所以從 UI 永遠造不出
+ * 「只剩 patch、沒有基準」的資料。那個狀態只能從這裡直接做掉。
+ */
+export async function deleteDocById(
+  env: FirestoreEnv,
+  args: { collection: CollectionName; id: string },
+): Promise<{ deleted: boolean }> {
+  const database = ensureDb(env);
+  const ref = database.collection(args.collection).doc(args.id);
+  const snap = await ref.get();
+  if (!snap.exists) {
+    throw new Error(`要刪的 ${args.collection}/${args.id} 不存在 —— 測試的前提已經不成立`);
+  }
+  await ref.delete();
+  return { deleted: true };
+}
+
 export interface PlanSeed {
   /** 不給就自動編號 */
   id?: string;

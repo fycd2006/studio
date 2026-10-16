@@ -977,7 +977,7 @@ export function PlanEditor({
                         isPrintMode ? "px-6 md:px-10 py-10 space-y-6 md:space-y-8" : "px-4 sm:px-8 md:px-12 py-8 sm:py-10 space-y-8"
                       )}>
                         {isHistoryMode && (
-                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 bg-orange-50/80 backdrop-blur-xl dark:bg-amber-900/10 border border-orange-200/50 dark:border-amber-700/30 rounded-2xl mb-8 gap-4 shadow-[0_4px_24px_-8px_rgba(249,115,22,0.15)]">
+                          <div data-testid="editor-history-banner" className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 bg-orange-50/80 backdrop-blur-xl dark:bg-amber-900/10 border border-orange-200/50 dark:border-amber-700/30 rounded-2xl mb-8 gap-4 shadow-[0_4px_24px_-8px_rgba(249,115,22,0.15)]">
                             <div className="flex items-center gap-3">
                               <div className="w-2 h-8 bg-gradient-to-b from-orange-400 to-orange-600 rounded-full shadow-inner" />
                               <div>
@@ -993,6 +993,7 @@ export function PlanEditor({
                               <div className="flex items-center gap-2 w-full sm:w-auto">
                                 <Button
                                   variant="ghost"
+                                  data-testid="editor-version-cancel"
                                   onClick={() => {
                                     setSelectedVersion(null);
                                     setIsHistoryMode(false);
@@ -1003,6 +1004,7 @@ export function PlanEditor({
                                   取消 / Cancel
                                 </Button>
                                 <Button
+                                  data-testid="editor-version-restore"
                                   onClick={() => handleRestoreVersion(selectedVersion.id)}
                                   className="h-10 px-7 rounded-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-black text-[11px] uppercase tracking-[0.2em] shadow-lg shadow-orange-500/25 border-none flex-1 sm:flex-none transition-all hover:scale-105 active:scale-95"
                                 >
@@ -1491,6 +1493,7 @@ export function PlanEditor({
         <button
           type="button"
           aria-label="Close version history"
+          data-testid="version-sidebar-overlay"
           className="fixed inset-0 z-[95] bg-black/20 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
           onClick={() => setIsSidebarOpen(false)}
         />
