@@ -82,9 +82,13 @@ export function ResponsiveActivitySelectV3({
     // 這將 100% 絕對綁定在父元件內，不論是網頁縮放 transform: scale() 還是任意容器捲動，它永遠死死黏在按鈕下方！
     return (
       <div className="relative w-full" ref={containerRef}>
+        {/* 桌機與手機的觸發鈕共用同一個 testid：這兩個分支是 if/return 互斥的，
+            不像本專案其他地方（hidden md:block + flex md:hidden）兩份都在 DOM 裡，
+            所以不會撈到兩個。改成 RWD class 切換的話就必須拆成兩個 testid。 */}
         <Button 
           variant="ghost" 
           role="combobox"
+          data-testid="activity-type-trigger"
           onClick={() => !disabled && setOpen(!open)}
           aria-expanded={open}
           disabled={disabled}
@@ -111,6 +115,7 @@ export function ResponsiveActivitySelectV3({
     <>
       <Button 
         variant="ghost" 
+        data-testid="activity-type-trigger"
         onClick={() => !disabled && setOpen(true)}
         disabled={disabled}
         className="w-full h-14 justify-between rounded-xl px-4 font-bold text-base bg-stone-50/50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 shadow-sm active:scale-[0.98] transition-transform"

@@ -3,7 +3,7 @@ name: camp-cypress-test-fe
 description: Use when planning, writing, reviewing, or debugging Cypress E2E tests for 北科崇德營隊教案平台 (camp-plan-studio, Next.js 15 + Firebase Firestore). Triggered by requests like "寫 cypress test"、"加 E2E"、"測試規劃"、"修測試"、"cypress 紅了"、"補 data-testid"、"測權限"、"驗持久化", or any task touching `cypress/` 底下的檔案、`cypress.config.ts`、`scripts/e2e.sh`、`src/firebase/emulator.ts`。此 skill 記錄本專案 12 個實測踩過的反模式與 emulator fixture 契約，寫測試前必須逐條比對。NOT for 比對線上站與設計稿的人眼驗證（那用 camp-live-mcp-verify）。
 ---
 
-# Camp Cypress Test FE — 測試規範（12 個反模式 + emulator fixture 契約）
+# Camp Cypress Test FE — 測試規範（15 個反模式 + emulator fixture 契約）
 
 本專案 E2E 的規範手冊。**任何時候規劃、撰寫、修改、debug cypress test，都必須先讀完這一份**。
 
@@ -14,7 +14,7 @@ description: Use when planning, writing, reviewing, or debugging Cypress E2E tes
 ## 核心原則（三句話）
 
 1. **E2E 一律跑在 Firebase emulator 上，資料自己建自己清** — 絕不指向真實 Firebase 專案。
-2. **測試紅了先假設抓到 bug，不是測試寫錯** — 已經這樣抓到一個真的（反模式 3）。
+2. **測試紅了先假設抓到 bug，不是測試寫錯** — 已經這樣抓到四個真的（反模式 3、13、14、15）。
 3. **寫新測試前先看 `cypress/support/commands.ts`** — 不要自己重寫登入 / 清資料 / 等寫入落地的邏輯。
 
 ---
@@ -167,6 +167,30 @@ afterEach(() => {
 });
 ```
 
+**編輯器類的 spec 多一條規則：`afterEach` 要先離開編輯器頁，再清資料。**
+
+```ts
+afterEach(() => {
+  cy.visit('/plans');
+  cy.location('pathname').should('eq', '/plans');   // 只確認換頁，不等頁面上的元素
+  cy.cleanupCampScenario(scenario.scenarioId);
+});
+```
+
+人還留在 `/plans/<id>` 上時刪掉 `lessonPlans` → 頁面切到「找不到教案」分支 →
+`PlanEditor` 卸載 → 它的卸載處理器用**卸載前的閉包狀態**補寫一筆 `planVersions`。
+那筆是在 cleanup 第一輪刪完**之後**才長出來的，於是「cleanup 前一刻量到 0 筆、
+cleanup 自己報 remaining 1 筆」，看起來像比對鍵寫錯（反模式 11），其實完全無關。
+
+`cleanupCampScenario` 現在會**最多刪三輪**並回傳 `passes`；跑超過一輪時
+`cy.cleanupCampScenario` 會印一行警告。⚠️ 重試不會弱化自證：比對鍵真的錯的話，
+三輪都撈不到，`remaining` 照樣不是 0。
+
+⚠️ 那一行 `cy.location` 刻意**不等 `/plans` 上的元素**。等元素會把 cleanup 綁上
+「app 要載入成功」這個條件 —— 實測遇過 `/plans` 停在載入轉圈超過 20 秒（見下方
+「還有兩個症狀沒定案」），結果 `afterEach` 紅掉、同一支 spec 後面的測試全被跳過，
+而訊息只說「找不到 plans-search-input」。
+
 **規則**
 
 - 要「某一筆有特定狀態的資料」→ 一律 `setupCampScenario` 自己建。**禁止**撈既有資料的第 0 筆來操作。
@@ -188,12 +212,14 @@ afterEach(() => {
 | `cy.dbDocsUntil(collection, predicate, opts)` | 同上但會重試，給非同步寫入用（見反模式 5） |
 | `cy.toastText()` | 抓 toast **外層容器**的文字（見反模式 10） |
 | `cy.selectCamp(campId)` | 已載入的頁面上換營隊 |
+| `cy.editorField(field)` | 編輯器某個欄位**可輸入**的那個元素（富文字是 contenteditable、人員是 input） |
+| `cy.typeInEditorField(field, text)` | 清空該欄位再輸入，並當場驗字真的進去了 |
 
 需要新的共用邏輯 → **擴充這份 commands，不要在 spec 裡複製第二份**。同一段 setup 出現第 3 次就該收斂成 command。
 
 ---
 
-## 反模式（13 條，逐條比對）
+## 反模式（15 條，逐條比對）
 
 ### 比對順序：先原則，後條目
 
@@ -207,8 +233,10 @@ Bad Example 是按「情境」寫的，情境對不上就會被打勾放行。**
 | 4 | 測試建的資料**清掉了嗎**？清不掉會不會被發現？ | 反模式 11 |
 | 5 | 這支測試**在守什麼業務行為**？講得出來嗎？ | 反模式 12 |
 | 6 | 間歇失敗的那一刻，**使用者看到什麼**？（白屏算 bug，不算測試不穩） | 反模式 13 |
+| 7 | 使用者**做完就立刻離開**（按返回 / 關分頁）時，這個功能還成立嗎？ | 反模式 14 |
+| 8 | 這個 Firestore 訂閱**等匿名登入完成了嗎**？（`useMemoFirebase` 的依賴有沒有 `user`） | 反模式 15 |
 
-任一題答不出來 → 即使 13 條全對不上，也要上報，標「原則層命中、無對應條目」。
+任一題答不出來 → 即使 15 條全對不上，也要上報，標「原則層命中、無對應條目」。
 
 ---
 
@@ -645,18 +673,120 @@ cy.toastText().should((text) => {
 probe，重複同一個動作 10+ 次，**不斷言**、只記錄 pathname + `body.innerText`
 長度 + title。這一步直接把「測試不穩」翻成「6/12 白屏」，後面才有東西可修。
 
-### ⚠️ 還有兩個症狀沒定案
+### 反模式 14：只驗「停在頁面上會不會存」，沒驗「馬上離開會不會掉」（這條抓到真 bug）
 
-同一輪觀察到的另外兩個，出現率都是 1/10，**還沒找到原因**：
+🔒 實測 2026-10-15，寫 `editor/field-persistence.cy.ts` 時抓到，**已修**。
+
+| | |
+| :--- | :--- |
+| 症狀 | 在教案編輯器的任何富文字欄位打字，**立刻**按「返回」離開 → 打的字永遠不會進資料庫。等 10 秒再讀也沒有 |
+| 使用者看到什麼 | 字在畫面上好好的，右上角寫著「已儲存至雲端」。回到總覽再點進來，字不見了 |
+| 為什麼測不到 | 一般的測試會打完字、斷言、再做下一件事 —— 那個「再做下一件事」的空檔就足夠讓 debounce 跑完。**只有在打完立刻離開時才會掉** |
+
+根因是兩層 debounce 中間斷掉了：
+
+```
+打字 → O2RichEditor debounce 350ms → onChange
+     → PlanEditor debounce 400ms → onUpdate → Firestore
+```
+
+`O2RichEditor` 的卸載清理函式原本只做 `clearTimeout` —— 等於把還沒送出的內容
+**丟掉**，父層 `PlanEditor` 的卸載 flush 根本收不到（它的 pendingUpdates 是空的）。
+
+修的時候踩到兩個 React 細節，都是實測量出來的（在元件裡印 log、從 spec 用
+`onBeforeLoad` 攔 `console.log` 收集）：
+
+| 量到的事實 | 後果 |
+| :--- | :--- |
+| 卸載時 React **先把 ref 設成 null**，才執行 effect 的清理函式（log：`timer=true el=false`） | 只靠 `editorRef.current?.innerHTML` 補送的話條件永遠不成立 —— 程式碼看起來有寫，一次都沒跑過。要另外用一個 `latestHtmlRef` 在每次 input 時同步記下內容 |
+| **父層的清理函式先於子層執行**（log：`PlanEditor 卸載` 在 `O2 卸載` 之前） | 子層補送上來的更新，父層已經 flush 過了 → 再排一個 400ms debounce 等於交給沒人會結算的計時器。父層要在清理函式裡立旗標，`handlePlanUpdate` 看到旗標就直接寫出去 |
+
+修完之後又踩到第三個（自己製造的）：
+
+> `isUnmountingRef` 的旗標在**嚴格模式的 mount → 清理 → 再 mount** 時就被設成 true，
+> 而沒有在 effect 重新掛上時重設 → 之後每一次打字都走「立即寫入」→ 父層每個字都
+> 重新 render → 受控的 input 把後面的字吃掉。症狀：打「王小明」只存到「小明」。
+> **凡是在清理函式裡設旗標，就要在 effect 本體把它重設回來。**
+
+```ts
+// ✅ 測試長這樣（不要在中間補等待，那會把這條要守的東西拿掉）
+cy.typeInEditorField('purpose', text);
+cy.getByTestId('editor-back').click();
+cy.location('pathname').should('eq', '/plans');
+cy.dbDocsUntil('lessonPlans', (docs) => (find(docs)?.purpose ?? '').includes(text));
+```
+
+**同類風險**：任何「打字 debounce → 寫後端」的欄位都要問這一題。
+本專案其餘地方查過了，目前**沒有**第二處：
+`MarkdownArea.tsx:55` 的 `handleInput` 沒有 debounce（直接 `onChange`），
+而且全專案沒有任何檔案 import 它（死碼）；
+`settings/page.tsx` 的營隊改名是按下確認才 `updateCamp`，不是邊打邊存。
+**新增這類欄位時要自己回來補這一條。**
+
+---
+
+### 反模式 15：全站的訂閱沒等匿名登入就發出去（這條定案了一個間歇失敗）
+
+🔒 實測 2026-10-16 定案，**已修**（`src/lib/timer-context.tsx`）。
+
+這就是先前記在「沒定案」那一欄的 `Missing or insufficient permissions`。
+當時記的是「dump 裡 `auth.uid` 有值」—— **那筆記錄是錯的**。
+用 `support/e2e.ts` 的 uncaught exception 收集器再抓到一次，dump 其實是：
+
+```
+FirebaseError: Missing or insufficient permissions
+{ "auth": null, "method": "get", "path": "/databases/(default)/documents/userSettings/global" }
+```
+
+`auth` 是 **null**，跟 `firestore.rules` 的 `request.auth != null` 完全一致，沒有矛盾。
+
+| | |
+| :--- | :--- |
+| 根因 | `TimerProvider`（全站都掛著，連 `/login`）的 `settingsRef` 只看 `db` 就訂閱 `userSettings/global`，**不等 `user`**。匿名登入是非同步的 → 登入完成前那個讀取就發出去了 → 被規則拒絕 |
+| 為什麼會炸整頁 | `use-doc.tsx` 收到錯誤 emit `permission-error` → `FirebaseErrorListener` 在 render 裡 `throw` → 整個 client tree 掛掉 |
+| 使用者看到什麼 | 空白頁或停在載入中，而錯誤訊息指向「計時器的設定檔」，跟他正在做的事毫無關係 |
+| 為什麼間歇 | 競態。本機約 1/10，網路越慢越容易中 |
+| 修法 | `if (!db || !user) return null` + 依賴加 `user` —— 跟 `plans-context` 的每個查詢一樣。這是全專案**唯一**漏掉這道閘的地方（`grep "if (!db) return null"` 只剩它） |
+
+**對應測試**：`cypress/e2e_fixture/auth-race.cy.ts`（延遲第一次匿名登入 4 秒）。
+寫這支時踩到兩個坑，少一個它就會在 bug 還在的時候照樣綠：
+
+| 坑 | 症狀 |
+| :--- | :--- |
+| 只攔 `accounts:signUp` | `cy.wait()` 報「No request ever occurred」。Firebase Auth 的身分存在 IndexedDB，Cypress 的 testIsolation **不清 IndexedDB** → 第二個測試起 SDK 走的是 `accounts:lookup`（還原既有 session） |
+| 沒清掉 IndexedDB 裡的身分 | 兩條都綠 —— 身分已經在手上，`currentUser` 一開始就有值，競態根本不會發生。要在 `onBeforeLoad` 裡 `win.indexedDB.deleteDatabase('firebaseLocalStorageDb')` |
+
+鑑別力驗證：把 `user` 那道閘拿掉 → 兩條都紅，訊息正是 `"auth": null` 的 permission denied。
+
+**同類風險**：任何新的 `useMemoFirebase(() => ... , [db])`。寫的時候問一句
+「登入還沒完成時這個訂閱會發出去嗎」。
+
+---
+
+### ⚠️ 還有一個症狀沒定案
 
 | 紅在哪 | 訊息 |
 | :--- | :--- |
-| `role-permission` 第一條 | `Expected to find element: [data-testid="plan-row-…"], but never found it` |
-| `create-delete` 的 `after each` + 下一個 `before each` | `FirebaseError: Missing or insufficient permissions`（`userSettings/global`，`method: get`，而 dump 裡 `auth.uid` 是**有值的**） |
+| `role-permission` 第一條 | `Expected to find element: [data-testid="plan-row-…"], but never found it`（出現率約 1/10） |
 
-查第二個時要知道：`firestore.rules` 只要求 `request.auth != null`，所以「有 uid
-卻被拒」本身就不合理，這個矛盾還沒解釋。`userSettings/global` 的 listener 在
-`timer-context.tsx:30`，是**全站 provider**，連 `/login` 都掛著。
+它**很可能就是反模式 15 的另一個外觀**（tree 爆掉 → 列表不出現），但還沒抓到
+同時有 uncaught exception 紀錄的那一次，所以不能算定案。下次再遇到，先看
+log 裡有沒有「⚠️ app 丟出 uncaught exception」。
+
+**2026-10-15 新增的一筆觀測**（跟上面第一個症狀很可能是同一件事）：
+`editor/field-persistence.cy.ts` 的 `afterEach` 在 `/plans` 上等 `plans-search-input`
+等了 20 秒沒等到。截圖顯示使用者看到的是**載入轉圈**（不是白屏），網路面板裡
+Firestore 的 Listen channel 是開著的，而且**沒有任何 uncaught exception、沒有
+permission error**。對應的判斷式是
+
+```ts
+// src/lib/plans-context.tsx:654
+isLoading: isUserLoading || campsData === null || (!!activeCampId && rawPlansData === null)
+```
+
+也就是說 camps 的 snapshot 一直沒到。`useCollection` 的錯誤分支會 `setData(null)`
+**並**發出 `permission-error`（`use-collection.tsx:87`）—— 這次沒有，所以不是被規則擋掉，
+是訂閱上去了但第一份 snapshot 沒回來。下一步可以從這裡查。
 
 而且要記得事實：`src/components/FirebaseErrorListener.tsx` 收到任何
 `permission-error` 就 `throw` 在 render 裡 —— 所以一個短暫的 permission error
@@ -702,8 +832,8 @@ cypress/
 │   │   │   ├── batch-export.cy.ts       ⬜ P1
 │   │   │   └── reorder.cy.ts            ⬜ P2
 │   │   ├── editor/
-│   │   │   ├── field-persistence.cy.ts  ⬜ P0
-│   │   │   ├── rich-text.cy.ts          ⬜ P0
+│   │   │   ├── field-persistence.cy.ts  ✅ 5   欄位落地 / 人員組合 / 劇本模式 / 離開不掉字 / 改名同步
+│   │   │   ├── rich-text.cy.ts          ✅ 2   快捷鍵粗體、貼上外部 HTML 的消毒
 │   │   │   ├── props-table.cy.ts        ⬜ P1
 │   │   │   ├── undo-redo.cy.ts          ⬜ P1
 │   │   │   ├── export-single.cy.ts      ⬜ P1
@@ -750,11 +880,13 @@ cypress/
 │       └── breakpoints.cy.ts            ⬜ P2
 │
 └── e2e_fixture/                         唯一允許 mock 的地方
+    ├── auth-race.cy.ts                  ✅ 2   匿名登入慢的時候全站不該炸（抓到反模式 15）
     ├── firestore-offline.cy.ts          ⬜ P1   後端掛掉時畫面不該白屏
     └── api-error-states.cy.ts           ⬜ P2   /api/* 回 500 時的錯誤呈現
 ```
 
-目前 **27 個測試全綠**（route-guard 9、login 3、role-permission 5、create-delete 4、overview 6）。
+目前 **36 個測試全綠**（route-guard 9、login 3、role-permission 5、create-delete 4、overview 6、
+field-persistence 5、rich-text 2、auth-race 2）。
 
 ### 新增 spec 前必做：先查既有的該不該擴充
 
@@ -768,15 +900,15 @@ cypress/
 | 這是「同一條使用者旅程的下一段」嗎？ | 是 → 擴充既有 spec（例如建立→編輯→存版本→還原屬於同一條） |
 | 這是「同一個畫面的另一個獨立功能」嗎？ | 是 → 開新檔 |
 
-### P0 —— 先補這六支（風險最高 / 完全沒覆蓋）
+### P0 —— 六支裡已完成兩支（editor 那兩支，各自抓到／守住一個真 bug）
 
 | spec | 守什麼 | 為什麼是 P0 |
 |---|---|---|
 | `edge_cases/xss.cy.ts` | 教案欄位塞 `<script>` / `<img onerror>` / `javascript:` → 存檔重載後**不該執行**，也不該出現在 DOM 裡 | `O2RichEditor.tsx:205` 與 `MarkdownArea.tsx:51` 把資料庫內容寫進 `innerHTML`，而 `sanitizeHtml` 只在貼上時跑、而且是黑名單式。這是已知的 stored XSS 風險，沒有回歸測試就不會知道修好了沒 |
 | `edge_cases/role-escalation.cy.ts` | 手改 `localStorage.studio_role = 'admin'` 之後，crew 身分**實際上**還能不能寫入 | 權限目前只做在前端（`auth-context`），沒有 middleware、Firestore 規則只檢查 `request.auth != null`。這支會把「目前擋不住」這件事**寫成會紅的斷言**，而不是停留在報告裡。⚠️ `access_page/route-guard.cy.ts` 只驗前端導向，證明不了後端擋得住 |
 | `api/export.cy.ts` | `/api/export` 的 docx / pdf / zip 輸出、空 body、超大輸入；以及**不帶任何身分就能呼叫** | 這支 API 沒有驗證也沒有輸入大小限制。先用測試把現況釘住，修的時候才知道有沒有改壞輸出 |
-| `feature_test/editor/field-persistence.cy.ts` | 每個欄位打字 → Firestore 真的存 → 重載還在；`updatedAt` 有更新 | 編輯器是這個產品的核心，目前**一行測試都沒有**。而且寫入是 fire-and-forget（反模式 5），正是最容易無聲失敗的地方 |
-| `feature_test/editor/rich-text.cy.ts` | 粗體 / 斜體 / 清單 / 連結 / 貼上外部 HTML → 存回去的內容正確 | `O2RichEditor` 1528 行、`MarkdownToolbar` 672 行，全靠手測 |
+| ~~`feature_test/editor/field-persistence.cy.ts`~~ ✅ | 六個富文字欄位 + 人員欄位落地、`updatedAt` 更新、劇本模式切換、**打完字立刻離開不掉字**、改名與總覽同步 | 已完成（5 條）。寫的過程抓到反模式 14 那個資料遺失的真 bug |
+| ~~`feature_test/editor/rich-text.cy.ts`~~ ✅ | Cmd/Ctrl+B 的粗體存成 HTML 且重載還在；貼上外部 HTML 時 `<script>` / `on*` / `javascript:` 被 `sanitizeHtml` 清掉 | 已完成（2 條）。⚠️ 編輯器**沒有顯示工具列**（`hideToolbar` 預設 true），清單 / 連結 / 標題這些只能從工具列進去的功能目前在 UI 上碰不到，所以沒測 |
 | `feature_test/versions/save-restore.cy.ts` | 存版本 → 改內容 → 還原 → 欄位回到舊值、Firestore 同步、`planVersions` 筆數對 | `restorePlanVersion` 牽涉 snapshot / patch 兩種型別與 jsondiffpatch 還原鏈，壞掉等於使用者的歷史版本救不回來 |
 
 ### P1 —— 接著補

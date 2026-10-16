@@ -262,7 +262,7 @@ export async function setupCampScenario(
 export async function cleanupCampScenario(
   env: FirestoreEnv,
   scenarioId: string,
-): Promise<{ deleted: Record<string, number>; remaining: Record<string, number> }> {
+): Promise<{ deleted: Record<string, number>; remaining: Record<string, number>; passes: number }> {
   const database = ensureDb(env);
   if (!scenarioId) throw new Error('cleanupCampScenario 需要 scenarioId');
 
@@ -273,14 +273,8 @@ export async function cleanupCampScenario(
   // 一筆都沒刪到 —— 清不到跟清乾淨看起來一模一樣。
   // 這裡改成「先撈出這個 scenario 的 camp id，再用 campId 串刪子表」，
   // campId 是測試改不動的東西，這是它比其他欄位可靠的根本原因。
-  const campSnap = await database
-    .collection('camps')
-    .where('scenarioId', '==', scenarioId)
-    .get();
-  const campIds = campSnap.docs.map((d) => d.id);
-
-  const deleted: Record<string, number> = {};
-  const planIds: string[] = [];
+  const campIds = new Set<string>();
+  const planIds = new Set<string>();
 
   const deleteDocs = async (docs: Array<{ ref: FirebaseFirestore.DocumentReference }>) => {
     // Firestore 一個 batch 上限 500 筆
@@ -291,60 +285,94 @@ export async function cleanupCampScenario(
     }
   };
 
-  // lessonPlans / rotationTables：用 campId 串刪（含 UI 建的），再補 scenarioId 以防漏
-  for (const name of ['lessonPlans', 'rotationTables'] as const) {
+  /** 撈出某個子表裡屬於這個 scenario 的文件（campId / planId / scenarioId 三路並集）。 */
+  const collectChildren = async (
+    name: string,
+    keyField: 'campId' | 'planId',
+    keyValues: Set<string>,
+  ) => {
     const seen = new Map<string, FirebaseFirestore.QueryDocumentSnapshot>();
-    for (const campId of campIds) {
-      const snap = await database.collection(name).where('campId', '==', campId).get();
-      snap.docs.forEach((d) => seen.set(d.id, d));
-    }
-    const tagged = await database.collection(name).where('scenarioId', '==', scenarioId).get();
-    tagged.docs.forEach((d) => seen.set(d.id, d));
-
-    if (name === 'lessonPlans') planIds.push(...Array.from(seen.keys()));
-    deleted[name] = seen.size;
-    await deleteDocs(Array.from(seen.values()));
-  }
-
-  // planVersions / planPresence：掛在 planId 上
-  for (const name of ['planVersions', 'planPresence'] as const) {
-    const seen = new Map<string, FirebaseFirestore.QueryDocumentSnapshot>();
-    for (let i = 0; i < planIds.length; i += 10) {
-      const chunk = planIds.slice(i, i + 10);
+    const values = Array.from(keyValues);
+    for (let i = 0; i < values.length; i += 10) {
+      const chunk = values.slice(i, i + 10);
       if (chunk.length === 0) continue;
-      const snap = await database.collection(name).where('planId', 'in', chunk).get();
+      const snap = await database.collection(name).where(keyField, 'in', chunk).get();
       snap.docs.forEach((d) => seen.set(d.id, d));
     }
     const tagged = await database.collection(name).where('scenarioId', '==', scenarioId).get();
     tagged.docs.forEach((d) => seen.set(d.id, d));
-    deleted[name] = seen.size;
-    await deleteDocs(Array.from(seen.values()));
-  }
-
-  deleted.camps = campSnap.size;
-  await deleteDocs(campSnap.docs);
-
-  // 自證：用**同一組條件**重查一次，各項都該是 0。
-  // 清不到就在第一次跑當場紅，而不是累積到咬死別支 spec 才被發現。
-  const remaining: Record<string, number> = {
-    camps: (await database.collection('camps').where('scenarioId', '==', scenarioId).get()).size,
+    return seen;
   };
-  for (const name of ['lessonPlans', 'rotationTables'] as const) {
-    let n = (await database.collection(name).where('scenarioId', '==', scenarioId).get()).size;
-    for (const campId of campIds) {
-      n += (await database.collection(name).where('campId', '==', campId).get()).size;
+
+  /** 刪一輪：camps → lessonPlans / rotationTables → planVersions / planPresence。回傳各表刪掉幾筆。 */
+  const runDeletePass = async () => {
+    const counts: Record<string, number> = {};
+
+    const campSnap = await database
+      .collection('camps')
+      .where('scenarioId', '==', scenarioId)
+      .get();
+    campSnap.docs.forEach((d) => campIds.add(d.id));
+
+    for (const name of ['lessonPlans', 'rotationTables'] as const) {
+      const seen = await collectChildren(name, 'campId', campIds);
+      if (name === 'lessonPlans') Array.from(seen.keys()).forEach((id) => planIds.add(id));
+      counts[name] = seen.size;
+      await deleteDocs(Array.from(seen.values()));
     }
-    remaining[name] = n;
-  }
-  for (const name of ['planVersions', 'planPresence'] as const) {
-    let n = (await database.collection(name).where('scenarioId', '==', scenarioId).get()).size;
-    for (let i = 0; i < planIds.length; i += 10) {
-      const chunk = planIds.slice(i, i + 10);
-      if (chunk.length === 0) continue;
-      n += (await database.collection(name).where('planId', 'in', chunk).get()).size;
+
+    for (const name of ['planVersions', 'planPresence'] as const) {
+      const seen = await collectChildren(name, 'planId', planIds);
+      counts[name] = seen.size;
+      await deleteDocs(Array.from(seen.values()));
     }
-    remaining[name] = n;
+
+    counts.camps = campSnap.size;
+    await deleteDocs(campSnap.docs);
+    return counts;
+  };
+
+  /** 用**同一組條件**重查一次，這才是「真的清到了」的證據。 */
+  const countRemaining = async () => {
+    const out: Record<string, number> = {
+      camps: (await database.collection('camps').where('scenarioId', '==', scenarioId).get()).size,
+    };
+    for (const name of ['lessonPlans', 'rotationTables'] as const) {
+      out[name] = (await collectChildren(name, 'campId', campIds)).size;
+    }
+    for (const name of ['planVersions', 'planPresence'] as const) {
+      out[name] = (await collectChildren(name, 'planId', planIds)).size;
+    }
+    return out;
+  };
+
+  // 刪 → 重查，不乾淨就再刪一輪，最多三輪。
+  //
+  // 為什麼需要重試（實測 2026-10-15，寫 editor 的 spec 時踩到）：
+  // 刪掉 lessonPlans 的那一刻，**還開著的編輯器頁面**會發現教案不見了 →
+  // /plans/[id] 切到「找不到教案」分支 → PlanEditor 卸載 → 它的卸載處理器
+  // （PlanEditor.tsx:560 附近）呼叫 autoSaveCurrentState() → 用卸載前的閉包
+  // 狀態寫出一筆 planVersions。於是「cleanup 前一刻量到 0 筆、cleanup 自己
+  // 卻報 remaining 1 筆」，看起來像比對鍵寫錯，其實是 app 在我們刪完之後才寫進來。
+  //
+  // ⚠️ 重試**不會**弱化自證：比對鍵真的寫錯時，每一輪都撈不到那些文件，
+  //    三輪跑完 remaining 照樣不是 0 → 照樣當場紅。它只吸收「一次性的
+  //    fire-and-forget 遲到寫入」。
+  // 💡 編輯器類的 spec 仍然該在 cleanup 前先離開編輯器頁（見 cypress/README.md），
+  //    那是治本：人不在頁上，刪除就不會觸發那個卸載寫入。
+  const deleted: Record<string, number> = {};
+  let remaining: Record<string, number> = {};
+  let passes = 0;
+
+  for (let pass = 1; pass <= 3; pass++) {
+    passes = pass;
+    const counts = await runDeletePass();
+    Object.entries(counts).forEach(([k, n]) => {
+      deleted[k] = (deleted[k] ?? 0) + n;
+    });
+    remaining = await countRemaining();
+    if (Object.values(remaining).every((n) => n === 0)) break;
   }
 
-  return { deleted, remaining };
+  return { deleted, remaining, passes };
 }

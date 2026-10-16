@@ -62,6 +62,30 @@ declare global {
       /** 提示訊息（Radix toast）的文字 —— 接 `.should(...)` 用 */
       toastText(): Chainable<string>;
 
+      /**
+       * 教案編輯器裡某個欄位**可輸入**的那個元素。
+       *
+       * 為什麼不是直接 getByTestId：編輯器的 12 個欄位都包在
+       * `FieldContainer`（src/components/PlanEditor.tsx:79）裡，testid 下在
+       * 容器上（`editor-field-<欄位>`），真正能打字的是它底下的
+       * contenteditable（富文字欄位）或 input（人員欄位）。
+       *
+       * ⚠️ 刻意**不加 `.first()`**：某個欄位裡冒出第二個可輸入元素時，
+       *    要在當場紅（「can only be called on a single element」），
+       *    而不是默默只測到其中一個。
+       */
+      editorField(field: string): Chainable<JQuery<HTMLElement>>;
+
+      /**
+       * 清空某個編輯器欄位再輸入文字，並**當場驗字真的進去了**。
+       *
+       * 最後那句斷言不是裝飾：Radix 關閉選單時會搶焦點（見 skill 反模式 4），
+       * 富文字編輯器也會在 350ms debounce 後把 innerHTML 寫回去 ——
+       * 兩者都可能吃掉輸入。沒有這句，字被吃掉會在三行之後以
+       * 「資料庫裡找不到」的樣子紅，而那完全指不到原因。
+       */
+      typeInEditorField(field: string, text: string): Chainable<void>;
+
       /** 直接讀 Firestore 的某個集合（驗「畫面操作真的寫進資料庫」） */
       dbDocs<T = Record<string, unknown>>(collection: string): Chainable<T[]>;
 
@@ -148,11 +172,23 @@ Cypress.Commands.add('setupCampScenario', (options: CampScenarioOptions = {}) =>
 
 Cypress.Commands.add('cleanupCampScenario', (scenarioId: string) => {
   if (!scenarioId) return;
-  cy.task<{ deleted: Record<string, number>; remaining: Record<string, number> }>(
-    'db:cleanupCampScenario',
-    scenarioId,
-  ).then(({ remaining }) => {
+  cy.task<{
+    deleted: Record<string, number>;
+    remaining: Record<string, number>;
+    passes: number;
+  }>('db:cleanupCampScenario', scenarioId).then(({ remaining, passes }) => {
     expect(remaining, 'cleanup 必須回傳 remaining（自證清乾淨）').to.be.an('object');
+    // 多跑了一輪就說出來 —— 那代表 app 在我們刪完之後還寫了東西進來
+    // （最常見的是編輯器卸載時的 autosave，見 plugins/firestore.ts 的註解）。
+    // 靜靜吸收掉會讓「哪支 spec 在 cleanup 之後還在寫」永遠查不出來。
+    if (passes > 1) {
+      cy.task(
+        'log',
+        `⚠️ cleanup 跑了 ${passes} 輪才清乾淨：有東西在第一輪刪完之後才寫進來。` +
+          `若是編輯器類的 spec，請在 cleanup 前先離開編輯器頁。`,
+        { log: false },
+      );
+    }
     const dirty = Object.entries(remaining).filter(([, n]) => Number(n) > 0);
     expect(
       dirty,
@@ -267,6 +303,54 @@ Cypress.Commands.add('toastText', () =>
   // 誤報成「畫面什麼都沒說」—— 正好是這類斷言要防的相反方向。
   cy.get('[data-testid="toast-viewport"]', { timeout: 15000 }).invoke('text'),
 );
+
+// ─────────────────────────────────────────────────────────────
+// 教案編輯器的欄位
+//
+// 編輯器的寫入鏈有**兩段** debounce，比列表頁長得多：
+//   打字 → O2RichEditor 350ms（O2RichEditor.tsx:216）→ onChange
+//        → PlanEditor 400ms（PlanEditor.tsx:412）→ onUpdate → Firestore
+// 所以「畫面上看到字」之後還要將近 0.75 秒才會落地，而且落地本身是
+// fire-and-forget（反模式 5）。驗資料庫一律用 cy.dbDocsUntil，不要直接
+// 接 cy.dbDocs —— 後者會間歇性撈到舊值，而紅的訊息長得像功能壞掉。
+// ─────────────────────────────────────────────────────────────
+
+Cypress.Commands.add('editorField', (field: string) =>
+  cy
+    .getByTestId(`editor-field-${field}`)
+    // ⚠️ 一定要寫 input[type="text"]，不能只寫 input：
+    //    每個 O2RichEditor 的工具列裡都藏著兩個 sr-only 的 <input type="color">
+    //    （O2RichEditor.tsx:1522-1523）→ 寫成 input 會撈到 3 個，而錯誤訊息
+    //    只會說「不能對 3 個元素點擊」，看不出真正的問題是選擇器太寬。
+    .find('[contenteditable="true"], input[type="text"], textarea'),
+);
+
+Cypress.Commands.add('typeInEditorField', (field: string, text: string) => {
+  cy.editorField(field).then(($el) => {
+    const isRichText = $el.attr('contenteditable') === 'true';
+    if (isRichText) {
+      // contenteditable 不吃 cy.clear()（它只支援 input / textarea），
+      // 用 {selectall}{del} 清。先 click 把焦點拿回來 —— 游標不在裡面時
+      // {selectall} 會選到整個 document。
+      //
+      // ⚠️ 每一步都**重新查一次元素**，不要串成
+      //    `.click().type('{selectall}{del}').type(text)`。
+      //    清空會讓 O2RichEditor 切到 placeholder 分支（isEditorEmpty）重新渲染，
+      //    串起來的話第二個 type 會拿到已經從 DOM 卸下的舊元素，報
+      //    「The subject is no longer attached to the DOM」——
+      //    而那個訊息看起來像元件壞了，其實只是鏈太長。（實測 2026-10-15）
+      cy.editorField(field).click();
+      cy.editorField(field).type('{selectall}{del}');
+      cy.editorField(field).type(text);
+      cy.editorField(field).should('contain.text', text);
+    } else {
+      cy.editorField(field).click();
+      cy.editorField(field).clear();
+      cy.editorField(field).type(text);
+      cy.editorField(field).should('have.value', text);
+    }
+  });
+});
 
 beforeEach(() => {
   // 身分不跨測試殘留：忘了重設會讓「未登入應被導走」那類測試在單獨跑時綠、

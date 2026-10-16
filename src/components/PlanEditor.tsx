@@ -90,7 +90,7 @@ const FieldContainer = ({
   const locked = isLockedByOther(field);
   const info = getLockInfo(field);
   return (
-    <div className="relative group">
+    <div className="relative group" data-testid={`editor-field-${field}`}>
       <div className={cn("transition-opacity", locked && "opacity-50 pointer-events-none")}>
         {children}
       </div>
@@ -398,6 +398,15 @@ export function PlanEditor({
   }, [flushPendingUpdates]);
 
   const handlePlanUpdate = (updates: Partial<LessonPlan>) => {
+    // 卸載進行中（父層的清理函式**先於**子層執行，實測確認）：
+    // 這時候再排一個 400ms 的 debounce，等於把子層卸載時補送上來的內容
+    // 交給一個沒人會再結算的計時器。直接寫出去。
+    if (isUnmountingRef.current) {
+      pendingUpdatesRef.current = { ...pendingUpdatesRef.current, ...updates };
+      onUpdateRef.current(planIdRef.current, pendingUpdatesRef.current);
+      pendingUpdatesRef.current = {};
+      return;
+    }
     // Update local UI immediately
     if (Object.keys(pendingUpdatesRef.current).length === 0) {
       // Record snapshot right before a new burst of typing
@@ -535,6 +544,8 @@ export function PlanEditor({
 
   const onUpdateRef = useRef(onUpdate);
   const planIdRef = useRef(plan.id);
+  /** 卸載是否已經開始（父層清理函式一跑就是 true，子層的卸載補送會晚於它）。 */
+  const isUnmountingRef = useRef(false);
 
 
   useEffect(() => {
@@ -543,6 +554,14 @@ export function PlanEditor({
   }, [onUpdate, plan.id]);
 
   useEffect(() => {
+    // ⚠️ 一定要在這裡重設回 false。
+    // React 的嚴格模式（dev）會 mount → 跑清理函式 → 再 mount，所以下面那個
+    // `isUnmountingRef.current = true` 在**畫面剛開好時**就會被設成 true。
+    // 不重設的話它會一直是 true → 每一次打字都走「立即寫入」那條路
+    // → 父層每個字都重新 render → 受控的 input 把後面的字吃掉。
+    // 實測症狀：在主關主欄位打「王小明」，資料庫裡只存到「小明」。
+    isUnmountingRef.current = false;
+
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       // Flush pending updates before unload
       if (Object.keys(pendingUpdatesRef.current).length > 0) {
@@ -556,6 +575,7 @@ export function PlanEditor({
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      isUnmountingRef.current = true;
       // Flush pending on unmount
       if (Object.keys(pendingUpdatesRef.current).length > 0) {
         onUpdateRef.current(planIdRef.current, pendingUpdatesRef.current);
@@ -657,6 +677,7 @@ export function PlanEditor({
               <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                 <button
                   type="button"
+                  data-testid="editor-back"
                   onClick={() => {
                     if (typeof window !== "undefined" && window.history.length > 1) {
                       router.back();
@@ -692,6 +713,7 @@ export function PlanEditor({
 
                 {/* Editable Document Title (Google Docs style) */}
                 <input
+                  data-testid="editor-title-input"
                   value={(currentPlan.activityName || "").replace(/<[^>]*>?/gm, '')}
                   onChange={(e) => handlePlanUpdate({ activityName: e.target.value })}
                   className="text-sm sm:text-base font-bold font-headline tracking-tight bg-transparent hover:bg-stone-200/50 dark:hover:bg-white/5 focus:bg-white dark:focus:bg-stone-900 border border-transparent hover:border-stone-300/70 dark:hover:border-white/15 focus:border-orange-500/50 rounded-lg px-2 py-0.5 transition-all text-foreground truncate max-w-[140px] sm:max-w-[240px] md:max-w-[380px] lg:max-w-[500px] focus:outline-none placeholder:text-muted-foreground/40"
@@ -701,7 +723,7 @@ export function PlanEditor({
                 />
 
                 {/* Cloud Save Status */}
-                <div className="flex items-center gap-1.5 shrink-0 pl-1">
+                <div className="flex items-center gap-1.5 shrink-0 pl-1" data-testid="editor-save-status">
                   {isSaving ? (
                     <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -722,6 +744,7 @@ export function PlanEditor({
                   variant="ghost"
                   size="sm"
                   title="版本紀錄"
+                  data-testid="editor-history-trigger"
                   onClick={() => {
                     const willOpen = !isSidebarOpen;
                     setIsSidebarOpen(willOpen);

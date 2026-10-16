@@ -41,7 +41,7 @@ export default function PlanEditorPage() {
 
   if (!plan) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#FAF8F5] dark:bg-[#0B1012] text-foreground transition-colors p-6">
+      <div data-testid="editor-plan-not-found" className="min-h-screen flex flex-col items-center justify-center bg-[#FAF8F5] dark:bg-[#0B1012] text-foreground transition-colors p-6">
         <div className="w-16 h-16 rounded-2xl bg-white/80 dark:bg-white/[0.04] border border-stone-200/80 dark:border-white/10 flex items-center justify-center mb-6 shadow-xs">
           <Loader2 className="w-7 h-7 animate-spin text-orange-500" />
         </div>
