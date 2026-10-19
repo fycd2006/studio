@@ -94,6 +94,7 @@ export interface UserSettings {
   activityTypes?: string[];
   groupTypes?: string[];
   groups?: Group[];
+  defaultCampId?: string;
 }
 
 export interface LessonPlan {

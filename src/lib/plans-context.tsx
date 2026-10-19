@@ -100,6 +100,8 @@ function getAuthorColor(uid: string) {
 interface PlansContextType {
   isLoading: boolean;
   camps: Camp[];
+  defaultCampId: string | null;
+  setDefaultCampId: (campId: string) => void;
   activeCampId: string | null;
   setActiveCampId: (id: string | null) => void;
   addCamp: (name: string, fields?: Partial<Camp>) => void;
@@ -400,6 +402,16 @@ export function PlansProvider({ children }: { children: ReactNode }) {
   }, [tableHistory, db]);
 
 
+  const defaultCampId = settings?.defaultCampId || null;
+
+  const setDefaultCampId = useCallback((campId: string) => {
+    if (!db) return;
+    setDocumentNonBlocking(doc(db, 'userSettings', 'global'), {
+      defaultCampId: campId,
+      updatedAt: Date.now()
+    }, { merge: true });
+  }, [db]);
+
   useEffect(() => {
     if (campsData === null) return;
 
@@ -408,11 +420,30 @@ export function PlansProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Check if user just logged in
+    const isJustLoggedIn = typeof window !== 'undefined' && sessionStorage.getItem('studio_just_logged_in') === 'true';
+    if (isJustLoggedIn) {
+      sessionStorage.removeItem('studio_just_logged_in');
+      const targetDefaultId = settings?.defaultCampId;
+      const targetDefaultCamp = targetDefaultId ? camps.find(c => c.id === targetDefaultId) : null;
+      if (targetDefaultCamp && (role === 'admin' || !targetDefaultCamp.isLocked)) {
+        setActiveCampId(targetDefaultCamp.id);
+        return;
+      }
+    }
+
     const hasValidActiveCamp = !!activeCampId && camps.some(c => c.id === activeCampId);
     if (!hasValidActiveCamp) {
-      setActiveCampId(camps[0].id);
+      const targetDefaultId = settings?.defaultCampId;
+      const targetDefaultCamp = targetDefaultId ? camps.find(c => c.id === targetDefaultId) : null;
+      if (targetDefaultCamp && (role === 'admin' || !targetDefaultCamp.isLocked)) {
+        setActiveCampId(targetDefaultCamp.id);
+      } else {
+        const firstAccessible = camps.find(c => role === 'admin' || !c.isLocked);
+        setActiveCampId(firstAccessible ? firstAccessible.id : camps[0].id);
+      }
     }
-  }, [campsData, camps, activeCampId]);
+  }, [campsData, camps, activeCampId, settings?.defaultCampId, role]);
 
   const addCamp = useCallback((name: string, fields?: Partial<Camp>) => {
     if (!db || !user) return;
@@ -732,7 +763,7 @@ export function PlansProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(() => ({
     isLoading: isUserLoading || campsData === null || (!!activeCampId && rawPlansData === null),
-    camps, activeCampId, setActiveCampId, addCamp, updateCamp, deleteCamp, toggleCampLock,
+    camps, defaultCampId, setDefaultCampId, activeCampId, setActiveCampId, addCamp, updateCamp, deleteCamp, toggleCampLock,
     plans: allPlans, 
     tables: allTables, 
     activePlan: allPlans.find(p => p.id === activePlanId) || null,
@@ -876,7 +907,7 @@ export function PlansProvider({ children }: { children: ReactNode }) {
     db, groups, addCamp, updateCamp, deleteCamp, toggleCampLock, updatePlan, deletePlan,
     addPlan, reorderPlans, savePlanVersion, restorePlanVersion, updatePlanVersionName,
     deletePlanVersion, autoSaveCurrentState, getFullVersionState, undoPlan, redoPlan,
-    addTable, updateTable, deleteTable, undoTable, redoTable
+    addTable, updateTable, deleteTable, undoTable, redoTable, defaultCampId, setDefaultCampId
   ]);
 
   return (

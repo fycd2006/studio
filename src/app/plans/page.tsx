@@ -27,13 +27,17 @@ import {
  ArrowUpDown,
  X,
  SlidersHorizontal,
+ Calendar,
+ ChevronDown,
+ Star,
+ Tent,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ActionBar } from "@/components/ActionBar";
 import { actionBarTheme } from "@/lib/actionbar-theme";
-import { cn, getUnifiedGroupBadgeParams } from "@/lib/utils";
+import { cn, getUnifiedGroupBadgeParams, getCampYear } from "@/lib/utils";
 import { FabStagger } from "@/components/FabStagger";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
@@ -61,13 +65,43 @@ function getDeterministicIndex(str: string): number {
 
 export default function PlansOverview() {
  const { role } = useAuth();
- const { plans, addPlan, groups, setActivePlanId, activeCampId, camps, deletePlan, updatePlan } = usePlans();
- const { language } = useTranslation();
+ const { plans, addPlan, groups, setActivePlanId, activeCampId, setActiveCampId, defaultCampId, camps, deletePlan, updatePlan } = usePlans();
+ const { language, t } = useTranslation();
  const router = useRouter();
  const searchParams = useSearchParams();
  const { toast } = useToast();
  const activeCamp = camps.find(c => c.id === activeCampId);
  const isAdmin = role === 'admin';
+
+ const visibleCamps = useMemo(() => {
+   if (role === 'admin') return camps;
+   return camps.filter(c => !c.isLocked);
+ }, [camps, role]);
+
+ const defaultCamp = useMemo(() => {
+   return camps.find(c => c.id === defaultCampId) || null;
+ }, [camps, defaultCampId]);
+
+ const yearsWithCamps = useMemo(() => {
+   const map = new Map<string, typeof camps>();
+   visibleCamps.forEach((camp) => {
+     const yr = getCampYear(camp);
+     if (!map.has(yr)) map.set(yr, []);
+     map.get(yr)!.push(camp);
+   });
+   const sortedYears = Array.from(map.keys()).sort((a, b) => b.localeCompare(a));
+   return { map, sortedYears };
+ }, [visibleCamps]);
+
+ const currentYear = useMemo(() => {
+   return activeCamp ? getCampYear(activeCamp) : (yearsWithCamps.sortedYears[0] || new Date().getFullYear().toString());
+ }, [activeCamp, yearsWithCamps.sortedYears]);
+
+ const campsInCurrentYear = useMemo(() => {
+   return yearsWithCamps.map.get(currentYear) || [];
+ }, [yearsWithCamps, currentYear]);
+
+ const isViewingOtherProject = !!(defaultCampId && activeCampId && activeCampId !== defaultCampId);
 
  const [viewType, setViewType] = useState<"grid" | "list" | "board">("list");
  const [isAdding, setIsAdding] = useState(false);
@@ -508,6 +542,118 @@ export default function PlansOverview() {
             <p className="text-sm sm:text-base text-fg-secondary font-light max-w-2xl leading-relaxed mt-3">
               {language === 'zh' ? '營隊核心教案架構、即時同步修訂與分工總覽。' : 'Core curriculum architecture, real-time collaboration, and division of responsibilities.'}
             </p>
+
+            {/* Year & Project Selector */}
+            {yearsWithCamps.sortedYears.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2.5 mt-5">
+                <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-white/70 dark:bg-white/[0.04] border border-stone-200/80 dark:border-white/10 backdrop-blur-md shadow-2xs">
+                  <div className="flex items-center gap-1.5 px-3 py-1 text-[11px] font-mono tracking-wider text-fg-muted uppercase border-r border-stone-200/60 dark:border-white/10">
+                    <Calendar className="w-3.5 h-3.5 text-orange-500" />
+                    <span>{t('SELECT_YEAR')}</span>
+                  </div>
+                  {yearsWithCamps.sortedYears.map((year) => {
+                    const isYearActive = currentYear === year;
+                    const campsOfYear = yearsWithCamps.map.get(year) || [];
+                    const hasDefaultCamp = campsOfYear.some(c => c.id === defaultCampId);
+
+                    return (
+                      <button
+                        key={year}
+                        onClick={() => {
+                          if (isYearActive) return;
+                          const target = campsOfYear.find(c => c.id === defaultCampId) || campsOfYear[0];
+                          if (target) {
+                            setActiveCampId(target.id);
+                            toast({
+                              title: t('SWITCHING_PROJECT'),
+                              description: t('SWITCHING_PROJECT_DESC', { name: target.name })
+                            });
+                          }
+                        }}
+                        className={cn(
+                          "relative px-3.5 py-1.5 rounded-xl text-xs font-mono transition-all flex items-center gap-1.5 cursor-pointer",
+                          isYearActive
+                            ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white font-medium shadow-xs"
+                            : "text-stone-600 dark:text-stone-300 hover:text-foreground hover:bg-stone-100 dark:hover:bg-white/5"
+                        )}
+                      >
+                        <span>{year} 年度</span>
+                        {hasDefaultCamp && (
+                          <Star className={cn("w-2.5 h-2.5", isYearActive ? "fill-white text-white" : "fill-amber-500 text-amber-500")} />
+                        )}
+                        {campsOfYear.length > 1 && (
+                          <span className={cn("text-[10px] opacity-80", isYearActive ? "text-white" : "text-fg-muted")}>
+                            ({campsOfYear.length})
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* If current year has multiple camps, allow switching camp within year */}
+                {campsInCurrentYear.length > 1 && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-mono font-medium text-foreground bg-white/70 dark:bg-white/[0.04] border border-stone-200/80 dark:border-white/10 hover:border-orange-500/50 backdrop-blur-md transition-all cursor-pointer shadow-2xs">
+                        <Tent className="w-3.5 h-3.5 text-orange-500" />
+                        <span className="truncate max-w-[200px]">{activeCamp?.name}</span>
+                        <ChevronDown className="w-3.5 h-3.5 text-fg-muted" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-64 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-2xl p-1.5 z-50">
+                      <div className="px-2.5 py-1 text-[10px] font-mono tracking-widest text-fg-muted uppercase flex items-center gap-1.5 mb-1">
+                        <span className="w-1.5 h-1.5 rotate-45 bg-orange-500" />
+                        {currentYear} 年度營隊專案
+                      </div>
+                      {campsInCurrentYear.map((c) => {
+                        const isSel = c.id === activeCampId;
+                        const isDef = c.id === defaultCampId;
+                        return (
+                          <DropdownMenuItem
+                            key={c.id}
+                            onSelect={() => {
+                              setActiveCampId(c.id);
+                              toast({ title: t('SWITCHING_PROJECT'), description: t('SWITCHING_PROJECT_DESC', { name: c.name }) });
+                            }}
+                            className={cn(
+                              "flex items-center justify-between px-3 py-2 text-xs font-mono rounded-xl cursor-pointer",
+                              isSel ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium" : "hover:bg-stone-100 dark:hover:bg-white/5"
+                            )}
+                          >
+                            <div className="flex items-center gap-2 truncate">
+                              <Tent className="w-3.5 h-3.5 shrink-0 text-orange-500" />
+                              <span className="truncate">{c.name}</span>
+                            </div>
+                            {isDef && (
+                              <Star className="w-3 h-3 shrink-0 fill-amber-500 text-amber-500" />
+                            )}
+                          </DropdownMenuItem>
+                        );
+                      })}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+
+                {/* Return to default project button if currently viewing another year/camp */}
+                {isViewingOtherProject && defaultCamp && (
+                  <button
+                    onClick={() => {
+                      setActiveCampId(defaultCamp.id);
+                      toast({
+                        title: t('SWITCHING_PROJECT'),
+                        description: t('SWITCHING_PROJECT_DESC', { name: defaultCamp.name }),
+                      });
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-mono text-amber-700 dark:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-all cursor-pointer shadow-2xs"
+                    title={t('RETURN_TO_DEFAULT_PROJECT')}
+                  >
+                    <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+                    <span>{t('RETURN_TO_DEFAULT_PROJECT')}: {defaultCamp.name}</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Actions Cluster (Desktop Only) */}
@@ -686,6 +832,58 @@ export default function PlansOverview() {
               <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 font-semibold shrink-0">
                 {plans.length}
               </span>
+
+              {/* Mobile Year & Project Switcher */}
+              {yearsWithCamps.sortedYears.length > 0 && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium text-foreground bg-stone-200/50 dark:bg-white/10 hover:bg-stone-200 dark:hover:bg-white/15 border border-stone-200/80 dark:border-white/10 shrink-0 cursor-pointer active:scale-95 transition-all ml-1"
+                      aria-label={t('SELECT_YEAR')}
+                    >
+                      <Calendar className="w-3 h-3 text-orange-500" />
+                      <span>{currentYear}</span>
+                      <ChevronDown className="w-3 h-3 text-fg-muted" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-60 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-2xl p-1.5 z-50">
+                    <div className="px-2.5 py-1 text-[10px] font-mono tracking-widest text-fg-muted uppercase flex items-center gap-1.5 mb-1">
+                      <span className="w-1.5 h-1.5 rotate-45 bg-orange-500" />
+                      {t('SELECT_YEAR')} / 專案
+                    </div>
+                    {yearsWithCamps.sortedYears.map((yr) => {
+                      const campsInYr = yearsWithCamps.map.get(yr) || [];
+                      return (
+                        <div key={yr} className="py-1">
+                          <div className="px-2.5 py-0.5 text-[10px] font-mono text-fg-muted font-bold">
+                            {yr} 年度 ({campsInYr.length})
+                          </div>
+                          {campsInYr.map((c) => {
+                            const isSel = c.id === activeCampId;
+                            const isDef = c.id === defaultCampId;
+                            return (
+                              <DropdownMenuItem
+                                key={c.id}
+                                onSelect={() => {
+                                  setActiveCampId(c.id);
+                                  toast({ title: t('SWITCHING_PROJECT'), description: t('SWITCHING_PROJECT_DESC', { name: c.name }) });
+                                }}
+                                className={cn(
+                                  "flex items-center justify-between px-3 py-1.5 text-xs font-mono rounded-xl cursor-pointer ml-1",
+                                  isSel ? "bg-orange-500 text-white font-medium shadow-xs" : "hover:bg-stone-100 dark:hover:bg-white/5"
+                                )}
+                              >
+                                <span className="truncate">{c.name}</span>
+                                {isDef && <Star className={cn("w-3 h-3 shrink-0", isSel ? "fill-white text-white" : "fill-amber-500 text-amber-500")} />}
+                              </DropdownMenuItem>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
 
             {/* Pinned Action Icons (Figure 2) */}

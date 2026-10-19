@@ -52,6 +52,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (data.role) {
         setRole(data.role);
         localStorage.setItem("studio_role", data.role);
+        sessionStorage.setItem("studio_just_logged_in", "true");
+        localStorage.removeItem("activeCampId");
         return true;
       }
       return false;
@@ -68,6 +70,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setRole(null);
     localStorage.removeItem("studio_role");
+    localStorage.removeItem("activeCampId");
+    sessionStorage.removeItem("studio_just_logged_in");
     router.push("/login");
   };
 

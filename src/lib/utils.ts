@@ -104,3 +104,19 @@ export function stripHtml(value?: string | null): string {
     .trim();
 }
 
+export function getCampYear(camp?: { name?: string; campStartDate?: string; createdAt?: number } | null): string {
+  if (!camp) return new Date().getFullYear().toString();
+  if (camp.campStartDate) {
+    const match = camp.campStartDate.match(/^(\d{4})/);
+    if (match) return match[1];
+  }
+  if (camp.name) {
+    const nameMatch = camp.name.match(/\b(20\d{2})\b/);
+    if (nameMatch) return nameMatch[1];
+  }
+  if (camp.createdAt && !isNaN(camp.createdAt)) {
+    return new Date(camp.createdAt).getFullYear().toString();
+  }
+  return new Date().getFullYear().toString();
+}
+

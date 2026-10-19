@@ -271,6 +271,16 @@ const en = {
   PLAN_CREATE_FAILED_DESC: "Unable to create a plan right now. Please try again later.",
   PLAN_CREATED_QUICK: "Quick plan created",
   PLAN_CREATED_QUICK_DESC: "Created plan for \"{name}\".",
+  DEFAULT_PROJECT: "Default Login Project",
+  SET_AS_DEFAULT_PROJECT: "Set as Default Login Project",
+  DEFAULT_PROJECT_SET: "Default Login Project Set",
+  DEFAULT_PROJECT_SET_DESC: "All users will see '{name}' first upon login.",
+  SELECT_YEAR: "Select Year",
+  ALL_YEARS: "All Years",
+  YEAR_LABEL: "Year {year}",
+  SWITCH_PROJECT: "Switch Project",
+  RETURN_TO_DEFAULT_PROJECT: "Return to Default Project",
+  VIEWING_ARCHIVE_YEAR: "Viewing {year} Project",
 };
 
 export default en;

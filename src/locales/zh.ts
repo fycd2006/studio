@@ -271,6 +271,16 @@ const zh = {
   PLAN_CREATE_FAILED_DESC: "目前無法新增教案，請稍後再試。",
   PLAN_CREATED_QUICK: "已快速新增",
   PLAN_CREATED_QUICK_DESC: "已新增「{name}」教案。",
+  DEFAULT_PROJECT: "登入首選專案",
+  SET_AS_DEFAULT_PROJECT: "設為登入首選專案",
+  DEFAULT_PROJECT_SET: "已設定登入首選專案",
+  DEFAULT_PROJECT_SET_DESC: "所有使用者登入時將第一優先顯示「{name}」。",
+  SELECT_YEAR: "切換年份",
+  ALL_YEARS: "全部年度",
+  YEAR_LABEL: "{year} 年度",
+  SWITCH_PROJECT: "切換專案",
+  RETURN_TO_DEFAULT_PROJECT: "返回首選專案",
+  VIEWING_ARCHIVE_YEAR: "正在瀏覽 {year} 年度專案",
 };
 
 export default zh;

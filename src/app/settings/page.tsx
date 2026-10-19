@@ -28,6 +28,7 @@ import {
   List,
   Trash2,
   X,
+  Star,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { exportProjectBackupZip } from "@/lib/export-excel";
@@ -41,7 +42,7 @@ import { VERSION_HISTORY } from "@/data/version-history";
 export default function SettingsPage() {
   const { role, logout } = useAuth();
   const {
-    camps, activeCampId, setActiveCampId, deleteCamp, updateCamp, addCamp,
+    camps, defaultCampId, setDefaultCampId, activeCampId, setActiveCampId, deleteCamp, updateCamp, addCamp,
     activityTypes, addActivityType, removeActivityType,
     groups, addGroup, updateGroup, deleteGroup,
     plans, tables
@@ -323,6 +324,7 @@ export default function SettingsPage() {
                   <div className="divide-y divide-stone-200/60 dark:divide-white/5">
                     {camps.map((camp, idx) => {
                       const isCurrent = activeCampId === camp.id;
+                      const isDefault = defaultCampId === camp.id;
                       const idxStr = String(idx + 1).padStart(2, '0');
                       return (
                         <div
@@ -438,10 +440,37 @@ export default function SettingsPage() {
                                 >
                                   {camp.isLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
                                 </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className={cn(
+                                    "h-8 w-8 rounded-lg transition-colors",
+                                    isDefault
+                                      ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                                      : "text-stone-400 hover:text-amber-500 hover:bg-stone-100 dark:hover:bg-white/5"
+                                  )}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDefaultCampId(camp.id);
+                                    toast({
+                                      title: t('DEFAULT_PROJECT_SET'),
+                                      description: t('DEFAULT_PROJECT_SET_DESC', { name: camp.name }),
+                                    });
+                                  }}
+                                  title={isDefault ? t('DEFAULT_PROJECT') : t('SET_AS_DEFAULT_PROJECT')}
+                                >
+                                  <Star className={cn("w-3.5 h-3.5", isDefault && "fill-current")} />
+                                </Button>
                               </>
                             )}
+                            {isDefault && (
+                              <span className="font-mono text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1 shrink-0">
+                                <Star className="w-2.5 h-2.5 fill-amber-500 text-amber-500" />
+                                {t('DEFAULT_PROJECT')}
+                              </span>
+                            )}
                             {isCurrent && (
-                              <span className="font-mono text-[10px] uppercase tracking-wider px-3 py-0.5 rounded-full bg-orange-500/15 text-orange-700 dark:text-orange-400 border border-orange-500/30">
+                              <span className="font-mono text-[10px] uppercase tracking-wider px-3 py-0.5 rounded-full bg-orange-500/15 text-orange-700 dark:text-orange-400 border border-orange-500/30 shrink-0">
                                 {t('ACTIVE_CORE')}
                               </span>
                             )}
