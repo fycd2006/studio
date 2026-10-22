@@ -1,6 +1,7 @@
 "use client"
 
 import { usePlans } from "@/hooks/use-plans";
+import { accessibleCamps } from "@/lib/camp-access";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { useState, useMemo, useEffect, useRef } from "react";
@@ -73,10 +74,7 @@ export default function PlansOverview() {
  const activeCamp = camps.find(c => c.id === activeCampId);
  const isAdmin = role === 'admin';
 
- const visibleCamps = useMemo(() => {
-   if (role === 'admin') return camps;
-   return camps.filter(c => !c.isLocked);
- }, [camps, role]);
+ const visibleCamps = useMemo(() => accessibleCamps(camps, role), [camps, role]);
 
  const defaultCamp = useMemo(() => {
    return camps.find(c => c.id === defaultCampId) || null;

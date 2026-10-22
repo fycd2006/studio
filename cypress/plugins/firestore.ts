@@ -155,6 +155,13 @@ export interface PlanSeed {
   isPropsPacked?: boolean;
 }
 
+/** 主 camp 以外要一起建的專案（例如「被管理員鎖定的那一個」）。 */
+export interface ExtraCampSeed {
+  id?: string;
+  name?: string;
+  isLocked?: boolean;
+}
+
 export interface CampScenarioOptions {
   scenarioId?: string;
   campName?: string;
@@ -165,14 +172,33 @@ export interface CampScenarioOptions {
   planCount?: number;
   /** 精確指定每一筆教案的內容；給了就不看 planCount。 */
   plans?: PlanSeed[];
+  /**
+   * 主 camp 以外還要建哪些專案。
+   *
+   * 為什麼放在 scenario 裡而不是做一支「再建一個 camp」的單點工具：
+   * 「鎖定專案」這類行為一定要**至少兩個專案**才驗得出來（只有一個的話，
+   * 「退回另一個未鎖定的專案」根本沒有退路可退，測試會在一個不成立的世界
+   * 上跑）。拆成單點工具的話，fixture 會散成兩處、cleanup 也要記得兩次。
+   */
+  extraCamps?: ExtraCampSeed[];
+  /**
+   * 哪一個是「登入首選專案」(userSettings.defaultCampId)：
+   * 0 = 主 camp，1 起算 extraCamps。不給就不寫 defaultCampId。
+   */
+  defaultCampIndex?: number;
   /** userSettings/global 的覆寫（計時器狀態、分組、活動類別）。 */
   settings?: Record<string, unknown>;
 }
 
 export interface CampScenario {
   scenarioId: string;
+  /** 主 camp（= camps[0].id）。教案都掛在它底下。 */
   campId: string;
   campName: string;
+  /** 這個 scenario 建出來的所有專案，index 0 是主 camp。 */
+  camps: Array<{ id: string; name: string; isLocked: boolean }>;
+  /** 有指定 defaultCampIndex 時，對應那一個 camp 的 id。 */
+  defaultCampId: string | null;
   planIds: string[];
   plans: Array<{ id: string; scheduledName: string; activityName: string; groupId: string }>;
 }
@@ -202,6 +228,10 @@ export async function setupCampScenario(
 
   const batch = database.batch();
 
+  const camps: CampScenario['camps'] = [
+    { id: campId, name: campName, isLocked: options.isLocked ?? false },
+  ];
+
   batch.set(database.collection('camps').doc(campId), {
     scenarioId,
     name: campName,
@@ -214,6 +244,32 @@ export async function setupCampScenario(
       : {}),
     campItems: [],
   });
+
+  // 其餘專案。都帶同一個 scenarioId —— cleanupCampScenario 就是用
+  // `camps.where('scenarioId','==',scenarioId)` 撈的，不帶的話會清不到，
+  // 而「清不到」跟「清乾淨」在回傳值上長得一模一樣（見本檔的 cleanup 註解）。
+  (options.extraCamps ?? []).forEach((seed, i) => {
+    const id = seed.id ?? `camp-${scenarioId}-extra-${i + 1}`;
+    const name = seed.name ?? `E2E 其他營隊 ${i + 1} [${scenarioId}]`;
+    const isLocked = seed.isLocked ?? false;
+    batch.set(database.collection('camps').doc(id), {
+      scenarioId,
+      name,
+      ownerId,
+      createdAt: Date.now() + i + 1,
+      isLocked,
+      campItems: [],
+    });
+    camps.push({ id, name, isLocked });
+  });
+
+  const defaultCamp =
+    options.defaultCampIndex === undefined ? null : camps[options.defaultCampIndex];
+  if (options.defaultCampIndex !== undefined && !defaultCamp) {
+    throw new Error(
+      `defaultCampIndex=${options.defaultCampIndex} 超出範圍 —— 這個 scenario 只有 ${camps.length} 個專案`,
+    );
+  }
 
   const plans: CampScenario['plans'] = [];
   planSeeds.forEach((seed, i) => {
@@ -257,6 +313,7 @@ export async function setupCampScenario(
       isReminderSet: false,
       isAlarmSet: false,
       updatedAt: Date.now(),
+      ...(defaultCamp ? { defaultCampId: defaultCamp.id } : {}),
       ...(options.settings ?? {}),
     },
     { merge: true },
@@ -268,6 +325,8 @@ export async function setupCampScenario(
     scenarioId,
     campId,
     campName,
+    camps,
+    defaultCampId: defaultCamp?.id ?? null,
     planIds: plans.map((p) => p.id),
     plans,
   };

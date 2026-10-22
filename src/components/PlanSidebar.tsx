@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useTranslation } from "@/lib/i18n-context";
+import { accessibleCamps } from "@/lib/camp-access";
 import { LessonPlan, PlanCategory, Camp, Group } from "@/types/plan";
 import { Button } from "@/components/ui/button";
 import { AdminDialog } from "@/components/AdminDialog";
@@ -124,10 +125,7 @@ export function PlanSidebar({
  const [deleteInput, setDeleteInput] = useState("");
 
  // RBAC: Crew can only see unlocked camps
- const visibleCamps = useMemo(() => {
- if (role === 'admin') return camps;
- return camps.filter(c => !c.isLocked);
- }, [camps, role]);
+ const visibleCamps = useMemo(() => accessibleCamps(camps, role), [camps, role]);
 
  const activeCamp = visibleCamps.find(c => c.id === activeCampId);
 

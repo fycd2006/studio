@@ -1,9 +1,10 @@
 "use client"
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth-context";
 import { usePlans } from "@/hooks/use-plans";
+import { accessibleCamps } from "@/lib/camp-access";
 import { useTheme } from "next-themes";
 import { useTranslation } from "@/lib/i18n-context";
 import {
@@ -69,6 +70,10 @@ export default function SettingsPage() {
 
   const activeCamp = camps.find(c => c.id === activeCampId);
   const isAdmin = role === 'admin';
+
+  // crew 看不到被鎖定的專案。這張清單原本直接渲染 camps —— 教案總覽與側欄
+  // 都有濾，只有這裡漏了，於是 crew 在這裡看得到也點得進去（issue #9）。
+  const visibleCamps = useMemo(() => accessibleCamps(camps, role), [camps, role]);
 
   useEffect(() => {
     if (searchParams.get('createProject') === '1' && isAdmin) {
@@ -190,6 +195,7 @@ export default function SettingsPage() {
               return (
                 <button
                   key={tab.key}
+                  data-testid={`settings-tab-${tab.key}`}
                   onClick={() => setActiveTab(tab.key)}
                   className={cn(
                     "flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-left transition-all duration-200 cursor-pointer border text-xs font-mono",
@@ -322,13 +328,30 @@ export default function SettingsPage() {
 
                 <div className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 rounded-3xl overflow-hidden">
                   <div className="divide-y divide-stone-200/60 dark:divide-white/5">
-                    {camps.map((camp, idx) => {
+                    {visibleCamps.length === 0 && (
+                      <div
+                        data-testid="settings-camps-empty"
+                        className="p-10 sm:p-14 flex flex-col items-center justify-center text-center"
+                      >
+                        <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-stone-100 dark:bg-white/5 border border-stone-200/60 dark:border-white/10 text-stone-400 mb-4">
+                          <Lock className="w-5 h-5" />
+                        </div>
+                        <h4 className="text-base font-normal text-foreground">
+                          {t('NO_ACCESSIBLE_PROJECTS')}
+                        </h4>
+                        <p className="text-xs font-mono text-fg-muted mt-1.5 max-w-sm">
+                          {t('NO_ACCESSIBLE_PROJECTS_DESC')}
+                        </p>
+                      </div>
+                    )}
+                    {visibleCamps.map((camp, idx) => {
                       const isCurrent = activeCampId === camp.id;
                       const isDefault = defaultCampId === camp.id;
                       const idxStr = String(idx + 1).padStart(2, '0');
                       return (
                         <div
                           key={camp.id}
+                          data-testid={`settings-camp-row-${camp.id}`}
                           className={cn(
                             "p-5 sm:p-6 flex items-center justify-between hover:bg-orange-500/[0.02] dark:hover:bg-orange-500/[0.04] transition-colors cursor-pointer group",
                             isCurrent && "bg-orange-500/[0.03] dark:bg-orange-500/[0.05]"

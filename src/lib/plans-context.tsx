@@ -19,6 +19,7 @@ import { getCorrectedNow, getServerTimeOffset } from '@/hooks/use-server-time';
 import { format } from 'date-fns';
 import * as jsondiffpatch from 'jsondiffpatch';
 import { useAuth } from '@/lib/auth-context';
+import { isCampAccessible, pickFallbackCamp } from '@/lib/camp-access';
 
 const sanitizeForFirestore = (obj: any): any => {
   if (obj === undefined) return null;
@@ -424,25 +425,23 @@ export function PlansProvider({ children }: { children: ReactNode }) {
     const isJustLoggedIn = typeof window !== 'undefined' && sessionStorage.getItem('studio_just_logged_in') === 'true';
     if (isJustLoggedIn) {
       sessionStorage.removeItem('studio_just_logged_in');
-      const targetDefaultId = settings?.defaultCampId;
-      const targetDefaultCamp = targetDefaultId ? camps.find(c => c.id === targetDefaultId) : null;
-      if (targetDefaultCamp && (role === 'admin' || !targetDefaultCamp.isLocked)) {
-        setActiveCampId(targetDefaultCamp.id);
+      const preferred = pickFallbackCamp(camps, role, settings?.defaultCampId);
+      if (preferred) {
+        setActiveCampId(preferred.id);
         return;
       }
     }
 
-    const hasValidActiveCamp = !!activeCampId && camps.some(c => c.id === activeCampId);
-    if (!hasValidActiveCamp) {
-      const targetDefaultId = settings?.defaultCampId;
-      const targetDefaultCamp = targetDefaultId ? camps.find(c => c.id === targetDefaultId) : null;
-      if (targetDefaultCamp && (role === 'admin' || !targetDefaultCamp.isLocked)) {
-        setActiveCampId(targetDefaultCamp.id);
-      } else {
-        const firstAccessible = camps.find(c => role === 'admin' || !c.isLocked);
-        setActiveCampId(firstAccessible ? firstAccessible.id : camps[0].id);
-      }
-    }
+    // ⚠️ 「有效」不只是「這筆專案還在」，還要**這個身分真的進得去**。
+    //    只檢查存在的話，localStorage 裡那個已經被管理員鎖定的專案會一直
+    //    通過檢查、永遠不會被換掉，於是 crew 重整幾次都還在裡面（issue #9）。
+    const activeCamp = activeCampId ? camps.find(c => c.id === activeCampId) : null;
+    if (isCampAccessible(activeCamp, role)) return;
+
+    // 退路：登入首選專案 →（不可用則）第一個可用的 →（都不可用）null。
+    // 這裡刻意**不**退到 camps[0] —— 那一筆同樣可能是鎖定的。
+    const fallback = pickFallbackCamp(camps, role, settings?.defaultCampId);
+    setActiveCampId(fallback ? fallback.id : null);
   }, [campsData, camps, activeCampId, settings?.defaultCampId, role]);
 
   const addCamp = useCallback((name: string, fields?: Partial<Camp>) => {

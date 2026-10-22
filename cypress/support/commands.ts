@@ -166,6 +166,25 @@ Cypress.Commands.add('setupCampScenario', (options: CampScenarioOptions = {}) =>
         '             並檢查 setupCampScenario 的 batch.commit() 有沒有被例外中斷',
     ).to.have.length(wanted);
 
+    // 多專案的 scenario 同樣要 Fail Fast：少建一個專案時，
+    // 下游會紅在「找不到某一列」—— 那個訊息看起來像畫面壞了，不像 fixture 少建。
+    const wantedCamps = 1 + (options.extraCamps?.length ?? 0);
+    expect(
+      scenario.camps,
+      `❌ scenario 建出來的專案數不對！\n` +
+        `   期望: ${wantedCamps} 個（主專案 1 + extraCamps ${options.extraCamps?.length ?? 0}）\n` +
+        `   實際: ${scenario.camps?.length ?? 0} 個\n` +
+        '   解決方案: 檢查 cypress/plugins/firestore.ts 的 setupCampScenario 有沒有把 extraCamps 寫進同一個 batch',
+    ).to.have.length(wantedCamps);
+
+    if (options.defaultCampIndex !== undefined) {
+      expect(
+        scenario.defaultCampId,
+        '❌ 指定了 defaultCampIndex，但 scenario 沒有回傳 defaultCampId\n' +
+          '   解決方案: 檢查 setupCampScenario 有沒有把 defaultCampId 寫進 userSettings/global',
+      ).to.be.a('string');
+    }
+
     return cy.wrap(scenario, { log: false });
   }),
 );

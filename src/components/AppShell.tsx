@@ -7,7 +7,6 @@ import { useAuth } from "@/lib/auth-context";
 import { usePathname } from "next/navigation";
 import { Loader2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useRouter } from "next/navigation";
 import { TransparentNavbar } from "@/components/TransparentNavbar";
 import { useTranslation } from "@/lib/i18n-context";
 
@@ -43,7 +42,6 @@ function AppShellInternal({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { toast } = useToast();
   const { t } = useTranslation();
-  const router = useRouter();
   const [hasVersionUpdate, setHasVersionUpdate] = React.useState(false);
 
   // V2 Broadcast System States
@@ -78,20 +76,23 @@ function AppShellInternal({ children }: { children: React.ReactNode }) {
 
   const showBroadcast = !!(broadcastText && !isBroadcastDismissed);
 
-  // RBAC Redirect: If crew attempts to access a locked camp
+  // 停在一個已被鎖定的專案上時，說明發生了什麼事。
+  //
+  // ⚠️ 這裡**只負責提示**，不負責把人帶走。之前的作法是 router.push("/")，
+  //    但那沒有動到 activeCampId —— 專案還是鎖定的那一個，於是每進一頁就
+  //    再被踢回首頁一次，連「系統設定 > 工作區」都進不去，人就卡死在裡面
+  //    （issue #9）。真正的修正是換掉活躍專案，那由 plans-context 負責；
+  //    換成功之後這個 effect 的條件自然不再成立，提示也只會跳一次。
   React.useEffect(() => {
-    if (!isAuthLoading && role === 'crew' && planData.activeCampId) {
-      const activeCamp = planData.camps.find(c => c.id === planData.activeCampId);
-      if (activeCamp?.isLocked) {
-        toast({
-          title: t('PROJECT_LOCKED_TITLE'),
-          description: t('PROJECT_LOCKED_DESC'),
-          variant: "destructive"
-        });
-        router.push("/");
-      }
-    }
-  }, [role, planData.activeCampId, planData.camps, isAuthLoading, toast, router, t]);
+    if (isAuthLoading || role !== 'crew' || !planData.activeCampId) return;
+    const activeCamp = planData.camps.find(c => c.id === planData.activeCampId);
+    if (!activeCamp?.isLocked) return;
+    toast({
+      title: t('PROJECT_LOCKED_TITLE'),
+      description: t('PROJECT_LOCKED_SWITCHED_DESC'),
+      variant: "destructive"
+    });
+  }, [role, planData.activeCampId, planData.camps, isAuthLoading, toast, t]);
 
   React.useEffect(() => {
     if (process.env.NODE_ENV !== 'production') {
