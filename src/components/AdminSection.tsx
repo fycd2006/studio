@@ -56,6 +56,72 @@ interface AdminSectionProps {
 
 type MainTab = 'timer' | 'tables' | 'props';
 
+// Debounced Prop Input Component (hoisted to module scope to prevent remounting on parent re-renders)
+const PropInput = ({
+  value,
+  onChange,
+  disabled,
+  placeholder,
+  className
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  disabled: boolean;
+  placeholder?: string;
+  className?: string;
+}) => {
+  const [localValue, setLocalValue] = useState(value);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  const resize = useCallback(() => {
+    const el = textareaRef.current;
+    if (el) {
+      el.style.height = "auto";
+      el.style.height = `${el.scrollHeight}px`;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!disabled) {
+      resize();
+    }
+  }, [localValue, disabled, resize]);
+
+  if (disabled) {
+    return (
+      <div className={cn("min-h-8 md:min-h-10 px-2 py-2 text-xs sm:text-sm text-slate-800 dark:text-slate-200 bg-transparent text-center font-fira-sans font-medium leading-normal flex items-center justify-center w-full", className)}>
+        <span className="w-full break-all whitespace-pre-wrap block text-center">
+          {value || ""}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <textarea
+      ref={textareaRef}
+      value={localValue}
+      placeholder={placeholder}
+      onChange={(e) => setLocalValue(e.target.value)}
+      onBlur={() => {
+        if (localValue !== value) {
+          onChange(localValue);
+        }
+      }}
+      onInput={resize}
+      rows={1}
+      className={cn(
+        "w-full min-h-8 md:min-h-10 resize-none bg-transparent px-2 py-2 text-center text-xs sm:text-sm text-slate-800 dark:text-slate-200 placeholder:text-stone-400 dark:placeholder:text-stone-600 font-fira-sans font-medium rounded-none focus:outline-none focus:bg-blue-50/60 dark:focus:bg-blue-500/5 transition-all overflow-y-hidden leading-normal border-none whitespace-pre-wrap break-all",
+        className
+      )}
+    />
+  );
+};
+
 export function AdminSection({
   tables, onAddTable, onUpdateTable, onDeleteTable,
   onUndoTable, onRedoTable, canUndoTable, canRedoTable,
@@ -291,16 +357,60 @@ export function AdminSection({
   const activityPropsFlattened = toPropRows(activityPlans);
   const teachingPropsFlattened = toPropRows(teachingPlans);
 
-  const handleUpdatePropItem = (planId: string, propId: string, updates: Partial<PropItem>) => {
+  const handleUpdatePropItem = (planId: string, propId: string | null, updates: Partial<PropItem>) => {
     if (isLocked) return;
     const plan = plans.find(p => p.id === planId);
     if (!plan) return;
 
-    const updatedProps = plan.props.map(p =>
+    const currentProps = plan.props || [];
+    if (!propId) {
+      const newProp: PropItem = {
+        id: Math.random().toString(36).substr(2, 9),
+        name: '',
+        quantity: '1',
+        unit: '個',
+        remarks: '',
+        isFromClub: false,
+        isToPurchase: false,
+        ...updates
+      };
+      onUpdatePlan(planId, { props: [...currentProps, newProp] });
+      return;
+    }
+
+    const updatedProps = currentProps.map(p =>
       p.id === propId ? { ...p, ...updates } : p
     );
 
     onUpdatePlan(planId, { props: updatedProps });
+  };
+
+  const handleAddPropToPlan = (planId: string) => {
+    if (isLocked) return;
+    const plan = plans.find(p => p.id === planId);
+    if (!plan) return;
+
+    const newProp: PropItem = {
+      id: Math.random().toString(36).substr(2, 9),
+      name: '新道具',
+      quantity: '1',
+      unit: '個',
+      remarks: '',
+      isFromClub: false,
+      isToPurchase: false
+    };
+
+    onUpdatePlan(planId, { props: [...(plan.props || []), newProp] });
+  };
+
+  const handleDeletePropFromPlan = (planId: string, propId: string) => {
+    if (isLocked) return;
+    const plan = plans.find(p => p.id === planId);
+    if (!plan) return;
+
+    onUpdatePlan(planId, {
+      props: (plan.props || []).filter(p => p.id !== propId)
+    });
   };
 
   const handleUpdateCampItem = (campItemId: string, updates: Partial<CampItem>) => {
@@ -345,66 +455,7 @@ export function AdminSection({
     });
   };
 
-  // Debounced Prop Input Component
-  const PropInput = ({
-    value,
-    onChange,
-    disabled,
-    className
-  }: {
-    value: string,
-    onChange: (val: string) => void,
-    disabled: boolean,
-    className?: string
-  }) => {
-    const [localValue, setLocalValue] = useState(value);
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-    useEffect(() => {
-      setLocalValue(value);
-    }, [value]);
-
-    const resize = useCallback(() => {
-      const el = textareaRef.current;
-      if (el) {
-        el.style.height = "auto";
-        el.style.height = `${el.scrollHeight}px`;
-      }
-    }, []);
-
-    useEffect(() => {
-      if (!disabled) {
-        resize();
-      }
-    }, [localValue, disabled, resize]);
-
-    if (disabled) {
-      return (
-        <div className={cn("min-h-8 md:min-h-10 px-2 py-2 text-xs sm:text-sm text-slate-800 dark:text-slate-200 bg-transparent text-center font-fira-sans font-medium leading-normal flex items-center justify-center w-full", className)}>
-          <span className="w-full break-all whitespace-pre-wrap block text-center">
-            {value || ""}
-          </span>
-        </div>
-      );
-    }
-
-    return (
-      <textarea
-        ref={textareaRef}
-        value={localValue}
-        onChange={(e) => setLocalValue(e.target.value)}
-        onBlur={() => onChange(localValue)}
-        onInput={resize}
-        rows={1}
-        className={cn(
-          "w-full min-h-8 md:min-h-10 resize-none bg-transparent px-2 py-2 text-center text-xs sm:text-sm text-slate-800 dark:text-slate-200 font-fira-sans font-medium rounded-none focus:outline-none focus:bg-blue-50/60 dark:focus:bg-blue-500/5 transition-all overflow-y-hidden leading-normal border-none whitespace-pre-wrap break-all",
-          className
-        )}
-      />
-    );
-  };
-
-  const renderPropTable = (title: string, propItems: PropTableRow[]) => {
+  const renderPropTable = (title: string, propItems: PropTableRow[], targetPlans: LessonPlan[]) => {
     // Group props by schedule category
     const propGroups = propItems.reduce((acc, item) => {
       const cat = item.plan.scheduledName || '未分類 / Uncategorized';
@@ -412,6 +463,8 @@ export function AdminSection({
       acc[cat].push(item);
       return acc;
     }, {} as Record<string, PropTableRow[]>);
+
+    const colCount = isLocked ? 9 : 10;
 
     return (
       <div className="w-full bg-white/80 dark:bg-white/[0.02] backdrop-blur-md border border-stone-200/80 dark:border-white/10 rounded-3xl overflow-hidden flex-1 flex flex-col shadow-xs my-2">
@@ -427,15 +480,16 @@ export function AdminSection({
                 <th className="w-[8%] px-4 py-3 whitespace-nowrap border-r border-stone-200/80 dark:border-white/10 font-mono">Unit</th>
                 <th className="w-[16%] px-4 py-3 min-w-[100px] border-r border-stone-200/80 dark:border-white/10">{t('OP_REMARKS')}</th>
                 <th className="w-[7%] px-4 py-3 whitespace-nowrap border-r border-stone-200/80 dark:border-white/10">{t('PACKED')}</th>
-                <th className="w-[7%] px-4 py-3 whitespace-nowrap">{t('CHECKED')}</th>
+                <th className={cn("w-[7%] px-4 py-3 whitespace-nowrap", !isLocked && "border-r border-stone-200/80 dark:border-white/10")}>{t('CHECKED')}</th>
+                {!isLocked && <th className="w-[10%] px-4 py-3 whitespace-nowrap text-center">操作</th>}
               </tr>
             </thead>
             <tbody>
               {Object.keys(propGroups).length === 0 ? (
-                <tr><td colSpan={9} className="text-center py-12 text-fg-muted font-mono text-xs tracking-wider border-b border-stone-200/80 dark:border-white/10">目前沒有任何道具資料</td></tr>
+                <tr><td colSpan={colCount} className="text-center py-12 text-fg-muted font-mono text-xs tracking-wider border-b border-stone-200/80 dark:border-white/10">目前沒有任何道具資料</td></tr>
               ) : null}
 
-              {Object.entries(propGroups).map(([categoryName, items], gIndex) => {
+              {Object.entries(propGroups).map(([categoryName, items]) => {
                 // To merge rows correctly within a category, group by plan ID
                 const plansInGroup = items.reduce((acc, item) => {
                   if (!acc[item.plan.id]) { acc[item.plan.id] = []; }
@@ -454,25 +508,61 @@ export function AdminSection({
                         item.prop?.isFromClub && item.prop?.isToPurchase ? "bg-emerald-500/[0.06] dark:bg-emerald-500/10" : "bg-transparent"
                       )}>
                         {isFirstInGroup && (
-                          <td className="px-4 py-3 font-mono text-xs text-foreground align-top border-r border-stone-200/80 dark:border-white/10 font-normal" rowSpan={items.length}>
-                            {categoryName}
+                          <td className={cn("font-mono text-xs text-foreground align-top border-r border-stone-200/80 dark:border-white/10 font-normal", isLocked ? "px-4 py-3" : "p-0")} rowSpan={items.length}>
+                            {isLocked ? (
+                              categoryName
+                            ) : (
+                              <PropInput
+                                value={item.plan.scheduledName || ''}
+                                placeholder="未分類"
+                                onChange={(v) => {
+                                  Object.keys(plansInGroup).forEach(pid => onUpdatePlan(pid, { scheduledName: v }));
+                                }}
+                                disabled={isLocked}
+                                className="font-mono text-xs font-normal text-foreground text-center"
+                              />
+                            )}
                           </td>
                         )}
                         {isFirstInPlan && (
-                          <td className="px-4 py-3 text-xs sm:text-sm text-foreground align-top border-r border-stone-200/80 dark:border-white/10 whitespace-pre-wrap break-all font-normal" rowSpan={planItems.length}>
-                            {stripHtml(item.plan.activityName) || '-'}
+                          <td className={cn("text-xs sm:text-sm text-foreground align-top border-r border-stone-200/80 dark:border-white/10 whitespace-pre-wrap break-all font-normal", isLocked ? "px-4 py-3" : "p-0")} rowSpan={planItems.length}>
+                            {isLocked ? (
+                              stripHtml(item.plan.activityName) || '-'
+                            ) : (
+                              <PropInput
+                                value={stripHtml(item.plan.activityName)}
+                                placeholder="教案名稱"
+                                onChange={(v) => onUpdatePlan(item.plan.id, { activityName: v })}
+                                disabled={isLocked}
+                                className="font-normal text-foreground text-center"
+                              />
+                            )}
                           </td>
                         )}
                         {isFirstInPlan && (
-                          <td className="px-4 py-3 text-xs sm:text-sm text-fg-muted align-top border-r border-stone-200/80 dark:border-white/10 whitespace-pre-wrap break-all" rowSpan={planItems.length}>
-                            {stripHtml(item.plan.members) || '-'}
+                          <td className={cn("text-xs sm:text-sm text-fg-muted align-top border-r border-stone-200/80 dark:border-white/10 whitespace-pre-wrap break-all", isLocked ? "px-4 py-3" : "p-0")} rowSpan={planItems.length}>
+                            {isLocked ? (
+                              stripHtml(item.plan.members) || '-'
+                            ) : (
+                              <PropInput
+                                value={stripHtml(item.plan.members)}
+                                placeholder="負責人"
+                                onChange={(v) => onUpdatePlan(item.plan.id, { members: v })}
+                                disabled={isLocked}
+                                className="text-fg-muted text-center"
+                              />
+                            )}
                           </td>
                         )}
-                        <td className={cn("align-middle border-r border-stone-200/80 dark:border-white/10", item.prop ? "p-0" : "px-2 py-2")}>
-                          {item.prop ? (
+                        <td className={cn("align-middle border-r border-stone-200/80 dark:border-white/10", (item.prop || !isLocked) ? "p-0" : "px-2 py-2")}>
+                          {item.prop || !isLocked ? (
                             <PropInput
-                              value={item.prop.name}
-                              onChange={(v) => handleUpdatePropItem(item.plan.id, item.prop!.id, { name: v })}
+                              value={item.prop?.name || ''}
+                              placeholder="輸入道具名稱..."
+                              onChange={(v) => {
+                                if (!item.prop && !v.trim()) return;
+                                handleUpdatePropItem(item.plan.id, item.prop?.id ?? null, { name: v });
+                              }}
                               disabled={isLocked}
                               className="font-normal text-foreground text-center"
                             />
@@ -480,11 +570,15 @@ export function AdminSection({
                             <div className="h-8 md:h-10 px-2 flex items-center justify-center text-xs text-fg-muted italic">無所需物品</div>
                           )}
                         </td>
-                        <td className={cn("align-middle border-r border-stone-200/80 dark:border-white/10", item.prop ? "p-0" : "px-2 py-2")}>
-                          {item.prop ? (
+                        <td className={cn("align-middle border-r border-stone-200/80 dark:border-white/10", (item.prop || !isLocked) ? "p-0" : "px-2 py-2")}>
+                          {item.prop || !isLocked ? (
                             <PropInput
-                              value={item.prop.quantity}
-                              onChange={(v) => handleUpdatePropItem(item.plan.id, item.prop!.id, { quantity: v })}
+                              value={item.prop?.quantity || ''}
+                              placeholder="1"
+                              onChange={(v) => {
+                                if (!item.prop && !v.trim()) return;
+                                handleUpdatePropItem(item.plan.id, item.prop?.id ?? null, { quantity: v });
+                              }}
                               disabled={isLocked}
                               className="text-center font-mono text-foreground"
                             />
@@ -492,11 +586,15 @@ export function AdminSection({
                             <div className="h-8 md:h-10 px-2 flex items-center justify-center text-fg-muted">-</div>
                           )}
                         </td>
-                        <td className={cn("align-middle border-r border-stone-200/80 dark:border-white/10", item.prop ? "p-0" : "px-2 py-2")}>
-                          {item.prop ? (
+                        <td className={cn("align-middle border-r border-stone-200/80 dark:border-white/10", (item.prop || !isLocked) ? "p-0" : "px-2 py-2")}>
+                          {item.prop || !isLocked ? (
                             <PropInput
-                              value={item.prop.unit === 'custom' ? '' : item.prop.unit}
-                              onChange={(v) => handleUpdatePropItem(item.plan.id, item.prop!.id, { unit: v })}
+                              value={item.prop ? (item.prop.unit === 'custom' ? '' : item.prop.unit) : ''}
+                              placeholder="個"
+                              onChange={(v) => {
+                                if (!item.prop && !v.trim()) return;
+                                handleUpdatePropItem(item.plan.id, item.prop?.id ?? null, { unit: v });
+                              }}
                               disabled={isLocked}
                               className="text-center text-fg-muted font-mono text-xs"
                             />
@@ -504,11 +602,15 @@ export function AdminSection({
                             <div className="h-8 md:h-10 px-2 flex items-center justify-center text-fg-muted">-</div>
                           )}
                         </td>
-                        <td className={cn("align-middle border-r border-stone-200/80 dark:border-white/10", item.prop ? "p-0" : "px-2 py-2")}>
-                          {item.prop ? (
+                        <td className={cn("align-middle border-r border-stone-200/80 dark:border-white/10", (item.prop || !isLocked) ? "p-0" : "px-2 py-2")}>
+                          {item.prop || !isLocked ? (
                             <PropInput
-                              value={item.prop.remarks || ''}
-                              onChange={(v) => handleUpdatePropItem(item.plan.id, item.prop!.id, { remarks: v })}
+                              value={item.prop?.remarks || ''}
+                              placeholder="備註"
+                              onChange={(v) => {
+                                if (!item.prop && !v.trim()) return;
+                                handleUpdatePropItem(item.plan.id, item.prop?.id ?? null, { remarks: v });
+                              }}
                               disabled={isLocked}
                               className="text-fg-muted text-center"
                             />
@@ -520,28 +622,52 @@ export function AdminSection({
                           <div className="flex justify-center items-center h-full">
                             <Checkbox
                               checked={item.prop?.isFromClub || false}
-                              disabled={isLocked || !item.prop}
+                              disabled={isLocked}
                               onCheckedChange={(c) => {
-                                if (!item.prop) return;
-                                handleUpdatePropItem(item.plan.id, item.prop.id, { isFromClub: c === true });
+                                handleUpdatePropItem(item.plan.id, item.prop?.id ?? null, { isFromClub: c === true });
                               }}
                               className="h-5 w-5 rounded-md"
                             />
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-center align-middle">
+                        <td className={cn("px-4 py-3 text-center align-middle", !isLocked && "border-r border-stone-200/80 dark:border-white/10")}>
                           <div className="flex justify-center items-center h-full">
                             <Checkbox
                               checked={item.prop?.isToPurchase || false}
-                              disabled={isLocked || !item.prop}
+                              disabled={isLocked}
                               onCheckedChange={(c) => {
-                                if (!item.prop) return;
-                                handleUpdatePropItem(item.plan.id, item.prop.id, { isToPurchase: c === true });
+                                handleUpdatePropItem(item.plan.id, item.prop?.id ?? null, { isToPurchase: c === true });
                               }}
                               className="h-5 w-5 rounded-md"
                             />
                           </div>
                         </td>
+                        {!isLocked && (
+                          <td className="px-2 py-2 text-center align-middle whitespace-nowrap">
+                            <div className="flex items-center justify-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleAddPropToPlan(item.plan.id)}
+                                className="h-7 px-2 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-mono text-xs"
+                                title="在此教案新增一項道具"
+                              >
+                                <Plus className="h-3.5 w-3.5 mr-0.5" /> 新增
+                              </Button>
+                              {item.prop && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeletePropFromPlan(item.plan.id, item.prop!.id)}
+                                  className="h-7 px-2 text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 font-mono text-xs"
+                                  title="刪除此道具"
+                                >
+                                  刪除
+                                </Button>
+                              )}
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     );
                   })
@@ -559,16 +685,27 @@ export function AdminSection({
                   <td className="border-r border-stone-200/40 dark:border-white/[0.04] h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
                   <td className="border-r border-stone-200/40 dark:border-white/[0.04] h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
                   <td className="border-r border-stone-200/40 dark:border-white/[0.04] h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
-                  <td className="h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>
+                  <td className={cn("h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none", !isLocked && "border-r border-stone-200/40 dark:border-white/[0.04]")}>&nbsp;</td>
+                  {!isLocked && <td className="h-[46px] min-h-[46px] p-0 m-0 leading-none text-transparent select-none">&nbsp;</td>}
                 </tr>
               ))}
             </tbody>
             <tfoot>
               <tr>
-                <td colSpan={isLocked ? 6 : 7} className="px-4 py-3 bg-stone-500/[0.02] dark:bg-white/[0.01] border-t border-stone-200/80 dark:border-white/10">
+                <td colSpan={colCount} className="px-4 py-3 bg-stone-500/[0.02] dark:bg-white/[0.01] border-t border-stone-200/80 dark:border-white/10">
                   {!isLocked && (
                     <Button
-                      onClick={handleAddCampItem}
+                      onClick={() => {
+                        if (targetPlans.length > 0) {
+                          handleAddPropToPlan(targetPlans[targetPlans.length - 1].id);
+                        } else {
+                          toast({
+                            title: "尚無教案資料",
+                            description: `目前「${title}」尚無教案，請先於教案庫新增教案後再建立道具。`,
+                            variant: "destructive"
+                          });
+                        }
+                      }}
                       size="sm"
                       variant="ghost"
                       className="w-full h-10 text-fg-muted hover:text-foreground hover:bg-stone-500/10 dark:hover:bg-white/5 transition-all gap-2 font-mono text-xs uppercase tracking-widest border-none"
@@ -593,6 +730,176 @@ export function AdminSection({
       acc[u].push(item);
       return acc;
     }, {} as Record<string, CampItem[]>);
+
+    const renderCombinedPlanRows = (
+      groupPlans: Record<string, LessonPlan[]>,
+      rowKeyPrefix: string,
+      accentClass: string
+    ) =>
+      Object.entries(groupPlans).map(([categoryName, catePlans]) =>
+        catePlans.map((plan, pIndex) => (
+          <tr
+            key={`${rowKeyPrefix}-${plan.id}`}
+            className={cn(
+              "group hover:bg-stone-500/[0.03] dark:hover:bg-white/[0.02] transition-colors duration-200 border-b border-stone-200/60 dark:border-white/10 last:border-0",
+              plan.isPreDepartureChecked && plan.isPropsPacked ? "bg-emerald-500/[0.06] dark:bg-emerald-500/10" : "bg-transparent"
+            )}
+          >
+            {pIndex === 0 && (
+              <td
+                className={cn(
+                  "font-mono text-xs text-foreground align-top border-r border-stone-200/80 dark:border-white/10 break-all font-normal",
+                  isLocked ? "px-4 py-3" : "p-0"
+                )}
+                rowSpan={catePlans.length}
+              >
+                {isLocked ? (
+                  categoryName
+                ) : (
+                  <PropInput
+                    value={plan.scheduledName || ''}
+                    placeholder="未分類"
+                    onChange={(v) => {
+                      catePlans.forEach(p => onUpdatePlan(p.id, { scheduledName: v }));
+                    }}
+                    disabled={isLocked}
+                    className="font-mono text-xs font-normal text-foreground text-center"
+                  />
+                )}
+              </td>
+            )}
+            <td
+              className={cn(
+                "text-xs sm:text-sm text-foreground align-top border-r border-stone-200/80 dark:border-white/10 text-center whitespace-pre-wrap break-all font-normal",
+                isLocked ? "px-4 py-3" : "p-0"
+              )}
+            >
+              {isLocked ? (
+                stripHtml(plan.activityName) || '-'
+              ) : (
+                <PropInput
+                  value={stripHtml(plan.activityName)}
+                  placeholder="教案名稱"
+                  onChange={(v) => onUpdatePlan(plan.id, { activityName: v })}
+                  disabled={isLocked}
+                  className="font-normal text-foreground text-center"
+                />
+              )}
+            </td>
+            <td
+              className={cn(
+                "text-xs sm:text-sm text-fg-muted align-top border-r border-stone-200/80 dark:border-white/10 text-center whitespace-pre-wrap break-all",
+                isLocked ? "px-4 py-3" : "p-0"
+              )}
+            >
+              {isLocked ? (
+                stripHtml(plan.members) || '-'
+              ) : (
+                <PropInput
+                  value={stripHtml(plan.members)}
+                  placeholder="負責人"
+                  onChange={(v) => onUpdatePlan(plan.id, { members: v })}
+                  disabled={isLocked}
+                  className="text-fg-muted text-center"
+                />
+              )}
+            </td>
+            <td className="px-3 py-2 text-foreground text-xs sm:text-sm border-r border-stone-200/80 dark:border-white/10 break-all align-middle">
+              {isLocked ? (
+                plan.props.length > 0 ? (
+                  <ul className="space-y-1.5 list-none">
+                    {plan.props.map(prop => (
+                      <li key={prop.id} className="flex items-center gap-1.5 flex-wrap">
+                        <span className="w-1.5 h-1.5 rounded-full bg-stone-300 dark:bg-stone-600 shrink-0" />
+                        <span className="font-normal text-foreground break-all">{prop.name}</span>
+                        <span className={cn("font-mono px-1 text-[11px] shrink-0 font-medium", accentClass)}>
+                          × {prop.quantity} {prop.unit === 'custom' ? '' : prop.unit}
+                        </span>
+                        {prop.remarks && <span className="text-fg-muted ml-1 text-[11px] break-all">({prop.remarks})</span>}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <span className="text-fg-muted italic text-xs">無所需物品</span>
+                )
+              ) : (
+                <div className="space-y-1.5">
+                  {plan.props.length === 0 && (
+                    <div className="text-fg-muted italic text-xs py-1">無所需物品（點擊右側「+ 新增」建立道具）</div>
+                  )}
+                  {plan.props.map(prop => (
+                    <div
+                      key={prop.id}
+                      className="grid grid-cols-[1fr_56px_52px_1fr_auto] items-center gap-1 bg-stone-500/[0.03] dark:bg-white/[0.03] rounded-lg px-1.5 py-0.5 border border-stone-200/60 dark:border-white/10"
+                    >
+                      <PropInput
+                        value={prop.name}
+                        placeholder="道具名稱"
+                        onChange={(v) => handleUpdatePropItem(plan.id, prop.id, { name: v })}
+                        disabled={isLocked}
+                        className="text-left font-normal text-foreground min-h-7 md:min-h-8 py-1 px-1.5"
+                      />
+                      <PropInput
+                        value={prop.quantity}
+                        placeholder="數量"
+                        onChange={(v) => handleUpdatePropItem(plan.id, prop.id, { quantity: v })}
+                        disabled={isLocked}
+                        className="text-center font-mono text-foreground min-h-7 md:min-h-8 py-1 px-1"
+                      />
+                      <PropInput
+                        value={prop.unit === 'custom' ? '' : prop.unit}
+                        placeholder="單位"
+                        onChange={(v) => handleUpdatePropItem(plan.id, prop.id, { unit: v })}
+                        disabled={isLocked}
+                        className="text-center font-mono text-xs text-fg-muted min-h-7 md:min-h-8 py-1 px-1"
+                      />
+                      <PropInput
+                        value={prop.remarks || ''}
+                        placeholder="備註"
+                        onChange={(v) => handleUpdatePropItem(plan.id, prop.id, { remarks: v })}
+                        disabled={isLocked}
+                        className="text-left text-fg-muted min-h-7 md:min-h-8 py-1 px-1.5"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeletePropFromPlan(plan.id, prop.id)}
+                        className="h-6 px-1.5 text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 font-mono text-[11px]"
+                        title="刪除此道具"
+                      >
+                        刪除
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </td>
+            <td className="px-4 py-3 text-center align-middle border-r border-stone-200/80 dark:border-white/10">
+              <div className="flex justify-center items-center h-full">
+                <Checkbox checked={plan.isPropsPacked || false} disabled={isLocked} onCheckedChange={(c) => onUpdatePlan(plan.id, { isPropsPacked: c === true })} className="h-5 w-5 rounded-md" />
+              </div>
+            </td>
+            <td className="px-4 py-3 text-center align-middle border-r border-stone-200/80 dark:border-white/10">
+              <div className="flex justify-center flex-col items-center h-full">
+                <Checkbox checked={plan.isPreDepartureChecked || false} disabled={isLocked} onCheckedChange={(c) => onUpdatePlan(plan.id, { isPreDepartureChecked: c === true })} className="h-5 w-5 rounded-md" />
+              </div>
+            </td>
+            {!isLocked && (
+              <td className="px-2 py-2 text-center align-middle whitespace-nowrap">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleAddPropToPlan(plan.id)}
+                  className="h-7 px-2 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-mono text-xs"
+                  title="在此教案新增道具"
+                >
+                  <Plus className="h-3.5 w-3.5 mr-0.5" /> 新增
+                </Button>
+              </td>
+            )}
+          </tr>
+        ))
+      );
 
     return (
       <div className="w-full bg-white/80 dark:bg-white/[0.02] backdrop-blur-md border border-stone-200/80 dark:border-white/10 rounded-3xl overflow-hidden flex-1 flex flex-col shadow-xs my-2">
@@ -619,53 +926,7 @@ export function AdminSection({
               </tr>
               {Object.keys(activityGroups).length === 0 ? (
                 <tr><td colSpan={isLocked ? 6 : 7} className="text-center py-6 text-fg-muted font-mono text-xs border-b border-stone-200/80 dark:border-white/10">目前沒有活動組資料</td></tr>
-              ) : Object.entries(activityGroups).map(([categoryName, catePlans]) => (
-                catePlans.map((plan, pIndex) => (
-                  <tr key={`act-${plan.id}`} className={cn(
-                    "group hover:bg-stone-500/[0.03] dark:hover:bg-white/[0.02] transition-colors duration-200 border-b border-stone-200/60 dark:border-white/10 last:border-0",
-                    plan.isPreDepartureChecked && plan.isPropsPacked ? "bg-emerald-500/[0.06] dark:bg-emerald-500/10" : "bg-transparent"
-                  )}>
-                    {pIndex === 0 && (
-                      <td className="px-4 py-3 font-mono text-xs text-foreground align-top border-r border-stone-200/80 dark:border-white/10 break-all font-normal" rowSpan={catePlans.length}>
-                        {categoryName}
-                      </td>
-                    )}
-                    <td className="px-4 py-3 text-xs sm:text-sm text-foreground align-top border-r border-stone-200/80 dark:border-white/10 text-center whitespace-pre-wrap break-all font-normal">
-                      {stripHtml(plan.activityName) || '-'}
-                    </td>
-                    <td className="px-4 py-3 text-xs sm:text-sm text-fg-muted align-top border-r border-stone-200/80 dark:border-white/10 text-center whitespace-pre-wrap break-all">
-                      {stripHtml(plan.members) || '-'}
-                    </td>
-                    <td className="px-4 py-3 text-foreground text-xs sm:text-sm border-r border-stone-200/80 dark:border-white/10 break-all">
-                      {plan.props.length > 0 ? (
-                        <ul className="space-y-1.5 list-none">
-                          {plan.props.map(prop => (
-                            <li key={prop.id} className="flex items-center gap-1.5 flex-wrap">
-                              <span className="w-1.5 h-1.5 rounded-full bg-stone-300 dark:bg-stone-600 shrink-0" />
-                              <span className="font-normal text-foreground break-all">{prop.name}</span>
-                              <span className="text-orange-600 dark:text-orange-400 font-mono px-1 text-[11px] shrink-0 font-medium">× {prop.quantity} {prop.unit === 'custom' ? '' : prop.unit}</span>
-                              {prop.remarks && <span className="text-fg-muted ml-1 text-[11px] break-all">({prop.remarks})</span>}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <span className="text-fg-muted italic text-xs">無所需物品</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-center align-middle border-r border-stone-200/80 dark:border-white/10">
-                      <div className="flex justify-center items-center h-full">
-                        <Checkbox checked={plan.isPropsPacked || false} disabled={isLocked} onCheckedChange={(c) => onUpdatePlan(plan.id, { isPropsPacked: c === true })} className="h-5 w-5 rounded-md" />
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-center align-middle border-r border-stone-200/80 dark:border-white/10">
-                      <div className="flex justify-center flex-col items-center h-full">
-                        <Checkbox checked={plan.isPreDepartureChecked || false} disabled={isLocked} onCheckedChange={(c) => onUpdatePlan(plan.id, { isPreDepartureChecked: c === true })} className="h-5 w-5 rounded-md" />
-                      </div>
-                    </td>
-                    {!isLocked && <td className="px-4 py-3 text-center align-middle"></td>}
-                  </tr>
-                ))
-              ))}
+              ) : renderCombinedPlanRows(activityGroups, 'act', 'text-orange-600 dark:text-orange-400')}
             </tbody>
 
             {/* 2. 教學組 */}
@@ -677,53 +938,7 @@ export function AdminSection({
               </tr>
               {Object.keys(teachingGroups).length === 0 ? (
                 <tr><td colSpan={isLocked ? 6 : 7} className="text-center py-6 text-fg-muted font-mono text-xs border-b border-stone-200/80 dark:border-white/10">目前沒有教學組資料</td></tr>
-              ) : Object.entries(teachingGroups).map(([categoryName, catePlans]) => (
-                catePlans.map((plan, pIndex) => (
-                  <tr key={`tch-${plan.id}`} className={cn(
-                    "group hover:bg-stone-500/[0.03] dark:hover:bg-white/[0.02] transition-colors duration-200 border-b border-stone-200/60 dark:border-white/10 last:border-0",
-                    plan.isPreDepartureChecked && plan.isPropsPacked ? "bg-emerald-500/[0.06] dark:bg-emerald-500/10" : "bg-transparent"
-                  )}>
-                    {pIndex === 0 && (
-                      <td className="px-4 py-3 font-mono text-xs text-foreground align-top border-r border-stone-200/80 dark:border-white/10 break-all font-normal" rowSpan={catePlans.length}>
-                        {categoryName}
-                      </td>
-                    )}
-                    <td className="px-4 py-3 text-xs sm:text-sm text-foreground align-top border-r border-stone-200/80 dark:border-white/10 text-center whitespace-pre-wrap break-all font-normal">
-                      {stripHtml(plan.activityName) || '-'}
-                    </td>
-                    <td className="px-4 py-3 text-xs sm:text-sm text-fg-muted align-top border-r border-stone-200/80 dark:border-white/10 text-center whitespace-pre-wrap break-all">
-                      {stripHtml(plan.members) || '-'}
-                    </td>
-                    <td className="px-4 py-3 text-foreground text-xs sm:text-sm border-r border-stone-200/80 dark:border-white/10 break-all">
-                      {plan.props.length > 0 ? (
-                        <ul className="space-y-1.5 list-none">
-                          {plan.props.map(prop => (
-                            <li key={prop.id} className="flex items-center gap-1.5 flex-wrap">
-                              <span className="w-1.5 h-1.5 rounded-full bg-stone-300 dark:bg-stone-600 shrink-0" />
-                              <span className="font-normal text-foreground break-all">{prop.name}</span>
-                              <span className="text-blue-600 dark:text-blue-400 font-mono px-1 text-[11px] shrink-0 font-medium">× {prop.quantity} {prop.unit === 'custom' ? '' : prop.unit}</span>
-                              {prop.remarks && <span className="text-fg-muted ml-1 text-[11px] break-all">({prop.remarks})</span>}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <span className="text-fg-muted italic text-xs">無所需物品</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-center align-middle border-r border-stone-200/80 dark:border-white/10">
-                      <div className="flex justify-center items-center h-full">
-                        <Checkbox checked={plan.isPropsPacked || false} disabled={isLocked} onCheckedChange={(c) => onUpdatePlan(plan.id, { isPropsPacked: c === true })} className="h-5 w-5 rounded-md" />
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-center align-middle border-r border-stone-200/80 dark:border-white/10">
-                      <div className="flex justify-center flex-col items-center h-full">
-                        <Checkbox checked={plan.isPreDepartureChecked || false} disabled={isLocked} onCheckedChange={(c) => onUpdatePlan(plan.id, { isPreDepartureChecked: c === true })} className="h-5 w-5 rounded-md" />
-                      </div>
-                    </td>
-                    {!isLocked && <td className="px-4 py-3 text-center align-middle"></td>}
-                  </tr>
-                ))
-              ))}
+              ) : renderCombinedPlanRows(teachingGroups, 'tch', 'text-blue-600 dark:text-blue-400')}
             </tbody>
 
             {/* 3. 營期物品 */}
@@ -1112,8 +1327,8 @@ export function AdminSection({
                     style={{ zoom }}
                   >
                     <div className={cn("transition-opacity duration-300 flex-1 flex flex-col", isLocked ? "opacity-90" : "opacity-100")}>
-                      {activePropsTab === 'activity' && renderPropTable('活動組', activityPropsFlattened)}
-                      {activePropsTab === 'teaching' && renderPropTable('教學組', teachingPropsFlattened)}
+                      {activePropsTab === 'activity' && renderPropTable('活動組', activityPropsFlattened, activityPlans)}
+                      {activePropsTab === 'teaching' && renderPropTable('教學組', teachingPropsFlattened, teachingPlans)}
                       {activePropsTab === 'all-props' && renderCombinedTable()}
                     </div>
                   </div>
