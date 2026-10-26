@@ -146,6 +146,9 @@ const en = {
   // Admin Section
   AUDIO_UNLOCKED: "Audio Unlocked",
   AUDIO_LOCKED: "Audio Locked",
+  AUDIO_NEEDS_GESTURE: "Tap once to enable audio",
+  AUDIO_NEEDS_GESTURE_DESC: "The browser needs one tap before it will play the alert.",
+  AUDIO_STATUS_PENDING: "Pending",
   ADMIN_TITLE: "Command Center",
   ROTATION_TABLE: "Rotation Table",
   PROPS_LIST: "Props Inventory",

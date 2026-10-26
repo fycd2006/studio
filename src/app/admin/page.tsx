@@ -1,7 +1,6 @@
 "use client"
 
 import { usePlans } from "@/hooks/use-plans";
-import { useTimer } from "@/lib/timer-context";
 import { useAuth } from "@/lib/auth-context";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -23,7 +22,6 @@ const AdminSection = dynamic(() => import("@/components/AdminSection").then(mod 
 export default function AdminPage() {
   const { role } = useAuth();
   const { toast } = useToast();
-  const timer = useTimer();
   const {
     plans, tables, camps, groups, activeCampId,
     addTable, updateTable, deleteTable,
@@ -45,7 +43,6 @@ export default function AdminPage() {
         onRedoTable={redoTable}
         canUndoTable={canUndoTable}
         canRedoTable={canRedoTable}
-        timer={timer}
         plans={plans}
         groups={groups}
         onUpdatePlan={updatePlan}

@@ -146,6 +146,9 @@ const zh = {
   // Admin Section
   AUDIO_UNLOCKED: "音效已解鎖",
   AUDIO_LOCKED: "音效未解鎖",
+  AUDIO_NEEDS_GESTURE: "點一下以啟用音效",
+  AUDIO_NEEDS_GESTURE_DESC: "瀏覽器需要你先碰一下畫面才准播放提示音",
+  AUDIO_STATUS_PENDING: "待啟用",
   ADMIN_TITLE: "行政中樞",
   ROTATION_TABLE: "輪替表",
   PROPS_LIST: "道具清單",

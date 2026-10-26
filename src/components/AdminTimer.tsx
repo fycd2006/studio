@@ -32,19 +32,11 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useServerTime, getCorrectedNow } from "@/hooks/use-server-time";
 import { useTranslation } from "@/lib/i18n-context";
+import { useTimer } from "@/lib/timer-context";
+import { useAlarmAudio } from "@/lib/alarm-audio";
 import { RotationTableData, LessonPlan, Camp } from "@/types/plan";
 
 interface AdminTimerProps {
-  timer: {
-    duration: number;
-    timeLeft: number;
-    isRunning: boolean;
-    targetEndTime?: number;
-    setDuration: (d: number) => void;
-    setTimeLeft: (t: number) => void;
-    setIsRunning: (r: boolean) => void;
-    reset: () => void;
-  };
   isLocked: boolean;
   autoEnterSaverMode?: boolean;
   tables?: RotationTableData[];
@@ -81,7 +73,6 @@ function playSyntheticAlarm(duration = 2.0, frequency = 440) {
 }
 
 export function AdminTimer({
-  timer,
   isLocked,
   autoEnterSaverMode = false,
   tables = [],
@@ -92,6 +83,9 @@ export function AdminTimer({
   onUpdateCamp
 }: AdminTimerProps) {
   const { t } = useTranslation();
+  // 直接取 context。原本是 admin/page.tsx → AdminSection（型別 `any`）→ 這裡，
+  // 穿三層卻沒有加任何東西，而且途中的型別裡還有一個不存在的 `setTimeLeft`。
+  const timer = useTimer();
   const [now, setNow] = useState<Date | null>(null);
 
   // V2 Admin States & Variables
@@ -126,31 +120,15 @@ export function AdminTimer({
  useServerTime();
  
  const wakeLockRef = useRef<any>(null);
- const playedMilestonesRef = useRef<Set<number>>(new Set());
- const silentLoopRef = useRef<HTMLAudioElement | null>(null);
  const lastCheckTimeRef = useRef<number>(Date.now());
  const autoEnterHandledRef = useRef(false);
  const lastSaverTapRef = useRef(0);
  
- const [audioUnlocked, setAudioUnlocked] = useState<boolean>(() => {
- if (typeof window !== 'undefined') {
- return localStorage.getItem('camp-audio-unlocked') === 'true';
- }
- return false;
- });
-
- useEffect(() => {
- const syncAudioState = () => {
- setAudioUnlocked(localStorage.getItem('camp-audio-unlocked') === 'true');
- };
-
- window.addEventListener('storage', syncAudioState);
- window.addEventListener('camp-audio-sync', syncAudioState as EventListener);
- return () => {
- window.removeEventListener('storage', syncAudioState);
- window.removeEventListener('camp-audio-sync', syncAudioState as EventListener);
- };
- }, []);
+ // 音效能力由 alarm-audio 統一擁有。這個元件只讀，不寫 —— 原本它自己留了一份
+ // state、一份 localStorage 寫入和一份跨實例同步，而 TransparentNavbar 也有
+ // 一份，兩邊靠一個自訂事件勉強對齊。
+ const { readiness, enable, disable } = useAlarmAudio();
+ const audioUnlocked = readiness === 'ready';
 
  const [isSaverMode, setIsSaverMode] = useState(false);
  const [isOnline, setIsOnline] = useState(true);
@@ -172,77 +150,13 @@ export function AdminTimer({
  const [m, setM] = useState(Math.floor((timer.duration % 3600) / 60));
  const [s, setS] = useState(timer.duration % 60);
 
- // 音檔網址
- const ALARM_URL = "https://raw.githubusercontent.com/freeCodeCamp/cdn/master/build/testable-projects-fcc/audio/BeepSound.wav"; 
- const SHORT_BEEP_URL = "/beep.wav"; 
- 
- // 1-second silent audio base64 to keep JS alive in background (iOS/Android workaround)
- const SILENT_AUDIO_BASE64 = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
 
-  // 使用真正的 HTMLAudioElement 綁定來突破 iOS 限制
-  const alarmAudioHtmlRef = useRef<HTMLAudioElement | null>(null);
-  const shortBeepHtmlRef = useRef<HTMLAudioElement | null>(null);
+  // 原本這裡掛著一個 document 層的 click/touchstart 監聽，把兩個 play() 的
+  // rejection 都吞掉、resume() 不等結果，然後無條件寫入 camp-audio-unlocked。
+  // 那就是「畫面說已解鎖、實際上拒播」的成因（issue #10 現象 3）。
+  // 現在由 alarm-audio 的 <AlarmAudioElements/> 負責：它會**等** play()/resume()
+  // 的結果，而且只動「能力」不動「意願」。
 
-  // Global event listener to auto-unlock audio on the first user interaction
-  useEffect(() => {
-    if (audioUnlocked) return;
-
-    const unlock = () => {
-      // Play a tiny silent sound on the audio elements
-      if (alarmAudioHtmlRef.current) {
-        alarmAudioHtmlRef.current.play().then(() => {
-          alarmAudioHtmlRef.current?.pause();
-        }).catch(() => {});
-      }
-      if (shortBeepHtmlRef.current) {
-        shortBeepHtmlRef.current.play().then(() => {
-          shortBeepHtmlRef.current?.pause();
-        }).catch(() => {});
-      }
-
-      // Also try to unlock Web Audio API Context
-      try {
-        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-        if (AudioContextClass) {
-          const ctx = new AudioContextClass();
-          if (ctx.state === 'suspended') {
-            ctx.resume();
-          }
-        }
-      } catch (e) {}
-
-      setAudioUnlocked(true);
-      localStorage.setItem('camp-audio-unlocked', 'true');
-      
-      // Notify other tabs
-      window.dispatchEvent(new Event('camp-audio-sync'));
-      
-      cleanup();
-    };
-
-    const cleanup = () => {
-      document.removeEventListener('click', unlock);
-      document.removeEventListener('touchstart', unlock);
-    };
-
-    document.addEventListener('click', unlock);
-    document.addEventListener('touchstart', unlock);
-
-    return cleanup;
-  }, [audioUnlocked]);
-
- useEffect(() => {
- silentLoopRef.current = new Audio(SILENT_AUDIO_BASE64);
- silentLoopRef.current.loop = true;
- silentLoopRef.current.volume = 0.01; // nearly silent just in case
- 
- return () => {
- if (silentLoopRef.current) {
- silentLoopRef.current.pause();
- silentLoopRef.current = null;
- }
- };
- }, []);
 
  const requestWakeLock = async () => {
  if ('wakeLock' in navigator && !wakeLockRef.current) {
@@ -274,24 +188,6 @@ export function AdminTimer({
  };
  }, []);
 
- useEffect(() => {
- if (timer.isRunning) {
- // Start silent audio loop to keep background JS execution alive
- if (audioUnlocked && silentLoopRef.current) {
- silentLoopRef.current.play().catch(e => console.warn("Silent loop blocked:", e));
- }
- } else {
- playedMilestonesRef.current.clear();
- 
- // Pause silent audio loop
- if (silentLoopRef.current) {
- silentLoopRef.current.pause();
- }
- }
- return () => {
- if (silentLoopRef.current) silentLoopRef.current.pause();
- };
- }, [timer.isRunning, audioUnlocked]);
 
  useEffect(() => {
  if (!timer.isRunning) {
@@ -301,141 +197,21 @@ export function AdminTimer({
  }
  }, [timer.duration, timer.isRunning]);
 
- const triggerAlarm = useCallback((title: string, description: string, audioMode: 'short' | 'long' = 'long', isDestructive = false) => {
-    toast({ 
-      title, 
-      description, 
-      variant: isDestructive ? "destructive" : "default" 
-    });
-    
-    if (audioUnlocked) {
-      if (audioMode === 'long') {
-        if (alarmAudioHtmlRef.current && alarmAudioHtmlRef.current.readyState >= 2) {
-          const audio = alarmAudioHtmlRef.current;
-          audio.currentTime = 0;
-          audio.volume = 1.0;
-          audio.play().catch(e => {
-            console.warn("Background audio blocked, using synthetic fallback:", e);
-            playSyntheticAlarm(3.0, 520);
-          });
-        } else {
-          console.warn("Long audio not ready, using synthetic fallback");
-          playSyntheticAlarm(3.0, 520);
-        }
-      } else if (audioMode === 'short') {
-        if (shortBeepHtmlRef.current && shortBeepHtmlRef.current.readyState >= 2) {
-          const audio = shortBeepHtmlRef.current;
-          const schedule = [0, 300, 1000, 1300, 2000, 2300];
-          schedule.forEach(delay => {
-            setTimeout(() => {
-              audio.currentTime = 0;
-              audio.volume = 1.0;
-              audio.play().catch(e => {
-                console.warn("Short beep blocked, using synthetic fallback:", e);
-                playSyntheticAlarm(0.15, 880);
-              });
-            }, delay);
-          });
-        } else {
-          console.warn("Short audio not ready, using synthetic fallback");
-          const schedule = [0, 300, 1000, 1300, 2000, 2300];
-          schedule.forEach(delay => {
-            setTimeout(() => {
-              playSyntheticAlarm(0.15, 880);
-            }, delay);
-          });
-        }
-      }
-      
-      // Attempt to trigger system notification (works in background/lock screen if authorized)
-      if ('Notification' in window && 'serviceWorker' in navigator && Notification.permission === 'granted') {
-        navigator.serviceWorker.ready.then(registration => {
-          registration.showNotification(title, {
-            body: description,
-            vibrate: isDestructive ? [500, 200, 500, 200, 500] : [200, 100, 200],
-            requireInteraction: true,
-            tag: isDestructive ? 'timer-end' : 'timer-warning',
-            renotify: true,
-            actions: isDestructive ? [
-              { action: 'dismiss', title: '知道了 / Dismiss' }
-            ] : [],
-          } as any);
-        });
-      }
-    }
-  }, [audioUnlocked, toast]);
-
- const checkAlarms = useCallback(() => {
- if (!timer.isRunning || !timer.targetEndTime) return;
-
- const currentTime = getCorrectedNow();
- const remaining = Math.max(0, Math.floor((timer.targetEndTime - currentTime) / 1000));
-
- // Pre-wake notification ~5 seconds before 3-minute warning (190~181秒)
- // Only trigger if total duration is greater than 3 minutes
- if (timer.duration > 180 && remaining <= 190 && remaining > 180 && !playedMilestonesRef.current.has(185)) {
- if ('Notification' in window && 'serviceWorker' in navigator && Notification.permission === 'granted') {
- navigator.serviceWorker.ready.then(registration => {
- registration.showNotification(`⏱ ${t('ALERT_INCOMING')}`, {
- body: t('THREE_MIN_WARNING_STBY'),
- vibrate: [100],
- tag: 'pre-wake-3min',
- silent: true,
- } as any);
- });
- }
- playedMilestonesRef.current.add(185);
- }
- 
- // 3 分鐘提醒 (180秒) - only if total duration > 3 minutes
- if (timer.duration > 180 && remaining <= 180 && remaining > 0 && !playedMilestonesRef.current.has(180)) {
- triggerAlarm(t('THREE_MIN_LEFT'), t('PREPARE_ROTATION'), 'short');
- playedMilestonesRef.current.add(180);
- }
-
- // Pre-wake notification ~3 seconds before timer ends (3~1秒)
- // Also warm up audio context by playing at near-zero volume
- if (remaining <= 3 && remaining > 0 && !playedMilestonesRef.current.has(1)) {
- // Audio warm-up: silently play to activate hardware Audio Context
- if (audioUnlocked && alarmAudioHtmlRef.current) {
- const audio = alarmAudioHtmlRef.current;
- audio.currentTime = 0;
- audio.volume = 0.01;
- audio.play().then(() => { audio.pause(); audio.volume = 1.0; }).catch(() => {});
- }
- 
- if ('Notification' in window && 'serviceWorker' in navigator && Notification.permission === 'granted') {
- navigator.serviceWorker.ready.then(registration => {
- registration.showNotification(`⏱ ${t('ROTATION_NOW')}`, {
- body: t('TIME_IS_UP_DESC'),
- vibrate: [200, 100, 200],
- tag: 'pre-wake-end',
- silent: true,
- requireInteraction: true,
- } as any);
- });
- }
- playedMilestonesRef.current.add(1);
- }
-
- // 時間到提醒 (0秒)
- if (remaining === 0 && !playedMilestonesRef.current.has(0)) {
- triggerAlarm(t('TIME_FOR_ROTATION'), t('PLEASE_ROTATE'), 'long', true);
- playedMilestonesRef.current.add(0);
- }
- }, [timer.isRunning, timer.targetEndTime, timer.duration, triggerAlarm]);
+ // 響鈴（四個里程碑、去重、通知）已經搬到 src/hooks/use-timer-alarms.ts，
+ // 由全站的 TimerAlarmHost 驅動。留在這裡的話，只有 admin 剛好停在計時分頁時
+ // 才會響 —— 那就是 issue #10 現象 3。
 
  useEffect(() => {
  setNow(new Date());
+ // 只負責畫面上那個時鐘。響鈴不在這裡 —— 主執行緒的 interval 在背景分頁會
+ // 被節流，而響鈴要靠 timer worker 推進的 remaining。
  const interval = setInterval(() => {
  setNow(new Date());
- checkAlarms();
  }, 1000);
  
  const handleVisibilityChange = () => {
  if (document.visibilityState === 'visible') {
  setNow(new Date());
- checkAlarms();
  }
  };
 
@@ -444,69 +220,41 @@ export function AdminTimer({
  clearInterval(interval);
  document.removeEventListener('visibilitychange', handleVisibilityChange);
  };
- }, [checkAlarms]);
+ }, []);
 
  const testAudio = async () => {
- const newStatus = !audioUnlocked;
- if (newStatus) {
- try {
- if (shortBeepHtmlRef.current) {
- shortBeepHtmlRef.current.currentTime = 0;
- shortBeepHtmlRef.current.volume = 1.0;
- await shortBeepHtmlRef.current.play();
- }
- 
- // Request Notification Permission
- if ('Notification' in window) {
- const permission = await Notification.requestPermission();
- if (permission === 'granted') {
- console.log("Notification permission granted!");
- }
- }
- 
- if (silentLoopRef.current && timer.isRunning) {
- silentLoopRef.current.play().catch(e => console.warn("Silent loop blocked:", e));
+ if (audioUnlocked) {
+ disable();
+ toast({ title: t('AUDIO_DISABLED_TITLE'), description: t('ALERT_DISABLED_DESC') });
+ return;
  }
 
- setAudioUnlocked(true);
- localStorage.setItem('camp-audio-unlocked', 'true');
- window.dispatchEvent(new Event('camp-audio-sync'));
- toast({
- title: t('AUDIO_LOCKED_TITLE'),
- description: t('AUDIO_UNLOCKED_DESC'),
- });
- } catch (e) {
+ // enable() 必須在使用者手勢裡呼叫，而這個函式就是按鈕的 onClick。
+ const ok = await enable();
+ if (ok) {
+ toast({ title: t('AUDIO_LOCKED_TITLE'), description: t('AUDIO_UNLOCKED_DESC') });
+ } else {
  toast({
  title: t('PLAYBACK_FAILED'),
  description: t('ENSURE_RINGER_ON'),
- variant: "destructive"
- });
- }
- } else {
- setAudioUnlocked(false);
- localStorage.setItem('camp-audio-unlocked', 'false');
- window.dispatchEvent(new Event('camp-audio-sync'));
- toast({
- title: t('AUDIO_DISABLED_TITLE'),
- description: t('ALERT_DISABLED_DESC'),
+ variant: "destructive",
  });
  }
  };
 
  const toggleTimer = () => {
- timer.setIsRunning(!timer.isRunning);
+ if (timer.isRunning) timer.stop();
+  else timer.start();
  };
 
  const resetTimer = () => {
  timer.reset();
- playedMilestonesRef.current.clear();
  toast({ description: t('SUCCESS') });
  };
 
  const updateDuration = () => {
  const totalSeconds = (h * 3600) + (m * 60) + s;
  timer.setDuration(totalSeconds);
- playedMilestonesRef.current.clear();
  toast({ description: t('SUCCESS') });
  };
 
@@ -565,15 +313,17 @@ export function AdminTimer({
  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
  };
 
- const progress = (timer.timeLeft / (timer.duration || 1)) * 100;
- const isCritical = timer.timeLeft <= 180 && timer.timeLeft > 0;
- const isFinished = timer.timeLeft === 0;
+ const progress = (timer.remaining / (timer.duration || 1)) * 100;
+ const isCritical = timer.remaining <= 180 && timer.remaining > 0;
+ const isFinished = timer.phase === 'finished';
 
  return (
  <div className="w-full flex flex-col items-center py-6 space-y-10 transition-colors duration-300">
  <div className="w-full max-w-5xl flex flex-col space-y-10">
  
- <div className={cn(
+ <div
+  data-testid="timer-audio-status"
+  className={cn(
   "w-full p-6 sm:p-8 rounded-3xl backdrop-blur-md border transition-all duration-300 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xs",
   audioUnlocked 
    ? "bg-emerald-500/[0.06] border-emerald-500/30" 
@@ -588,14 +338,23 @@ export function AdminTimer({
    </div>
    <div>
     <h4 className="font-normal text-base text-foreground tracking-tight">
-     {audioUnlocked ? t('AUDIO_UNLOCKED') : t('AUDIO_LOCKED')}
+     {readiness === 'ready'
+      ? t('AUDIO_UNLOCKED')
+      : readiness === 'needs-gesture'
+       ? t('AUDIO_NEEDS_GESTURE')
+       : t('AUDIO_LOCKED')}
     </h4>
     <p className="text-fg-muted font-mono text-xs mt-0.5">
-     {audioUnlocked ? "● 語音廣播與警報音效已就緒" : "○ 點擊右側按鈕以解除瀏覽器音訊限制"}
+     {readiness === 'ready'
+      ? "● 語音廣播與警報音效已就緒"
+      : readiness === 'needs-gesture'
+       ? t('AUDIO_NEEDS_GESTURE_DESC')
+       : "○ 點擊右側按鈕以解除瀏覽器音訊限制"}
     </p>
    </div>
   </div>
   <Button 
+   data-testid="timer-audio-toggle"
    onClick={testAudio}
    variant={audioUnlocked ? "outline" : "default"}
    className={cn(
@@ -610,7 +369,7 @@ export function AdminTimer({
  </div>
 
  {!isLocked && (
-  <Card className="w-full p-6 sm:p-10 rounded-3xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 flex flex-col space-y-8 shadow-xs">
+  <Card data-testid="timer-console" className="w-full p-6 sm:p-10 rounded-3xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 flex flex-col space-y-8 shadow-xs">
    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-stone-200/60 dark:border-white/5">
     <div className="flex items-center gap-4">
      <div className="p-3 bg-orange-500/10 border border-orange-500/20 text-orange-600 dark:text-orange-400 rounded-2xl">
@@ -662,6 +421,7 @@ export function AdminTimer({
 
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
      <Button 
+      data-testid="timer-start"
       onClick={toggleTimer} 
       className={cn(
        "h-14 rounded-2xl font-mono text-xs uppercase tracking-wider gap-2.5 shadow-lg transition-all",
@@ -676,6 +436,7 @@ export function AdminTimer({
      <Button 
       variant="outline" 
       className="h-14 rounded-2xl font-mono text-xs uppercase tracking-wider gap-2 border border-stone-200/80 dark:border-white/10 hover:border-orange-500/40 text-foreground transition-all shadow-xs" 
+      data-testid="timer-reset"
       onClick={resetTimer}
      >
       <RotateCcw className="h-5 w-5 text-stone-400" /> RESET
@@ -686,7 +447,7 @@ export function AdminTimer({
  )}
 
       {!isLocked && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full mt-6">
+        <div data-testid="timer-broadcast-console" className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full mt-6">
           {/* Broadcast Console Card */}
           <Card className="p-6 sm:p-8 rounded-3xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 flex flex-col space-y-6 shadow-xs text-left">
             <div className="flex items-center gap-4">
@@ -871,11 +632,13 @@ export function AdminTimer({
     )}>
       {isCritical ? t('REMAINING_TIME') : isFinished ? t('TIME_UP') : t('REMAINING_TIME')}
     </div>
-    <div className={cn(
+    <div
+      data-testid="timer-remaining"
+      className={cn(
       "font-mono font-light transition-all duration-700 text-center text-[clamp(4.5rem,20vw,14rem)] leading-none tracking-tight",
       isCritical ? "text-rose-400 animate-pulse" : isFinished ? "text-rose-500" : "text-white"
     )}>
-      {formatTime(timer.timeLeft)}
+      {formatTime(timer.remaining)}
     </div>
     <div className="text-xs sm:text-sm font-mono text-stone-400 mt-4 tracking-widest">
       {now ? now.toLocaleTimeString('zh-TW', { hour12: false }) : "--:--:--"}
@@ -910,11 +673,13 @@ export function AdminTimer({
       </div>
 
       <div className="flex flex-col items-center justify-center my-auto">
-        <div className={cn(
+        <div
+          data-testid="timer-saver-remaining"
+          className={cn(
           "font-mono font-light transition-all duration-700 text-center text-[clamp(5rem,24vw,20rem)] leading-none tracking-tight",
           isCritical ? "text-rose-500 animate-pulse" : isFinished ? "text-rose-600" : "text-stone-300"
         )}>
-          {formatTime(timer.timeLeft)}
+          {formatTime(timer.remaining)}
         </div>
         <div className="flex items-center gap-3 mt-6">
           <span className={cn(
@@ -923,7 +688,11 @@ export function AdminTimer({
               ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" 
               : "bg-amber-500/10 border-amber-500/30 text-amber-400"
           )}>
-            音效: {audioUnlocked ? "已解鎖" : "未解鎖"}
+            音效: {readiness === 'ready'
+              ? t('AUDIO_UNLOCKED')
+              : readiness === 'needs-gesture'
+               ? t('AUDIO_STATUS_PENDING')
+               : t('AUDIO_LOCKED')}
           </span>
           <span className="text-xs font-mono text-stone-500 tracking-widest">
             {now ? now.toLocaleTimeString('zh-TW', { hour12: false }) : "--:--:--"}
@@ -938,9 +707,6 @@ export function AdminTimer({
     document.body
   )}
 
- {/* 隱藏的音檔 DOM 元素，這是 iOS/Safari 唯一最穩定的播放方式 */}
- <audio ref={alarmAudioHtmlRef} src={ALARM_URL} preload="auto" />
- <audio ref={shortBeepHtmlRef} src={SHORT_BEEP_URL} preload="auto" />
  </div>
  );
 }

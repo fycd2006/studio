@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { cn, getUnifiedGroupBadgeParams } from "@/lib/utils";
 import { usePlans } from "@/hooks/use-plans";
+import { useAlarmAudio } from "@/lib/alarm-audio";
 import { usePresence } from "@/hooks/use-presence";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,9 +40,12 @@ interface NavbarProps {
 }
 
 export function TransparentNavbar({ groups }: NavbarProps) {
-  const SHORT_BEEP_URL = "/beep.wav";
+
   const [activeSubmenu, setActiveSubmenu] = useState<"plans" | "admin" | null>(null);
-  const [audioUnlocked, setAudioUnlocked] = useState(false);
+  // 音效狀態由 alarm-audio 統一擁有。原本這裡與 AdminTimer 各有一份 state、
+  // 各有一個 /beep.wav 實例、各自寫 localStorage，靠一個自訂事件勉強對齊。
+  const { readiness, enable, disable } = useAlarmAudio();
+  const audioUnlocked = readiness === 'ready';
   const [isQuickAddExpanded, setIsQuickAddExpanded] = useState(false);
 
   // Read scroll state from store (ActionBar writes it)
@@ -58,17 +62,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
   const { camps, activeCampId, activePlanId, groups: allGroups, addPlan } = usePlans();
   const { activeViewers } = usePresence(activePlanId);
   const lastScrollY = useRef(0);
-  const shortBeepRef = useRef<HTMLAudioElement | null>(null);
   const closeSubmenuTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    shortBeepRef.current = new Audio(SHORT_BEEP_URL);
-    shortBeepRef.current.preload = "auto";
-
-    return () => {
-      shortBeepRef.current = null;
-    };
-  }, []);
 
   const activeCamp = camps?.find((c) => c.id === activeCampId);
   const displayGroups = groups || allGroups || [];
@@ -172,28 +166,14 @@ export function TransparentNavbar({ groups }: NavbarProps) {
 
   const toggleAudioUnlock = async () => {
     if (audioUnlocked) {
-      localStorage.setItem("camp-audio-unlocked", "false");
-      window.dispatchEvent(new Event("camp-audio-sync"));
-      setAudioUnlocked(false);
+      disable();
       toast({ title: t('AUDIO_DISABLED_TITLE'), description: t('NAV_TIMER_AUDIO_SYNCED') });
       return;
     }
 
-    try {
-      if (!shortBeepRef.current) {
-        shortBeepRef.current = new Audio(SHORT_BEEP_URL);
-        shortBeepRef.current.preload = "auto";
-      }
-
-      shortBeepRef.current.currentTime = 0;
-      shortBeepRef.current.volume = 1.0;
-      await shortBeepRef.current.play();
-
-      localStorage.setItem("camp-audio-unlocked", "true");
-      window.dispatchEvent(new Event("camp-audio-sync"));
-      setAudioUnlocked(true);
+    if (await enable()) {
       toast({ title: t('AUDIO_LOCKED_TITLE'), description: t('NAV_TIMER_AUDIO_SYNCED') });
-    } catch {
+    } else {
       toast({ title: t('AUDIO_UNLOCK_FAILED_TITLE'), description: t('AUDIO_UNLOCK_FAILED_DESC'), variant: "destructive" });
     }
   };
@@ -217,21 +197,6 @@ export function TransparentNavbar({ groups }: NavbarProps) {
     toast({ title: t('PLAN_CREATED_QUICK'), description: t('PLAN_CREATED_QUICK_DESC', { name: groupName }) });
     router.push("/plans");
   };
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const syncAudioState = () => {
-      setAudioUnlocked(localStorage.getItem("camp-audio-unlocked") === "true");
-    };
-
-    syncAudioState();
-    window.addEventListener("storage", syncAudioState);
-    window.addEventListener("camp-audio-sync", syncAudioState as EventListener);
-    return () => {
-      window.removeEventListener("storage", syncAudioState);
-      window.removeEventListener("camp-audio-sync", syncAudioState as EventListener);
-    };
-  }, []);
 
   useEffect(() => {
     const THRESHOLD = 10;
@@ -382,7 +347,11 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                       {audioUnlocked ? t('AUDIO_DISABLE') : t('AUDIO_ENABLE')}
                     </span>
                     <span className="text-xs font-mono font-bold text-fg-muted">
-                      {audioUnlocked ? t('AUDIO_STATUS_ON') : t('AUDIO_STATUS_OFF')}
+                      {readiness === 'ready'
+                        ? t('AUDIO_STATUS_ON')
+                        : readiness === 'needs-gesture'
+                          ? t('AUDIO_STATUS_PENDING')
+                          : t('AUDIO_STATUS_OFF')}
                     </span>
                   </button>
 
