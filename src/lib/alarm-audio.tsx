@@ -250,7 +250,11 @@ export function notifyAlarm(opts: {
       registration.showNotification(opts.title, {
         body: opts.body,
         silent: opts.silent,
-        vibrate: opts.urgent ? [500, 200, 500, 200, 500] : [200, 100, 200],
+        // ⚠️ 靜音通知**不准**同時帶震動樣式，Chrome 會直接丟
+        //    `Silent notifications must not specify vibration patterns`，
+        //    而那是在 promise 裡 throw 的 —— 沒有 catch 的話整個預喚醒通知
+        //    靜靜失敗。實跑才會踩到：要先有通知權限才跑得到這一行。
+        ...(opts.silent ? {} : { vibrate: opts.urgent ? [500, 200, 500, 200, 500] : [200, 100, 200] }),
         requireInteraction: !opts.silent,
         tag: opts.tag ?? (opts.urgent ? 'timer-end' : 'timer-warning'),
         renotify: true,

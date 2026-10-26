@@ -319,6 +319,76 @@ describe('行政中心 — 同步計時器', () => {
     });
   });
 
+  it('C4 · admin 在別人開著頁面時啟動新回合，那些裝置不准當場響', () => {
+    // 這條是用瀏覽器實跑抓到的，而且是最嚴重的一種：`remaining` 來自 worker
+    // 推進的狀態、`targetEndTime` 來自 Firestore 快照，新回合剛被啟動的那一瞬間
+    // 兩者不同步 —— 剩餘還是上一輪的 0，截止時刻已經是新的。響鈴宿主的 effect
+    // 比 provider 的 tick 先跑，於是看到「剩 0 秒、但截止時刻在兩分鐘後」。
+    // 症狀：**每次 admin 按下啟動，所有已經開著頁面的裝置都會立刻被「換關時間到」
+    // 炸一次。** 實測 2026-10-27，armed 30 秒的回合在同一秒就響了。
+    //
+    // ⚠️ 關鍵是「頁面先開著，回合才開始」。先 seed 再開頁驗不出來 ——
+    //    那條路徑上 provider 的 tick 來得及先算好剩餘秒數。
+    seedTimer({ duration: 300, timeLeft: 0, isRunning: false, targetEndTime: Date.now() - 60_000 });
+
+    cy.loginAs('crew');
+    cy.visitApp('/plans', {
+      campId: scenario.campId,
+      onBeforeLoad: (win) => {
+        win.localStorage.setItem('camp-audio-unlocked', 'true');
+        recordToasts(win);
+      },
+    });
+    cy.getByTestId('plans-search-input').should('be.visible');
+    cy.getByTestId('alarm-audio-long').should('exist');
+
+    // ⚠️ 這是兩個 effect 之間的競態（宿主的 effect 比 provider 的 tick 先跑），
+    //    所以單跑一次只有機率會中。連做三輪「上一輪結束 → 啟動新回合」的轉換，
+    //    把抓到的機率拉高 —— 實測拿掉防線後這樣跑會紅在「不該響時間到」。
+    Cypress._.range(3).forEach((i) => {
+      // 先回到「上一輪剛結束」的形狀：剩餘 0、截止時刻在過去
+      cy.then(() => {
+        const now = Date.now();
+        return cy.task('db:patchDoc', {
+          collection: 'userSettings',
+          id: 'global',
+          data: { isRunning: false, timeLeft: 0, targetEndTime: now - 60_000, updatedAt: now },
+        });
+      });
+      cy.dbDocsUntil<TimerDoc>(
+        'userSettings',
+        (docs) => docs.find((d) => d.id === 'global')?.isRunning === false,
+        { attempts: 10, intervalMs: 300, reason: `第 ${i + 1} 輪：先回到已結束的狀態` },
+      );
+
+      // 頁面開著的狀態下，admin 那台啟動一個還很久才結束的新回合
+      cy.then(() => {
+        const now = Date.now();
+        return cy.task('db:patchDoc', {
+          collection: 'userSettings',
+          id: 'global',
+          data: { isRunning: true, timeLeft: 300, targetEndTime: now + 120_000, updatedAt: now },
+        });
+      });
+      cy.dbDocsUntil<TimerDoc>(
+        'userSettings',
+        (docs) => docs.find((d) => d.id === 'global')?.isRunning === true,
+        { attempts: 10, intervalMs: 300, reason: `第 ${i + 1} 輪：新回合應該已經寫進去了` },
+      );
+    });
+
+    // 再輪詢幾秒，給誤觸發最後的機會
+    cy.dbDocsUntil<TimerDoc>(
+      'userSettings',
+      (docs) => !!docs.find((d) => d.id === 'global'),
+      { attempts: 8, intervalMs: 500, reason: '收尾輪詢' },
+    );
+
+    toastLog().should((log) => {
+      expect(log.join(' | '), '回合才剛開始、還有兩分鐘，不該響「時間到」').to.not.include('換關時間到');
+    });
+  });
+
   it('A3 · 計時頁不該出現「匯出」（它匯出的是輪替表與道具）；總表頁要有', () => {
     cy.loginAs('admin');
     cy.visitApp('/admin?tab=timer', { campId: scenario.campId });

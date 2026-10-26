@@ -91,6 +91,68 @@ describe('音效解鎖狀態如實', () => {
     });
   });
 
+  it('D3 · 靜音的預喚醒通知不准帶震動樣式（否則整個通知會靜靜失敗）', () => {
+    // 這條是實跑抓到的。Chrome 對 `showNotification` 有一條規則：
+    // silent 的通知**不准**同時帶 vibrate，否則直接 throw
+    //   `Silent notifications must not specify vibration patterns`
+    // 而那是在 promise 裡丟出來的 —— 沒有人 catch，所以「時間到前幾秒的預喚醒
+    // 通知」會整個靜靜失敗。那組通知的用途正是把手機螢幕叫醒，壞了不會有人發現。
+    //
+    // 要跑到這一行需要通知權限，所以這裡把平台整個換掉：權限直接是 granted，
+    // 而 showNotification 用和 Chrome 一樣的規則檢查，壞掉就當場炸。
+    cy.loginAs('admin');
+    cy.visitApp('/admin?tab=timer', {
+      campId: scenario.campId,
+      onBeforeLoad: (win) => {
+        win.localStorage.setItem('camp-audio-unlocked', 'true');
+        const calls: Array<{ title: string; options: Record<string, unknown> }> = [];
+        (win as unknown as { __notifications: typeof calls }).__notifications = calls;
+
+        const fakeNotification = function () {} as unknown as typeof Notification;
+        Object.defineProperty(fakeNotification, 'permission', { get: () => 'granted' });
+        Object.defineProperty(fakeNotification, 'requestPermission', {
+          value: () => Promise.resolve('granted'),
+        });
+        Object.defineProperty(win, 'Notification', { value: fakeNotification, configurable: true });
+
+        const registration = {
+          showNotification: (title: string, options: Record<string, unknown>) => {
+            calls.push({ title, options });
+            // Chrome 自己的規則，照抄
+            if (options.silent && options.vibrate) {
+              throw new TypeError('Silent notifications must not specify vibration patterns.');
+            }
+            return Promise.resolve();
+          },
+        };
+        Object.defineProperty(win.navigator.serviceWorker, 'ready', {
+          get: () => Promise.resolve(registration),
+          configurable: true,
+        });
+      },
+    });
+
+    // 開一個 5 秒後結束的回合：會經過「剩 3 秒」的靜音預喚醒里程碑
+    cy.then(() => {
+      const now = Date.now();
+      return cy.task('db:patchDoc', {
+        collection: 'userSettings',
+        id: 'global',
+        data: { duration: 300, timeLeft: 300, isRunning: true, targetEndTime: now + 5_000, updatedAt: now },
+      });
+    });
+
+    // 白名單：真的有送出靜音通知（否則下面的 not 斷言是空的）
+    cy.window({ timeout: 30000 }).should((win) => {
+      const calls = (win as unknown as { __notifications: Array<{ options: Record<string, unknown> }> }).__notifications;
+      const silent = calls.filter((c) => c.options.silent);
+      expect(silent.length, '應該送出過靜音的預喚醒通知').to.be.greaterThan(0);
+      silent.forEach((c) => {
+        expect(c.options.vibrate, '靜音通知不准帶 vibrate').to.be.undefined;
+      });
+    });
+  });
+
   it('D2 · 同一個世界、不攔播放時要顯示已解鎖（證明 D1 不是選擇器打錯）', () => {
     cy.loginAs('admin');
     cy.visitApp('/admin?tab=timer', {

@@ -122,6 +122,23 @@ export interface AlarmMilestone {
  * 唯一的一張表。要加一個提醒就在這裡加一列，不需要動 host。
  * 四個里程碑與原本 `AdminTimer.checkAlarms` 裡的四段逐一對應。
  */
+/**
+ * 允許「比牆上時鐘早一點」觸發的容忍值。
+ *
+ * ⚠️ 這一條是**必要的**，而且是用瀏覽器實跑才抓到的：
+ *    `remaining` 來自 worker 推進的狀態，而 `targetEndTime` 來自 Firestore 的
+ *    快照。新的一輪剛開始（或頁面剛載入）時，這兩個值會有一瞬間不同步 ——
+ *    `remaining` 還是上一輪留下的 0，`targetEndTime` 已經是新的截止時刻。
+ *    React 的 effect 是由內而外跑，響鈴宿主比 provider 的 tick 先執行，
+ *    所以那一瞬間它看到的是「剩 0 秒，但截止時刻在 30 秒後」。
+ *    沒有這道防線的話：**任何人在回合進行中打開網站，都會立刻被「換關時間到」
+ *    炸一次**（實測 2026-10-27，armed 30 秒的回合在同一秒就響了）。
+ *
+ *    值要大於 1 秒：推進算的是 `floor((target - now) / 1000)`，
+ *    所以 `remaining` 讀到 0 的時候，離截止時刻還有最多 999ms。
+ */
+const CLOCK_TOLERANCE_MS = 1_200;
+
 export const ALARM_MILESTONES: readonly AlarmMilestone[] = [
   { id: 'prewake-reminder', atRemaining: 190, graceMs: 5_000, minDurationSeconds: 180, effect: 'silent-notify' },
   { id: 'reminder', atRemaining: 180, graceMs: 10_000, minDurationSeconds: 180, effect: 'sound-reminder' },
@@ -160,6 +177,8 @@ export function dueMilestones(args: {
     if (claimed.has(m.id)) return false;
     if (remaining > m.atRemaining) return false;
     const dueAt = targetEndTime - m.atRemaining * 1000;
+    const earlyBy = dueAt - now;
+    if (earlyBy > CLOCK_TOLERANCE_MS) return false;
     return now - dueAt <= m.graceMs;
   });
 }
