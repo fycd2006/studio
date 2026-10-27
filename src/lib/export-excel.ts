@@ -1,4 +1,5 @@
 import { LessonPlan, Camp, RotationTableData, CampItem } from "@/types/plan";
+import { campItemBlocks, UNASSIGNED_USAGE_LABEL } from "@/lib/camp-items";
 import { exportToDocxBlob } from "@/lib/export-utils";
 
 type XLSXModule = typeof import("xlsx");
@@ -167,18 +168,13 @@ function addPropsSheet(XLSX: XLSXModule, wb: any, sheetName: string, lessonPlans
 function addCampItemsSheet(XLSX: XLSXModule, wb: any, sheetName: string, items: CampItem[]) {
   const rows: Record<string, string>[] = [];
 
-  // Group by usage
-  const groups = items.reduce((acc, item) => {
-    const u = item.usage || "未分類";
-    if (!acc[u]) acc[u] = [];
-    acc[u].push(item);
-    return acc;
-  }, {} as Record<string, CampItem[]>);
-
-  for (const [usageName, groupItems] of Object.entries(groups)) {
-    for (const item of groupItems) {
+  // 分群與排序**沿用畫面那一份推導**（src/lib/camp-items.ts）—— 這裡原本自己寫了
+  // 第三份 `item.usage || "未分類"`，於是「還沒分類」這條規則在 repo 裡有三個版本，
+  // 匯出的列序也跟畫面對不上。
+  for (const block of campItemBlocks(items)) {
+    for (const item of block.items) {
       rows.push({
-        "用途": usageName,
+        "用途": block.usage ?? UNASSIGNED_USAGE_LABEL,
         "物品名稱": item.name,
         "已打包": item.isPacked ? "✓" : "",
         "已確認": item.isChecked ? "✓" : "",
