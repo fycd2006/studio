@@ -177,6 +177,18 @@ Cypress.Commands.add('setupCampScenario', (options: CampScenarioOptions = {}) =>
         '   解決方案: 檢查 cypress/plugins/firestore.ts 的 setupCampScenario 有沒有把 extraCamps 寫進同一個 batch',
     ).to.have.length(wantedCamps);
 
+    // campItems 是**一份文件裡的一個陣列**，所以「少寫幾筆」不會變成少一份文件，
+    // 只會變成一個比預期短的陣列 —— 下游會紅在「找不到某一列」，而那看起來像畫面壞了。
+    const wantedItems = options.campItems?.length ?? 0;
+    expect(
+      scenario.campItemIds,
+      `❌ scenario 建出來的營期物品筆數不對！\n` +
+        `   期望: ${wantedItems} 筆\n` +
+        `   實際: ${scenario.campItemIds?.length ?? 0} 筆\n` +
+        '   解決方案: 檢查 cypress/plugins/firestore.ts 的 setupCampScenario 有沒有把\n' +
+        '             options.campItems 寫進主 camp 的 campItems 欄位',
+    ).to.have.length(wantedItems);
+
     if (options.defaultCampIndex !== undefined) {
       expect(
         scenario.defaultCampId,

@@ -188,6 +188,16 @@ export interface CampScenarioOptions {
   defaultCampIndex?: number;
   /** userSettings/global 的覆寫（計時器狀態、分組、活動類別）。 */
   settings?: Record<string, unknown>;
+  /**
+   * 主 camp 的營期物品（`camps/{id}.campItems`）。
+   *
+   * 為什麼放在 scenario 裡而不是先建空的再 patch：那個欄位是**一份文件裡的一個陣列**，
+   * 所以「先建再補」等於自己在測試裡重演一次 read-modify-write —— 而那正是 issue #11
+   * 的缺陷形狀。一次建齊，spec 拿到的就是確定的世界。
+   *
+   * 順序**有意義**：畫面的群組順序是由「每個分類第一次出現的位置」決定的。
+   */
+  campItems?: Array<{ usage: string; name: string; isPacked?: boolean; isChecked?: boolean }>;
 }
 
 export interface CampScenario {
@@ -201,6 +211,13 @@ export interface CampScenario {
   defaultCampId: string | null;
   planIds: string[];
   plans: Array<{ id: string; scheduledName: string; activityName: string; groupId: string }>;
+  /**
+   * 主 camp 的 campItems id，順序與 options.campItems 相同。
+   *
+   * 刻意是**決定性**的（`item-${scenarioId}-${i}`，不是隨機）—— spec 才能用
+   * `scenario.campItemIds[2]` 直接定位某一列，不必先從畫面上反查 id。
+   */
+  campItemIds: string[];
 }
 
 // 只有這兩個 —— 對應 src/lib/plans-context.tsx 的 DEFAULT_GROUPS。
@@ -232,6 +249,14 @@ export async function setupCampScenario(
     { id: campId, name: campName, isLocked: options.isLocked ?? false },
   ];
 
+  const campItems = (options.campItems ?? []).map((seed, i) => ({
+    id: `item-${scenarioId}-${i}`,
+    usage: seed.usage,
+    name: seed.name,
+    isPacked: seed.isPacked ?? false,
+    isChecked: seed.isChecked ?? false,
+  }));
+
   batch.set(database.collection('camps').doc(campId), {
     scenarioId,
     name: campName,
@@ -242,7 +267,7 @@ export async function setupCampScenario(
     ...(options.broadcastText
       ? { broadcastText: options.broadcastText, broadcastTime: Date.now() }
       : {}),
-    campItems: [],
+    campItems,
   });
 
   // 其餘專案。都帶同一個 scenarioId —— cleanupCampScenario 就是用
@@ -329,6 +354,7 @@ export async function setupCampScenario(
     defaultCampId: defaultCamp?.id ?? null,
     planIds: plans.map((p) => p.id),
     plans,
+    campItemIds: campItems.map((i) => i.id),
   };
 }
 
