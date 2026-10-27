@@ -142,16 +142,6 @@ interface PlansContextType {
   viewMode: 'editor' | 'admin';
   setViewMode: (mode: 'editor' | 'admin') => void;
   isSaving: boolean;
-  audioEnabled: boolean;
-  timer: {
-    duration: number;
-    timeLeft: number;
-    targetEndTime: number | undefined;
-    isRunning: boolean;
-    setIsRunning: (r: boolean) => void;
-    setDuration: (d: number) => void;
-    reset: () => void;
-  };
   activityTypes: string[];
   addActivityType: (newType: string) => void;
   removeActivityType: (typeToRemove: string) => void;
@@ -773,16 +763,6 @@ export function PlansProvider({ children }: { children: ReactNode }) {
     undoTable, redoTable, canUndoTable: tableHistory.past.length > 0, canRedoTable: tableHistory.future.length > 0,
     viewMode, setViewMode,
     isSaving: false,
-    audioEnabled: true,
-    timer: {
-      duration: settings?.duration || 40 * 60,
-      timeLeft: settings?.timeLeft || 0,
-      targetEndTime: settings?.targetEndTime,
-      isRunning: settings?.isRunning || false,
-      setIsRunning: () => {},
-      setDuration: () => {},
-      reset: () => {}
-    },
     activityTypes: settings?.activityTypes || ['劇本', '大地遊戲', '科學闖關', '科學實驗', '手作課程', '相見歡', '起床遊戲'],
     addActivityType: (newType: string) => {
       if (!db) return;

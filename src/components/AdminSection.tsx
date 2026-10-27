@@ -45,7 +45,6 @@ interface AdminSectionProps {
   onRedoTable?: () => void;
   canUndoTable?: boolean;
   canRedoTable?: boolean;
-  timer: any;
   plans: LessonPlan[];
   groups: Group[];
   onUpdatePlan: (id: string, updates: Partial<LessonPlan>) => void;
@@ -125,7 +124,6 @@ const PropInput = ({
 export function AdminSection({
   tables, onAddTable, onUpdateTable, onDeleteTable,
   onUndoTable, onRedoTable, canUndoTable, canRedoTable,
-  timer,
   plans,
   groups,
   onUpdatePlan,
@@ -1063,14 +1061,17 @@ export function AdminSection({
         <div className={cn("w-full pt-14 sm:pt-16 pb-8 md:pb-12 transition-all duration-300 flex-1 flex flex-col", activeMainTab === 'props' ? "px-0 pt-14 sm:pt-16 pb-0" : "px-4 sm:px-6 md:px-8 lg:px-10")}>
           <Tabs value={activeMainTab} onValueChange={handleMainTabChange} className={cn("w-full flex flex-col items-stretch flex-1", activeMainTab === 'props' ? "space-y-0" : "space-y-4 sm:space-y-6")}>
 
-            {activeMainTab !== 'timer' && (
-              <ActionBar position="top" title="操作列" className="scrollbar-hide">
-                <div className="flex w-full items-center justify-between gap-1.5 sm:gap-3 flex-nowrap min-w-0">
+            <ActionBar position="top" title="操作列" className="scrollbar-hide">
+                <div data-testid="admin-action-bar" className="flex w-full items-center justify-between gap-1.5 sm:gap-3 flex-nowrap min-w-0">
                   
                   {/* Left Cluster: Lock & Contextual Controls */}
                   <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-                    {/* Lock Toggle */}
+                    {/* Lock Toggle —— 計時頁只對 admin 顯示（issue #10 預期 1：
+                        「crew 看不到控制項」）。總表／道具頁刻意維持原行為：crew
+                        看得到，按下去跳「權限不足」，跟教案頁的作法一致。 */}
+                    {(role === 'admin' || activeMainTab !== 'timer') && (
                     <Button
+                      data-testid="admin-lock-toggle"
                       variant="ghost"
                       size="sm"
                       onClick={() => {
@@ -1093,8 +1094,12 @@ export function AdminSection({
                       {isLocked ? <Lock className="h-3.5 w-3.5 shrink-0" /> : <Unlock className="h-3.5 w-3.5 shrink-0" />}
                       <span className="hidden sm:inline font-medium">{isLocked ? "已鎖定" : "可編輯"}</span>
                     </Button>
+                    )}
 
-                    <div className={cn(actionBarTheme.separator, "mx-0.5")} />
+                    {/* 分隔線只有在它右邊真的有東西時才畫 —— 計時頁右邊是空的 */}
+                    {activeMainTab !== 'timer' && (
+                      <div className={cn(actionBarTheme.separator, "mx-0.5")} />
+                    )}
 
                     {/* Tables: Day selector + Wizard + Add table */}
                     {activeMainTab === 'tables' && (
@@ -1222,7 +1227,9 @@ export function AdminSection({
                       </>
                     )}
 
-                    {/* Export Dropdown */}
+                    {/* Export Dropdown —— 匯出的內容是輪替表與道具（handleExportExcel），
+                        計時頁沒有可匯出的東西 */}
+                    {activeMainTab !== 'timer' && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -1230,6 +1237,7 @@ export function AdminSection({
                           size="sm"
                           className="h-8 px-2.5 sm:px-3.5 rounded-full font-mono text-xs tracking-wider uppercase bg-stone-200/80 dark:bg-white/15 hover:bg-stone-300 dark:hover:bg-white/20 gap-1.5 text-foreground cursor-pointer"
                           title="匯出"
+                          data-testid="admin-export-trigger"
                         >
                           <FileDown className="h-3.5 w-3.5" />
                           <span className="hidden sm:inline">匯出</span>
@@ -1258,16 +1266,15 @@ export function AdminSection({
                         )}
                       </DropdownMenuContent>
                     </DropdownMenu>
+                    )}
                   </div>
 
                 </div>
-              </ActionBar>
-            )}
+            </ActionBar>
 
             <div className="w-full flex-1 relative">
               <TabsContent value="timer" className="m-0 h-full w-full">
                 <AdminTimer
-                  timer={timer}
                   isLocked={isLocked}
                   autoEnterSaverMode={shouldAutoEnterSaver}
                   tables={tables}

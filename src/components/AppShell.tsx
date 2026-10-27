@@ -8,6 +8,7 @@ import { usePathname } from "next/navigation";
 import { Loader2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TransparentNavbar } from "@/components/TransparentNavbar";
+import { TimerAlarmHost } from "@/components/TimerAlarmHost";
 import { useTranslation } from "@/lib/i18n-context";
 
 /** Routes that should NOT render the navbar */
@@ -32,7 +33,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  return <AppShellInternal>{children}</AppShellInternal>;
+  return (
+    <>
+      {/* 全站響鈴。放在這裡（而不是 AppShellInternal 裡面）有兩個理由：
+          auth 頁已經在上面被 return 掉了，所以登入畫面不會響；
+          而它在 AppShellInternal 的載入 early return 之上，所以還在轉圈的
+          裝置照樣會響。 */}
+      <TimerAlarmHost />
+      <AppShellInternal>{children}</AppShellInternal>
+      {/* Toaster 也必須在 early return 之上。
+          原本它在 AppShellInternal 的**最後面**，所以只要那邊還在
+          `isAuthLoading || planData.isLoading` 的轉圈分支，整個 toast 容器就
+          不存在 —— 這段時間跳出來的提示會靜靜地消失在 use-toast 的 store 裡。
+          實測在 /plans 上就是這樣：響鈴真的觸發了（去重紀錄有 timeup），
+          但使用者一個字都沒看到。響鈴要「停在任何一頁都看得到」，
+          容器就不能跟著載入狀態忽隱忽現。 */}
+      <Toaster />
+    </>
+  );
 }
 
 /** Internal shell with transparent navbar — only rendered on non-auth pages */
@@ -227,7 +245,6 @@ function AppShellInternal({ children }: { children: React.ReactNode }) {
         {children}
       </main>
 
-      <Toaster />
     </div>
   );
 }
