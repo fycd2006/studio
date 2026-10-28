@@ -20,6 +20,7 @@ import { format } from 'date-fns';
 import * as jsondiffpatch from 'jsondiffpatch';
 import { useAuth } from '@/lib/auth-context';
 import { isCampAccessible, pickFallbackCamp } from '@/lib/camp-access';
+import { applyCampItemEdit, type CampItemEdit } from '@/lib/camp-items';
 
 const sanitizeForFirestore = (obj: any): any => {
   if (obj === undefined) return null;
@@ -98,6 +99,16 @@ function getAuthorColor(uid: string) {
   return USER_COLORS[Math.abs(hash) % USER_COLORS.length];
 }
 
+/**
+ * `updateCamp` 能改的欄位。
+ *
+ * ⚠️ 刻意排除 `campItems` —— 那是**一份文件裡的一個陣列**，`updateDoc` 整個換掉它，
+ *    所以「呼叫端自己 read-modify-write」在同一個 tick 裡呼叫兩次就會互相覆蓋
+ *    （GitHub issue #11 ③）。唯一合法的寫入路徑是 `updateCampItems`，
+ *    而這個型別就是編譯器用來保證「沒有第二個寫入者」的閘門。
+ */
+export type CampUpdate = Omit<Partial<Camp>, 'campItems'>;
+
 interface PlansContextType {
   isLoading: boolean;
   camps: Camp[];
@@ -106,8 +117,10 @@ interface PlansContextType {
   activeCampId: string | null;
   setActiveCampId: (id: string | null) => void;
   addCamp: (name: string, fields?: Partial<Camp>) => void;
-  updateCamp: (id: string, updates: Partial<Camp>) => void;
+  updateCamp: (id: string, updates: CampUpdate) => void;
   deleteCamp: (id: string) => void;
+  /** 營期物品的**唯一**寫入路徑。見 `src/lib/camp-items.ts`。 */
+  updateCampItems: (campId: string, edit: CampItemEdit) => void;
   toggleCampLock: (campId: string) => void;
   plans: LessonPlan[];
   tables: RotationTableData[];
@@ -458,7 +471,7 @@ export function PlansProvider({ children }: { children: ReactNode }) {
     setActiveCampId(campId);
   }, [db, user]);
 
-  const updateCamp = useCallback((id: string, updates: Partial<Camp>) => {
+  const updateCamp = useCallback((id: string, updates: CampUpdate) => {
     if (!db) return;
     const filtered = Object.fromEntries(Object.entries(updates).filter(([_, v]) => v !== undefined));
     updateDocumentNonBlocking(doc(db, 'camps', id), filtered);
@@ -750,9 +763,28 @@ export function PlansProvider({ children }: { children: ReactNode }) {
     updateDocumentNonBlocking(doc(db, 'camps', campId), { isLocked: !camp.isLocked });
   }, [db, camps]);
 
+  /**
+   * 營期物品的唯一寫入者。形狀與 `toggleCampLock` 相同 —— 自己去 `camps` 拿
+   * 當下的那一份、算出完整的新陣列、只寫一次。
+   *
+   * 呼叫端**不准**自己組 `campItems`（`CampUpdate` 已經把它從 `updateCamp`
+   * 排除掉）。那個限制換來的是：「同一個 tick 裡改群組裡的每一筆」這種寫法
+   * 在型別上不存在，所以 issue #11 ③ 寫不回來。
+   */
+  const updateCampItems = useCallback((campId: string, edit: CampItemEdit) => {
+    if (!db) return;
+    const camp = camps.find(c => c.id === campId);
+    if (!camp) return;
+    const current = camp.campItems ?? [];
+    const next = applyCampItemEdit(current, edit);
+    // 沒變就不寫。PropInput 是 onBlur 才送出的，而點進點出不改字是常態。
+    if (next === current) return;
+    updateDocumentNonBlocking(doc(db, 'camps', campId), { campItems: next });
+  }, [db, camps]);
+
   const value = useMemo(() => ({
     isLoading: isUserLoading || campsData === null || (!!activeCampId && rawPlansData === null),
-    camps, defaultCampId, setDefaultCampId, activeCampId, setActiveCampId, addCamp, updateCamp, deleteCamp, toggleCampLock,
+    camps, defaultCampId, setDefaultCampId, activeCampId, setActiveCampId, addCamp, updateCamp, deleteCamp, updateCampItems, toggleCampLock,
     plans: allPlans, 
     tables: allTables, 
     activePlan: allPlans.find(p => p.id === activePlanId) || null,
@@ -883,7 +915,7 @@ export function PlansProvider({ children }: { children: ReactNode }) {
     isUserLoading, campsData, rawPlansData, camps, activeCampId, allPlans, allTables,
     activePlanId, activePlanVersions, planHistory.past.length, planHistory.future.length,
     tableHistory.past.length, tableHistory.future.length, viewMode, settings,
-    db, groups, addCamp, updateCamp, deleteCamp, toggleCampLock, updatePlan, deletePlan,
+    db, groups, addCamp, updateCamp, deleteCamp, updateCampItems, toggleCampLock, updatePlan, deletePlan,
     addPlan, reorderPlans, savePlanVersion, restorePlanVersion, updatePlanVersionName,
     deletePlanVersion, autoSaveCurrentState, getFullVersionState, undoPlan, redoPlan,
     addTable, updateTable, deleteTable, undoTable, redoTable, defaultCampId, setDefaultCampId

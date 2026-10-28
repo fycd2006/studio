@@ -1,7 +1,9 @@
 "use client"
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { RotationTableData, LessonPlan, PropItem, Camp, CampItem, Group } from "@/types/plan";
+import { RotationTableData, LessonPlan, PropItem, Camp, Group } from "@/types/plan";
+import { campItemBlocks, UNASSIGNED_USAGE_LABEL, type CampItemEdit } from "@/lib/camp-items";
+import type { CampUpdate } from "@/lib/plans-context";
 import { AdminTimer } from "@/components/AdminTimer";
 import { AdminRotationTable } from "@/components/AdminRotationTable";
 import { Button } from "@/components/ui/button";
@@ -50,7 +52,9 @@ interface AdminSectionProps {
   onUpdatePlan: (id: string, updates: Partial<LessonPlan>) => void;
   camps: Camp[];
   activeCampId: string | null;
-  onUpdateCamp: (id: string, updates: Partial<Camp>) => void;
+  /** ⚠️ `CampUpdate` 刻意不含 `campItems` —— 營期物品只能走 `onUpdateCampItems`。 */
+  onUpdateCamp: (id: string, updates: CampUpdate) => void;
+  onUpdateCampItems: (campId: string, edit: CampItemEdit) => void;
 }
 
 type MainTab = 'timer' | 'tables' | 'props';
@@ -61,13 +65,17 @@ const PropInput = ({
   onChange,
   disabled,
   placeholder,
-  className
+  className,
+  testId
 }: {
   value: string;
   onChange: (val: string) => void;
   disabled: boolean;
   placeholder?: string;
   className?: string;
+  /** 掛在實際承載值的那個元素上 —— 解鎖時是 textarea（值在 .value），
+   *  鎖定時是 div（值在文字內容）。兩種狀態同一個 testid。 */
+  testId?: string;
 }) => {
   const [localValue, setLocalValue] = useState(value);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -92,7 +100,7 @@ const PropInput = ({
 
   if (disabled) {
     return (
-      <div className={cn("min-h-8 md:min-h-10 px-2 py-2 text-xs sm:text-sm text-slate-800 dark:text-slate-200 bg-transparent text-center font-fira-sans font-medium leading-normal flex items-center justify-center w-full", className)}>
+      <div data-testid={testId} className={cn("min-h-8 md:min-h-10 px-2 py-2 text-xs sm:text-sm text-slate-800 dark:text-slate-200 bg-transparent text-center font-fira-sans font-medium leading-normal flex items-center justify-center w-full", className)}>
         <span className="w-full break-all whitespace-pre-wrap block text-center">
           {value || ""}
         </span>
@@ -103,6 +111,7 @@ const PropInput = ({
   return (
     <textarea
       ref={textareaRef}
+      data-testid={testId}
       value={localValue}
       placeholder={placeholder}
       onChange={(e) => setLocalValue(e.target.value)}
@@ -129,7 +138,8 @@ export function AdminSection({
   onUpdatePlan,
   camps,
   activeCampId,
-  onUpdateCamp
+  onUpdateCamp,
+  onUpdateCampItems
 }: AdminSectionProps) {
   const resolveMainTabFromHash = useCallback((hash: string): MainTab => {
     const normalized = hash.replace('#', '').toLowerCase();
@@ -411,46 +421,21 @@ export function AdminSection({
     });
   };
 
-  const handleUpdateCampItem = (campItemId: string, updates: Partial<CampItem>) => {
-    if (isLocked || !activeCampId) return;
-    const camp = camps.find(c => c.id === activeCampId);
-    if (!camp) return;
-
-    const currentItems = camp.campItems || [];
-    const updatedItems = currentItems.map(item =>
-      item.id === campItemId ? { ...item, ...updates } : item
-    );
-
-    onUpdateCamp(activeCampId, { campItems: updatedItems });
-  };
-
   const activeCamp = camps.find(c => c.id === activeCampId);
   const campItems = activeCamp?.campItems || [];
 
-  const handleAddCampItem = () => {
+  /**
+   * 營期物品的所有改動都走這一支，而且一次編輯只寫一次。
+   *
+   * 舊的寫法是三個各自 read-modify-write 的 handler（`handleUpdateCampItem` /
+   * `handleAddCampItem` / `handleDeleteCampItem`）—— `campItems` 是一份文件裡的
+   * 一個陣列，所以「同一個 tick 裡對群組的每一筆各呼叫一次」會互相覆蓋，
+   * 最後一次贏（GitHub issue #11 ③）。改分類現在吃整個 block，那種寫法
+   * 在型別上已經不存在。
+   */
+  const editCampItems = (edit: CampItemEdit) => {
     if (isLocked || !activeCampId) return;
-    const camp = camps.find(c => c.id === activeCampId);
-    if (!camp) return;
-
-    const newItem: CampItem = {
-      id: Math.random().toString(36).substr(2, 9),
-      usage: '未分類',
-      name: '新物品',
-      isPacked: false,
-      isChecked: false
-    };
-
-    onUpdateCamp(activeCampId, { campItems: [...(camp.campItems || []), newItem] });
-  };
-
-  const handleDeleteCampItem = (campItemId: string) => {
-    if (isLocked || !activeCampId) return;
-    const camp = camps.find(c => c.id === activeCampId);
-    if (!camp) return;
-
-    onUpdateCamp(activeCampId, {
-      campItems: (camp.campItems || []).filter(item => item.id !== campItemId)
-    });
+    onUpdateCampItems(activeCampId, edit);
   };
 
   const renderPropTable = (title: string, propItems: PropTableRow[], targetPlans: LessonPlan[]) => {
@@ -721,13 +706,12 @@ export function AdminSection({
   };
 
   const renderCombinedTable = () => {
-    // Group camp items
-    const usageGroups = campItems.reduce((acc, item) => {
-      const u = item.usage || '未分類 / Uncategorized';
-      if (!acc[u]) { acc[u] = []; }
-      acc[u].push(item);
-      return acc;
-    }, {} as Record<string, CampItem[]>);
+    // 畫面上共用一個分類格的那幾塊。具名群組在前（照每個分類第一筆出現的順序），
+    // 還沒分類的**每一筆自己一塊**、一律排在最後 —— 所以「新增的物品落在表格最
+    // 下面、而且有自己的分類格」是從資料推導出來的，不是某個 handler 記得要做的
+    // 事（issue #11 ①）。規則在 src/lib/camp-items.ts。
+    const blocks = campItemBlocks(campItems);
+    const colCount = isLocked ? 6 : 7;
 
     const renderCombinedPlanRows = (
       groupPlans: Record<string, LessonPlan[]>,
@@ -918,52 +902,53 @@ export function AdminSection({
             {/* 1. 活動組 */}
             <tbody>
               <tr>
-                <td colSpan={isLocked ? 6 : 7} className="px-4 py-3 font-mono text-xs uppercase tracking-widest text-orange-600 dark:text-orange-400 bg-orange-500/5 dark:bg-orange-500/10 border-b border-stone-200/80 dark:border-white/10 font-medium">
+                <td colSpan={colCount} className="px-4 py-3 font-mono text-xs uppercase tracking-widest text-orange-600 dark:text-orange-400 bg-orange-500/5 dark:bg-orange-500/10 border-b border-stone-200/80 dark:border-white/10 font-medium">
                   // 01. 活動組 // 教案道具確認
                 </td>
               </tr>
               {Object.keys(activityGroups).length === 0 ? (
-                <tr><td colSpan={isLocked ? 6 : 7} className="text-center py-6 text-fg-muted font-mono text-xs border-b border-stone-200/80 dark:border-white/10">目前沒有活動組資料</td></tr>
+                <tr><td colSpan={colCount} className="text-center py-6 text-fg-muted font-mono text-xs border-b border-stone-200/80 dark:border-white/10">目前沒有活動組資料</td></tr>
               ) : renderCombinedPlanRows(activityGroups, 'act', 'text-orange-600 dark:text-orange-400')}
             </tbody>
 
             {/* 2. 教學組 */}
             <tbody>
               <tr>
-                <td colSpan={isLocked ? 6 : 7} className="px-4 py-3 font-mono text-xs uppercase tracking-widest text-blue-600 dark:text-blue-400 bg-blue-500/5 dark:bg-blue-500/10 border-b border-stone-200/80 dark:border-white/10 font-medium">
+                <td colSpan={colCount} className="px-4 py-3 font-mono text-xs uppercase tracking-widest text-blue-600 dark:text-blue-400 bg-blue-500/5 dark:bg-blue-500/10 border-b border-stone-200/80 dark:border-white/10 font-medium">
                   // 02. 教學組 // 教案道具確認
                 </td>
               </tr>
               {Object.keys(teachingGroups).length === 0 ? (
-                <tr><td colSpan={isLocked ? 6 : 7} className="text-center py-6 text-fg-muted font-mono text-xs border-b border-stone-200/80 dark:border-white/10">目前沒有教學組資料</td></tr>
+                <tr><td colSpan={colCount} className="text-center py-6 text-fg-muted font-mono text-xs border-b border-stone-200/80 dark:border-white/10">目前沒有教學組資料</td></tr>
               ) : renderCombinedPlanRows(teachingGroups, 'tch', 'text-blue-600 dark:text-blue-400')}
             </tbody>
 
             {/* 3. 營期物品 */}
-            <tbody>
+            <tbody data-testid="camp-items-body">
               <tr>
-                <td colSpan={isLocked ? 6 : 7} className="px-4 py-3 font-mono text-xs uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 dark:bg-emerald-500/10 border-b border-stone-200/80 dark:border-white/10 font-medium">
+                <td colSpan={colCount} className="px-4 py-3 font-mono text-xs uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 dark:bg-emerald-500/10 border-b border-stone-200/80 dark:border-white/10 font-medium">
                   // 03. 營期其他物品 // 物資統籌確認
                 </td>
               </tr>
-              {Object.keys(usageGroups).length === 0 ? (
-                <tr><td colSpan={isLocked ? 6 : 7} className="text-center py-4 text-fg-muted font-mono text-xs border-b border-stone-200/80 dark:border-white/10">目前沒有營期物品資料</td></tr>
-              ) : Object.entries(usageGroups).map(([usageName, items]) => (
-                items.map((item, pIndex) => (
-                  <tr key={`cmp-${item.id}`} className={cn(
+              {blocks.length === 0 ? (
+                <tr><td colSpan={colCount} className="text-center py-4 text-fg-muted font-mono text-xs border-b border-stone-200/80 dark:border-white/10">目前沒有營期物品資料</td></tr>
+              ) : blocks.map((block) => (
+                block.items.map((item, pIndex) => (
+                  <tr key={`cmp-${item.id}`} data-testid={`camp-item-row-${item.id}`} className={cn(
                     "group hover:bg-stone-500/[0.03] dark:hover:bg-white/[0.02] transition-colors duration-200 border-b border-stone-200/60 dark:border-white/10 last:border-0",
                     item.isChecked && item.isPacked ? "bg-emerald-500/[0.06] dark:bg-emerald-500/10" : "bg-transparent"
                   )}>
                     {pIndex === 0 && (
-                      <td className={cn("font-mono text-xs text-foreground align-top border-r border-stone-200/80 dark:border-white/10 break-all font-normal", isLocked ? "px-4 py-3" : "p-0")} rowSpan={items.length}>
+                      <td data-testid={`camp-item-usage-${block.items[0].id}`} className={cn("font-mono text-xs text-foreground align-top border-r border-stone-200/80 dark:border-white/10 break-all font-normal", isLocked ? "px-4 py-3" : "p-0")} rowSpan={block.items.length}>
                         {isLocked ? (
-                          usageName
+                          block.usage ?? UNASSIGNED_USAGE_LABEL
                         ) : (
                           <PropInput
-                            value={item.usage}
-                            onChange={(v) => {
-                              items.forEach(i => handleUpdateCampItem(i.id, { usage: v }));
-                            }}
+                            value={block.usage ?? ''}
+                            placeholder={UNASSIGNED_USAGE_LABEL}
+                            // 改分類吃**整個 block** —— 「只改群組的一部分」在型別上
+                            // 不存在，而且這裡只寫一次，不是對每一筆各寫一次。
+                            onChange={(v) => editCampItems({ kind: 'assign-usage', block, usage: v })}
                             disabled={isLocked}
                             className="font-normal text-foreground text-center"
                           />
@@ -973,9 +958,10 @@ export function AdminSection({
                     <td className="p-0 align-middle border-r border-stone-200/80 dark:border-white/10">
                       <PropInput
                         value={item.name}
-                        onChange={(v) => handleUpdateCampItem(item.id, { name: v })}
+                        onChange={(v) => editCampItems({ kind: 'patch', itemId: item.id, patch: { name: v } })}
                         disabled={isLocked}
                         className="font-normal text-foreground text-center"
+                        testId={`camp-item-name-${item.id}`}
                       />
                     </td>
                     <td className="px-4 py-3 text-xs text-fg-muted align-middle border-r border-stone-200/80 dark:border-white/10 text-center">
@@ -989,7 +975,7 @@ export function AdminSection({
                         <Checkbox
                           checked={item.isPacked || false}
                           disabled={isLocked}
-                          onCheckedChange={(c) => handleUpdateCampItem(item.id, { isPacked: c === true })}
+                          onCheckedChange={(c) => editCampItems({ kind: 'patch', itemId: item.id, patch: { isPacked: c === true } })}
                           className="h-5 w-5 rounded-md"
                         />
                       </div>
@@ -999,7 +985,7 @@ export function AdminSection({
                         <Checkbox
                           checked={item.isChecked || false}
                           disabled={isLocked}
-                          onCheckedChange={(c) => handleUpdateCampItem(item.id, { isChecked: c === true })}
+                          onCheckedChange={(c) => editCampItems({ kind: 'patch', itemId: item.id, patch: { isChecked: c === true } })}
                           className="h-5 w-5 rounded-md"
                         />
                       </div>
@@ -1009,7 +995,8 @@ export function AdminSection({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDeleteCampItem(item.id)}
+                          data-testid={`camp-item-delete-${item.id}`}
+                          onClick={() => editCampItems({ kind: 'remove', itemId: item.id })}
                           className="h-7 px-2 text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 opacity-0 group-hover:opacity-100 transition-opacity font-mono text-xs"
                         >
                           刪除
@@ -1035,10 +1022,12 @@ export function AdminSection({
             </tbody>
             <tfoot>
               <tr>
-                <td colSpan={isLocked ? 6 : 7} className="px-4 py-3 bg-stone-500/[0.02] dark:bg-white/[0.01] border-t border-stone-200/80 dark:border-white/10">
+                <td colSpan={colCount} className="px-4 py-3 bg-stone-500/[0.02] dark:bg-white/[0.01] border-t border-stone-200/80 dark:border-white/10">
                   {!isLocked && (
                     <Button
-                      onClick={handleAddCampItem}
+                      data-testid="camp-items-add"
+                      // id 在呼叫端產生，camp-items.ts 才能保持是純函式
+                      onClick={() => editCampItems({ kind: 'add', id: Math.random().toString(36).slice(2, 11) })}
                       size="sm"
                       variant="ghost"
                       className="w-full h-10 text-fg-muted hover:text-foreground hover:bg-stone-500/10 dark:hover:bg-white/5 transition-all gap-2 font-mono text-xs uppercase tracking-widest border-none"
@@ -1152,6 +1141,7 @@ export function AdminSection({
                         {(['activity', 'teaching', 'all-props'] as const).map((tab) => (
                           <button
                             key={tab}
+                            data-testid={`admin-props-tab-${tab}`}
                             onClick={() => setActivePropsTab(tab)}
                             className={cn(
                               "px-2.5 sm:px-3.5 py-1 rounded-full text-xs font-mono tracking-wider transition-all cursor-pointer whitespace-nowrap",

@@ -26,7 +26,7 @@ export default function AdminPage() {
     plans, tables, camps, groups, activeCampId,
     addTable, updateTable, deleteTable,
     undoTable, redoTable, canUndoTable, canRedoTable,
-    updatePlan, updateCamp,
+    updatePlan, updateCamp, updateCampItems,
   } = usePlans();
 
   const isAdmin = role === 'admin';
@@ -49,6 +49,7 @@ export default function AdminPage() {
         camps={camps}
         activeCampId={activeCampId}
         onUpdateCamp={updateCamp}
+        onUpdateCampItems={updateCampItems}
       />
     </div>
   );
