@@ -439,6 +439,7 @@ export default function PlansOverview() {
           className="w-48 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-2xl p-1.5"
         >
           <DropdownMenuItem
+            data-testid={`plan-action-word-${plan.id}`}
             onSelect={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -450,6 +451,7 @@ export default function PlansOverview() {
             <span>下載 Word (.docx)</span>
           </DropdownMenuItem>
           <DropdownMenuItem
+            data-testid={`plan-action-pdf-${plan.id}`}
             onSelect={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -696,6 +698,7 @@ export default function PlansOverview() {
             <DropdownMenu open={isDownloadMenuOpen} onOpenChange={setIsDownloadMenuOpen}>
               <DropdownMenuTrigger asChild>
                 <button
+                  data-testid="plans-batch-export-trigger"
                   disabled={isBatchDownloading || plans.length === 0}
                   className={cn(
                     "inline-flex items-center gap-2 px-5 py-3 rounded-full text-xs font-mono font-medium uppercase tracking-wider text-foreground/80 hover:text-foreground bg-white/80 dark:bg-white/[0.04] hover:bg-white dark:hover:bg-white/10 border border-stone-200/90 dark:border-white/15 backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 cursor-pointer",
@@ -715,6 +718,7 @@ export default function PlansOverview() {
                   全部教案匯出 (ALL PLANS)
                 </div>
                 <DropdownMenuItem
+                  data-testid="plans-batch-export-word-all"
                   onSelect={(e) => {
                     e.preventDefault();
                     void handleBatchDownload("word", "all");
@@ -725,6 +729,7 @@ export default function PlansOverview() {
                   <span>所有 Word (.docx)</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
+                  data-testid="plans-batch-export-pdf-all"
                   onSelect={(e) => {
                     e.preventDefault();
                     void handleBatchDownload("pdf", "all");
@@ -739,6 +744,7 @@ export default function PlansOverview() {
                   目前篩選結果 (FILTERED)
                 </div>
                 <DropdownMenuItem
+                  data-testid="plans-batch-export-word-filtered"
                   onSelect={(e) => {
                     e.preventDefault();
                     void handleBatchDownload("word", "filtered");
@@ -749,6 +755,7 @@ export default function PlansOverview() {
                   <span>僅限目前篩選 (Word)</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
+                  data-testid="plans-batch-export-pdf-filtered"
                   onSelect={(e) => {
                     e.preventDefault();
                     void handleBatchDownload("pdf", "filtered");

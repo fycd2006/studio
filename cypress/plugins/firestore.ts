@@ -150,6 +150,11 @@ export interface PlanSeed {
   assistantMember?: string;
   time?: string;
   location?: string;
+  purpose?: string;
+  process?: string;
+  content?: string;
+  remarks?: string;
+  openingClosingRemarks?: string;
   order?: number;
   props?: Array<{ id: string; name: string; quantity: string; unit: string; remarks?: string }>;
   isPropsPacked?: boolean;
@@ -313,13 +318,13 @@ export async function setupCampScenario(
       assistantMember: seed.assistantMember ?? '',
       time: seed.time ?? '09:00-10:00',
       location: seed.location ?? 'E2E 教室',
-      purpose: '',
-      process: '',
-      content: '',
+      purpose: seed.purpose ?? '',
+      process: seed.process ?? '',
+      content: seed.content ?? '',
       divisionOfLabor: '',
       props: seed.props ?? [],
-      remarks: '',
-      openingClosingRemarks: '',
+      remarks: seed.remarks ?? '',
+      openingClosingRemarks: seed.openingClosingRemarks ?? '',
       googleDocUrl: '',
       order: seed.order ?? i,
       updatedAt: Date.now(),

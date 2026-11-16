@@ -351,18 +351,20 @@ export function PlanEditor({
   const handlePrint = async () => {
     try {
       toast({ title: "匯出中", description: "正在產生 PDF 檔案..." });
-      await exportToPdf(currentPlan);
+      await exportToPdf(currentPlan, { useSaveDialog: false });
       toast({ title: "匯出成功", description: "已下載 PDF 檔案" });
-    } catch {
+    } catch (err) {
+      console.error("PDF export failed", err);
       toast({ title: "匯出失敗", description: "發生錯誤", variant: "destructive" });
     }
   };
   const handleExportWord = async () => {
     try {
       toast({ title: "匯出中", description: "正在產生 Word 檔案..." });
-      await exportToDocx(currentPlan);
+      await exportToDocx(currentPlan, undefined, { useSaveDialog: false });
       toast({ title: "匯出成功", description: "已經成功下載 Word 檔案" });
     } catch (err) {
+      console.error("Word export failed", err);
       toast({ title: "匯出失敗", description: "發生錯誤", variant: "destructive" });
     }
   };
@@ -890,6 +892,7 @@ export function PlanEditor({
                     <Button
                       variant="ghost"
                       size="sm"
+                      data-testid="editor-export-trigger"
                       className="h-8 px-2.5 rounded-lg text-xs font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-200/70 dark:hover:bg-white/10 gap-1.5"
                     >
                       <FileDown className="w-4 h-4" />
@@ -897,11 +900,11 @@ export function PlanEditor({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-36 rounded-2xl border border-stone-200/80 dark:border-white/10 bg-white dark:bg-[#14191C] shadow-2xl p-1.5 z-[60]">
-                    <DropdownMenuItem onClick={handlePrint} className="text-xs font-mono py-2 px-3 rounded-xl cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2">
+                    <DropdownMenuItem data-testid="editor-export-pdf" onClick={handlePrint} className="text-xs font-mono py-2 px-3 rounded-xl cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2">
                       <FileText className="w-4 h-4 text-rose-500" />
                       <span>PDF (.pdf)</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleExportWord} className="text-xs font-mono py-2 px-3 rounded-xl cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2">
+                    <DropdownMenuItem data-testid="editor-export-word" onClick={handleExportWord} className="text-xs font-mono py-2 px-3 rounded-xl cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2">
                       <FileText className="w-4 h-4 text-orange-500" />
                       <span>WORD (.docx)</span>
                     </DropdownMenuItem>

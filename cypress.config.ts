@@ -70,8 +70,52 @@ export default defineConfig({
       crewPassword: process.env.CYPRESS_crewPassword || 'e2e-crew-pw',
     },
 
-    setupNodeEvents(on) {
+    setupNodeEvents(on, config) {
       on('task', {
+        /** 清空 cypress/downloads 目錄，避免上一條測試殘留影響檔名判定。 */
+        'downloads:clear': () => {
+          const dir = config.downloadsFolder;
+          if (fs.existsSync(dir)) {
+            fs.rmSync(dir, { recursive: true, force: true });
+          }
+          fs.mkdirSync(dir, { recursive: true });
+          return null;
+        },
+
+        /** 輪詢等待下載目錄出現符合條件且寫入完成的檔案，並回傳名稱與 base64。 */
+        'downloads:waitForFile': async (args: { pattern: string; timeoutMs?: number }) => {
+          const dir = config.downloadsFolder;
+          const timeoutMs = args.timeoutMs ?? 15000;
+          const deadline = Date.now() + timeoutMs;
+          const regex = new RegExp(args.pattern);
+
+          while (Date.now() < deadline) {
+            if (fs.existsSync(dir)) {
+              const files = fs
+                .readdirSync(dir)
+                .filter((name) => !name.endsWith('.crdownload') && !name.endsWith('.tmp'));
+              const matched = files.find((name) => regex.test(name));
+              if (matched) {
+                const fullPath = path.join(dir, matched);
+                const buf = fs.readFileSync(fullPath);
+                if (buf.length > 0) {
+                  return {
+                    fileName: matched,
+                    size: buf.length,
+                    base64: buf.toString('base64'),
+                    allFiles: files,
+                  };
+                }
+              }
+            }
+            await new Promise((r) => setTimeout(r, 200));
+          }
+
+          const existing = fs.existsSync(dir) ? fs.readdirSync(dir) : [];
+          throw new Error(
+            `在 ${timeoutMs}ms 內找不到符合 /${args.pattern}/ 的下載檔案。目前目錄內容: ${JSON.stringify(existing)}`,
+          );
+        },
         /** 整個 emulator 清空。回傳各集合殘留筆數（支援呼叫端自證）。 */
         'db:reset': () => resetFirestore(firestoreEnv),
 

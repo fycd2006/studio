@@ -1,6 +1,7 @@
 import { LessonPlan, Camp, RotationTableData, CampItem } from "@/types/plan";
 import { campItemBlocks, UNASSIGNED_USAGE_LABEL } from "@/lib/camp-items";
 import { exportToDocxBlob } from "@/lib/export-utils";
+import { buildPlanBaseFileName } from "@/lib/export-filename";
 
 type XLSXModule = typeof import("xlsx");
 
@@ -32,7 +33,7 @@ export async function exportProjectBackupZip(
   for (const plan of campPlans) {
     try {
       const blob = await exportToDocxBlob(plan);
-      const safeName = sanitize(`${plan.scheduledName || "教案"}_${plan.activityName || "未命名"}`);
+      const safeName = buildPlanBaseFileName(plan);
       wordFolder!.file(`${safeName}.docx`, blob);
     } catch (e) {
       console.warn(`Failed to generate docx for plan ${plan.id}`, e);
