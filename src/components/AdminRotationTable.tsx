@@ -135,10 +135,10 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
     onUpdate({ teamOrders: newTeams });
   };
 
-  const unifiedAddBtnStyle = "rounded-full font-mono text-xs uppercase tracking-wider gap-1.5 h-8 px-4 border border-orange-500/40 text-orange-600 dark:text-orange-400 hover:bg-orange-500/10 transition-all shadow-xs";
+  const unifiedAddBtnStyle = "rounded-md font-mono text-xs uppercase tracking-wider gap-1.5 h-8 px-4 border border-orange-500/40 text-orange-600 dark:text-orange-400 hover:bg-orange-500/10 transition-all shadow-xs";
 
   return (
-    <Card className="rounded-3xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 shadow-xs overflow-hidden w-full max-w-4xl mx-auto transition-colors">
+    <Card className="rounded-xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 shadow-xs overflow-hidden w-full max-w-4xl mx-auto transition-colors">
       <CardContent className="p-0">
         
         {/* Table Title Bar */}
@@ -147,7 +147,7 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
             {!isReadOnly && (
               <button
                 onClick={addStation}
-                className="h-7 w-7 rounded-full bg-white/15 hover:bg-white/30 text-white transition-all flex items-center justify-center cursor-pointer"
+                className="h-7 w-7 rounded-md bg-white/15 hover:bg-white/30 text-white transition-all flex items-center justify-center cursor-pointer"
                 title="新增關卡 (Add Station)"
               >
                 <Plus className="h-4 w-4" />
@@ -175,10 +175,10 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
                       <span className="font-mono text-xs text-fg-muted uppercase tracking-wider">{table.day || "Day 1"}</span>
                     ) : (
                       <Select value={table.day || "Day 1"} onValueChange={(val) => onUpdate({ day: val })}>
-                        <SelectTrigger className="h-8 rounded-xl font-mono text-xs bg-white dark:bg-white/5 border border-stone-200/80 dark:border-white/10 text-foreground px-2">
+                        <SelectTrigger className="h-8 rounded-lg font-mono text-xs bg-white dark:bg-white/5 border border-stone-200/80 dark:border-white/10 text-foreground px-2">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="rounded-2xl border border-stone-200/80 dark:border-white/10 shadow-2xl bg-white dark:bg-[#14191C] font-mono text-xs p-1">
+                        <SelectContent className="rounded-lg border border-stone-200/80 dark:border-white/10 shadow-2xl bg-white dark:bg-[#14191C] font-mono text-xs p-1">
                           {["Day 1", "Day 2", "Day 3", "Day 4", "Day 5"].map(day => (
                             <SelectItem key={day} value={day} className="rounded-xl font-normal text-xs cursor-pointer">{day}</SelectItem>
                           ))}
@@ -198,7 +198,7 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
                     {!isReadOnly && table.stations.length > 1 && (
                       <button
                         onClick={() => removeStation(idx)}
-                        className="absolute top-1 right-1 h-4 w-4 bg-rose-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover/header:opacity-100 transition-all shadow-xs z-20 cursor-pointer"
+                        className="absolute top-1 right-1 h-4 w-4 bg-rose-500 text-white rounded-md flex items-center justify-center opacity-0 group-hover/header:opacity-100 transition-all shadow-xs z-20 cursor-pointer"
                         title="移除關卡"
                       >
                         <X className="h-3 w-3" />
@@ -371,7 +371,7 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
             <Button
               variant="ghost"
               size="sm"
-              className="text-stone-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 font-mono text-xs uppercase tracking-wider transition-all rounded-xl h-9 px-4 gap-1.5"
+              className="text-stone-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 font-mono text-xs uppercase tracking-wider transition-all rounded-lg h-9 px-4 gap-1.5"
               onClick={onDelete}
             >
               <Trash2 className="h-4 w-4" />

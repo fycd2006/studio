@@ -1,3 +1,6 @@
+import { renderCanvasJsonToPng } from "@/lib/canvas-image";
+import { parseEditorHtml } from "@/lib/editor-html";
+import { prepareClipboardImage } from "@/lib/editor-image";
 import { LessonPlan } from "@/types/plan";
 import { stripHtml } from "@/lib/utils";
 import {
@@ -119,6 +122,50 @@ const triggerBlobDownload = async (
   }, 10000);
 };
 
+const richFields = ["purpose", "process", "content", "divisionOfLabor", "remarks", "openingClosingRemarks"] as const;
+
+async function embedExportImages(plan: LessonPlan): Promise<LessonPlan> {
+  if (typeof document === "undefined") return plan;
+  const result = { ...plan };
+  const converted = new Map<string, Promise<Awaited<ReturnType<typeof prepareClipboardImage>> | null>>();
+  const convert = async (source: string) => {
+    try {
+      const url = new URL(source, window.location.href);
+      if (!/^https?:$/.test(url.protocol) && !/^data:image\//i.test(source)) return null;
+      const response = await fetch(url, { credentials: "same-origin", signal: AbortSignal.timeout(3000) });
+      if (!response.ok || !response.headers.get("Content-Type")?.startsWith("image/")) return null;
+      const image = await response.blob();
+      return image.size < 10_000_000 ? await prepareClipboardImage(image, 100_000) : null;
+    } catch {
+      return null;
+    }
+  };
+  const pending = richFields.map(async (field) => {
+    if (!/<img\b/i.test(plan[field] ?? "")) return;
+    const html = parseEditorHtml(plan[field]);
+    const images = [...html.content.querySelectorAll<HTMLImageElement>("img[src]")];
+    let changed = false;
+    await Promise.all(images.map(async (image) => {
+      const source = image.getAttribute("src");
+      if (!source || /^data:image\/(?:png|jpeg|jpg);base64,/i.test(source)) return;
+      if (!converted.has(source)) {
+        if (converted.size >= 8) return;
+        converted.set(source, convert(source));
+      }
+      const embedded = await converted.get(source);
+      if (!embedded) return;
+      image.src = embedded.src;
+      if (!image.style.width && image.hasAttribute("width")) image.style.width = image.getAttribute("width") + "px";
+      image.width = embedded.width;
+      image.height = embedded.height;
+      changed = true;
+    }));
+    if (changed) result[field] = html.innerHTML;
+  });
+  await Promise.all(pending);
+  return result;
+}
+
 async function preparePlanForApi(plan: LessonPlan, canvasImageData?: string): Promise<LessonPlan> {
   let resolvedCanvas = canvasImageData || plan.canvasImage || undefined;
   if (
@@ -136,7 +183,7 @@ async function preparePlanForApi(plan: LessonPlan, canvasImageData?: string): Pr
   }
 
   // Strip raw canvasData JSON from HTTP payload so large drawings never exceed body limits
-  const { canvasData: _omitCanvasData, ...rest } = plan;
+  const { canvasData: _omitCanvasData, ...rest } = await embedExportImages(plan);
   return {
     ...rest,
     canvasData: null,
@@ -598,114 +645,6 @@ function buildMultiPageJpegPdf(
 }
 
 /**
- * 處理富文本內容中的 HTML 標記，將其轉化為 Word 支援的 Paragraphs
- */
-function parseHtmlToDocx(docx: DocxModule, html: string) {
-  const { Paragraph, TextRun, AlignmentType } = docx;
-  const normalizedHtml = stripInvalidXmlChars(html);
-  if (!normalizedHtml) return [new Paragraph({ text: "無內容", spacing: { after: 200 } })];
-
-  const paragraphs: InstanceType<typeof Paragraph>[] = [];
-  if (typeof document !== "undefined") {
-    const container = document.createElement("div");
-    container.innerHTML = normalizedHtml;
-
-    container.childNodes.forEach((node: any) => {
-      const text = node.textContent || "";
-      if (!text.trim() && node.nodeName !== "BR" && node.nodeName !== "UL" && node.nodeName !== "OL")
-        return;
-
-      let alignment: (typeof AlignmentType)[keyof typeof AlignmentType] = AlignmentType.LEFT;
-      if (node.style?.textAlign === "center") alignment = AlignmentType.CENTER;
-      if (node.style?.textAlign === "right") alignment = AlignmentType.RIGHT;
-
-      const children: InstanceType<typeof TextRun>[] = [];
-
-      const processTextNodes = (parent: any) => {
-        parent.childNodes.forEach((child: any) => {
-          if (child.nodeType === 3) {
-            const fontSizeStr = parent.style?.fontSize || "";
-            let size = 24;
-            if (fontSizeStr.includes("px")) {
-              const parsed = parseInt(fontSizeStr, 10);
-              if (Number.isFinite(parsed) && parsed > 0) {
-                size = Math.round(parsed * 1.5);
-              }
-            }
-
-            children.push(
-              new TextRun({
-                text: stripInvalidXmlChars(child.textContent || ""),
-                bold:
-                  parent.nodeName === "B" ||
-                  parent.nodeName === "STRONG" ||
-                  Boolean(parent.closest && parent.closest("B, STRONG")),
-                italics:
-                  parent.nodeName === "I" ||
-                  parent.nodeName === "EM" ||
-                  Boolean(parent.closest && parent.closest("I, EM")),
-                underline:
-                  parent.nodeName === "U" || Boolean(parent.closest && parent.closest("U"))
-                    ? {}
-                    : undefined,
-                color: parent.style?.color?.startsWith("#")
-                  ? parent.style.color.substring(1)
-                  : TEXT_COLOR,
-                size,
-              })
-            );
-          } else if (child.nodeName === "BR") {
-            children.push(new TextRun({ break: 1 }));
-          } else {
-            processTextNodes(child);
-          }
-        });
-      };
-
-      if (node.nodeName === "UL" || node.nodeName === "OL") {
-        node.childNodes.forEach((li: any) => {
-          if (li.nodeName === "LI") {
-            paragraphs.push(
-              new Paragraph({
-                text: stripInvalidXmlChars(li.textContent || ""),
-                bullet: node.nodeName === "UL" ? { level: 0 } : undefined,
-                numbering:
-                  node.nodeName === "OL" ? { reference: "my-numbering", level: 0 } : undefined,
-                spacing: { after: 120 },
-              })
-            );
-          }
-        });
-      } else {
-        processTextNodes(node);
-        paragraphs.push(
-          new Paragraph({
-            children:
-              children.length > 0
-                ? children
-                : [new TextRun({ text: stripInvalidXmlChars(text), color: TEXT_COLOR, size: 24 })],
-            alignment,
-            spacing: { after: 200, line: 360 },
-          })
-        );
-      }
-    });
-  } else {
-    return (htmlToPlainText(normalizedHtml) || "無內容").split("\n").map(
-      (line) =>
-        new Paragraph({
-          children: [new TextRun({ text: stripInvalidXmlChars(line), color: TEXT_COLOR, size: 24 })],
-          spacing: { after: 200 },
-        })
-    );
-  }
-
-  return paragraphs.length > 0
-    ? paragraphs
-    : [new Paragraph({ text: "無內容", spacing: { after: 200 } })];
-}
-
-/**
  * 建立美化過的標題段落
  */
 function createStyledHeading(docx: DocxModule, title: string) {
@@ -746,7 +685,7 @@ export async function exportToDocx(
     console.warn("Export API unavailable, fallback to local DOCX generation", error);
   }
 
-  const blob = await buildRichDocxBlob(plan, canvasImageData);
+  const blob = await buildRichDocxBlob(await embedExportImages(plan), canvasImageData);
   const fileName = buildPlanBaseFileName(plan);
   await triggerBlobDownload(blob, `${fileName}.docx`, DOCX_MIME, ".docx", options);
 }
@@ -761,7 +700,8 @@ export async function exportToDocxBlob(plan: LessonPlan, canvasImageData?: strin
 
 /** Internal: build the rich docx blob (shared by exportToDocx and exportToDocxBlob) */
 async function buildRichDocxBlob(plan: LessonPlan, canvasImageData?: string): Promise<Blob> {
-  const docx = await import("docx");
+  const [docx, { createRichDocxRenderer }] = await Promise.all([import("docx"), import("@/lib/rich-docx")]);
+  const rich = createRichDocxRenderer(docx);
   const {
     Document,
     Packer,
@@ -774,7 +714,6 @@ async function buildRichDocxBlob(plan: LessonPlan, canvasImageData?: string): Pr
     TableRow: DocxTableRow,
     TableCell: DocxTableCell,
     WidthType,
-    LevelFormat,
     VerticalAlign,
   } = docx;
 
@@ -824,7 +763,7 @@ async function buildRichDocxBlob(plan: LessonPlan, canvasImageData?: string): Pr
         ]),
 
     createStyledHeading(docx, "【教案目的】"),
-    ...parseHtmlToDocx(docx, plan.purpose),
+    ...rich.section(plan.purpose),
 
     ...(isScriptMode
       ? []
@@ -846,7 +785,7 @@ async function buildRichDocxBlob(plan: LessonPlan, canvasImageData?: string): Pr
           }),
 
           createStyledHeading(docx, "【教案流程】"),
-          ...parseHtmlToDocx(docx, plan.process),
+          ...rich.section(plan.process),
         ]),
   ];
 
@@ -877,11 +816,11 @@ async function buildRichDocxBlob(plan: LessonPlan, canvasImageData?: string): Pr
 
   children.push(
     createStyledHeading(docx, "【教案內容說明】"),
-    ...parseHtmlToDocx(docx, plan.content),
+    ...rich.section(plan.content),
 
     ...(isScriptMode
       ? []
-      : [createStyledHeading(docx, "【分工】"), ...parseHtmlToDocx(docx, plan.divisionOfLabor)])
+      : [createStyledHeading(docx, "【分工】"), ...rich.section(plan.divisionOfLabor)])
   );
 
   children.push(createStyledHeading(docx, "【道具表】"));
@@ -1021,37 +960,18 @@ async function buildRichDocxBlob(plan: LessonPlan, canvasImageData?: string): Pr
 
   children.push(
     createStyledHeading(docx, "【備註】"),
-    ...parseHtmlToDocx(docx, plan.remarks),
+    ...rich.section(plan.remarks),
 
     ...(isScriptMode
       ? []
       : [
           createStyledHeading(docx, "【開場結語】"),
-          ...parseHtmlToDocx(docx, plan.openingClosingRemarks),
+          ...rich.section(plan.openingClosingRemarks),
         ])
   );
 
   const doc = new Document({
-    numbering: {
-      config: [
-        {
-          reference: "my-numbering",
-          levels: [
-            {
-              level: 0,
-              format: LevelFormat.DECIMAL,
-              text: "%1.",
-              alignment: AlignmentType.START,
-              style: {
-                paragraph: {
-                  indent: { left: 720, hanging: 360 },
-                },
-              },
-            },
-          ],
-        },
-      ],
-    },
+    numbering: rich.numbering,
     sections: [
       {
         properties: {
@@ -1165,45 +1085,4 @@ export async function exportPlansAsZip(
     (serverName && !isGenericAsciiFallbackName(serverName) ? serverName : fallbackName);
   const blob = await response.blob();
   await triggerBlobDownload(blob, resolvedName, ZIP_MIME, ".zip", options);
-}
-
-/**
- * 將 Fabric.js canvas JSON 渲染為 PNG data:image URL。
- * 使用離屏 canvas，不需要已掛載的畫布元件。
- */
-async function renderCanvasJsonToPng(canvasJson: string, height: number): Promise<string> {
-  const { fabric } = await import("fabric");
-
-  return new Promise((resolve, reject) => {
-    const canvasEl = document.createElement("canvas");
-    canvasEl.width = 800;
-    canvasEl.height = height || 500;
-    canvasEl.style.display = "none";
-    document.body.appendChild(canvasEl);
-
-    try {
-      const offscreen = new fabric.Canvas(canvasEl, {
-        backgroundColor: "#ffffff",
-      });
-
-      offscreen.loadFromJSON(canvasJson, () => {
-        offscreen.renderAll();
-        const dataUrl = offscreen.toDataURL({ format: "png", multiplier: 2 });
-        offscreen.dispose();
-        canvasEl.remove();
-        resolve(dataUrl);
-      });
-
-      setTimeout(() => {
-        try {
-          offscreen.dispose();
-        } catch {}
-        canvasEl.remove();
-        reject(new Error("Canvas render timed out"));
-      }, 10000);
-    } catch (e) {
-      canvasEl.remove();
-      reject(e);
-    }
-  });
 }

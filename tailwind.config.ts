@@ -110,9 +110,12 @@ export default {
         '800': '800ms',
       },
       borderRadius: {
+        DEFAULT: 'var(--radius)',
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+        xl: 'calc(var(--radius) + 2px)',
+        '2xl': 'calc(var(--radius) + 4px)',
       },
       keyframes: {
         shimmer: {

@@ -78,7 +78,7 @@ export function computeDiff(oldText: string, newText: string): DiffSegment[] {
  * Tokenize text into words while preserving whitespace and punctuation as separate tokens.
  */
 function tokenize(text: string): string[] {
-  return text.match(/\S+|\s+/g) || [];
+  return text.match(/\s+|[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]|(?:(?![\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}])[\p{L}\p{M}\p{N}])+|./gu) || [];
 }
 
 /**

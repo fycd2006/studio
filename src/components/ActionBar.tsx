@@ -73,7 +73,7 @@ export function ActionBar({ children, title, className, tone = "warm", position 
         className
       )}
     >
-      <div className="max-w-6xl mx-auto max-md:w-full md:glass-pill rounded-2xl md:rounded-full px-1.5 sm:px-5 py-0.5 sm:py-1.5 flex items-center justify-between gap-1 sm:gap-3 md:shadow-lg md:border md:border-white/40 md:dark:border-white/10">
+      <div className="max-w-6xl mx-auto max-md:w-full md:glass-pill rounded-xl px-1.5 sm:px-5 py-0.5 sm:py-1.5 flex items-center justify-between gap-1 sm:gap-3 md:shadow-lg md:border md:border-white/40 md:dark:border-white/10">
         {/* Architectural Title Specification (Hidden on mobile, shown on desktop) */}
         {title && (
           <div className="hidden lg:flex items-center gap-2 architectural-tag whitespace-nowrap pl-1">

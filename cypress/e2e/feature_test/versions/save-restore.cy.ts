@@ -160,17 +160,17 @@ describe('教案編輯器：版本存檔與還原 (admin)', () => {
     cy.getByTestId('version-sidebar').should('be.visible');
   };
 
-  /**
-   * 關掉版本面板。
-   *
-   * ⚠️ 不是可省略的步驟：面板打開時 PlanEditor.tsx:1492 會鋪一層
-   *    `fixed inset-0 z-[95]` 的遮罩，而「還原」鈕在主內容區（z 更低）——
-   *    面板沒關就點還原，會紅在「被另一個元素蓋住」。**那不是測試問題，
-   *    使用者也是得先把面板收起來才按得到還原**（見本檔末附帶發現一）。
-   */
   const closeSidebar = () => {
-    cy.getByTestId('version-sidebar-overlay').click();
+    cy.getByTestId('version-sidebar-close').click();
     cy.getByTestId('version-sidebar').should('not.exist');
+  };
+
+  const showAutoSaves = () => {
+    cy.getByTestId('version-sidebar').then(($sidebar) => {
+      for (const group of $sidebar.find('[data-testid="version-auto-group"][aria-expanded="false"]').toArray()) {
+        cy.wrap(group).click();
+      }
+    });
   };
 
   /**
@@ -192,21 +192,23 @@ describe('教案編輯器：版本存檔與還原 (admin)', () => {
     cy.toastText().should('include', '版本已儲存');
   };
 
-  /** 在面板裡選一個版本進入預覽，再收起面板按還原（不含還原後的斷言） */
+  /** 在並列面板選取版本後，直接從頂部還原。 */
   const restoreVersion = (versionId: string) => {
     openSidebar();
+    showAutoSaves();
     cy.getByTestId(`version-row-${versionId}`).click();
     // 預覽模式的訊號：歷史橫幅出現。此時欄位會被 DiffHighlighter 取代
     // （PlanEditor.tsx:1141），所以**預覽中拿不到 editor-field-***，
     // 要等還原完回到一般模式才驗欄位。
     cy.getByTestId('editor-history-banner').should('be.visible');
-    closeSidebar();
+    cy.getByTestId('version-sidebar').should('be.visible');
     cy.getByTestId('editor-version-restore').click();
   };
 
   /** 從面板刪掉一筆版本（面板操作完會回到即時編輯狀態） */
   const deleteVersionViaUi = (versionId: string) => {
     openSidebar();
+    showAutoSaves();
     // 刪除鈕只在該版本**被選取時**才出現（VersionHistorySidebar.tsx:287），
     // 而且同樣是 opacity-0 group-hover
     cy.getByTestId(`version-row-${versionId}`).click();
@@ -502,6 +504,25 @@ describe('教案編輯器：版本存檔與還原 (admin)', () => {
     cy.getByTestId('version-sidebar').should('contain.text', '定稿版');
   });
 
+  it('並列顯示相鄰版本的差異，支援跳轉並篩選具名版本', () => {
+    cy.viewport(1400, 900);
+    openEditor();
+    typePurpose('共同文字 舊內容');
+    saveNamedVersion('第一版');
+    closeSidebar();
+    typePurpose('共同文字 新內容');
+    saveNamedVersion('第二版');
+    cy.getByTestId('version-sidebar').contains('button', '第二版').click();
+    cy.getByTestId('version-sidebar').should('be.visible');
+    cy.get('ins[data-version-change]').should('contain.text', '新');
+    cy.get('del[data-version-change]').should('contain.text', '舊');
+    cy.get('button[aria-label="下一個變更"]').click();
+    cy.get('[data-version-change].outline').should('have.length', 1);
+    cy.contains('label', '僅顯示已命名版本').click();
+    cy.getByTestId('version-sidebar').should('contain.text', '第一版').and('contain.text', '第二版');
+    cy.getByTestId('version-sidebar').should('not.contain.text', 'Auto Save');
+  });
+
   // ── 6. 防呆：沒給名稱不該產生版本，也不該謊稱存好了 ──────────
 
   it('存檔沒打名稱就按確定 → 不產生具名版本，也不該出現「版本已儲存」', () => {
@@ -531,19 +552,7 @@ describe('教案編輯器：版本存檔與還原 (admin)', () => {
 });
 
 /*
- * 附帶發現一（未修，另記）：桌機上選了版本之後，「還原 / Restore」鈕被版本面板的
- * 全螢幕遮罩（PlanEditor.tsx:1492，z-[95]）蓋住，使用者必須先把面板收起來才按得到，
- * 而面板上沒有任何提示說「關掉我才看得到還原鈕」。手機（< 640px）反而沒這問題 ——
- * onSelectVersion 會順手把面板關掉（PlanEditor.tsx:1504）。
- *
- * 附帶發現二（未修，另記）：刪掉「正在預覽的那一筆版本」之後，畫面卡在歷史模式 ——
- * 欄位全是唯讀的 diff 檢視，而橫幅上的「取消 / Cancel」鈕因為掛在 `selectedVersion &&`
- * 底下而消失。要回到即時編輯只剩兩條路：面板裡的「目前狀態」那一列，或用頂欄的
- * 版本紀錄鈕把面板收起來（那條分支有順手 setIsHistoryMode(false)）。
- * 點遮罩關面板**不會**解除歷史模式。修法是 handleDeleteVersion 裡
- * setSelectedVersion(null) 的同時也 setIsHistoryMode(false)。
- *
- * 附帶發現三（未修，另記）：教案編輯器剛載入的前幾秒內，點頂欄的「版本紀錄」會被
+ * 附帶發現（未修，另記）：教案編輯器剛載入的前幾秒內，點頂欄的「版本紀錄」會被
  * 整個吞掉 —— 按鈕可見、可點、沒有任何遮擋，但面板不出現，過幾秒再點才會開。
  * 量到的時間窗在 dev server 上是「數秒」；正式環境的 chunk 是預先建好的，窗口應該
  * 小得多，但 /plans/[id] 是 server-rendered on demand，SSR 出來的按鈕在接上事件

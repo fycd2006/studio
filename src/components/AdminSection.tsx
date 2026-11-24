@@ -7,11 +7,12 @@ import type { CampUpdate } from "@/lib/plans-context";
 import { AdminTimer } from "@/components/AdminTimer";
 import { AdminRotationTable } from "@/components/AdminRotationTable";
 import { Button } from "@/components/ui/button";
-import { Clock, Table as TableIcon, Plus, Lock, Unlock, Undo2, Redo2, Package2, ZoomIn, ZoomOut, Maximize, MoreHorizontal, FileDown, Zap, Calendar } from "lucide-react";
+import { Clock, Table as TableIcon, Plus, Lock, Unlock, Undo2, Redo2, Package2, ZoomIn, ZoomOut, Maximize, MoreHorizontal, FileDown, Zap, Calendar, Pencil } from "lucide-react";
 import { SmartRotationWizardModal } from "@/components/SmartRotationWizardModal";
 import { GeneratedSchedule } from "@/lib/rotation-scheduler";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminDialog } from "@/components/AdminDialog";
+import { PlanPreviewDialog } from "@/components/PlanPreviewDialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
@@ -66,7 +67,8 @@ const PropInput = ({
   disabled,
   placeholder,
   className,
-  testId
+  testId,
+  onEditingEnd,
 }: {
   value: string;
   onChange: (val: string) => void;
@@ -76,6 +78,7 @@ const PropInput = ({
   /** 掛在實際承載值的那個元素上 —— 解鎖時是 textarea（值在 .value），
    *  鎖定時是 div（值在文字內容）。兩種狀態同一個 testid。 */
   testId?: string;
+  onEditingEnd?: () => void;
 }) => {
   const [localValue, setLocalValue] = useState(value);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -114,11 +117,14 @@ const PropInput = ({
       data-testid={testId}
       value={localValue}
       placeholder={placeholder}
+      autoFocus={Boolean(onEditingEnd)}
+      aria-label={onEditingEnd ? placeholder : undefined}
       onChange={(e) => setLocalValue(e.target.value)}
       onBlur={() => {
         if (localValue !== value) {
           onChange(localValue);
         }
+        onEditingEnd?.();
       }}
       onInput={resize}
       rows={1}
@@ -158,6 +164,8 @@ export function AdminSection({
   const [selectedDay, setSelectedDay] = useState<string>("Day 1");
   const [activeMainTab, setActiveMainTab] = useState<MainTab>('timer');
   const [activePropsTab, setActivePropsTab] = useState<'activity' | 'teaching' | 'all-props'>('activity');
+  const [preview, setPreview] = useState<{ id: string; trigger: HTMLButtonElement } | null>(null);
+  const [renamingPlanId, setRenamingPlanId] = useState<string | null>(null);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
 
   const handleWizardGenerate = useCallback(async (
@@ -318,10 +326,12 @@ export function AdminSection({
     return key;
   };
 
+  const findPlanGroup = (plan: LessonPlan) => plan.groupId
+    ? groups.find(g => g.id === plan.groupId || normalizeKey(g.slug) === normalizeKey(plan.groupId))
+    : undefined;
+
   const resolvePlanMainType = (plan: LessonPlan): 'activity' | 'teaching' => {
-    const byGroupIdOrSlug = groups.find(
-      g => g.id === plan.groupId || normalizeKey(g.slug) === normalizeKey(plan.groupId)
-    );
+    const byGroupIdOrSlug = findPlanGroup(plan);
     const categoryKey = mapCategoryToSlug(plan.category);
     const groupSlugKey = mapCategoryToSlug(byGroupIdOrSlug?.slug);
     const groupNameZhKey = mapCategoryToSlug(byGroupIdOrSlug?.nameZh);
@@ -337,6 +347,54 @@ export function AdminSection({
 
   const teachingPlans = plans.filter(p => resolvePlanMainType(p) === 'teaching').sort((a, b) => a.order - b.order);
   const activityPlans = plans.filter(p => resolvePlanMainType(p) === 'activity').sort((a, b) => a.order - b.order);
+  const previewPlan = preview && activeMainTab === 'props'
+    ? plans.find(plan => plan.id === preview.id)
+    : undefined;
+
+  const renderPlanName = (plan: LessonPlan) => {
+    const name = stripHtml(plan.activityName);
+    if (!isLocked && renamingPlanId === plan.id) {
+      return (
+        <PropInput
+          value={name}
+          placeholder={t('SUBJECT')}
+          onChange={(activityName) => onUpdatePlan(plan.id, { activityName })}
+          onEditingEnd={() => setRenamingPlanId(null)}
+          disabled={false}
+          className="font-normal"
+        />
+      );
+    }
+
+    return (
+      <button
+        type="button"
+        aria-haspopup="dialog"
+        aria-label={name || t('SUBJECT')}
+        onClick={event => setPreview({ id: plan.id, trigger: event.currentTarget })}
+        className={cn(
+          "max-w-full cursor-pointer whitespace-pre-wrap break-words rounded-sm underline-offset-4 hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+          !isLocked && "px-2 py-2",
+        )}
+      >
+        {name || '—'}
+      </button>
+    );
+  };
+
+  const renderRenamePlan = (plan: LessonPlan) => (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      onClick={() => setRenamingPlanId(plan.id)}
+      className="size-7 shrink-0 rounded-md text-fg-muted"
+      aria-label={t('EDIT_NAME')}
+      title={t('EDIT_NAME')}
+    >
+      <Pencil aria-hidden className="size-3.5" />
+    </Button>
+  );
 
   const groupByCategory = (lessonPlans: LessonPlan[]) => {
     return lessonPlans.reduce((acc, plan) => {
@@ -450,7 +508,7 @@ export function AdminSection({
     const colCount = isLocked ? 9 : 10;
 
     return (
-      <div className="w-full bg-white/80 dark:bg-white/[0.02] backdrop-blur-md border border-stone-200/80 dark:border-white/10 rounded-3xl overflow-hidden flex-1 flex flex-col shadow-xs my-2">
+      <div className="w-full bg-white/80 dark:bg-white/[0.02] backdrop-blur-md border border-stone-200/80 dark:border-white/10 rounded-xl overflow-hidden flex-1 flex flex-col shadow-xs my-2">
         <div className="w-full overflow-auto flex-1 min-h-0 pr-12 sm:pr-0">
           <table className="w-full min-w-[760px] md:min-w-[1000px] text-sm text-left border-collapse">
             <thead className="text-fg-muted text-[11px] font-mono uppercase tracking-[0.2em] sticky top-0 bg-[#FAF8F5]/90 dark:bg-[#12171A]/90 backdrop-blur-xl z-10 border-b border-stone-200/80 dark:border-white/10 text-center">
@@ -509,17 +567,7 @@ export function AdminSection({
                         )}
                         {isFirstInPlan && (
                           <td className={cn("text-xs sm:text-sm text-foreground align-top border-r border-stone-200/80 dark:border-white/10 whitespace-pre-wrap break-all font-normal", isLocked ? "px-4 py-3" : "p-0")} rowSpan={planItems.length}>
-                            {isLocked ? (
-                              stripHtml(item.plan.activityName) || '-'
-                            ) : (
-                              <PropInput
-                                value={stripHtml(item.plan.activityName)}
-                                placeholder="教案名稱"
-                                onChange={(v) => onUpdatePlan(item.plan.id, { activityName: v })}
-                                disabled={isLocked}
-                                className="font-normal text-foreground text-center"
-                              />
-                            )}
+                            {renderPlanName(item.plan)}
                           </td>
                         )}
                         {isFirstInPlan && (
@@ -628,6 +676,7 @@ export function AdminSection({
                         {!isLocked && (
                           <td className="px-2 py-2 text-center align-middle whitespace-nowrap">
                             <div className="flex items-center justify-center gap-1">
+                              {isFirstInPlan && renderRenamePlan(item.plan)}
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -756,17 +805,7 @@ export function AdminSection({
                 isLocked ? "px-4 py-3" : "p-0"
               )}
             >
-              {isLocked ? (
-                stripHtml(plan.activityName) || '-'
-              ) : (
-                <PropInput
-                  value={stripHtml(plan.activityName)}
-                  placeholder="教案名稱"
-                  onChange={(v) => onUpdatePlan(plan.id, { activityName: v })}
-                  disabled={isLocked}
-                  className="font-normal text-foreground text-center"
-                />
-              )}
+              {renderPlanName(plan)}
             </td>
             <td
               className={cn(
@@ -868,15 +907,18 @@ export function AdminSection({
             </td>
             {!isLocked && (
               <td className="px-2 py-2 text-center align-middle whitespace-nowrap">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleAddPropToPlan(plan.id)}
-                  className="h-7 px-2 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-mono text-xs"
-                  title="在此教案新增道具"
-                >
-                  <Plus className="h-3.5 w-3.5 mr-0.5" /> 新增
-                </Button>
+                <div className="flex items-center justify-center gap-1">
+                  {renderRenamePlan(plan)}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleAddPropToPlan(plan.id)}
+                    className="h-7 px-2 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-mono text-xs"
+                    title="在此教案新增道具"
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-0.5" /> 新增
+                  </Button>
+                </div>
               </td>
             )}
           </tr>
@@ -884,7 +926,7 @@ export function AdminSection({
       );
 
     return (
-      <div className="w-full bg-white/80 dark:bg-white/[0.02] backdrop-blur-md border border-stone-200/80 dark:border-white/10 rounded-3xl overflow-hidden flex-1 flex flex-col shadow-xs my-2">
+      <div className="w-full bg-white/80 dark:bg-white/[0.02] backdrop-blur-md border border-stone-200/80 dark:border-white/10 rounded-xl overflow-hidden flex-1 flex flex-col shadow-xs my-2">
         <div className="w-full overflow-auto flex-1 min-h-0 pr-12 sm:pr-0">
           <table className="w-full min-w-[760px] md:min-w-[1000px] text-sm text-left border-collapse">
             <thead className="text-fg-muted text-[11px] font-mono uppercase tracking-[0.2em] sticky top-0 z-10 bg-[#FAF8F5]/90 dark:bg-[#12171A]/90 backdrop-blur-xl border-b border-stone-200/80 dark:border-white/10 text-center">
@@ -1072,7 +1114,7 @@ export function AdminSection({
                         }
                       }}
                       className={cn(
-                        "h-8 sm:h-9 px-2.5 sm:px-3 rounded-full font-mono text-xs gap-1.5 transition-all cursor-pointer",
+                        "h-8 sm:h-9 px-2.5 sm:px-3 rounded-md font-mono text-xs gap-1.5 transition-all cursor-pointer",
                         isLocked
                           ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 border border-rose-500/20"
                           : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20"
@@ -1094,13 +1136,13 @@ export function AdminSection({
                     {activeMainTab === 'tables' && (
                       <div className="flex items-center gap-1.5 sm:gap-2">
                         {/* Day Selector */}
-                        <div className="flex items-center gap-1 bg-stone-200/60 dark:bg-white/10 rounded-full px-2 py-0.5 border border-stone-300/60 dark:border-white/10">
+                        <div className="flex items-center gap-1 bg-stone-200/60 dark:bg-white/10 rounded-lg px-2 py-0.5 border border-stone-300/60 dark:border-white/10">
                           <Calendar className="h-3.5 w-3.5 text-orange-500 shrink-0" />
                           <Select value={selectedDay} onValueChange={setSelectedDay}>
                             <SelectTrigger className="h-7 w-16 sm:w-20 border-0 bg-transparent shadow-none font-mono text-xs text-foreground focus:ring-0 p-0 text-center font-medium">
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent className="rounded-xl border border-stone-200/80 dark:border-white/10 shadow-2xl bg-white dark:bg-[#14191C] font-mono text-xs p-1">
+                            <SelectContent className="rounded-lg border border-stone-200/80 dark:border-white/10 shadow-2xl bg-white dark:bg-[#14191C] font-mono text-xs p-1">
                               {dayOptions.map(d => (
                                 <SelectItem key={d} value={d} className="rounded-lg text-xs cursor-pointer">{d}</SelectItem>
                               ))}
@@ -1113,7 +1155,7 @@ export function AdminSection({
                             <Button
                               onClick={() => setIsWizardOpen(true)}
                               size="sm"
-                              className="rounded-full font-mono text-xs uppercase tracking-wider gap-1.5 h-8 px-2.5 sm:px-3.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-xs cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
+                              className="rounded-md font-mono text-xs uppercase tracking-wider gap-1.5 h-8 px-2.5 sm:px-3.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-xs cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
                             >
                               <Zap className="h-3.5 w-3.5 fill-white shrink-0" />
                               <span className="hidden sm:inline">智能排關</span>
@@ -1124,7 +1166,7 @@ export function AdminSection({
                               variant="outline"
                               size="sm"
                               onClick={() => onAddTable(selectedDay)}
-                              className="rounded-full font-mono text-xs uppercase tracking-wider gap-1 h-8 px-2.5 sm:px-3 border-stone-300 dark:border-white/10 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-white/5 shadow-2xs cursor-pointer"
+                              className="rounded-md font-mono text-xs uppercase tracking-wider gap-1 h-8 px-2.5 sm:px-3 border-stone-300 dark:border-white/10 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-white/5 shadow-2xs cursor-pointer"
                               title="新增空白輪替表"
                             >
                               <Plus className="h-3.5 w-3.5 shrink-0" />
@@ -1137,14 +1179,14 @@ export function AdminSection({
 
                     {/* Props: Sub-tabs */}
                     {activeMainTab === 'props' && (
-                      <div className="flex items-center gap-1 p-0.5 sm:p-1 bg-stone-200/60 dark:bg-white/10 rounded-full border border-stone-300/60 dark:border-white/10">
+                      <div className="flex items-center gap-1 p-0.5 sm:p-1 bg-stone-200/60 dark:bg-white/10 rounded-lg border border-stone-300/60 dark:border-white/10">
                         {(['activity', 'teaching', 'all-props'] as const).map((tab) => (
                           <button
                             key={tab}
                             data-testid={`admin-props-tab-${tab}`}
                             onClick={() => setActivePropsTab(tab)}
                             className={cn(
-                              "px-2.5 sm:px-3.5 py-1 rounded-full text-xs font-mono tracking-wider transition-all cursor-pointer whitespace-nowrap",
+                              "px-2.5 sm:px-3.5 py-1 rounded-md text-xs font-mono tracking-wider transition-all cursor-pointer whitespace-nowrap",
                               activePropsTab === tab
                                 ? "bg-white dark:bg-white/20 text-orange-600 dark:text-orange-400 font-semibold shadow-xs"
                                 : "text-stone-600 hover:text-foreground dark:text-stone-400"
@@ -1162,13 +1204,13 @@ export function AdminSection({
                     {/* Tables: Undo / Redo & Zoom */}
                     {activeMainTab === 'tables' && (
                       <>
-                        <div className="hidden sm:flex items-center bg-stone-200/60 dark:bg-white/10 rounded-full p-0.5 border border-stone-300/60 dark:border-white/10">
+                        <div className="hidden sm:flex items-center bg-stone-200/60 dark:bg-white/10 rounded-lg p-0.5 border border-stone-300/60 dark:border-white/10">
                           <Button 
                             variant="ghost" 
                             size="icon" 
                             onClick={onUndoTable} 
                             disabled={!canUndoTable || isLocked} 
-                            className="h-7 w-7 rounded-full text-foreground hover:bg-white dark:hover:bg-white/10 disabled:opacity-30 cursor-pointer"
+                            className="h-7 w-7 rounded-md text-foreground hover:bg-white dark:hover:bg-white/10 disabled:opacity-30 cursor-pointer"
                             title="復原 (Undo)"
                           >
                             <Undo2 className="h-3.5 w-3.5" />
@@ -1178,7 +1220,7 @@ export function AdminSection({
                             size="icon" 
                             onClick={onRedoTable} 
                             disabled={!canRedoTable || isLocked} 
-                            className="h-7 w-7 rounded-full text-foreground hover:bg-white dark:hover:bg-white/10 disabled:opacity-30 cursor-pointer"
+                            className="h-7 w-7 rounded-md text-foreground hover:bg-white dark:hover:bg-white/10 disabled:opacity-30 cursor-pointer"
                             title="重做 (Redo)"
                           >
                             <Redo2 className="h-3.5 w-3.5" />
@@ -1192,21 +1234,21 @@ export function AdminSection({
                               <Button 
                                 variant="ghost" 
                                 size="sm" 
-                                className="h-8 px-2.5 rounded-full font-mono text-xs uppercase tracking-wider gap-1 bg-stone-200/60 dark:bg-white/10 border border-stone-300/60 dark:border-white/10 hover:bg-stone-300/80 dark:hover:bg-white/15"
+                                className="h-8 px-2.5 rounded-md font-mono text-xs uppercase tracking-wider gap-1 bg-stone-200/60 dark:bg-white/10 border border-stone-300/60 dark:border-white/10 hover:bg-stone-300/80 dark:hover:bg-white/15"
                                 title="縮放表格"
                               >
                                 <ZoomIn className="h-3.5 w-3.5 text-stone-600 dark:text-stone-300" />
                                 <span>{Math.round(zoom * 100)}%</span>
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" sideOffset={6} className="w-36 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-xl p-1 font-mono text-xs">
-                              <DropdownMenuItem onClick={handleZoomIn} disabled={zoom >= 2} className="cursor-pointer gap-2 py-1.5 rounded-lg">
+                            <DropdownMenuContent align="end" sideOffset={6} className="w-36 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-lg p-1 font-mono text-xs">
+                              <DropdownMenuItem onClick={handleZoomIn} disabled={zoom >= 2} className="cursor-pointer gap-2 py-1.5 rounded-md">
                                 <ZoomIn className="h-3.5 w-3.5" /> 放大 (+10%)
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={handleZoomOut} disabled={zoom <= 0.3} className="cursor-pointer gap-2 py-1.5 rounded-lg">
+                              <DropdownMenuItem onClick={handleZoomOut} disabled={zoom <= 0.3} className="cursor-pointer gap-2 py-1.5 rounded-md">
                                 <ZoomOut className="h-3.5 w-3.5" /> 縮小 (-10%)
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={handleFitAll} className="cursor-pointer gap-2 py-1.5 rounded-lg">
+                              <DropdownMenuItem onClick={handleFitAll} className="cursor-pointer gap-2 py-1.5 rounded-md">
                                 <Maximize className="h-3.5 w-3.5" /> 重設 (100%)
                               </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -1225,7 +1267,7 @@ export function AdminSection({
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 px-2.5 sm:px-3.5 rounded-full font-mono text-xs tracking-wider uppercase bg-stone-200/80 dark:bg-white/15 hover:bg-stone-300 dark:hover:bg-white/20 gap-1.5 text-foreground cursor-pointer"
+                          className="h-8 px-2.5 sm:px-3.5 rounded-md font-mono text-xs tracking-wider uppercase bg-stone-200/80 dark:bg-white/15 hover:bg-stone-300 dark:hover:bg-white/20 gap-1.5 text-foreground cursor-pointer"
                           title="匯出"
                           data-testid="admin-export-trigger"
                         >
@@ -1233,23 +1275,23 @@ export function AdminSection({
                           <span className="hidden sm:inline">匯出</span>
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" sideOffset={6} className="w-44 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-xl p-1.5 font-sans">
-                        <DropdownMenuItem onSelect={handleExportExcel} className="cursor-pointer font-medium text-xs py-2 px-3 rounded-lg hover:bg-stone-100 dark:hover:bg-white/5 transition-colors">
+                      <DropdownMenuContent align="end" sideOffset={6} className="w-44 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-lg p-1.5 font-sans">
+                        <DropdownMenuItem onSelect={handleExportExcel} className="cursor-pointer font-medium text-xs py-2 px-3 rounded-md hover:bg-stone-100 dark:hover:bg-white/5 transition-colors">
                           匯出 Excel (.xlsx)
                         </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={handlePrint} className="cursor-pointer font-medium text-xs py-2 px-3 rounded-lg hover:bg-stone-100 dark:hover:bg-white/5 transition-colors">
+                        <DropdownMenuItem onSelect={handlePrint} className="cursor-pointer font-medium text-xs py-2 px-3 rounded-md hover:bg-stone-100 dark:hover:bg-white/5 transition-colors">
                           列印 / Print
                         </DropdownMenuItem>
                         {/* On mobile, also expose Undo/Redo/Zoom in the dropdown */}
                         {activeMainTab === 'tables' && (
                           <div className="sm:hidden border-t border-stone-200 dark:border-white/10 mt-1 pt-1">
-                            <DropdownMenuItem onSelect={onUndoTable} disabled={!canUndoTable || isLocked} className="cursor-pointer font-medium text-xs py-1.5 px-3 rounded-lg gap-2">
+                            <DropdownMenuItem onSelect={onUndoTable} disabled={!canUndoTable || isLocked} className="cursor-pointer font-medium text-xs py-1.5 px-3 rounded-md gap-2">
                               <Undo2 className="h-3.5 w-3.5" /> 復原 (Undo)
                             </DropdownMenuItem>
-                            <DropdownMenuItem onSelect={onRedoTable} disabled={!canRedoTable || isLocked} className="cursor-pointer font-medium text-xs py-1.5 px-3 rounded-lg gap-2">
+                            <DropdownMenuItem onSelect={onRedoTable} disabled={!canRedoTable || isLocked} className="cursor-pointer font-medium text-xs py-1.5 px-3 rounded-md gap-2">
                               <Redo2 className="h-3.5 w-3.5" /> 重做 (Redo)
                             </DropdownMenuItem>
-                            <DropdownMenuItem onSelect={handleFitAll} className="cursor-pointer font-medium text-xs py-1.5 px-3 rounded-lg gap-2">
+                            <DropdownMenuItem onSelect={handleFitAll} className="cursor-pointer font-medium text-xs py-1.5 px-3 rounded-md gap-2">
                               <Maximize className="h-3.5 w-3.5" /> 縮放重設 (100%)
                             </DropdownMenuItem>
                           </div>
@@ -1301,7 +1343,7 @@ export function AdminSection({
                       ))
                     ) : (
                       <div className="flex flex-col items-center justify-center py-24 text-center space-y-4">
-                        <div className="w-14 h-14 rounded-2xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 flex items-center justify-center text-fg-muted shadow-xs">
+                        <div className="w-14 h-14 rounded-lg bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 flex items-center justify-center text-fg-muted shadow-xs">
                           <TableIcon className="h-6 w-6" />
                         </div>
                         <p className="text-xs font-mono text-fg-muted tracking-widest uppercase">目前無輪替表資料</p>
@@ -1335,6 +1377,16 @@ export function AdminSection({
           </Tabs>
         </div>
       </main>
+
+      {previewPlan && preview && (
+        <PlanPreviewDialog
+          key={previewPlan.id}
+          plan={previewPlan}
+          group={findPlanGroup(previewPlan) ?? groups.find(group => group.slug === resolvePlanMainType(previewPlan))}
+          trigger={preview.trigger}
+          onClose={() => setPreview(null)}
+        />
+      )}
 
       {/* Smart Rotation Wizard Modal */}
       <SmartRotationWizardModal

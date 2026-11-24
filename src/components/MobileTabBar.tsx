@@ -95,11 +95,11 @@ export function MobileTabBar() {
                   className="flex flex-col items-center justify-center w-full py-0.5 focus:outline-none select-none cursor-pointer group"
                   aria-label={t(tab.labelKey)}
                 >
-                  <div className="relative w-11 sm:w-13 h-7 flex items-center justify-center rounded-full transition-all">
+                  <div className="relative w-11 sm:w-13 h-7 flex items-center justify-center rounded-md transition-all">
                     {active && (
                       <motion.div
                         layoutId="mobile-standalone-m3-active-pill"
-                        className="absolute inset-0 rounded-full bg-orange-500/15 dark:bg-orange-500/25 border border-orange-500/20"
+                        className="absolute inset-0 rounded-md bg-orange-500/15 dark:bg-orange-500/25 border border-orange-500/20"
                         transition={{ type: "spring", stiffness: 500, damping: 35 }}
                       />
                     )}

@@ -24,6 +24,13 @@ export function getRandomNickname(uid: string): string {
   return `${adj}的${anim}`;
 }
 
+export const campNicknameStorageKey = 'camp-user-nickname';
+
+export function getCampEditorName(user: { uid: string; displayName: string | null }) {
+  const savedName = typeof window === 'undefined' ? undefined : localStorage.getItem(campNicknameStorageKey)?.trim();
+  return savedName || user.displayName?.trim() || getRandomNickname(user.uid);
+}
+
 export function usePresence(planId: string | null) {
   const { user } = useUser();
   const db = useFirestore();
@@ -34,16 +41,7 @@ export function usePresence(planId: string | null) {
   const lockedFieldsRef = useRef<Set<string>>(new Set());
   const lockTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
-  // Determine user display name or fallback to a deterministic random animal nickname
-  const getMyName = useCallback(() => {
-    if (!user) return '訪客';
-    if (user.displayName) return user.displayName;
-    if (typeof window !== 'undefined') {
-      const localName = localStorage.getItem('camp-user-nickname');
-      if (localName) return localName;
-    }
-    return getRandomNickname(user.uid);
-  }, [user]);
+  const getMyName = useCallback(() => user ? getCampEditorName(user) : '訪客', [user]);
 
   useEffect(() => {
     if (!db || !planId) {

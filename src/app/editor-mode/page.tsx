@@ -83,7 +83,7 @@ export default function EditorModePage() {
             type="button"
             aria-label="完成編輯"
             onClick={() => setIsEditing(false)}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm shadow-emerald-500/30 transition-transform duration-200 hover:scale-105 active:scale-95"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-emerald-500 text-white shadow-sm shadow-emerald-500/30 transition-transform duration-200 hover:scale-105 active:scale-95"
           >
             <Check className="h-5 w-5" />
           </button>
@@ -95,13 +95,13 @@ export default function EditorModePage() {
       </header>
 
       <main className="mx-auto w-full max-w-3xl px-4 pb-28 pt-8 sm:px-6 sm:pt-10">
-        <section className="rounded-3xl border border-stone-200/80 dark:border-white/10 bg-white/80 dark:bg-white/[0.03] backdrop-blur-md p-6 shadow-sm sm:p-8">
+        <section className="rounded-xl border border-stone-200/80 dark:border-white/10 bg-white/80 dark:bg-white/[0.03] backdrop-blur-md p-6 shadow-sm sm:p-8">
           <div className="mb-7 flex items-start justify-between gap-4">
             <div>
               <h1 className="text-[34px] font-semibold leading-tight text-foreground sm:text-[42px]">Cymbal Cleaning Company</h1>
               <p className="mt-2 text-sm text-fg-muted">Product strategy draft · Collaboration enabled</p>
             </div>
-            <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            <span className="rounded-sm bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
               {isEditing ? "Editing" : "Read-only"}
             </span>
           </div>
@@ -182,7 +182,7 @@ export default function EditorModePage() {
         onClick={() => setIsEditing(true)}
         className={[
           "fixed bottom-[calc(env(safe-area-inset-bottom)+16px)] right-4 z-50",
-          "inline-flex h-14 w-14 items-center justify-center rounded-2xl",
+          "inline-flex h-14 w-14 items-center justify-center rounded-lg",
           "bg-primary text-primary-foreground shadow-lg shadow-primary/20",
           "transition-all duration-300 ease-out",
           "hover:scale-105 active:scale-95",

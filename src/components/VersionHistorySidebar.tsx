@@ -1,320 +1,212 @@
-"use client"
+"use client";
 
-import React, { useMemo } from 'react';
-import { PlanVersion } from "@/types/plan";
-import { format, isToday, isYesterday, startOfDay } from "date-fns";
-import { 
- History, 
- RotateCcw, 
- User, 
- Clock, 
- ChevronRight,
- Filter,
- CheckCircle2,
- Trash2,
- Pencil,
- Check,
- X
-} from "lucide-react";
+import { useState } from "react";
+import { format, isToday, isYesterday } from "date-fns";
+import { Check, ChevronDown, ChevronRight, History, Pencil, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { useTranslation } from "@/lib/i18n-context";
+import type { PlanVersion } from "@/types/plan";
+
+const autoSaveInterval = 10 * 60 * 1000;
+
+function isAutoSave(version: PlanVersion) {
+  return version.isAuto ?? (version.type === "patch" || /^Auto Save(?: - | \(Exit\)$)/.test(version.name));
+}
+
+function isNamed(version: PlanVersion) {
+  return Boolean(version.versionName?.trim() || (!isAutoSave(version) && version.name.trim()));
+}
 
 interface VersionHistorySidebarProps {
- versions: PlanVersion[];
- selectedVersionId: string | null;
- onSelectVersion: (version: PlanVersion | null) => void;
- onDelete?: (versionId: string) => void | Promise<void>;
- showNamedOnly: boolean;
- onToggleFilter: () => void;
- onBackToCurrent: () => void;
- onUpdateVersionName?: (versionId: string, newName: string) => void;
- onSaveVersion?: (name: string) => void | Promise<void>;
- onClose: () => void;
- className?: string;
+  versions: PlanVersion[];
+  selectedVersionId: string | null;
+  onSelectVersion: (version: PlanVersion) => void;
+  onDelete?: (versionId: string) => void | Promise<void>;
+  onBackToCurrent: () => void;
+  onUpdateVersionName?: (versionId: string, name: string) => void | Promise<void>;
+  onSaveVersion?: (name: string) => void | Promise<void>;
+  onClose: () => void;
 }
 
 export function VersionHistorySidebar({
- versions,
- selectedVersionId,
- onSelectVersion,
- onDelete,
- showNamedOnly,
- onToggleFilter,
- onBackToCurrent,
- onUpdateVersionName,
- onSaveVersion,
- onClose,
- className
+  versions, selectedVersionId, onSelectVersion, onDelete, onBackToCurrent,
+  onUpdateVersionName, onSaveVersion, onClose,
 }: VersionHistorySidebarProps) {
- const { t } = useTranslation();
+  const [namedOnly, setNamedOnly] = useState(false);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [nameError, setNameError] = useState(false);
 
- const [editingId, setEditingId] = React.useState<string | null>(null);
- const [editName, setEditName] = React.useState('');
+  const days = new Map<string, PlanVersion[][]>();
+  for (const version of versions) {
+    if (namedOnly && !isNamed(version)) continue;
+    const date = new Date(version.createdAt);
+    const day = isToday(date) ? "今天" : isYesterday(date) ? "昨天" : "更早 · " + format(date, "yyyy/MM/dd");
+    const groups = days.get(day) ?? [];
+    const group = groups[groups.length - 1];
+    if (group && isAutoSave(version) && !isNamed(version) && isAutoSave(group[0]) &&
+        !isNamed(group[0]) && group[0].createdAt - version.createdAt <= autoSaveInterval) {
+      group.push(version);
+    } else {
+      groups.push([version]);
+    }
+    days.set(day, groups);
+  }
 
- const handleStartEdit = (e: React.SyntheticEvent, version: PlanVersion) => {
- e.stopPropagation();
- setEditingId(version.id);
- setEditName(version.versionName || version.name);
- };
+  const startEdit = (id: string, name: string) => {
+    setEditingId(id);
+    setEditName(name);
+    setNameError(false);
+  };
 
- const handleSaveEdit = (e: React.SyntheticEvent, versionId: string) => {
- e.stopPropagation();
- if (editName.trim() && onUpdateVersionName) {
- onUpdateVersionName(versionId, editName.trim());
- }
- setEditingId(null);
- };
+  const saveName = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!editingId || saving) return;
+    const name = editName.trim();
+    if (!name) {
+      setEditingId(null);
+      return;
+    }
+    setSaving(true);
+    setNameError(false);
+    try {
+      if (editingId === "current") await onSaveVersion?.(name);
+      else await onUpdateVersionName?.(editingId, name);
+      setEditingId(null);
+    } catch {
+      setNameError(true);
+    } finally {
+      setSaving(false);
+    }
+  };
 
- const handleCancelEdit = (e: React.SyntheticEvent) => {
- e.stopPropagation();
- setEditingId(null);
- };
+  const nameForm = (current: boolean) => (
+    <form onSubmit={saveName} className="flex flex-wrap items-center gap-1 p-2">
+      <Input
+        data-testid={current ? "version-save-input" : undefined}
+        aria-label="版本名稱"
+        placeholder="版本名稱"
+        value={editName}
+        maxLength={120}
+        onChange={(event) => setEditName(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Escape" && !saving) setEditingId(null);
+        }}
+        className="h-8 min-w-0 flex-1"
+        autoFocus
+      />
+      <Button size="icon" variant="ghost" type="submit" disabled={saving}
+        data-testid={current ? "version-save-confirm" : undefined}
+        aria-label="儲存名稱" className="h-8 w-8"><Check className="h-4 w-4" /></Button>
+      <Button size="icon" variant="ghost" type="button" disabled={saving}
+        onClick={() => setEditingId(null)} aria-label="取消命名" className="h-8 w-8"><X className="h-4 w-4" /></Button>
+      {nameError && <p role="alert" className="w-full text-xs text-destructive">儲存名稱失敗，請再試一次。</p>}
+    </form>
+  );
 
- const groupedVersions = useMemo(() => {
- const groups: Record<string, PlanVersion[]> = {
- Today: [],
- Yesterday: [],
- Earlier: []
- };
+  const versionRow = (version: PlanVersion) => (
+    <div key={version.id} className={cn("rounded-lg border border-transparent", selectedVersionId === version.id &&
+      "border-orange-300 bg-orange-50 dark:border-amber-600/60 dark:bg-amber-400/10")}>
+      {editingId === version.id ? nameForm(false) : (
+        <div className="flex items-center gap-0.5 pr-1">
+          <button type="button" data-testid={`version-row-${version.id}`} onClick={() => onSelectVersion(version)}
+            aria-pressed={selectedVersionId === version.id}
+            className="flex min-w-0 flex-1 items-start gap-2.5 rounded-lg p-2.5 text-left hover:bg-muted">
+            <span aria-hidden="true" className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full"
+              style={{ backgroundColor: version.authorColor || "#64748b" }} />
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-semibold">{version.versionName || version.name}</span>
+              <span className="block truncate text-xs text-muted-foreground">
+                {version.authorName || "未知修改者"} · <time dateTime={new Date(version.createdAt).toISOString()}>
+                  {format(version.createdAt, "HH:mm:ss")}
+                </time>
+              </span>
+            </span>
+          </button>
+          {onUpdateVersionName && (
+            <Button size="icon" variant="ghost" className="h-8 w-8" aria-label="命名此版本"
+              onClick={() => startEdit(version.id, isNamed(version) ? version.versionName || version.name : "")}>
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
+          {onDelete && selectedVersionId === version.id && (
+            <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" aria-label="刪除此版本"
+              data-testid={`version-delete-${version.id}`} onClick={() => onDelete(version.id)}>
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      )}
+    </div>
+  );
 
- versions.forEach(v => {
- const date = new Date(v.createdAt);
- if (isToday(date)) groups.Today.push(v);
- else if (isYesterday(date)) groups.Yesterday.push(v);
- else groups.Earlier.push(v);
- });
+  return (
+    <aside data-testid="version-sidebar" aria-label="版本紀錄"
+      className="flex h-full min-h-0 flex-col bg-card text-card-foreground">
+      <div className="border-b px-4 py-3">
+        <div className="flex items-center justify-between">
+          <h2 className="flex items-center gap-2 text-base font-semibold leading-tight">
+            <History className="h-4 w-4 text-orange-600 dark:text-amber-400" />
+            版本紀錄
+          </h2>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}
+            aria-label="收起版本紀錄" data-testid="version-sidebar-close"><X className="h-4 w-4" /></Button>
+        </div>
+        <label className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+          <input type="checkbox" checked={namedOnly} onChange={(event) => setNamedOnly(event.target.checked)} />
+          僅顯示已命名版本
+        </label>
+      </div>
 
- return Object.entries(groups).filter(([_, list]) => list.length > 0);
- }, [versions]);
-
- return (
- <div data-testid="version-sidebar" className={cn("fixed top-0 right-0 h-[100dvh] w-full sm:w-96 z-[100] flex flex-col bg-white/95 backdrop-blur-xl dark:bg-[#14191C]/95 border-l border-stone-200/80 dark:border-white/10 shadow-2xl transition-all duration-300", className)}>
- <div className="px-6 pb-4 pt-[calc(env(safe-area-inset-top,1.5rem))]">
- <div className="flex items-center justify-between mb-4">
- <h2 className="text-[15px] font-black tracking-widest text-foreground uppercase flex items-center gap-2.5">
- <History className="h-5 w-5 text-orange-600 dark:text-amber-400" />
- 版本紀錄 / History
- </h2>
- <Button
- variant="ghost"
- size="icon"
- onClick={onClose}
- title="關閉版本紀錄"
- className="h-8 w-8 rounded-full text-fg-muted hover:text-foreground hover:bg-stone-100 dark:hover:bg-white/10 border-none transition-all"
- >
- <X className="h-4 w-4" />
- </Button>
- </div>
- <div className="flex items-center justify-end">
- <Button
- variant="ghost"
- size="sm"
- onClick={onToggleFilter}
- className={cn(
-							"h-7 px-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all",
-							showNamedOnly ? "bg-orange-100 text-orange-700 dark:bg-amber-400/20 dark:text-amber-400" : "bg-stone-100 text-stone-500 hover:bg-stone-200 dark:bg-white/5 dark:text-fg-muted dark:hover:bg-white/10"
-						)}
- >
- <Filter className="h-3.5 w-3.5 mr-1.5" />
- {showNamedOnly ? "Named Only" : "Show All"}
- </Button>
- </div>
- </div>
-
- <ScrollArea className="flex-1">
- <div className="p-4 space-y-8">
- <div className="space-y-4">
- <h3 className="text-[10px] font-black text-fg-muted font-mono uppercase tracking-[0.2em] px-2">
- 目前狀態 / Current
- </h3>
- <div 
- className={cn(
-									"p-4 rounded-2xl transition-all cursor-pointer relative group border",
-									selectedVersionId === null
-										? "bg-orange-50/80 dark:bg-amber-400/10 border-orange-200/50 dark:border-amber-400/20 shadow-[0_2px_12px_rgba(249,115,22,0.08)] dark:shadow-none" 
-										: "bg-white/40 dark:bg-white/[0.03] border-transparent hover:border-stone-200/80 dark:hover:border-white/15 hover:bg-white/80 dark:hover:bg-white/[0.06] hover:shadow-sm"
-								)}
- onClick={onBackToCurrent}
-								data-testid="version-current-row"
- >
- <div className="flex items-start gap-3">
- <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white bg-gradient-to-br from-orange-400 to-orange-600 shadow-md ring-2 ring-white dark:ring-[#0B1012]">
- <span className="text-[10px] font-black uppercase tracking-wider">LIVE</span>
- </div>
- <div className="flex-1 min-w-0">
- <div className="flex items-center justify-between gap-2 h-8">
- {editingId === 'current' ? (
- <div className="flex items-center gap-1 w-full" onClick={e => e.stopPropagation()}>
- <Input 
- placeholder="儲存當前版本..."
-											data-testid="version-save-input"
- value={editName}
- onChange={e => setEditName(e.target.value)}
- className="h-7 text-xs px-2 py-0 font-bold"
- autoFocus
- onKeyDown={e => {
- if (e.key === 'Enter') {
- if (editName.trim() && onSaveVersion) {
- onSaveVersion(editName.trim());
- }
- setEditingId(null);
- }
- if (e.key === 'Escape') setEditingId(null);
- }}
- />
- <Button size="icon" variant="ghost" className="h-6 w-6 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 shrink-0 border-none rounded-full" data-testid="version-save-confirm" onClick={(e) => {
- e.stopPropagation();
- if (editName.trim() && onSaveVersion) {
- onSaveVersion(editName.trim());
- }
- setEditingId(null);
- }}>
- <Check className="h-3.5 w-3.5" />
- </Button>
- <Button size="icon" variant="ghost" className="h-6 w-6 text-stone-400 hover:text-stone-600 hover:bg-stone-200 shrink-0 border-none rounded-full" onClick={(e) => {
- e.stopPropagation();
- setEditingId(null);
- }}>
- <X className="h-3.5 w-3.5" />
- </Button>
- </div>
- ) : (
- <span className="font-bold text-sm text-foreground truncate block">
- 當前版本 (Current Draft)
- </span>
- )}
- </div>
- </div>
- </div>
- 
- <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
- {editingId !== 'current' && onSaveVersion && (
- <Button data-testid="version-save-trigger" 
- variant="ghost" 
- size="icon" 
- className="h-7 w-7 text-stone-400 hover:text-orange-600 hover:bg-orange-100 dark:hover:bg-amber-400/20 dark:hover:text-amber-400 rounded-full transition-colors"
- onClick={(e) => {
- e.stopPropagation();
- setEditingId('current');
- setEditName('');
- }}
- >
- <Pencil className="h-3.5 w-3.5" />
- </Button>
- )}
- </div>
- </div>
- </div>
-
- {groupedVersions.map(([groupName, list]) => (
- <div key={groupName} className="space-y-4">
- <h3 className="text-[10px] font-black text-fg-muted font-mono uppercase tracking-[0.2em] px-2">
- {groupName}
- </h3>
- <div className="space-y-2">
- {list.map((version) => (
- <div 
- key={version.id}
- className={cn(
-								"p-4 rounded-2xl transition-all cursor-pointer relative group border",
-								selectedVersionId === version.id 
-									? "bg-orange-50/80 dark:bg-amber-400/10 border-orange-200/50 dark:border-amber-400/20 shadow-[0_2px_12px_rgba(249,115,22,0.08)] dark:shadow-none" 
-									: "bg-white/40 dark:bg-white/[0.03] border-transparent hover:border-stone-200/80 dark:hover:border-white/15 hover:bg-white/80 dark:hover:bg-white/[0.06] hover:shadow-sm"
-							)}
- onClick={() => onSelectVersion(version)}
-									data-testid={`version-row-${version.id}`}
- >
- <div className="flex items-start gap-3">
- <div 
- className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white overflow-hidden shadow-inner"
- style={{ backgroundColor: version.authorColor || '#cbd5e1' }}
- >
- <span className="text-sm font-black uppercase text-white/90">{(version.authorName || 'A').charAt(0)}</span>
- </div>
- <div className="flex-1 min-w-0">
- <div className="flex items-center justify-between gap-2">
- {editingId === version.id ? (
- <div className="flex items-center gap-1 w-full" onClick={e => e.stopPropagation()}>
- <Input 
- value={editName}
- onChange={e => setEditName(e.target.value)}
- className="h-7 text-xs px-2 py-0 font-bold"
- autoFocus
- onKeyDown={e => {
- if (e.key === 'Enter') handleSaveEdit(e, version.id);
- if (e.key === 'Escape') handleCancelEdit(e);
- }}
- />
- <Button size="icon" variant="ghost" className="h-6 w-6 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 shrink-0 border-none rounded-full" onClick={(e) => handleSaveEdit(e, version.id)}>
- <Check className="h-3.5 w-3.5" />
- </Button>
- <Button size="icon" variant="ghost" className="h-6 w-6 text-stone-400 hover:text-stone-600 hover:bg-stone-200 shrink-0 border-none rounded-full" onClick={handleCancelEdit}>
- <X className="h-3.5 w-3.5" />
- </Button>
- </div>
- ) : (
- <span className="font-bold text-sm text-foreground truncate block">
- {version.versionName || version.name}
- </span>
- )}
- {version.type === 'snapshot' && editingId !== version.id && (
- <div className="flex-shrink-0 w-2 h-2 rounded-full bg-emerald-500" title="Full Snapshot" />
- )}
- </div>
- <div className="flex items-center gap-2 mt-1">
- <span className="text-[10px] font-mono font-bold text-fg-muted uppercase tracking-widest">
- {version.authorName}
- </span>
- <span className="text-[10px] text-stone-300 dark:text-slate-700">•</span>
- <time className="text-[10px] font-bold text-fg-muted font-mono uppercase tracking-widest">
- {format(new Date(version.createdAt), "HH:mm")}
- </time>
- </div>
- </div>
- </div>
- 
- <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
- {editingId !== version.id && (
- <Button 
- variant="ghost" 
- size="icon" 
- className="h-7 w-7 text-stone-400 hover:text-orange-600 hover:bg-orange-100 dark:hover:bg-amber-400/20 dark:hover:text-amber-400 rounded-full transition-colors"
- onClick={(e) => handleStartEdit(e, version)}
- >
- <Pencil className="h-3.5 w-3.5" />
- </Button>
- )}
- {onDelete && selectedVersionId === version.id && editingId !== version.id && (
- <Button data-testid={`version-delete-${version.id}`} 
- variant="ghost" 
- size="icon" 
- className="h-7 w-7 text-stone-400 hover:text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-500/10 dark:hover:text-rose-400 rounded-full transition-colors"
- onClick={(e) => {
- e.stopPropagation();
- onDelete(version.id);
- }}
- >
- <Trash2 className="h-3.5 w-3.5" />
- </Button>
- )}
- </div>
- </div>
- ))}
- </div>
- </div>
- ))}
- </div>
- </ScrollArea>
- 
- {!versions.length && (
- <div className="flex-1 flex flex-col items-center justify-center p-12 text-center opacity-30">
- <History className="h-12 w-12 mb-4 text-stone-200" />
- <p className="font-bold text-xs uppercase tracking-widest text-stone-400">尚無紀錄 / NO HISTORY</p>
- </div>
- )}
- </div>
- );
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-3 py-3">
+        <div className="rounded-lg border">
+          {editingId === "current" ? nameForm(true) : (
+            <div className="flex items-center gap-1 p-1">
+              <button type="button" data-testid="version-current-row" onClick={onBackToCurrent}
+                aria-pressed={selectedVersionId === null}
+                className={cn("flex-1 rounded-md p-2 text-left text-sm font-semibold hover:bg-muted",
+                  selectedVersionId === null && "bg-muted")}>當前版本</button>
+              {onSaveVersion && (
+                <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="儲存當前版本"
+                  data-testid="version-save-trigger" onClick={() => startEdit("current", "")}>
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+        {[...days].map(([day, groups]) => (
+          <section key={day} className="space-y-1">
+            <h3 className="px-2 text-xs font-semibold text-muted-foreground">{day}</h3>
+            {groups.map((group) => {
+              const newest = group[0];
+              if (group.length === 1) return versionRow(newest);
+              const open = expanded[newest.id] ?? group.some((version) => version.id === selectedVersionId);
+              const oldest = group[group.length - 1];
+              return (
+                <div key={newest.id}>
+                  <button type="button" aria-expanded={open} data-testid="version-auto-group"
+                    onClick={() => setExpanded((previous) => ({ ...previous, [newest.id]: !open }))}
+                    className="flex w-full items-center gap-2 rounded-lg p-2.5 text-left text-sm hover:bg-muted">
+                    {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    <span>自動存檔 · {group.length} 筆</span>
+                    <span className="ml-auto text-xs text-muted-foreground">
+                      {format(oldest.createdAt, "HH:mm")}–{format(newest.createdAt, "HH:mm")}
+                    </span>
+                  </button>
+                  {open && <div className="ml-3 border-l pl-2">{group.map(versionRow)}</div>}
+                </div>
+              );
+            })}
+          </section>
+        ))}
+        {days.size === 0 && (
+          <p className="px-2 text-sm text-muted-foreground">{namedOnly ? "尚無已命名版本" : "尚無版本紀錄"}</p>
+        )}
+      </div>
+    </aside>
+  );
 }

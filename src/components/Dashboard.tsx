@@ -71,7 +71,7 @@ export function Dashboard({ camps, activeCampId, plans, onSelectPlan, onSetViewM
  {/* ═══════════════════════════════════════════
  HERO SECTION — Landing Page Warmth
  ═══════════════════════════════════════════ */}
- <section className="relative w-full overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-primary via-[#FF6B00] to-accent p-8 md:p-16 text-white shadow-2xl shadow-primary/20 dark:shadow-primary/10 group">
+ <section className="relative w-full overflow-hidden rounded-xl bg-gradient-to-br from-primary via-[#FF6B00] to-accent p-8 md:p-16 text-white shadow-2xl shadow-primary/20 dark:shadow-primary/10 group">
  {/* Background Pattern */}
  <div className="absolute inset-0 dot-grid opacity-10 pointer-events-none" />
  {/* Decorative Floating Orbs */}
@@ -80,7 +80,7 @@ export function Dashboard({ camps, activeCampId, plans, onSelectPlan, onSetViewM
  
  <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
  <div className="space-y-6 text-center md:text-left max-w-2xl">
- <Badge className="bg-white/20 hover:bg-white/30 text-white px-4 py-1.5 rounded-full backdrop-blur-md font-bold tracking-widest text-[10px] uppercase shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <Badge className="bg-white/20 hover:bg-white/30 text-white px-4 py-1.5 rounded-sm backdrop-blur-md font-bold tracking-widest text-[10px] uppercase shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
  <Flame className="h-3 w-3 mr-1.5" />
  Volunteer Studio
  </Badge>
@@ -94,7 +94,7 @@ export function Dashboard({ camps, activeCampId, plans, onSelectPlan, onSetViewM
  <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 pt-4">
  <Button 
  onClick={() => onSetViewMode('editor')}
- className="bg-white text-primary hover:bg-white/90 h-14 px-8 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-black/10 group/btn transition-all btn-shimmer btn-press cursor-pointer shadow-[0_8px_30px_rgba(140,120,100,0.05)]"
+ className="bg-white text-primary hover:bg-white/90 h-14 px-8 rounded-lg font-bold text-xs uppercase tracking-widest shadow-black/10 group/btn transition-all btn-shimmer btn-press cursor-pointer shadow-[0_8px_30px_rgba(140,120,100,0.05)]"
  >
  開始編寫 / Start Planning
  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover/btn:translate-x-1" />
@@ -102,7 +102,7 @@ export function Dashboard({ camps, activeCampId, plans, onSelectPlan, onSetViewM
  <Button 
  onClick={() => onSetViewMode('admin')}
  variant="outline" 
- className="bg-white/10  text-white hover:bg-white/20 h-14 px-8 rounded-2xl font-bold text-xs uppercase tracking-widest backdrop-blur-md btn-press cursor-pointer shadow-[0_8px_30px_rgba(140,120,100,0.05)]"
+ className="bg-white/10  text-white hover:bg-white/20 h-14 px-8 rounded-lg font-bold text-xs uppercase tracking-widest backdrop-blur-md btn-press cursor-pointer shadow-[0_8px_30px_rgba(140,120,100,0.05)]"
  >
  行政中心 / Admin Center
  </Button>
@@ -110,7 +110,7 @@ export function Dashboard({ camps, activeCampId, plans, onSelectPlan, onSetViewM
  </div>
  {/* Decorative Visual */}
  <div className="relative hidden lg:block">
- <div className="w-64 h-64 md:w-72 md:h-72 bg-white/10 rounded-[3rem] backdrop-blur-2xl shadow-2xl animate-float flex items-center justify-center overflow-hidden shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
+ <div className="w-64 h-64 md:w-72 md:h-72 bg-white/10 rounded-xl backdrop-blur-2xl shadow-2xl animate-float flex items-center justify-center overflow-hidden shadow-[0_8px_30px_rgba(140,120,100,0.05)]">
  <Sparkles className="w-24 h-24 text-white/15 absolute -top-6 -right-6" />
  <Layout className="w-28 h-28 text-white/30" />
  </div>
@@ -128,7 +128,7 @@ export function Dashboard({ camps, activeCampId, plans, onSelectPlan, onSetViewM
  { icon: Package2, label: "物資準備率 / Props Ready", value: stats.propsReadyRate, suffix: "%", sub: "教案道具裝袋狀態", color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-500/10" },
  { icon: Clock, label: "剩餘天數 / Days left", value: countdowns[0]?.days || 0, suffix: "天", sub: countdowns[0]?.label || "無即時活動", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-500/10" },
  ].map((stat, i) => (
- <Card key={i} className="glass-card glow-card p-6 rounded-[1.5rem] flex flex-col justify-between hover:scale-[1.02] transition-all duration-300 cursor-default gradient- border-none">
+ <Card key={i} className="glass-card glow-card p-6 rounded-xl flex flex-col justify-between hover:scale-[1.02] transition-all duration-300 cursor-default gradient- border-none">
  <div className="flex items-center justify-between mb-4">
  <div className={cn("p-3 rounded-xl shadow-sm", stat.bg)}>
  <stat.icon className={cn("h-5 w-5", stat.color)} />
@@ -152,13 +152,13 @@ export function Dashboard({ camps, activeCampId, plans, onSelectPlan, onSetViewM
  ═══════════════════════════════════════════ */}
  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
  {/* Countdown Timeline */}
- <Card className="lg:col-span-1 glass-card glow-card p-8 rounded-[2rem]">
+ <Card className="lg:col-span-1 glass-card glow-card p-8 rounded-xl">
  <div className="flex items-center gap-3 mb-8">
  <Calendar className="h-5 w-5 text-primary" />
  <h3 className="font-headline font-bold text-lg tracking-tight text-foreground uppercase">營隊里程碑 / Milestones</h3>
  </div>
  <div className="space-y-6 relative">
- <div className="absolute left-2 top-2 bottom-2 w-0.5 bg- rounded-full border-none" />
+ <div className="absolute left-2 top-2 bottom-2 w-0.5 bg- rounded-sm border-none" />
  {countdowns.length > 0 ? countdowns.map((e, i) => (
  <div key={i} className="relative pl-8 flex items-center justify-between group">
  <div className={cn(
@@ -181,7 +181,7 @@ export function Dashboard({ camps, activeCampId, plans, onSelectPlan, onSetViewM
  </Card>
 
  {/* Recently Updated Plans */}
- <Card className="lg:col-span-2 glass-card glow-card p-8 rounded-[2rem]">
+ <Card className="lg:col-span-2 glass-card glow-card p-8 rounded-xl">
  <div className="flex items-center justify-between mb-8">
  <div className="flex items-center gap-3">
  <FileText className="h-5 w-5 text-primary" />
@@ -221,7 +221,7 @@ export function Dashboard({ camps, activeCampId, plans, onSelectPlan, onSetViewM
  </div>
  )) : (
  <div className="text-center py-16 space-y-4">
- <div className="w-16 h-16 bg-secondary rounded-2xl flex items-center justify-center mx-auto text-muted-foreground/30">
+ <div className="w-16 h-16 bg-secondary rounded-lg flex items-center justify-center mx-auto text-muted-foreground/30">
  <FileText className="h-8 w-8" />
  </div>
  <p className="text-muted-foreground font-medium font-comic">目前還沒有教案紀錄 / No plans found</p>

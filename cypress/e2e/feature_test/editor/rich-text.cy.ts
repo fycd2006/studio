@@ -7,14 +7,6 @@
  *   2. 從外部（Google Docs / 網頁）貼進來的內容，格式留著、**可執行的東西被拿掉**。
  *      這是 O2RichEditor.tsx:53 的 sanitizeHtml 唯一被呼叫到的地方（只在貼上時跑）。
  *
- * ⚠️ 本專案的編輯器**沒有顯示工具列**（O2RichEditor 的 hideToolbar 預設 true，
- *    PlanEditor 沒有覆寫）。所以粗體這類格式只能從鍵盤快捷鍵進去 ——
- *    不要為了「點工具列按鈕」去找不存在的 testid。
- *
- * ⚠️ 這支**不是** stored XSS 的測試。sanitizeHtml 只擋貼上那條路；
- *    資料庫裡既有的內容是直接 innerHTML 塞回畫面的（O2RichEditor.tsx:205），
- *    那條路由 edge_cases/xss.cy.ts 負責。
- *
  * 對應實作：src/components/O2RichEditor.tsx
  */
 
@@ -137,4 +129,64 @@ describe('教案編輯器：富文字格式與貼上 (admin)', () => {
     cy.editorField('content').should('contain.text', '合法粗體');
     cy.window().its('__xssFromPaste').should('be.undefined');
   });
+  it('工具列依游標顯示格式，連續換字型、字級和字色時保留原本選取', () => {
+    cy.viewport(1400, 900);
+    openEditor();
+    const field = cy.editorField('purpose');
+    field.click();
+    cy.window().then((win) => {
+      const data = new win.DataTransfer();
+      data.setData('text/html', '<p style="text-align:center"><span style="font-family:Microsoft JhengHei;font-size:18px">這段文字</span></p>');
+      cy.editorField('purpose').trigger('paste', { clipboardData: data });
+    });
+    cy.editorField('purpose').contains('這段文字').then(($text) => {
+      const element = $text[0];
+      element.closest<HTMLElement>('[contenteditable]')?.focus();
+      const range = element.ownerDocument.createRange();
+      range.selectNodeContents(element);
+      element.ownerDocument.getSelection()?.removeAllRanges();
+      element.ownerDocument.getSelection()?.addRange(range);
+    });
+    const button = (label: string) => cy.get('button[aria-label="' + label + '"]:visible');
+    button('字型 微軟正黑體').should('be.visible').click();
+    cy.contains('button', /^Arial$/).click();
+    cy.window().should((win) => expect(win.getSelection()?.toString()).to.eq('這段文字'));
+    button('置中對齊').should('have.attr', 'aria-pressed', 'true');
+    button('字級 18px').click();
+    cy.contains('button', /^24px$/).click();
+    cy.window().should((win) => expect(win.getSelection()?.toString()).to.eq('這段文字'));
+    button('字級 24px').should('be.visible');
+    button('字色與醒目提示').click();
+    button('字色 #e11d48').click();
+    cy.window().should((win) => expect(win.getSelection()?.toString()).to.eq('這段文字'));
+    cy.dbDocsUntil<PlanDoc>('lessonPlans', (docs) => {
+      const stored = planInDb(docs)?.purpose ?? '';
+      return stored.includes('Arial') && stored.includes('24px') && /(?:225, 29, 72|#e11d48)/i.test(stored);
+    }, { reason: '三次工具列設定都應作用於同一段文字' });
+  });
+
+  it('表格跳格、合併、分割與插入欄後維持格內文字', () => {
+    cy.viewport(1400, 900);
+    openEditor();
+    cy.editorField('purpose').click().type('表格：{enter}');
+    cy.get('button[aria-label="插入表格"]:visible').click();
+    cy.contains('button', /^2 × 2$/).click();
+    cy.editorField('purpose').find('td').should('have.length', 4);
+    cy.editorField('purpose').find('td').eq(0).click();
+    cy.realPress('a');
+    cy.realPress('Tab');
+    cy.realPress('b');
+    cy.editorField('purpose').find('td').eq(1).should('contain.text', 'b');
+    cy.editorField('purpose').find('td').eq(0).click();
+    cy.get('button[aria-label="表格操作"]').click();
+    cy.contains('button', '合併右側儲存格').click();
+    cy.editorField('purpose').find('td').eq(0).should('have.attr', 'colspan', '2').and('contain.text', 'b');
+    cy.get('button[aria-label="表格操作"]').click();
+    cy.contains('button', '分割儲存格').click();
+    cy.editorField('purpose').find('td').should('have.length', 4);
+    cy.get('button[aria-label="表格操作"]').click();
+    cy.contains('button', '右方插入欄').click();
+    cy.editorField('purpose').find('td').should('have.length', 6);
+  });
+
 });

@@ -80,7 +80,7 @@ const en = {
   TIME_WINDOW: "Time Window",
   VENUE: "Location",
   PROCEDURES: "Procedural Phases",
-  VISUAL_BLUEPRINT: "Visual Blueprint",
+  VISUAL_BLUEPRINT: "Lesson content",
   REMOVE_CANVAS: "Remove Canvas",
   ADD_CANVAS: "Add Visual Canvas",
   OPENING_CLOSING: "Opening & Closing",

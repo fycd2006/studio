@@ -132,6 +132,7 @@ export interface PlanVersion {
   planId: string;
   name: string;
   versionName?: string;
+  isAuto?: boolean;
   createdAt: number;
   type: 'snapshot' | 'patch';
   authorId: string;

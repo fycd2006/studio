@@ -59,8 +59,8 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { VersionHistorySidebar } from "./VersionHistorySidebar";
 import { DiffHighlighter } from "./DiffHighlighter";
-import { getChangedFields } from "@/lib/text-diff";
 import { exportToDocx, exportToPdf } from "@/lib/export-utils";
+import { utf8Length } from "@/lib/editor-image";
 import { usePresence } from "@/hooks/use-presence";
 
 const FabricCanvas = dynamic(
@@ -68,7 +68,7 @@ const FabricCanvas = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-[500px] flex flex-col gap-2.5 items-center justify-center border border-dashed border-stone-200/80 dark:border-white/10 rounded-2xl bg-stone-50/50 dark:bg-white/[0.02]">
+      <div className="h-[500px] flex flex-col gap-2.5 items-center justify-center border border-dashed border-stone-200/80 dark:border-white/10 rounded-lg bg-stone-50/50 dark:bg-white/[0.02]">
         <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
         <span className="text-sm text-fg-muted font-bold">正在載入藍圖畫布...</span>
       </div>
@@ -92,7 +92,7 @@ const FieldContainer = ({
   const locked = isLockedByOther(field);
   const info = getLockInfo(field);
   return (
-    <div className="relative group" data-testid={`editor-field-${field}`}>
+    <div className="relative group" data-editor-field={field} data-testid={`editor-field-${field}`}>
       <div className={cn("transition-opacity", locked && "opacity-50 pointer-events-none")}>
         {children}
       </div>
@@ -106,7 +106,7 @@ const FieldContainer = ({
         return (
           <div 
             style={{ backgroundColor: `hsl(${hue}, 72%, 42%)` }}
-            className="absolute -top-3 right-2 z-10 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md flex items-center gap-1.5 animate-in fade-in-30 zoom-in-95 duration-200 pointer-events-auto"
+            className="absolute -top-3 right-2 z-10 text-white text-[10px] font-bold px-2 py-0.5 rounded-sm shadow-md flex items-center gap-1.5 animate-in fade-in-30 zoom-in-95 duration-200 pointer-events-auto"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
             <span>{info.name} 編輯中</span>
@@ -131,14 +131,20 @@ const FieldContainer = ({
 };
 
 
-const SectionHeader = ({ title, icon: Icon, tag }: { title: string; icon?: any; tag?: string }) => (
+const SectionHeader = ({ title, icon: Icon, tag, actions }: {
+  title: string;
+  icon?: React.ElementType;
+  tag?: string;
+  actions?: React.ReactNode;
+}) => (
   <div className="flex items-center justify-between gap-3 mb-4 pt-4 md:pt-8 first:pt-0 border-b hairline-divider pb-3 transition-colors">
     <div className="flex items-center gap-2.5">
       <h3 className="text-base sm:text-lg font-sans font-medium text-foreground tracking-tight transition-colors">
         {title}
       </h3>
     </div>
-    <div className="flex items-center gap-2">
+    <div className="flex shrink-0 items-center gap-2">
+      {actions}
       {tag && (
         <span className="architectural-tag text-[10px] tracking-technical text-fg-muted hidden sm:inline-flex">
           {tag}
@@ -160,14 +166,14 @@ interface PlanEditorProps {
   canRedo?: boolean;
   versions?: PlanVersion[];
   /** 回傳 true 代表真的建了一筆版本；false 代表沒有。 */
-  onSaveVersion?: (name: string, isAuto?: boolean) => Promise<boolean>;
+  onSaveVersion?: (name: string, isAuto?: boolean, draft?: LessonPlan) => Promise<boolean>;
   /** 回傳還原後的完整狀態；null 代表還原失敗（內容沒有被改動）。 */
   onRestoreVersion?: (versionId: string) => Promise<LessonPlan | null>;
   /** 回傳 true 代表真的刪掉了；false 代表沒刪（取消刪除）。 */
   onDeleteVersion?: (versionId: string) => Promise<boolean>;
   onAutoSave?: () => void;
   getFullVersionState?: (version: PlanVersion) => Promise<LessonPlan>;
-  onUpdateVersionName?: (versionId: string, versionName: string) => void;
+  onUpdateVersionName?: (versionId: string, versionName: string) => Promise<void>;
   activityTypes?: string[];
 }
 
@@ -189,22 +195,55 @@ export function PlanEditor({
   }, [forceTakeoverField, toast]);
 
   // History Mode State
-  const [isHistoryMode, setIsHistoryMode] = useState(false);
   const [blueprintMode, setBlueprintMode] = useState<'text' | 'canvas'>(plan.canvasData ? 'canvas' : 'text');
 
+  const blueprintPlanId = useRef(plan.id);
   useEffect(() => {
+    if (blueprintPlanId.current === plan.id) return;
+    blueprintPlanId.current = plan.id;
     setBlueprintMode(plan.canvasData ? 'canvas' : 'text');
   }, [plan.id, plan.canvasData]);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [selectedVersion, setSelectedVersion] = useState<PlanVersion | null>(null);
+  const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
+  const selectedVersion = versions.find((version) => version.id === selectedVersionId);
+  const selectedIndex = versions.findIndex((version) => version.id === selectedVersionId);
+  const previousVersion = selectedIndex >= 0 ? versions[selectedIndex + 1] : undefined;
+  const isHistoryMode = Boolean(selectedVersionId);
+  const showHistoryBar = isSidebarOpen || isHistoryMode;
   const [previewPlan, setPreviewPlan] = useState<LessonPlan | null>(null);
   const [previousPlan, setPreviousPlan] = useState<LessonPlan | null>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [previewError, setPreviewError] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const previewContentRef = useRef<HTMLDivElement>(null);
+  const planEditorRef = useRef<HTMLDivElement>(null);
+  const [changePosition, setChangePosition] = useState(-1);
+  const [changeCount, setChangeCount] = useState(0);
 
-  // Versions UI state
-  const [newVersionName, setNewVersionName] = useState("");
-  const [showNamedOnly, setShowNamedOnly] = useState(false);
+  const jumpToChange = (direction: number) => {
+    if (changeCount === 0) return;
+    setChangePosition((position) => position < 0
+      ? (direction > 0 ? 0 : changeCount - 1)
+      : (position + direction + changeCount) % changeCount);
+  };
+
+  useEffect(() => {
+    if (changePosition < 0) return;
+    const changes = previewContentRef.current?.querySelectorAll<HTMLElement>("[data-version-change]");
+    changes?.forEach((element, index) => {
+      for (const token of ["outline", "outline-2", "outline-orange-500"]) {
+        element.classList.toggle(token, index === changePosition);
+      }
+    });
+    changes?.[changePosition]?.scrollIntoView({ block: "center" });
+  }, [changePosition, previewPlan, previousPlan]);
+
+  const returnToEditor = () => {
+    setSelectedVersionId(null);
+    setIsSidebarOpen(false);
+  };
+
 
   // Global Editor Zoom
   const [pageZoom, setPageZoom] = useState(1);
@@ -282,9 +321,9 @@ export function PlanEditor({
     }
   };
   const [isFabVisible, setIsFabVisible] = useState(true);
-  const isPrintMode = !isMobile || isMobilePrintView;
+  const isPrintMode = !showHistoryBar && (!isMobile || isMobilePrintView);
   const isReadOnlyMode = isMobile && !isEditingMode;
-  const isInteractionLocked = isHistoryMode || isReadOnlyMode;
+  const isInteractionLocked = showHistoryBar || isReadOnlyMode;
 
   const lastScrollYRef = useRef(0);
   const scrollTickingRef = useRef(false);
@@ -351,7 +390,7 @@ export function PlanEditor({
   const handlePrint = async () => {
     try {
       toast({ title: "匯出中", description: "正在產生 PDF 檔案..." });
-      await exportToPdf(currentPlan, { useSaveDialog: false });
+      await exportToPdf(getLiveDraft(), { useSaveDialog: false });
       toast({ title: "匯出成功", description: "已下載 PDF 檔案" });
     } catch (err) {
       console.error("PDF export failed", err);
@@ -361,7 +400,7 @@ export function PlanEditor({
   const handleExportWord = async () => {
     try {
       toast({ title: "匯出中", description: "正在產生 Word 檔案..." });
-      await exportToDocx(currentPlan, undefined, { useSaveDialog: false });
+      await exportToDocx(getLiveDraft(), undefined, { useSaveDialog: false });
       toast({ title: "匯出成功", description: "已經成功下載 Word 檔案" });
     } catch (err) {
       console.error("Word export failed", err);
@@ -515,6 +554,21 @@ export function PlanEditor({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  const getLiveDraft = () => {
+    const current = { ...localPlan, ...pendingUpdatesRef.current };
+    for (const element of planEditorRef.current?.querySelectorAll<HTMLElement>("[data-editor-field]") ?? []) {
+      const field = element.dataset.editorField as keyof LessonPlan;
+      const richText = element.querySelector<HTMLElement>("[data-rich-text-editor]");
+      if (richText && typeof current[field] === "string") {
+        Object.assign(current, { [field]: richText.innerHTML.replace(/\u200b/g, "") });
+      }
+    }
+    return current;
+  };
+
+  // Leave room for Firestore's document overhead and edits after pasting.
+  const remainingPasteBytes = () => Math.max(0, 900_000 - utf8Length(JSON.stringify(getLiveDraft())));
+
   const currentPlan = isHistoryMode ? (previewPlan || plan) : localPlan;
   const isScriptMode = currentPlan.scheduledName === '劇本';
 
@@ -614,58 +668,56 @@ export function PlanEditor({
     };
   }, []);
 
-  // Load preview data when version selected
   useEffect(() => {
+    setPreviewPlan(null);
+    setPreviousPlan(null);
+    setPreviewError(false);
+    setChangePosition(-1);
+    setChangeCount(0);
     if (!selectedVersion || !getFullVersionState) {
-      setPreviewPlan(null);
-      setPreviousPlan(null);
+      setIsLoadingPreview(false);
       return;
     }
 
+    let cancelled = false;
+    setIsLoadingPreview(true);
     const load = async () => {
-      setIsLoadingPreview(true);
       try {
-        const targetState = await getFullVersionState(selectedVersion);
-        setPreviewPlan(targetState);
-
-        const currentIdx = versions.findIndex(v => v.id === selectedVersion.id);
-        if (currentIdx < versions.length - 1) {
-          const prevState = await getFullVersionState(versions[currentIdx + 1]);
-          setPreviousPlan(prevState);
-        } else {
-          setPreviousPlan(null);
-        }
-      } catch (err) {
-        // ⚠️ 這裡只 console.error 的話，使用者看到的是「欄位全部空白的歷史檢視」，
-        //    而且畫面上沒有任何東西說明發生了什麼（實測 2026-10-16，瀏覽器實際操作）。
-        //    重建不出來（基準快照被刪掉或資料壞掉）是真的會發生的事，要講出來。
-        //    刻意**留在歷史模式**：橫幅上的「取消」還在，使用者可以自己退出或換一個
-        //    版本看，也還能按還原（還原會再報一次它自己的失敗）。
-        console.error("Failed to load version preview:", err);
-        setPreviewPlan(null);
-        setPreviousPlan(null);
-        toast({
-          title: "這個版本打不開",
-          description: "它的重建基準已經不在了，所以沒辦法顯示當時的內容。",
-          variant: "destructive",
-        });
+        const target = await getFullVersionState(selectedVersion);
+        const prior = previousVersion
+          ? await getFullVersionState(previousVersion).catch(() => null)
+          : null;
+        if (cancelled) return;
+        setPreviewPlan(target);
+        setPreviousPlan(prior);
+      } catch (error) {
+        if (cancelled) return;
+        console.error("Failed to load version preview:", error);
+        setPreviewError(true);
       } finally {
-        setIsLoadingPreview(false);
+        if (!cancelled) setIsLoadingPreview(false);
       }
     };
-    load();
-  }, [selectedVersion, getFullVersionState, versions]);
+    void load();
+    return () => { cancelled = true; };
+  }, [selectedVersion, previousVersion, getFullVersionState]);
 
-  const handleSaveVersion = async (name?: string) => {
-    // Flush pending updates immediately before saving version
-    if (Object.keys(pendingUpdatesRef.current).length > 0) {
-      onUpdateRef.current(planIdRef.current, pendingUpdatesRef.current);
-      pendingUpdatesRef.current = {};
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    }
+  useEffect(() => {
+    const content = previewContentRef.current;
+    if (!content) return;
+    const countChanges = () => setChangeCount(content.querySelectorAll("[data-version-change]").length);
+    countChanges();
+    const observer = new MutationObserver(countChanges);
+    observer.observe(content, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [previewPlan, previousPlan, blueprintMode, isLoadingPreview]);
 
-    const nameToSave = name || newVersionName;
-    if (!nameToSave.trim()) {
+  const handleSaveVersion = async (name: string) => {
+    const draft = getLiveDraft();
+    flushPendingUpdates();
+
+    const nameToSave = name.trim();
+    if (!nameToSave) {
       toast({ title: "請輸入版本名稱", variant: "destructive" });
       return;
     }
@@ -675,7 +727,7 @@ export function PlanEditor({
     //    原本這裡不 await 也不看結果就跳「版本已儲存」，使用者會以為書籤存好了。
     let saved = false;
     try {
-      saved = (await onSaveVersion?.(nameToSave.trim())) ?? false;
+      saved = (await onSaveVersion?.(nameToSave, false, draft)) ?? false;
     } catch (err) {
       console.error('[PlanEditor] 儲存版本失敗:', err);
       saved = false;
@@ -687,10 +739,9 @@ export function PlanEditor({
         description: "請稍後再試一次；目前的內容沒有受到影響。",
         variant: "destructive",
       });
-      return;
+      throw new Error("Version was not saved");
     }
 
-    setNewVersionName("");
     toast({ title: "版本已儲存" });
   };
 
@@ -709,12 +760,17 @@ export function PlanEditor({
    * 失敗就留在歷史模式並說實話，不要讓使用者在「以為已還原」的狀態下繼續打字。
    */
   const handleRestoreVersion = async (versionId: string) => {
+    if (isRestoring) return;
+    flushPendingUpdates();
+    setIsRestoring(true);
     let restored: LessonPlan | null | undefined;
     try {
       restored = await onRestoreVersion?.(versionId);
     } catch (err) {
       console.error('[PlanEditor] 還原版本失敗:', err);
       restored = null;
+    } finally {
+      setIsRestoring(false);
     }
 
     if (!restored) {
@@ -731,8 +787,7 @@ export function PlanEditor({
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     setLocalPlan(restored);
 
-    setIsHistoryMode(false);
-    setSelectedVersion(null);
+    returnToEditor();
     toast({ title: "已還原版本" });
   };
 
@@ -771,8 +826,7 @@ export function PlanEditor({
     }
 
     if (selectedVersion?.id === versionId) {
-      setSelectedVersion(null);
-      setIsHistoryMode(false);
+      setSelectedVersionId(null);
     }
     toast({ title: "已刪除版本" });
   };
@@ -785,11 +839,58 @@ export function PlanEditor({
     : (currentPlan.category === 'teaching' ? t('TEACHING_PLAN') : t('ACTIVITY_PLAN'));
 
   return (
-    <div className={cn(
+    <div ref={planEditorRef} className={cn(
       "flex flex-row font-body transition-colors relative w-full min-h-[100dvh] bg-background text-foreground"
     )}>
       <div className="flex-1 min-w-0 relative flex flex-col">
-        {/* ── GOOGLE DOCS STYLE STICKY TOP DOCK (100% Solid / Opaque, No Transparency) ── */}
+        {showHistoryBar ? (
+          <header data-testid={isHistoryMode ? "editor-history-banner" : undefined}
+            className="sticky top-0 z-40 flex flex-wrap items-center gap-2 border-b bg-card px-3 py-2 sm:px-5">
+            <Button type="button" variant="ghost" size="icon" aria-label="返回教案編輯"
+              data-testid="editor-version-cancel" onClick={returnToEditor} disabled={isRestoring}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div className="mr-auto min-w-0">
+              <p className="truncate text-sm font-semibold">
+                {selectedVersion ? selectedVersion.versionName || selectedVersion.name : "當前版本"}
+              </p>
+              {selectedVersion && (
+                <p className="text-xs text-muted-foreground">
+                  {format(selectedVersion.createdAt, "yyyy/MM/dd HH:mm:ss")} · {selectedVersion.authorName || "未知修改者"}
+                </p>
+              )}
+            </div>
+            {selectedVersion && (
+              <div className="flex items-center gap-0.5" aria-label="變更位置">
+                <Button type="button" variant="ghost" size="icon" aria-label="上一個變更"
+                  disabled={!changeCount} onClick={() => jumpToChange(-1)} className="h-8 w-8">
+                  <ChevronUp className="h-4 w-4" />
+                </Button>
+                <span className="min-w-9 text-center text-xs text-muted-foreground tabular-nums" aria-live="polite">
+                  {changePosition + 1}/{changeCount}
+                </span>
+                <Button type="button" variant="ghost" size="icon" aria-label="下一個變更"
+                  disabled={!changeCount} onClick={() => jumpToChange(1)} className="h-8 w-8">
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            {!isSidebarOpen && (
+              <Button type="button" variant="outline" size="sm" onClick={() => setIsSidebarOpen(true)}
+                aria-label="展開版本紀錄" data-testid="editor-history-trigger" disabled={isRestoring}>
+                <History className="h-4 w-4" /> <span className="hidden sm:inline">版本紀錄</span>
+              </Button>
+            )}
+            {selectedVersion && onRestoreVersion && (
+              <Button type="button" size="sm" data-testid="editor-version-restore"
+                disabled={isLoadingPreview || !previewPlan || isRestoring}
+                onClick={() => void handleRestoreVersion(selectedVersion.id)}>
+                {isRestoring ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+                還原此版本
+              </Button>
+            )}
+          </header>
+        ) : (
         <TooltipProvider delayDuration={200}>
           <div className="sticky top-0 z-40 w-full bg-[#FAF8F5] dark:bg-[#0B1012] border-b border-stone-200/80 dark:border-white/10 shadow-2xs select-none">
             {/* Row 1: Document Info & Global Actions (Collapsible) */}
@@ -828,7 +929,7 @@ export function PlanEditor({
                   const params = getUnifiedGroupBadgeParams(currentGroup?.slug || currentPlan.category, currentGroup?.nameZh || '');
                   return (
                     <span className={cn(
-                      "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium tracking-wider uppercase border shrink-0",
+                      "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-sm text-[10px] font-mono font-medium tracking-wider uppercase border shrink-0",
                       params.softBg,
                       params.softText,
                       params.softBorder
@@ -873,11 +974,7 @@ export function PlanEditor({
                   size="sm"
                   title="版本紀錄"
                   data-testid="editor-history-trigger"
-                  onClick={() => {
-                    const willOpen = !isSidebarOpen;
-                    setIsSidebarOpen(willOpen);
-                    if (!willOpen && !selectedVersion) setIsHistoryMode(false);
-                  }}
+                  onClick={() => setIsSidebarOpen(true)}
                   className={cn(
                     "h-8 px-2.5 rounded-lg text-xs font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-200/70 dark:hover:bg-white/10 gap-1.5",
                     isSidebarOpen && "bg-stone-200 dark:bg-white/15 text-orange-600 dark:text-orange-400"
@@ -899,12 +996,12 @@ export function PlanEditor({
                       <span className="hidden sm:inline">匯出</span>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-36 rounded-2xl border border-stone-200/80 dark:border-white/10 bg-white dark:bg-[#14191C] shadow-2xl p-1.5 z-[60]">
-                    <DropdownMenuItem data-testid="editor-export-pdf" onClick={handlePrint} className="text-xs font-mono py-2 px-3 rounded-xl cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2">
+                  <DropdownMenuContent align="end" className="w-36 rounded-lg border border-stone-200/80 dark:border-white/10 bg-white dark:bg-[#14191C] shadow-2xl p-1.5 z-[60]">
+                    <DropdownMenuItem data-testid="editor-export-pdf" onClick={handlePrint} className="text-xs font-mono py-2 px-3 rounded-md cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2">
                       <FileText className="w-4 h-4 text-rose-500" />
                       <span>PDF (.pdf)</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem data-testid="editor-export-word" onClick={handleExportWord} className="text-xs font-mono py-2 px-3 rounded-xl cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2">
+                    <DropdownMenuItem data-testid="editor-export-word" onClick={handleExportWord} className="text-xs font-mono py-2 px-3 rounded-md cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2">
                       <FileText className="w-4 h-4 text-orange-500" />
                       <span>WORD (.docx)</span>
                     </DropdownMenuItem>
@@ -1001,14 +1098,14 @@ export function PlanEditor({
                       <ChevronDown className="h-3 w-3 text-stone-400" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-40 rounded-2xl border border-stone-200/80 dark:border-white/10 bg-white dark:bg-[#14191C] shadow-2xl p-1.5 z-[60]">
-                    <DropdownMenuItem onClick={handleZoomIn} disabled={pageZoom >= 2} className="text-xs py-2 px-3 rounded-xl gap-2 cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 font-mono">
+                  <DropdownMenuContent align="start" className="w-40 rounded-lg border border-stone-200/80 dark:border-white/10 bg-white dark:bg-[#14191C] shadow-2xl p-1.5 z-[60]">
+                    <DropdownMenuItem onClick={handleZoomIn} disabled={pageZoom >= 2} className="text-xs py-2 px-3 rounded-md gap-2 cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 font-mono">
                       <ZoomIn className="h-3.5 w-3.5" /> 放大 (Zoom In)
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleZoomOut} disabled={pageZoom <= 0.3} className="text-xs py-2 px-3 rounded-xl gap-2 cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 font-mono">
+                    <DropdownMenuItem onClick={handleZoomOut} disabled={pageZoom <= 0.3} className="text-xs py-2 px-3 rounded-md gap-2 cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 font-mono">
                       <ZoomOut className="h-3.5 w-3.5" /> 縮小 (Zoom Out)
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleFitAll} className="text-xs py-2 px-3 rounded-xl gap-2 cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 font-mono">
+                    <DropdownMenuItem onClick={handleFitAll} className="text-xs py-2 px-3 rounded-md gap-2 cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 font-mono">
                       <Maximize className="h-3.5 w-3.5" /> 重設 (100%)
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -1064,6 +1161,7 @@ export function PlanEditor({
             </div>
           </div>
         </TooltipProvider>
+        )}
 
         <div className="w-full flex flex-col items-center px-0 sm:px-4 md:px-6 xl:px-8 pt-3 sm:pt-6">
           <div className="w-full md:max-w-none flex flex-col items-center">
@@ -1072,7 +1170,7 @@ export function PlanEditor({
                 className="relative"
                 style={{
                   width: isPrintMode ? `${PRINT_PAGE_WIDTH * pageZoom}px` : '100%',
-                  maxWidth: isPrintMode ? 'none' : '100%',
+                  maxWidth: isPrintMode ? 'none' : showHistoryBar ? '900px' : '100%',
                 }}
               >
                 <div
@@ -1089,66 +1187,31 @@ export function PlanEditor({
                     !isPrintMode && "[&_.prose]:text-[inherit] [&_.prose_p]:text-[inherit] [&_.prose_li]:text-[inherit] [&_.prose_h1]:text-[2em] [&_.prose_h2]:text-[1.5em] [&_.prose_h3]:text-[1.17em]"
                   )}
                 >
-                  {isLoadingPreview ? (
-                    <div className="h-full min-h-[260px] w-full md:w-[816px] flex flex-col items-center justify-center gap-2 text-fg-muted transition-colors">
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      <p className="text-xs font-bold uppercase tracking-widest">Reconstructing History...</p>
+                  {isHistoryMode && !previewPlan ? (
+                    <div role={previewError || !selectedVersion ? "alert" : "status"}
+                      className="flex min-h-[260px] w-full items-center justify-center gap-2 p-4 text-muted-foreground">
+                      {!previewError && selectedVersion && <Loader2 className="h-5 w-5 animate-spin" />}
+                      {previewError || !selectedVersion ? "無法開啟此版本，請選擇另一個版本。" : "正在載入版本…"}
                     </div>
                   ) : (
                     <div className={cn(
                       "w-full overflow-visible transition-all",
                       isPrintMode
-                        ? "studio-sheet rounded-none sm:rounded-2xl"
-                        : "studio-sheet rounded-2xl sm:rounded-3xl border hairline-divider my-2 sm:my-6"
+                        ? "studio-sheet rounded-none sm:rounded-xl"
+                        : "studio-sheet rounded-xl border hairline-divider my-2 sm:my-6"
                     )}>
                       <div className={cn(
                         "leading-[1.65]",
                         isPrintMode ? "px-6 md:px-10 py-10 space-y-6 md:space-y-8" : "px-4 sm:px-8 md:px-12 py-8 sm:py-10 space-y-8"
                       )}>
-                        {isHistoryMode && (
-                          <div data-testid="editor-history-banner" className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 bg-orange-50/80 backdrop-blur-xl dark:bg-amber-900/10 border border-orange-200/50 dark:border-amber-700/30 rounded-2xl mb-8 gap-4 shadow-[0_4px_24px_-8px_rgba(249,115,22,0.15)]">
-                            <div className="flex items-center gap-3">
-                              <div className="w-2 h-8 bg-gradient-to-b from-orange-400 to-orange-600 rounded-full shadow-inner" />
-                              <div>
-                                <span className="text-[14px] font-black tracking-widest text-foreground uppercase block">歷史紀錄 / History View</span>
-                                {selectedVersion && (
-                                  <span className="text-[9px] font-bold text-stone-500 uppercase tracking-widest">
-                                    Showing: {selectedVersion.versionName || selectedVersion.name} ({format(new Date(selectedVersion.createdAt), "MM/dd HH:mm")})
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            {selectedVersion && (
-                              <div className="flex items-center gap-2 w-full sm:w-auto">
-                                <Button
-                                  variant="ghost"
-                                  data-testid="editor-version-cancel"
-                                  onClick={() => {
-                                    setSelectedVersion(null);
-                                    setIsHistoryMode(false);
-                                    setIsSidebarOpen(false);
-                                  }}
-                                  className="h-10 px-5 rounded-full font-bold text-[11px] uppercase tracking-widest text-stone-500 hover:bg-stone-200 hover:text-foreground dark:hover:bg-white/10 transition-all flex-1 sm:flex-none"
-                                >
-                                  取消 / Cancel
-                                </Button>
-                                <Button
-                                  data-testid="editor-version-restore"
-                                  onClick={() => handleRestoreVersion(selectedVersion.id)}
-                                  className="h-10 px-7 rounded-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-black text-[11px] uppercase tracking-[0.2em] shadow-lg shadow-orange-500/25 border-none flex-1 sm:flex-none transition-all hover:scale-105 active:scale-95"
-                                >
-                                  <RotateCcw className="h-4 w-4 mr-2" /> 還原 / Restore
-                                </Button>
-                              </div>
-                            )}
-                          </div>
+                        {isHistoryMode && previousVersion && !previousPlan && (
+                          <p role="status" className="text-sm text-muted-foreground">無法載入前一版本，以下顯示所選版本內容。</p>
                         )}
-
-                        <div className="space-y-6 md:space-y-12">
+                        <div ref={previewContentRef} className="space-y-6 md:space-y-12">
                           <section>
                             <SectionHeader title="活動類型" icon={Layers} tag="ACTIVITY TYPE" />
                             {isHistoryMode ? (
-                              <DiffHighlighter type="text" oldValue={previousPlan?.scheduledName} newValue={previewPlan?.scheduledName} />
+                              <DiffHighlighter type="text" oldValue={(previousPlan ?? previewPlan)?.scheduledName} newValue={previewPlan?.scheduledName} />
                             ) : (
                               <ResponsiveActivitySelectV3
                                 value={currentPlan.scheduledName || ""}
@@ -1163,10 +1226,11 @@ export function PlanEditor({
                             <section>
                               <SectionHeader title={t('SUBJECT')} icon={Target} tag="SUBJECT" />
                               {isHistoryMode ? (
-                                <DiffHighlighter type="text" oldValue={previousPlan?.activityName} newValue={previewPlan?.activityName} />
+                                <DiffHighlighter type="markdown" oldValue={(previousPlan ?? previewPlan)?.activityName} newValue={previewPlan?.activityName} />
                               ) : (
                                 <FieldContainer field="activityName" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
                                   <O2RichEditor
+                                    getPasteBudget={remainingPasteBytes}
                                     value={currentPlan.activityName}
                                     onChange={(val) => handlePlanUpdate({ activityName: val })}
                                     onFocus={() => handleFocus('activityName')}
@@ -1193,7 +1257,7 @@ export function PlanEditor({
                                     </div>
                                     <DiffHighlighter
                                       type="text"
-                                      oldValue={stripHtml(previousPlan?.leadMember || previousPlan?.members)}
+                                      oldValue={stripHtml((previousPlan ?? previewPlan)?.leadMember || (previousPlan ?? previewPlan)?.members)}
                                       newValue={stripHtml(previewPlan?.leadMember || previewPlan?.members)}
                                     />
                                   </div>
@@ -1204,7 +1268,7 @@ export function PlanEditor({
                                     </div>
                                     <DiffHighlighter
                                       type="text"
-                                      oldValue={stripHtml(previousPlan?.assistantMember)}
+                                      oldValue={stripHtml((previousPlan ?? previewPlan)?.assistantMember)}
                                       newValue={stripHtml(previewPlan?.assistantMember)}
                                     />
                                   </div>
@@ -1218,7 +1282,7 @@ export function PlanEditor({
                                     </div>
                                     <FieldContainer field="leadMember" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
                                       <div className={cn(
-                                        "w-full rounded-none md:rounded-lg border bg-white/50 dark:bg-slate-800/50 border-stone-200 dark:border-slate-700/50 shadow-2xs transition-all duration-300 relative group overflow-hidden",
+                                        "w-full rounded-lg border bg-white/50 dark:bg-slate-800/50 border-stone-200 dark:border-slate-700/50 shadow-2xs transition-all duration-300 relative group overflow-hidden",
                                         "focus-within:ring-2 focus-within:ring-orange-500/20 focus-within:border-orange-500/40 dark:focus-within:border-amber-400/40 hover:border-stone-300 dark:hover:border-slate-600",
                                         isInteractionLocked && "opacity-80 cursor-default"
                                       )}>
@@ -1242,7 +1306,7 @@ export function PlanEditor({
                                     </div>
                                     <FieldContainer field="assistantMember" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
                                       <div className={cn(
-                                        "w-full rounded-none md:rounded-lg border bg-white/50 dark:bg-slate-800/50 border-stone-200 dark:border-slate-700/50 shadow-2xs transition-all duration-300 relative group overflow-hidden",
+                                        "w-full rounded-lg border bg-white/50 dark:bg-slate-800/50 border-stone-200 dark:border-slate-700/50 shadow-2xs transition-all duration-300 relative group overflow-hidden",
                                         "focus-within:ring-2 focus-within:ring-orange-500/20 focus-within:border-orange-500/40 dark:focus-within:border-amber-400/40 hover:border-stone-300 dark:hover:border-slate-600",
                                         isInteractionLocked && "opacity-80 cursor-default"
                                       )}>
@@ -1267,10 +1331,11 @@ export function PlanEditor({
                           <section>
                             <SectionHeader title={t('MISSION_OBJ')} icon={Target} tag="MISSION" />
                             {isHistoryMode ? (
-                              <DiffHighlighter type="markdown" oldValue={previousPlan?.purpose} newValue={previewPlan?.purpose} />
+                              <DiffHighlighter type="markdown" oldValue={(previousPlan ?? previewPlan)?.purpose} newValue={previewPlan?.purpose} />
                             ) : (
                               <FieldContainer field="purpose" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
                                 <O2RichEditor
+                                  getPasteBudget={remainingPasteBytes}
                                   value={currentPlan.purpose || ""}
                                   onChange={(val) => handlePlanUpdate({ purpose: val })}
                                   onFocus={() => handleFocus('purpose')}
@@ -1288,10 +1353,11 @@ export function PlanEditor({
                               <div className="space-y-2">
                                 <SectionHeader title={t('TIME_WINDOW')} icon={Clock} tag="DURATION" />
                                 {isHistoryMode ? (
-                                  <DiffHighlighter type="text" oldValue={previousPlan?.time} newValue={previewPlan?.time} />
+                                  <DiffHighlighter type="text" oldValue={(previousPlan ?? previewPlan)?.time} newValue={previewPlan?.time} />
                                 ) : (
                                   <FieldContainer field="time" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
                                     <O2RichEditor
+                                      getPasteBudget={remainingPasteBytes}
                                       value={currentPlan.time}
                                       onChange={(val) => handlePlanUpdate({ time: val })}
                                       onFocus={() => handleFocus('time')}
@@ -1307,10 +1373,11 @@ export function PlanEditor({
                               <div className="space-y-2">
                                 <SectionHeader title={t('VENUE')} icon={MapPin} tag="VENUE" />
                                 {isHistoryMode ? (
-                                  <DiffHighlighter type="text" oldValue={previousPlan?.location} newValue={previewPlan?.location} />
+                                  <DiffHighlighter type="text" oldValue={(previousPlan ?? previewPlan)?.location} newValue={previewPlan?.location} />
                                 ) : (
                                   <FieldContainer field="location" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
                                     <O2RichEditor
+                                      getPasteBudget={remainingPasteBytes}
                                       value={currentPlan.location}
                                       onChange={(val) => handlePlanUpdate({ location: val })}
                                       onFocus={() => handleFocus('location')}
@@ -1330,10 +1397,11 @@ export function PlanEditor({
                             <section>
                               <SectionHeader title={t('PROCEDURES')} icon={Layout} tag="WORKFLOW" />
                               {isHistoryMode ? (
-                                <DiffHighlighter type="markdown" oldValue={previousPlan?.process} newValue={previewPlan?.process} />
+                                <DiffHighlighter type="markdown" oldValue={(previousPlan ?? previewPlan)?.process} newValue={previewPlan?.process} />
                               ) : (
                                 <FieldContainer field="process" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
                                   <O2RichEditor
+                                    getPasteBudget={remainingPasteBytes}
                                     value={currentPlan.process}
                                     onChange={(val) => handlePlanUpdate({ process: val })}
                                     onFocus={() => handleFocus('process')}
@@ -1346,45 +1414,34 @@ export function PlanEditor({
                             </section>
                           )}
 
-                           <section className="flex flex-col w-full">
-                             <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pt-8 first:pt-0 border-b hairline-divider pb-3 transition-colors">
-                               <div className="flex items-center gap-2.5">
-                                 <h3 className="text-base sm:text-lg font-headline font-bold text-foreground tracking-tight transition-colors">
-                                   {t('VISUAL_BLUEPRINT')}
-                                 </h3>
-                                 <span className="architectural-tag text-[10px] hidden sm:inline-flex">VISUAL BLUEPRINT</span>
+                           <section className="flex w-full flex-col">
+                             <SectionHeader title={t('VISUAL_BLUEPRINT')} actions={!isHistoryMode && (
+                               <div role="group" aria-label={language === 'zh' ? '教案內容檢視' : 'Lesson content view'}
+                                 className="flex items-center gap-0.5 rounded-lg border bg-muted/35 p-0.5">
+                                 {([
+                                   ['text', language === 'zh' ? '文字描述' : 'Text', FileText],
+                                   ['canvas', language === 'zh' ? '手繪藍圖' : 'Drawing', Palette],
+                                 ] as const).map(([mode, label, Icon]) => (
+                                   <button key={mode} type="button" aria-pressed={blueprintMode === mode}
+                                     onClick={() => setBlueprintMode(mode)}
+                                     className={cn("flex min-h-8 items-center gap-1.5 rounded-md px-2 text-xs font-medium sm:px-3",
+                                       blueprintMode === mode ? "bg-background text-foreground shadow-sm"
+                                         : "text-muted-foreground hover:bg-muted hover:text-foreground")}>
+                                     <Icon className="h-3.5 w-3.5" />
+                                     {label}
+                                   </button>
+                                 ))}
                                </div>
-                               <div className="flex items-center gap-1 bg-black/[0.04] dark:bg-white/[0.06] p-1 rounded-full text-xs font-bold border border-black/[0.04] dark:border-white/[0.06]">
-                                 <button
-                                   onClick={() => setBlueprintMode('text')}
-                                   className={cn(
-                                     "px-3 py-1 rounded-full transition-all flex items-center gap-1.5 cursor-pointer text-xs font-headline font-semibold btn-tactile",
-                                     blueprintMode === 'text' 
-                                       ? "bg-white dark:bg-white/15 shadow-sm text-foreground"
-                                       : "text-muted-foreground hover:text-foreground"
-                                   )}
-                                 >
-                                   <FileText className="h-3.5 w-3.5" />
-                                   <span>{language === 'zh' ? '文字描述' : 'Rich Text'}</span>
-                                 </button>
-                                 <button
-                                   onClick={() => setBlueprintMode('canvas')}
-                                   className={cn(
-                                     "px-3 py-1 rounded-full transition-all flex items-center gap-1.5 cursor-pointer text-xs font-headline font-semibold btn-tactile",
-                                     blueprintMode === 'canvas' 
-                                       ? "bg-white dark:bg-white/15 shadow-sm text-foreground"
-                                       : "text-muted-foreground hover:text-foreground"
-                                   )}
-                                 >
-                                   <Palette className="h-3.5 w-3.5" />
-                                   <span>{language === 'zh' ? '手繪藍圖' : 'Canvas Drawing'}</span>
-                                 </button>
-                               </div>
-                             </div>
+                             )} />
 
-                             {blueprintMode === 'text' ? (
+                             {isHistoryMode && (
+                               <DiffHighlighter type="markdown" oldValue={(previousPlan ?? previewPlan)?.content} newValue={previewPlan?.content} />
+                             )}
+                             {(!isHistoryMode || currentPlan.canvasImage ||
+                               (previousPlan && previousPlan.canvasData !== previewPlan?.canvasData)) && (blueprintMode === 'text' && !isHistoryMode ? (
                                <FieldContainer field="content" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
                                  <O2RichEditor
+                                   getPasteBudget={remainingPasteBytes}
                                    value={currentPlan.content}
                                    onChange={(val) => handlePlanUpdate({ content: val })}
                                    onFocus={() => handleFocus('content')}
@@ -1396,7 +1453,10 @@ export function PlanEditor({
                              ) : (
                                <div className="w-full relative">
                                  {isInteractionLocked ? (
-                                   <div className="border border-stone-200/80 dark:border-white/10 rounded-2xl p-4 bg-white/80 dark:bg-white/[0.03] flex items-center justify-center min-h-[300px]">
+                                   <div className="relative border border-stone-200/80 dark:border-white/10 rounded-lg p-4 bg-white/80 dark:bg-white/[0.03] flex flex-col items-center justify-center gap-3 min-h-[300px]">
+                                     {isHistoryMode && previousPlan && previousPlan.canvasData !== previewPlan?.canvasData && (
+                                       <span data-version-change className="absolute left-3 top-3 rounded bg-muted px-2 py-1 text-xs">手繪藍圖已修改</span>
+                                     )}
                                      {currentPlan.canvasImage ? (
                                        <img 
                                          src={currentPlan.canvasImage} 
@@ -1407,13 +1467,23 @@ export function PlanEditor({
                                      ) : (
                                        <span className="text-muted-foreground text-sm font-bold">（尚無手繪視覺藍圖）</span>
                                      )}
+                                     {isReadOnlyMode && !showHistoryBar && (
+                                       <Button type="button" variant="outline" size="sm" onClick={() => setIsEditingMode(true)}>
+                                         <Pencil className="h-4 w-4" />
+                                         {language === 'zh' ? '編輯藍圖' : 'Edit drawing'}
+                                       </Button>
+                                     )}
                                    </div>
                                  ) : (
                                    <FieldContainer field="canvasData" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
                                      <div 
-                                       className="w-full rounded-2xl border border-stone-200/80 dark:border-white/10 overflow-hidden bg-white/80 dark:bg-white/[0.03]"
-                                       onFocus={() => handleFocus('canvasData')}
-                                       onBlur={() => handleBlur('canvasData')}
+                                       className="w-full"
+                                       onFocus={(event) => {
+                                         if (!event.currentTarget.contains(event.relatedTarget)) handleFocus('canvasData');
+                                       }}
+                                       onBlur={(event) => {
+                                         if (!event.currentTarget.contains(event.relatedTarget)) handleBlur('canvasData');
+                                       }}
                                      >
                                        <FabricCanvas
                                          initialData={currentPlan.canvasData}
@@ -1430,13 +1500,20 @@ export function PlanEditor({
                                    </FieldContainer>
                                  )}
                                </div>
-                             )}
+                             ))}
                            </section>
+
+                          {isHistoryMode && (previewPlan?.divisionOfLabor || previousPlan?.divisionOfLabor) && (
+                            <section>
+                              <SectionHeader title="分工" icon={Users} tag="DIVISION OF LABOR" />
+                              <DiffHighlighter type="markdown" oldValue={(previousPlan ?? previewPlan)?.divisionOfLabor} newValue={previewPlan?.divisionOfLabor} />
+                            </section>
+                          )}
 
                           <section className="w-full flex flex-col">
                             <SectionHeader title={t('MATERIALS')} icon={Package} tag="MATERIALS & PROPS" />
                             {isHistoryMode ? (
-                              <DiffHighlighter type="table" oldValue={previousPlan?.props} newValue={previewPlan?.props} />
+                              <DiffHighlighter type="table" oldValue={(previousPlan ?? previewPlan)?.props} newValue={previewPlan?.props} />
                             ) : (
                               <div className="w-full">
                                 <FieldContainer field="props" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
@@ -1456,10 +1533,11 @@ export function PlanEditor({
                             <section>
                               <SectionHeader title={t('OPENING_CLOSING') || "開場與結語"} icon={StickyNote} tag="REMARKS" />
                               {isHistoryMode ? (
-                                <DiffHighlighter type="markdown" oldValue={previousPlan?.openingClosingRemarks} newValue={previewPlan?.openingClosingRemarks} />
+                                <DiffHighlighter type="markdown" oldValue={(previousPlan ?? previewPlan)?.openingClosingRemarks} newValue={previewPlan?.openingClosingRemarks} />
                               ) : (
                                 <FieldContainer field="openingClosingRemarks" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
                                   <O2RichEditor
+                                    getPasteBudget={remainingPasteBytes}
                                     value={currentPlan.openingClosingRemarks || ""}
                                     onChange={(val) => handlePlanUpdate({ openingClosingRemarks: val })}
                                     onFocus={() => handleFocus('openingClosingRemarks')}
@@ -1476,10 +1554,11 @@ export function PlanEditor({
                           <section>
                             <SectionHeader title="備註" icon={StickyNote} tag="OPERATIONAL NOTES" />
                             {isHistoryMode ? (
-                              <DiffHighlighter type="markdown" oldValue={previousPlan?.remarks} newValue={previewPlan?.remarks} />
+                              <DiffHighlighter type="markdown" oldValue={(previousPlan ?? previewPlan)?.remarks} newValue={previewPlan?.remarks} />
                             ) : (
                               <FieldContainer field="remarks" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
                                 <O2RichEditor
+                                  getPasteBudget={remainingPasteBytes}
                                   value={currentPlan.remarks || ""}
                                   onChange={(val) => handlePlanUpdate({ remarks: val })}
                                   onFocus={() => handleFocus('remarks')}
@@ -1504,7 +1583,7 @@ export function PlanEditor({
 
 
       {/* ── MOBILE BOTTOM TOOLBAR (100% Solid / Opaque, Fixed at Bottom) ── */}
-      <TooltipProvider delayDuration={200}>
+      {!showHistoryBar && <TooltipProvider delayDuration={200}>
         <div
           ref={mobileToolbarRef}
           className={cn(
@@ -1568,14 +1647,14 @@ export function PlanEditor({
                     <ChevronDown className="h-3 w-3 text-stone-400" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-40 rounded-2xl border border-stone-200/80 dark:border-white/10 bg-white dark:bg-[#14191C] shadow-2xl p-1.5 z-[60]">
-                  <DropdownMenuItem onClick={handleZoomIn} disabled={pageZoom >= 2} className="text-xs py-2 px-3 rounded-xl gap-2 cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 font-mono">
+                <DropdownMenuContent align="start" className="w-40 rounded-lg border border-stone-200/80 dark:border-white/10 bg-white dark:bg-[#14191C] shadow-2xl p-1.5 z-[60]">
+                  <DropdownMenuItem onClick={handleZoomIn} disabled={pageZoom >= 2} className="text-xs py-2 px-3 rounded-md gap-2 cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 font-mono">
                     <ZoomIn className="h-3.5 w-3.5" /> 放大 (Zoom In)
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleZoomOut} disabled={pageZoom <= 0.3} className="text-xs py-2 px-3 rounded-xl gap-2 cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 font-mono">
+                  <DropdownMenuItem onClick={handleZoomOut} disabled={pageZoom <= 0.3} className="text-xs py-2 px-3 rounded-md gap-2 cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 font-mono">
                     <ZoomOut className="h-3.5 w-3.5" /> 縮小 (Zoom Out)
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleFitAll} className="text-xs py-2 px-3 rounded-xl gap-2 cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 font-mono">
+                  <DropdownMenuItem onClick={handleFitAll} className="text-xs py-2 px-3 rounded-md gap-2 cursor-pointer hover:bg-stone-100 dark:hover:bg-white/5 font-mono">
                     <Maximize className="h-3.5 w-3.5" /> 重設 (100%)
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -1601,61 +1680,54 @@ export function PlanEditor({
             </div>
           </div>
         </div>
-      </TooltipProvider>
+      </TooltipProvider>}
 
       {/* Floating Action Button (FAB) for entering edit mode on mobile (Google Docs mobile style) */}
-      <Button
+      {!showHistoryBar && <Button
         type="button"
         variant="ghost"
         size="icon"
         onClick={() => setIsEditingMode(true)}
         title="進入編輯模式"
         className={cn(
-          "fixed right-4 bottom-[calc(env(safe-area-inset-bottom)+20px)] z-[70] h-14 w-14 rounded-2xl bg-orange-600 text-white dark:bg-amber-400 dark:text-[#0B1012] shadow-[0_10px_28px_rgba(234,88,12,0.32)] dark:shadow-[0_10px_28px_rgba(251,191,36,0.28)] border-none transition-all duration-300 ease-out md:hidden",
+          "fixed right-4 bottom-[calc(env(safe-area-inset-bottom)+20px)] z-[70] h-14 w-14 rounded-lg bg-orange-600 text-white dark:bg-amber-400 dark:text-[#0B1012] shadow-[0_10px_28px_rgba(234,88,12,0.32)] dark:shadow-[0_10px_28px_rgba(251,191,36,0.28)] border-none transition-all duration-300 ease-out md:hidden",
           !isEditingMode && isFabVisible ? "translate-y-0 opacity-100 pointer-events-auto" : "translate-y-8 opacity-0 pointer-events-none"
         )}
       >
         <Pencil className="h-5 w-5" />
-      </Button>
+      </Button>}
 
       {isSidebarOpen && (
-        <button
-          type="button"
-          aria-label="Close version history"
-          data-testid="version-sidebar-overlay"
-          className="fixed inset-0 z-[95] bg-black/20 border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow"
-          onClick={() => setIsSidebarOpen(false)}
-        />
+        <>
+          <button type="button" aria-label="收起版本紀錄" data-testid="version-sidebar-overlay"
+            className="fixed inset-0 z-50 bg-black/35 md:hidden" onClick={() => setIsSidebarOpen(false)} />
+          <div className="fixed inset-x-0 bottom-0 z-[60] h-[min(65dvh,34rem)] overflow-hidden rounded-t-xl border bg-card shadow-xl md:sticky md:inset-x-auto md:bottom-auto md:top-0 md:z-30 md:h-[100dvh] md:w-72 md:shrink-0 md:self-start md:rounded-none md:border-y-0 md:border-r-0 md:shadow-none lg:w-80">
+            <VersionHistorySidebar
+              versions={versions}
+              selectedVersionId={selectedVersionId}
+              onSelectVersion={(version) => {
+                if (isRestoring) return;
+                if (version.id !== selectedVersionId) {
+                  setPreviewPlan(null);
+                  setPreviousPlan(null);
+                  setPreviewError(false);
+                  setSelectedVersionId(version.id);
+                }
+                if (isMobile) setIsSidebarOpen(false);
+              }}
+              onDelete={isRestoring || !onDeleteVersion ? undefined : handleDeleteVersion}
+              onClose={() => setIsSidebarOpen(false)}
+              onBackToCurrent={() => {
+                if (isRestoring) return;
+                setSelectedVersionId(null);
+                if (isMobile) setIsSidebarOpen(false);
+              }}
+              onUpdateVersionName={onUpdateVersionName}
+              onSaveVersion={onSaveVersion ? handleSaveVersion : undefined}
+            />
+          </div>
+        </>
       )}
-
-      {/* Sidebar - Global fixed drawer */}
-      {isSidebarOpen && (
-        <VersionHistorySidebar
-          versions={versions}
-          selectedVersionId={selectedVersion?.id || null}
-          onSelectVersion={(v) => {
-            setSelectedVersion(v);
-            setIsHistoryMode(!!v);
-            if (window.innerWidth < 640) {
-              setIsSidebarOpen(false);
-            }
-          }}
-          onDelete={handleDeleteVersion}
-          showNamedOnly={showNamedOnly}
-          onToggleFilter={() => setShowNamedOnly(!showNamedOnly)}
-          onClose={() => setIsSidebarOpen(false)}
-          onBackToCurrent={() => {
-            setSelectedVersion(null);
-            setIsHistoryMode(false);
-            if (window.innerWidth < 640) setIsSidebarOpen(false);
-          }}
-          onUpdateVersionName={onUpdateVersionName}
-          onSaveVersion={handleSaveVersion}
-          className=""
-        />
-      )}
-
     </div>
   );
 }
-

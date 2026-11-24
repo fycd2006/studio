@@ -14,7 +14,8 @@ import {
   initiateAnonymousSignIn,
   useAuth as useFirebaseAuth
 } from '@/firebase';
-import { collection, query, doc, orderBy, where, limit, getDocs, getDoc } from 'firebase/firestore';
+import { collection, query, doc, orderBy, where, limit, getDocs, getDoc, setDoc, updateDoc, writeBatch, deleteField } from 'firebase/firestore';
+import { getCampEditorName, getRandomNickname } from '@/hooks/use-presence';
 import { getCorrectedNow, getServerTimeOffset } from '@/hooks/use-server-time';
 import { format } from 'date-fns';
 import * as jsondiffpatch from 'jsondiffpatch';
@@ -42,7 +43,6 @@ const jdp = jsondiffpatch.create({
   objectHash: (obj: any) => obj.id || JSON.stringify(obj),
 });
 
-const VERSION_GROUPING_WINDOW = 10 * 60 * 1000; // 10 minutes
 const SNAPSHOT_INTERVAL = 10; // Save full snapshot every 10 versions
 
 const USER_COLORS = [
@@ -133,10 +133,10 @@ interface PlansContextType {
   reorderPlans: (category: PlanCategory, startIndex: number, endIndex: number) => void;
   activePlanVersions: PlanVersion[];
   /** 回傳 true 代表真的建了一筆版本（讓呼叫端能分辨成功與「其實沒存」）。 */
-  savePlanVersion: (name: string, isAuto?: boolean) => Promise<boolean>;
+  savePlanVersion: (name: string, isAuto?: boolean, draft?: LessonPlan) => Promise<boolean>;
   /** 回傳還原後的完整狀態；還原不了就回傳 null（讓呼叫端能分辨成功與失敗）。 */
   restorePlanVersion: (versionId: string) => Promise<LessonPlan | null>;
-  updatePlanVersionName: (versionId: string, versionName: string) => void;
+  updatePlanVersionName: (versionId: string, versionName: string) => Promise<void>;
   /** 回傳 true 代表真的刪掉了；false 代表沒刪（例如刪了會讓後面的歷史救不回來）。 */
   deletePlanVersion: (versionId: string) => Promise<boolean>;
   autoSaveCurrentState: () => void;
@@ -251,7 +251,11 @@ export function PlansProvider({ children }: { children: ReactNode }) {
     return query(collection(db, 'planVersions'), where('planId', '==', activePlanId), orderBy('createdAt', 'desc'));
   }, [db, user, activePlanId]);
   const { data: versionsData } = useCollection<PlanVersion>(versionsQuery);
-  const activePlanVersions = versionsData || [];
+  const activePlanVersions = useMemo(() => (versionsData ?? []).map((version) =>
+    (!version.authorName || version.authorName === 'Anonymous') && version.authorId
+      ? { ...version, authorName: version.authorId === user?.uid ? getCampEditorName(user) : getRandomNickname(version.authorId) }
+      : version
+  ), [versionsData, user]);
 
   // History state for plans
   const [planHistory, setPlanHistory] = useState<{ past: LessonPlan[][], future: LessonPlan[][] }>({ past: [], future: [] });
@@ -523,41 +527,27 @@ export function PlansProvider({ children }: { children: ReactNode }) {
 
   const getFullVersionState = useCallback(async (version: PlanVersion): Promise<LessonPlan> => {
     if (version.type === 'snapshot' && version.snapshot) return version.snapshot;
-    
-    const q = query(
-      collection(db!, 'planVersions'), 
-      where('planId', '==', activePlanId), 
+    if (!db || version.type !== 'patch') throw new Error('版本缺少快照');
+
+    const result = await getDocs(query(
+      collection(db, 'planVersions'),
+      where('planId', '==', version.planId),
       where('createdAt', '<=', version.createdAt),
       orderBy('createdAt', 'desc')
-    );
-    const snapshot = await getDocs(q);
-    const versionsList = snapshot.docs.map(d => d.data() as PlanVersion);
-    
-    const snapshotIdx = versionsList.findIndex(v => v.type === 'snapshot');
-    if (snapshotIdx === -1) {
-      // 重建不出來就要說出來。
-      //
-      // 原本這裡是 `return allPlans.find(p => p.id === activePlanId)!` —— 回傳
-      // **目前這份教案**。那個值會被 restorePlanVersion 原封不動寫回去，於是
-      // 「還原」變成什麼都沒做，而呼叫端照樣跳「已還原版本」：使用者以為歷史
-      // 救回來了，其實一個字都沒變。寧可讓呼叫端收到錯誤、老實告訴使用者。
-      throw new Error(`版本 ${version.id} 找不到可重建的基準快照（patch 鏈斷了）`);
-    }
+    ));
+    const versions = result.docs.map((entry) => entry.data() as PlanVersion);
+    const target = versions.findIndex((entry) => entry.id === version.id);
+    const chain = target >= 0 ? versions.slice(target) : [];
+    const base = chain.findIndex((entry) => entry.type === 'snapshot' && entry.snapshot);
+    if (base < 0) throw new Error('版本 ' + version.id + ' 缺少基準快照');
 
-    let state = JSON.parse(JSON.stringify(versionsList[snapshotIdx].snapshot));
-    for (let i = snapshotIdx - 1; i >= 0; i--) {
-      if (versionsList[i].type === 'patch' && versionsList[i].delta) {
-        try {
-          const clonedState = JSON.parse(JSON.stringify(state));
-          state = jdp.patch(clonedState, versionsList[i].delta) || state;
-        } catch (err) {
-          console.error(`Patch failed at version ${versionsList[i].id}:`, err);
-          break;
-        }
-      }
+    const state = JSON.parse(JSON.stringify(chain[base].snapshot)) as LessonPlan;
+    for (const patch of chain.slice(0, base).reverse()) {
+      if (patch.type !== 'patch' || !patch.delta) throw new Error('版本 ' + patch.id + ' 缺少差異資料');
+      jdp.patch(state, patch.delta);
     }
     return state;
-  }, [db, activePlanId, allPlans]);
+  }, [db]);
 
   /** 回傳 true 代表真的建了一筆版本；false 代表沒有（呼叫端要據此決定提示什麼）。 */
   const saveNewVersion = useCallback(async (currentPlan: LessonPlan, now: number, name: string, isAuto: boolean): Promise<boolean> => {
@@ -614,7 +604,8 @@ export function PlansProvider({ children }: { children: ReactNode }) {
       createdAt: now,
       type: shouldBeSnapshot ? 'snapshot' : 'patch',
       authorId: user.uid,
-      authorName: user.displayName || 'Anonymous',
+      isAuto,
+      authorName: getCampEditorName(user),
       authorColor: getAuthorColor(user.uid),
     };
 
@@ -624,13 +615,15 @@ export function PlansProvider({ children }: { children: ReactNode }) {
       newVersion.delta = sanitizeForFirestore(precomputedDelta);
     }
 
-    setDocumentNonBlocking(doc(db, 'planVersions', versionId), newVersion, { merge: true });
+    const versionRef = doc(db, 'planVersions', versionId);
+    if (isAuto) setDocumentNonBlocking(versionRef, newVersion, { merge: true });
+    else await setDoc(versionRef, newVersion);
     return true;
   }, [db, user, activePlanId, activePlanVersions, getFullVersionState]);
 
-  const savePlanVersion = useCallback(async (name: string, isAuto: boolean = false): Promise<boolean> => {
+  const savePlanVersion = useCallback(async (name: string, isAuto = false, draft?: LessonPlan): Promise<boolean> => {
     if (!db || !user || !activePlanId) return false;
-    const currentPlan = allPlans.find(p => p.id === activePlanId);
+    const currentPlan = draft?.id === activePlanId ? draft : allPlans.find(p => p.id === activePlanId);
     if (!currentPlan) return false;
 
     const now = Date.now();
@@ -649,55 +642,36 @@ export function PlansProvider({ children }: { children: ReactNode }) {
     // 重建不出來時 getFullVersionState 會 throw —— 刻意不在這裡吞掉，
     // 呼叫端要能分辨「還原成功」與「還原失敗」才有辦法對使用者說實話。
     const fullState = await getFullVersionState(versionToRestore);
-    const { id: _planId, updatedAt, ...snapshotData } = fullState;
-    updatePlan(activePlanId, snapshotData);
-    return fullState;
-  }, [db, activePlanId, activePlanVersions, updatePlan, getFullVersionState]);
+    const restored = { ...fullState, id: activePlanId, updatedAt: Date.now() };
+    pushPlanHistory();
+    await setDoc(doc(db, 'lessonPlans', activePlanId), sanitizeForFirestore(restored));
+    return restored;
+  }, [db, activePlanId, activePlanVersions, pushPlanHistory, getFullVersionState]);
 
-  const updatePlanVersionName = useCallback((versionId: string, versionName: string) => {
-    if (!db) return;
-    updateDocumentNonBlocking(doc(db, 'planVersions', versionId), { versionName });
+  const updatePlanVersionName = useCallback(async (versionId: string, versionName: string) => {
+    if (!db) throw new Error('Firestore is unavailable');
+    await updateDoc(doc(db, 'planVersions', versionId), { versionName });
   }, [db]);
 
-  /**
-   * 刪一筆版本紀錄。
-   *
-   * ⚠️ 不能只刪掉就算了。patch 型的版本只存「跟前一版的差異」，重建時要往回找到
-   *    最近的 snapshot 當基準（見 getFullVersionState）。直接刪掉一個 snapshot，
-   *    它後面那些 patch 就再也重建不出來 —— 而使用者的意圖只是「清掉一筆紀錄」，
-   *    不是「讓後面每一筆都變成還原不回來的廢資料」。
-   *
-   *    所以刪 snapshot 之前，先把「時間上的下一筆 patch」實體化成 snapshot，
-   *    讓鏈接得回去。實體化一定要在刪除**之前**做，因為重建本身要讀到這個 snapshot。
-   *
-   * ⚠️ 接不回去時會**取消刪除**，而「取消了」一定要回報給呼叫端（回傳 false）。
-   *    這個函式第一版只是 `return`，呼叫端（PlanEditor 的 handleDeleteVersion）
-   *    照樣跳「已刪除版本」—— 使用者看到成功提示、那一列還在面板上，
-   *    只會以為畫面壞了。那正是本專案反模式 16 的樣子，而且是修 bug 時自己種下的。
-   */
   const deletePlanVersion = useCallback(async (versionId: string): Promise<boolean> => {
     if (!db) return false;
-    const list = activePlanVersions || [];   // createdAt 由新到舊
-    const idx = list.findIndex(v => v.id === versionId);
-    const toDelete = idx >= 0 ? list[idx] : undefined;
-    const newer = idx > 0 ? list[idx - 1] : undefined;
+    const index = activePlanVersions.findIndex((version) => version.id === versionId);
+    if (index < 0) return false;
+    const newer = activePlanVersions[index - 1];
 
-    if (toDelete?.type === 'snapshot' && newer?.type === 'patch') {
-      try {
-        const materialized = await getFullVersionState(newer);
-        setDocumentNonBlocking(
-          doc(db, 'planVersions', newer.id),
-          { type: 'snapshot', snapshot: sanitizeForFirestore(JSON.parse(JSON.stringify(materialized))) },
-          { merge: true },
-        );
-      } catch (err) {
-        // 接不回去就不要刪 —— 刪了會讓後面整段歷史變成廢資料
-        console.error('[deletePlanVersion] 無法把下一筆 patch 實體化，取消刪除:', err);
-        return false;
-      }
+    const batch = writeBatch(db);
+    if (newer?.type === 'patch') {
+      // The next patch depends on this version, so materialize it before removing the dependency.
+      const snapshot = await getFullVersionState(newer);
+      batch.update(doc(db, 'planVersions', newer.id), {
+        type: 'snapshot',
+        snapshot: sanitizeForFirestore(snapshot),
+        delta: deleteField(),
+        isAuto: newer.isAuto ?? true,
+      });
     }
-
-    deleteDocumentNonBlocking(doc(db, 'planVersions', versionId));
+    batch.delete(doc(db, 'planVersions', versionId));
+    await batch.commit();
     return true;
   }, [db, activePlanVersions, getFullVersionState]);
 

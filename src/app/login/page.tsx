@@ -178,7 +178,7 @@ export default function LoginPage() {
         className="relative z-10 mx-auto flex min-h-screen w-full max-w-sm flex-col items-center justify-center px-4 py-8"
       >
         <div className="mb-6 flex flex-col items-center">
-          <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white mb-3 shadow-lg">
+          <div className="w-16 h-16 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white mb-3 shadow-lg">
             <Tent className="h-8 w-8 text-orange-400" strokeWidth={1.5} />
           </div>
           <span className="text-[10px] font-mono tracking-widest uppercase text-white/60 mb-1">
@@ -192,7 +192,7 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <div className="w-full rounded-3xl bg-white/90 dark:bg-[#0B1012]/90 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-2xl p-6 sm:p-7">
+        <div className="w-full rounded-xl bg-white/90 dark:bg-[#0B1012]/90 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-2xl p-6 sm:p-7">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
               <label className="text-[10px] font-mono uppercase tracking-wider text-fg-muted px-1">帳號 (Username)</label>
@@ -204,7 +204,7 @@ export default function LoginPage() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="請輸入帳號"
-                  className="w-full pl-10 pr-4 h-11 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 text-xs font-normal text-foreground outline-none focus:border-orange-500 transition-colors"
+                  className="w-full pl-10 pr-4 h-11 rounded-lg bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 text-xs font-normal text-foreground outline-none focus:border-orange-500 transition-colors"
                   required
                 />
               </div>
@@ -220,7 +220,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-10 h-11 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 text-xs font-normal text-foreground outline-none focus:border-orange-500 transition-colors"
+                  className="w-full pl-10 pr-10 h-11 rounded-lg bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 text-xs font-normal text-foreground outline-none focus:border-orange-500 transition-colors"
                   required
                 />
                 <button
@@ -256,7 +256,7 @@ export default function LoginPage() {
               data-testid="login-submit"
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-11 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-mono text-xs uppercase tracking-wider transition-all disabled:opacity-50 shadow-xs flex items-center justify-center cursor-pointer mt-2"
+              className="w-full h-11 rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-mono text-xs uppercase tracking-wider transition-all disabled:opacity-50 shadow-xs flex items-center justify-center cursor-pointer mt-2"
             >
               {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "登入系統 / Sign in"}
             </button>
@@ -268,7 +268,7 @@ export default function LoginPage() {
             href="https://lihi2.cc/3yxOC"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex w-full items-center justify-center gap-2.5 rounded-xl bg-white/10 hover:bg-white/15 backdrop-blur-md border border-white/15 py-2.5 text-xs font-mono text-white transition-colors"
+            className="flex w-full items-center justify-center gap-2.5 rounded-lg bg-white/10 hover:bg-white/15 backdrop-blur-md border border-white/15 py-2.5 text-xs font-mono text-white transition-colors"
           >
             <Facebook className="h-4 w-4" strokeWidth={1.5} />
             <span className="truncate">NTUT Chong De Facebook</span>
@@ -277,7 +277,7 @@ export default function LoginPage() {
             href="https://www.instagram.com/taipeitech_cd?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
             target="_blank"
             rel="noopener noreferrer"
-            className="flex w-full items-center justify-center gap-2.5 rounded-xl bg-white/10 hover:bg-white/15 backdrop-blur-md border border-white/15 py-2.5 text-xs font-mono text-white transition-colors"
+            className="flex w-full items-center justify-center gap-2.5 rounded-lg bg-white/10 hover:bg-white/15 backdrop-blur-md border border-white/15 py-2.5 text-xs font-mono text-white transition-colors"
           >
             <Instagram className="h-4 w-4" strokeWidth={1.5} />
             <span className="truncate">NTUT Chong De Instagram</span>
