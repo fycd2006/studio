@@ -100,7 +100,7 @@
 ```css
 .card {
   background: #020617;
-  border-radius: 12px;
+  border-radius: 10px;
   padding: 24px;
   box-shadow: var(--shadow-md);
   transition: all 200ms ease;
@@ -141,7 +141,7 @@
 
 .modal {
   background: white;
-  border-radius: 16px;
+  border-radius: 10px;
   padding: 32px;
   box-shadow: var(--shadow-xl);
   max-width: 500px;

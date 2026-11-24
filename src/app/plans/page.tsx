@@ -55,6 +55,7 @@ import {
 import { LessonPlan } from "@/types/plan";
 import { exportPlansAsZip, exportToDocx, exportToPdf } from "@/lib/export-utils";
 import fallbackImagesData from "@/data/fallback-images.json";
+import { useOverviewPreferences, type OverviewPreferences } from "./overview-preferences";
 
 function getDeterministicIndex(str: string): number {
   let hash = 0;
@@ -101,30 +102,26 @@ export default function PlansOverview() {
 
  const isViewingOtherProject = !!(defaultCampId && activeCampId && activeCampId !== defaultCampId);
 
- const [viewType, setViewType] = useState<"grid" | "list" | "board">("list");
+ const [preferences, updatePreferences] = useOverviewPreferences(activeCampId, role);
+ const { viewType, searchQuery, sortBy, sortDirection } = preferences;
+ const setViewType = (viewType: OverviewPreferences["viewType"]) => updatePreferences({ viewType });
+ const setSearchQuery = (searchQuery: string) => updatePreferences({ searchQuery });
  const [isAdding, setIsAdding] = useState(false);
  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
  const [deleteInput, setDeleteInput] = useState("");
  const [isBatchDownloading, setIsBatchDownloading] = useState(false);
  const [isDownloadMenuOpen, setIsDownloadMenuOpen] = useState(false);
- const [searchQuery, setSearchQuery] = useState("");
- const [filterGroup, setFilterGroup] = useState<string>("all");
- const [sortBy, setSortBy] = useState<"updatedAt" | "name" | "category">("updatedAt");
- const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
  const [swipeDirection, setSwipeDirection] = useState<1 | -1>(1);
  const [activeFab, setActiveFab] = useState<string | null>(null);
  const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null);
  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
  const tabRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
 
- const handleSortClick = (nextSortBy: "updatedAt" | "name" | "category") => {
- if (sortBy === nextSortBy) {
- setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
- return;
- }
-
- setSortBy(nextSortBy);
- setSortDirection(nextSortBy === "updatedAt" ? "desc" : "asc");
+ const handleSortClick = (nextSortBy: OverviewPreferences["sortBy"]) => {
+  const direction = sortBy === nextSortBy
+    ? (sortDirection === "asc" ? "desc" : "asc")
+    : (nextSortBy === "updatedAt" ? "desc" : "asc");
+  updatePreferences({ sortBy: nextSortBy, sortDirection: direction });
  };
 
  const groupOrder = useMemo(() => ["all", ...groups.map((g) => g.slug)], [groups]);
@@ -170,14 +167,25 @@ export default function PlansOverview() {
  return groups.find(g => normalizeKey(g.slug) === fallbackSlug) || null;
  };
 
+ const groupParam = searchParams.get("group");
+ const resolveGroup = (value: string) => normalizeKey(value) === "all"
+   ? "all"
+   : groups.find((group) => normalizeKey(group.slug) === normalizeKey(value))?.slug;
+ const linkedGroup = groupParam === null ? undefined : resolveGroup(groupParam);
+ const filterGroup = (groupParam === null ? resolveGroup(preferences.filterGroup) : linkedGroup) ?? "all";
+
  useEffect(() => {
- const selected = searchParams.get('group');
- if (selected && groups.some(g => normalizeKey(g.slug) === normalizeKey(selected))) {
- setFilterGroup(selected);
- return;
- }
- setFilterGroup('all');
- }, [searchParams, groups]);
+   if (linkedGroup) updatePreferences({ filterGroup: linkedGroup });
+ }, [linkedGroup, updatePreferences]);
+
+ const setFilterGroup = (group: string) => {
+   updatePreferences({ filterGroup: group });
+   if (groupParam !== null && linkedGroup !== group) {
+     const url = new URL(window.location.href);
+     url.searchParams.set("group", group);
+     window.history.replaceState(null, "", url);
+   }
+ };
 
   useEffect(() => {
     const el = tabRefs.current[filterGroup];
@@ -427,7 +435,7 @@ export default function PlansOverview() {
             data-testid={`plan-actions-${plan.id}`}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
-            className="h-8 w-8 inline-flex items-center justify-center rounded-full text-stone-400 hover:text-foreground hover:bg-stone-200/60 dark:hover:bg-white/10 transition-colors cursor-pointer"
+            className="h-8 w-8 inline-flex items-center justify-center rounded-md text-stone-400 hover:text-foreground hover:bg-stone-200/60 dark:hover:bg-white/10 transition-colors cursor-pointer"
             aria-label="教案操作"
           >
             <MoreHorizontal className="w-4 h-4" />
@@ -436,7 +444,7 @@ export default function PlansOverview() {
         <DropdownMenuContent
           align="end"
           onClick={(e) => e.stopPropagation()}
-          className="w-48 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-2xl p-1.5"
+          className="w-48 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-lg p-1.5"
         >
           <DropdownMenuItem
             data-testid={`plan-action-word-${plan.id}`}
@@ -445,7 +453,7 @@ export default function PlansOverview() {
               e.stopPropagation();
               void handleDownloadPlan(plan, "word");
             }}
-            className="cursor-pointer text-xs py-2 px-3 rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2"
+            className="cursor-pointer text-xs py-2 px-3 rounded-md hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2"
           >
             <Download className="w-4 h-4 text-orange-500" />
             <span>下載 Word (.docx)</span>
@@ -457,18 +465,18 @@ export default function PlansOverview() {
               e.stopPropagation();
               void handleDownloadPlan(plan, "pdf");
             }}
-            className="cursor-pointer text-xs py-2 px-3 rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2"
+            className="cursor-pointer text-xs py-2 px-3 rounded-md hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2"
           >
             <FileText className="w-4 h-4 text-rose-500" />
             <span>下載 PDF (.pdf)</span>
           </DropdownMenuItem>
           {isAdmin && groups.length > 0 && (
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger className="cursor-pointer text-xs py-2 px-3 rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2">
+              <DropdownMenuSubTrigger className="cursor-pointer text-xs py-2 px-3 rounded-md hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2">
                 <Users className="w-4 h-4 text-stone-400" />
                 <span>更換組別</span>
               </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent className="w-48 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-2xl p-1.5">
+              <DropdownMenuSubContent className="w-48 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-lg p-1.5">
                 {groups.map((group) => {
                   const params = getUnifiedGroupBadgeParams(group.slug, group.nameZh);
                   return (
@@ -479,7 +487,7 @@ export default function PlansOverview() {
                         e.stopPropagation();
                         handleChangePlanGroup(plan, group.id);
                       }}
-                      className="cursor-pointer text-xs py-2 px-3 rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2"
+                      className="cursor-pointer text-xs py-2 px-3 rounded-md hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2"
                     >
                       <span className={cn("w-2 h-2 rounded-full shadow-xs shrink-0", params.colorDot)} />
                       <span>{language === 'zh' ? group.nameZh : group.nameEn}</span>
@@ -506,7 +514,7 @@ export default function PlansOverview() {
                 e.stopPropagation();
                 handleDeletePlan(plan.id, getPlanDisplayName(plan));
               }}
-              className="cursor-pointer text-xs py-2 px-3 rounded-xl text-rose-600 hover:bg-rose-500/10 focus:text-rose-600 flex items-center gap-2"
+              className="cursor-pointer text-xs py-2 px-3 rounded-md text-rose-600 hover:bg-rose-500/10 focus:text-rose-600 flex items-center gap-2"
             >
               <Trash2 className="w-4 h-4 text-rose-500" />
               <span>刪除教案</span>
@@ -546,7 +554,7 @@ export default function PlansOverview() {
             {/* Year & Project Selector */}
             {yearsWithCamps.sortedYears.length > 0 && (
               <div className="flex flex-wrap items-center gap-2.5 mt-5">
-                <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-white/70 dark:bg-white/[0.04] border border-stone-200/80 dark:border-white/10 backdrop-blur-md shadow-2xs">
+                <div className="flex items-center gap-1.5 p-1 rounded-lg bg-white/70 dark:bg-white/[0.04] border border-stone-200/80 dark:border-white/10 backdrop-blur-md shadow-2xs">
                   <div className="flex items-center gap-1.5 px-3 py-1 text-[11px] font-mono tracking-wider text-fg-muted uppercase border-r border-stone-200/60 dark:border-white/10">
                     <Calendar className="w-3.5 h-3.5 text-orange-500" />
                     <span>{t('SELECT_YEAR')}</span>
@@ -571,7 +579,7 @@ export default function PlansOverview() {
                           }
                         }}
                         className={cn(
-                          "relative px-3.5 py-1.5 rounded-xl text-xs font-mono transition-all flex items-center gap-1.5 cursor-pointer",
+                          "relative px-3.5 py-1.5 rounded-lg text-xs font-mono transition-all flex items-center gap-1.5 cursor-pointer",
                           isYearActive
                             ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white font-medium shadow-xs"
                             : "text-stone-600 dark:text-stone-300 hover:text-foreground hover:bg-stone-100 dark:hover:bg-white/5"
@@ -595,13 +603,13 @@ export default function PlansOverview() {
                 {campsInCurrentYear.length > 1 && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-mono font-medium text-foreground bg-white/70 dark:bg-white/[0.04] border border-stone-200/80 dark:border-white/10 hover:border-orange-500/50 backdrop-blur-md transition-all cursor-pointer shadow-2xs">
+                      <button className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-mono font-medium text-foreground bg-white/70 dark:bg-white/[0.04] border border-stone-200/80 dark:border-white/10 hover:border-orange-500/50 backdrop-blur-md transition-all cursor-pointer shadow-2xs">
                         <Tent className="w-3.5 h-3.5 text-orange-500" />
                         <span className="truncate max-w-[200px]">{activeCamp?.name}</span>
                         <ChevronDown className="w-3.5 h-3.5 text-fg-muted" />
                       </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-64 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-2xl p-1.5 z-50">
+                    <DropdownMenuContent align="start" className="w-64 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-lg p-1.5 z-50">
                       <div className="px-2.5 py-1 text-[10px] font-mono tracking-widest text-fg-muted uppercase flex items-center gap-1.5 mb-1">
                         <span className="w-1.5 h-1.5 rotate-45 bg-orange-500" />
                         {currentYear} 年度營隊專案
@@ -617,7 +625,7 @@ export default function PlansOverview() {
                               toast({ title: t('SWITCHING_PROJECT'), description: t('SWITCHING_PROJECT_DESC', { name: c.name }) });
                             }}
                             className={cn(
-                              "flex items-center justify-between px-3 py-2 text-xs font-mono rounded-xl cursor-pointer",
+                              "flex items-center justify-between px-3 py-2 text-xs font-mono rounded-md cursor-pointer",
                               isSel ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium" : "hover:bg-stone-100 dark:hover:bg-white/5"
                             )}
                           >
@@ -645,7 +653,7 @@ export default function PlansOverview() {
                         description: t('SWITCHING_PROJECT_DESC', { name: defaultCamp.name }),
                       });
                     }}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-mono text-amber-700 dark:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-all cursor-pointer shadow-2xs"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-mono text-amber-700 dark:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-all cursor-pointer shadow-2xs"
                     title={t('RETURN_TO_DEFAULT_PROJECT')}
                   >
                     <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
@@ -664,7 +672,7 @@ export default function PlansOverview() {
                 <button
                   data-testid="plans-add-trigger"
                   className={cn(
-                    "group inline-flex items-center gap-2.5 px-6 sm:px-7 py-3 rounded-full text-xs font-mono font-medium uppercase tracking-wider text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-[0_4px_16px_rgba(249,115,22,0.3)] hover:shadow-[0_8px_24px_rgba(249,115,22,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 cursor-pointer",
+                    "group inline-flex items-center gap-2.5 px-6 sm:px-7 py-3 rounded-md text-xs font-mono font-medium uppercase tracking-wider text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-[0_4px_16px_rgba(249,115,22,0.3)] hover:shadow-[0_8px_24px_rgba(249,115,22,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 cursor-pointer",
                     !isAdmin && "opacity-60 cursor-not-allowed"
                   )}
                 >
@@ -675,7 +683,7 @@ export default function PlansOverview() {
               <DropdownMenuContent
                 align="end"
                 sideOffset={8}
-                className="w-56 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-2xl p-1.5"
+                className="w-56 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-lg p-1.5"
               >
                 {groups.map((group) => {
                   const params = getUnifiedGroupBadgeParams(group.slug, group.nameZh);
@@ -684,7 +692,7 @@ export default function PlansOverview() {
                       key={group.id}
                       data-testid={`plans-add-group-${group.slug}`}
                       onSelect={() => handleCreatePlan(group.slug)}
-                      className="cursor-pointer font-medium text-xs py-2.5 px-3 rounded-xl hover:bg-orange-500/10 hover:text-orange-600 transition-colors flex items-center gap-2"
+                      className="cursor-pointer font-medium text-xs py-2.5 px-3 rounded-md hover:bg-orange-500/10 hover:text-orange-600 transition-colors flex items-center gap-2"
                     >
                       <span className={cn("w-2 h-2 rounded-full shadow-xs shrink-0", params.colorDot)} />
                       {language === 'zh' ? group.nameZh : group.nameEn}
@@ -701,7 +709,7 @@ export default function PlansOverview() {
                   data-testid="plans-batch-export-trigger"
                   disabled={isBatchDownloading || plans.length === 0}
                   className={cn(
-                    "inline-flex items-center gap-2 px-5 py-3 rounded-full text-xs font-mono font-medium uppercase tracking-wider text-foreground/80 hover:text-foreground bg-white/80 dark:bg-white/[0.04] hover:bg-white dark:hover:bg-white/10 border border-stone-200/90 dark:border-white/15 backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 cursor-pointer",
+                    "inline-flex items-center gap-2 px-5 py-3 rounded-md text-xs font-mono font-medium uppercase tracking-wider text-foreground/80 hover:text-foreground bg-white/80 dark:bg-white/[0.04] hover:bg-white dark:hover:bg-white/10 border border-stone-200/90 dark:border-white/15 backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 cursor-pointer",
                     (isBatchDownloading || plans.length === 0) && "opacity-50 cursor-not-allowed"
                   )}
                 >
@@ -712,7 +720,7 @@ export default function PlansOverview() {
               <DropdownMenuContent
                 align="end"
                 sideOffset={8}
-                className="w-60 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-2xl p-1.5"
+                className="w-60 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-lg p-1.5"
               >
                 <div className="px-3 py-1.5 text-[10px] font-mono tracking-widest text-fg-muted uppercase">
                   全部教案匯出 (ALL PLANS)
@@ -723,7 +731,7 @@ export default function PlansOverview() {
                     e.preventDefault();
                     void handleBatchDownload("word", "all");
                   }}
-                  className="cursor-pointer text-xs py-2 px-3 rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2"
+                  className="cursor-pointer text-xs py-2 px-3 rounded-md hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2"
                 >
                   <FileText className="w-4 h-4 text-orange-500" />
                   <span>所有 Word (.docx)</span>
@@ -734,7 +742,7 @@ export default function PlansOverview() {
                     e.preventDefault();
                     void handleBatchDownload("pdf", "all");
                   }}
-                  className="cursor-pointer text-xs py-2 px-3 rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2"
+                  className="cursor-pointer text-xs py-2 px-3 rounded-md hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2"
                 >
                   <FileText className="w-4 h-4 text-rose-500" />
                   <span>所有 PDF (.pdf)</span>
@@ -749,7 +757,7 @@ export default function PlansOverview() {
                     e.preventDefault();
                     void handleBatchDownload("word", "filtered");
                   }}
-                  className="cursor-pointer text-xs py-2 px-3 rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2 text-fg-secondary"
+                  className="cursor-pointer text-xs py-2 px-3 rounded-md hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2 text-fg-secondary"
                 >
                   <Download className="w-3.5 h-3.5 text-stone-400" />
                   <span>僅限目前篩選 (Word)</span>
@@ -760,7 +768,7 @@ export default function PlansOverview() {
                     e.preventDefault();
                     void handleBatchDownload("pdf", "filtered");
                   }}
-                  className="cursor-pointer text-xs py-2 px-3 rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2 text-fg-secondary"
+                  className="cursor-pointer text-xs py-2 px-3 rounded-md hover:bg-stone-100 dark:hover:bg-white/5 flex items-center gap-2 text-fg-secondary"
                 >
                   <Download className="w-3.5 h-3.5 text-stone-400" />
                   <span>僅限目前篩選 (PDF)</span>
@@ -834,7 +842,7 @@ export default function PlansOverview() {
               <h1 className="text-xl font-bold tracking-tight text-foreground truncate">
                 {language === 'zh' ? '教案總覽' : 'Plans'}
               </h1>
-              <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 font-semibold shrink-0">
+              <span className="text-[11px] font-mono px-2 py-0.5 rounded-sm bg-orange-500/10 text-orange-600 dark:text-orange-400 font-semibold shrink-0">
                 {plans.length}
               </span>
 
@@ -843,7 +851,7 @@ export default function PlansOverview() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
-                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium text-foreground bg-stone-200/50 dark:bg-white/10 hover:bg-stone-200 dark:hover:bg-white/15 border border-stone-200/80 dark:border-white/10 shrink-0 cursor-pointer active:scale-95 transition-all ml-1"
+                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-sm text-[11px] font-mono font-medium text-foreground bg-stone-200/50 dark:bg-white/10 hover:bg-stone-200 dark:hover:bg-white/15 border border-stone-200/80 dark:border-white/10 shrink-0 cursor-pointer active:scale-95 transition-all ml-1"
                       aria-label={t('SELECT_YEAR')}
                     >
                       <Calendar className="w-3 h-3 text-orange-500" />
@@ -851,7 +859,7 @@ export default function PlansOverview() {
                       <ChevronDown className="w-3 h-3 text-fg-muted" />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-60 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-2xl p-1.5 z-50">
+                  <DropdownMenuContent align="start" className="w-60 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-lg p-1.5 z-50">
                     <div className="px-2.5 py-1 text-[10px] font-mono tracking-widest text-fg-muted uppercase flex items-center gap-1.5 mb-1">
                       <span className="w-1.5 h-1.5 rotate-45 bg-orange-500" />
                       {t('SELECT_YEAR')} / 專案
@@ -874,7 +882,7 @@ export default function PlansOverview() {
                                   toast({ title: t('SWITCHING_PROJECT'), description: t('SWITCHING_PROJECT_DESC', { name: c.name }) });
                                 }}
                                 className={cn(
-                                  "flex items-center justify-between px-3 py-1.5 text-xs font-mono rounded-xl cursor-pointer ml-1",
+                                  "flex items-center justify-between px-3 py-1.5 text-xs font-mono rounded-md cursor-pointer ml-1",
                                   isSel ? "bg-orange-500 text-white font-medium shadow-xs" : "hover:bg-stone-100 dark:hover:bg-white/5"
                                 )}
                               >
@@ -897,7 +905,7 @@ export default function PlansOverview() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-stone-700 dark:text-stone-300 hover:text-foreground hover:bg-stone-200/50 dark:hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
+                    className="w-9 h-9 rounded-md flex items-center justify-center text-stone-700 dark:text-stone-300 hover:text-foreground hover:bg-stone-200/50 dark:hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
                     aria-label="切換檢視版型"
                     title="切換檢視版型"
                   >
@@ -906,7 +914,7 @@ export default function PlansOverview() {
                     {viewType === "board" && <Kanban className="w-5 h-5 text-foreground" />}
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-44 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-2xl p-1.5 z-50">
+                <DropdownMenuContent align="end" className="w-44 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-lg p-1.5 z-50">
                   <div className="px-2.5 py-1 text-[10px] font-mono tracking-widest text-fg-muted uppercase flex items-center gap-1.5 mb-1">
                     <span className="w-1.5 h-1.5 rotate-45 bg-orange-500" />
                     檢視版型 VIEW
@@ -914,7 +922,7 @@ export default function PlansOverview() {
                   <DropdownMenuItem
                     onSelect={() => setViewType("list")}
                     className={cn(
-                      "flex items-center gap-2.5 px-3 py-2 text-xs font-mono rounded-xl cursor-pointer",
+                      "flex items-center gap-2.5 px-3 py-2 text-xs font-mono rounded-md cursor-pointer",
                       viewType === "list" ? "bg-orange-500 text-white font-medium shadow-xs" : "hover:bg-stone-100 dark:hover:bg-white/5"
                     )}
                   >
@@ -924,7 +932,7 @@ export default function PlansOverview() {
                   <DropdownMenuItem
                     onSelect={() => setViewType("grid")}
                     className={cn(
-                      "flex items-center gap-2.5 px-3 py-2 text-xs font-mono rounded-xl cursor-pointer",
+                      "flex items-center gap-2.5 px-3 py-2 text-xs font-mono rounded-md cursor-pointer",
                       viewType === "grid" ? "bg-orange-500 text-white font-medium shadow-xs" : "hover:bg-stone-100 dark:hover:bg-white/5"
                     )}
                   >
@@ -934,7 +942,7 @@ export default function PlansOverview() {
                   <DropdownMenuItem
                     onSelect={() => setViewType("board")}
                     className={cn(
-                      "flex items-center gap-2.5 px-3 py-2 text-xs font-mono rounded-xl cursor-pointer",
+                      "flex items-center gap-2.5 px-3 py-2 text-xs font-mono rounded-md cursor-pointer",
                       viewType === "board" ? "bg-orange-500 text-white font-medium shadow-xs" : "hover:bg-stone-100 dark:hover:bg-white/5"
                     )}
                   >
@@ -949,7 +957,7 @@ export default function PlansOverview() {
                 <DropdownMenuTrigger asChild>
                   <button
                     className={cn(
-                      "w-9 h-9 rounded-full flex items-center justify-center active:scale-95 transition-all cursor-pointer relative",
+                      "w-9 h-9 rounded-md flex items-center justify-center active:scale-95 transition-all cursor-pointer relative",
                       sortBy !== 'updatedAt' || sortDirection !== 'desc'
                         ? "text-orange-500 bg-orange-500/10"
                         : "text-stone-700 dark:text-stone-300 hover:text-foreground hover:bg-stone-200/50 dark:hover:bg-white/10"
@@ -960,7 +968,7 @@ export default function PlansOverview() {
                     <ArrowUpDown className="w-5 h-5" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-2xl p-1.5 z-50">
+                <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-lg p-1.5 z-50">
                   <div className="px-2.5 py-1 text-[10px] font-mono tracking-widest text-fg-muted uppercase flex items-center justify-between mb-1">
                     <div className="flex items-center gap-1.5">
                       <span className="w-1.5 h-1.5 rotate-45 bg-orange-500" />
@@ -968,7 +976,7 @@ export default function PlansOverview() {
                     </div>
                     {(sortBy !== 'updatedAt' || sortDirection !== 'desc') && (
                       <button
-                        onClick={() => { setSortBy('updatedAt'); setSortDirection('desc'); }}
+                        onClick={() => { updatePreferences({ sortBy: 'updatedAt', sortDirection: 'desc' }); }}
                         className="text-[10px] text-orange-600 dark:text-orange-400 hover:underline cursor-pointer"
                       >
                         重設
@@ -978,7 +986,7 @@ export default function PlansOverview() {
                   <DropdownMenuItem
                     onSelect={(e) => { e.preventDefault(); handleSortClick('updatedAt'); }}
                     className={cn(
-                      "flex items-center justify-between px-3 py-2 text-xs font-mono rounded-xl cursor-pointer",
+                      "flex items-center justify-between px-3 py-2 text-xs font-mono rounded-md cursor-pointer",
                       sortBy === 'updatedAt' ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium" : "hover:bg-stone-100 dark:hover:bg-white/5"
                     )}
                   >
@@ -996,7 +1004,7 @@ export default function PlansOverview() {
                   <DropdownMenuItem
                     onSelect={(e) => { e.preventDefault(); handleSortClick('name'); }}
                     className={cn(
-                      "flex items-center justify-between px-3 py-2 text-xs font-mono rounded-xl cursor-pointer",
+                      "flex items-center justify-between px-3 py-2 text-xs font-mono rounded-md cursor-pointer",
                       sortBy === 'name' ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium" : "hover:bg-stone-100 dark:hover:bg-white/5"
                     )}
                   >
@@ -1014,7 +1022,7 @@ export default function PlansOverview() {
                   <DropdownMenuItem
                     onSelect={(e) => { e.preventDefault(); handleSortClick('category'); }}
                     className={cn(
-                      "flex items-center justify-between px-3 py-2 text-xs font-mono rounded-xl cursor-pointer",
+                      "flex items-center justify-between px-3 py-2 text-xs font-mono rounded-md cursor-pointer",
                       sortBy === 'category' ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium" : "hover:bg-stone-100 dark:hover:bg-white/5"
                     )}
                   >
@@ -1038,7 +1046,7 @@ export default function PlansOverview() {
                   <button
                     disabled={isBatchDownloading || plans.length === 0}
                     className={cn(
-                      "w-9 h-9 rounded-full flex items-center justify-center text-stone-700 dark:text-stone-300 hover:text-foreground hover:bg-stone-200/50 dark:hover:bg-white/10 active:scale-95 transition-all cursor-pointer",
+                      "w-9 h-9 rounded-md flex items-center justify-center text-stone-700 dark:text-stone-300 hover:text-foreground hover:bg-stone-200/50 dark:hover:bg-white/10 active:scale-95 transition-all cursor-pointer",
                       (isBatchDownloading || plans.length === 0) && "opacity-50 cursor-not-allowed"
                     )}
                     aria-label="批次匯出"
@@ -1047,21 +1055,21 @@ export default function PlansOverview() {
                     <Download className="w-5 h-5 text-orange-500" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-52 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-2xl p-1.5 z-50">
+                <DropdownMenuContent align="end" className="w-52 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-lg p-1.5 z-50">
                   <div className="px-2.5 py-1 text-[10px] font-mono tracking-widest text-fg-muted uppercase flex items-center gap-1.5 mb-1">
                     <span className="w-1.5 h-1.5 rotate-45 bg-orange-500" />
                     批次匯出 EXPORT
                   </div>
                   <DropdownMenuItem
                     onSelect={(e) => { e.preventDefault(); void handleBatchDownload("word", "all"); }}
-                    className="flex items-center gap-2 px-3 py-2 text-xs font-mono rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 cursor-pointer"
+                    className="flex items-center gap-2 px-3 py-2 text-xs font-mono rounded-md hover:bg-stone-100 dark:hover:bg-white/5 cursor-pointer"
                   >
                     <FileText className="w-4 h-4 text-orange-500" />
                     <span>所有 Word (.docx)</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onSelect={(e) => { e.preventDefault(); void handleBatchDownload("pdf", "all"); }}
-                    className="flex items-center gap-2 px-3 py-2 text-xs font-mono rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 cursor-pointer"
+                    className="flex items-center gap-2 px-3 py-2 text-xs font-mono rounded-md hover:bg-stone-100 dark:hover:bg-white/5 cursor-pointer"
                   >
                     <FileText className="w-4 h-4 text-rose-500" />
                     <span>所有 PDF (.pdf)</span>
@@ -1072,14 +1080,14 @@ export default function PlansOverview() {
                   </div>
                   <DropdownMenuItem
                     onSelect={(e) => { e.preventDefault(); void handleBatchDownload("word", "filtered"); }}
-                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-mono rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 text-fg-secondary cursor-pointer"
+                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-mono rounded-md hover:bg-stone-100 dark:hover:bg-white/5 text-fg-secondary cursor-pointer"
                   >
                     <Download className="w-3.5 h-3.5 text-stone-400" />
                     <span>僅限目前篩選 (Word)</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onSelect={(e) => { e.preventDefault(); void handleBatchDownload("pdf", "filtered"); }}
-                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-mono rounded-xl hover:bg-stone-100 dark:hover:bg-white/5 text-fg-secondary cursor-pointer"
+                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-mono rounded-md hover:bg-stone-100 dark:hover:bg-white/5 text-fg-secondary cursor-pointer"
                   >
                     <Download className="w-3.5 h-3.5 text-stone-400" />
                     <span>僅限目前篩選 (PDF)</span>
@@ -1094,7 +1102,7 @@ export default function PlansOverview() {
                     data-testid="plans-add-trigger-mobile"
                     disabled={!isAdmin}
                     className={cn(
-                      "w-9 h-9 rounded-full flex items-center justify-center bg-orange-500 hover:bg-orange-600 text-white shadow-[0_2px_8px_rgba(249,115,22,0.35)] active:scale-95 transition-all cursor-pointer shrink-0 ml-0.5",
+                      "w-9 h-9 rounded-md flex items-center justify-center bg-orange-500 hover:bg-orange-600 text-white shadow-[0_2px_8px_rgba(249,115,22,0.35)] active:scale-95 transition-all cursor-pointer shrink-0 ml-0.5",
                       !isAdmin && "opacity-60 cursor-not-allowed"
                     )}
                     aria-label="新增教案"
@@ -1103,7 +1111,7 @@ export default function PlansOverview() {
                     {!isAdmin ? <Lock className="w-4 h-4" /> : <Plus className="w-5 h-5 stroke-[2.5]" />}
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-52 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-2xl p-1.5 z-50">
+                <DropdownMenuContent align="end" className="w-52 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-lg p-1.5 z-50">
                   <div className="px-2.5 py-1 text-[10px] font-mono tracking-widest text-fg-muted uppercase flex items-center gap-1.5 mb-1">
                     <span className="w-1.5 h-1.5 rotate-45 bg-orange-500" />
                     選擇組別 CREATE PLAN
@@ -1115,7 +1123,7 @@ export default function PlansOverview() {
                         key={`m-top-add-${group.id}`}
                         data-testid={`plans-add-group-mobile-${group.slug}`}
                         onSelect={() => handleCreatePlan(group.slug)}
-                        className="cursor-pointer font-medium text-xs py-2 px-2.5 rounded-xl hover:bg-orange-500/10 hover:text-orange-600 transition-colors flex items-center gap-2"
+                        className="cursor-pointer font-medium text-xs py-2 px-2.5 rounded-md hover:bg-orange-500/10 hover:text-orange-600 transition-colors flex items-center gap-2"
                       >
                         <span className={cn("w-2 h-2 rounded-full shadow-xs shrink-0", params.colorDot)} />
                         <span>{language === 'zh' ? group.nameZh : group.nameEn}</span>
@@ -1129,6 +1137,7 @@ export default function PlansOverview() {
           <div className="group-tabs-scroll flex items-center gap-6 sm:gap-8 overflow-x-auto no-scrollbar px-1 pb-0">
             <button
               data-testid="plans-group-tab-all"
+              aria-pressed={filterGroup === "all"}
               ref={(el) => { tabRefs.current['all'] = el; }}
               onClick={() => {
                 const currentIndex = groupOrder.indexOf(filterGroup);
@@ -1147,7 +1156,7 @@ export default function PlansOverview() {
               {filterGroup === 'all' && (
                 <motion.div
                   layoutId="group-tab-underline"
-                  className="absolute bottom-0 inset-x-0 h-[3px] bg-orange-500 rounded-full shadow-[0_1px_6px_rgba(249,115,22,0.4)]"
+                  className="absolute bottom-0 inset-x-0 h-[3px] bg-orange-500 rounded-sm shadow-[0_1px_6px_rgba(249,115,22,0.4)]"
                   transition={{ type: "spring", stiffness: 500, damping: 35 }}
                 />
               )}
@@ -1161,6 +1170,7 @@ export default function PlansOverview() {
                 <button
                   key={group.id}
                   data-testid={`plans-group-tab-${group.slug}`}
+                    aria-pressed={isActive}
                   ref={(el) => { tabRefs.current[group.slug] = el; }}
                   onClick={() => {
                     const currentIndex = groupOrder.indexOf(filterGroup);
@@ -1180,7 +1190,7 @@ export default function PlansOverview() {
                   {isActive && (
                     <motion.div
                       layoutId="group-tab-underline"
-                      className="absolute bottom-0 inset-x-0 h-[3px] bg-orange-500 rounded-full shadow-[0_1px_6px_rgba(249,115,22,0.4)]"
+                      className="absolute bottom-0 inset-x-0 h-[3px] bg-orange-500 rounded-sm shadow-[0_1px_6px_rgba(249,115,22,0.4)]"
                       transition={{ type: "spring", stiffness: 500, damping: 35 }}
                     />
                   )}
@@ -1201,7 +1211,7 @@ export default function PlansOverview() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="請搜尋教案名稱、類別或人員..."
-              className="w-full pl-11 pr-14 h-12 rounded-2xl bg-white/80 dark:bg-white/[0.03] border border-stone-200/80 dark:border-white/10 backdrop-blur-md text-sm sm:text-base font-normal text-foreground placeholder:text-fg-muted focus:outline-none focus:border-orange-500/80 focus:ring-2 focus:ring-orange-500/20 transition-all shadow-xs"
+              className="w-full pl-11 pr-14 h-12 rounded-lg bg-white/80 dark:bg-white/[0.03] border border-stone-200/80 dark:border-white/10 backdrop-blur-md text-sm sm:text-base font-normal text-foreground placeholder:text-fg-muted focus:outline-none focus:border-orange-500/80 focus:ring-2 focus:ring-orange-500/20 transition-all shadow-xs"
             />
             {searchQuery && (
               <button
@@ -1217,11 +1227,11 @@ export default function PlansOverview() {
           {/* Secondary Controls (Sort & View Mode) */}
           <div className="hidden md:flex items-center gap-3 shrink-0 self-end lg:self-auto">
               {/* Sort Controls */}
-              <div className="flex items-center gap-1 bg-white/60 dark:bg-white/[0.03] p-1 rounded-full border border-stone-200/80 dark:border-white/10">
+              <div className="flex items-center gap-1 bg-white/60 dark:bg-white/[0.03] p-1 rounded-lg border border-stone-200/80 dark:border-white/10">
                 <button
                   onClick={() => handleSortClick('updatedAt')}
                   className={cn(
-                    "px-3 py-1.5 rounded-full text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer",
+                    "px-3 py-1.5 rounded-md text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer",
                     sortBy === 'updatedAt' ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium" : "text-fg-muted hover:text-foreground"
                   )}
                 >
@@ -1235,7 +1245,7 @@ export default function PlansOverview() {
                 <button
                   onClick={() => handleSortClick('name')}
                   className={cn(
-                    "px-3 py-1.5 rounded-full text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer",
+                    "px-3 py-1.5 rounded-md text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer",
                     sortBy === 'name' ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium" : "text-fg-muted hover:text-foreground"
                   )}
                 >
@@ -1249,7 +1259,7 @@ export default function PlansOverview() {
                 <button
                   onClick={() => handleSortClick('category')}
                   className={cn(
-                    "px-3 py-1.5 rounded-full text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer",
+                    "px-3 py-1.5 rounded-md text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer",
                     sortBy === 'category' ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium" : "text-fg-muted hover:text-foreground"
                   )}
                 >
@@ -1262,34 +1272,37 @@ export default function PlansOverview() {
               </div>
 
               {/* View Switcher Pill */}
-              <div className="flex items-center gap-1 bg-white/60 dark:bg-white/[0.03] p-1 rounded-full border border-stone-200/80 dark:border-white/10">
+              <div className="flex items-center gap-1 bg-white/60 dark:bg-white/[0.03] p-1 rounded-lg border border-stone-200/80 dark:border-white/10">
                 <button
                   onClick={() => setViewType("list")}
                   className={cn(
-                    "p-2 rounded-full transition-all cursor-pointer",
+                    "p-2 rounded-md transition-all cursor-pointer",
                     viewType === "list" ? "bg-orange-500 text-white shadow-xs" : "text-fg-muted hover:text-foreground"
                   )}
                   title="清單視圖 (List)"
+                  aria-pressed={viewType === "list"}
                 >
                   <List className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => setViewType("grid")}
                   className={cn(
-                    "p-2 rounded-full transition-all cursor-pointer",
+                    "p-2 rounded-md transition-all cursor-pointer",
                     viewType === "grid" ? "bg-orange-500 text-white shadow-xs" : "text-fg-muted hover:text-foreground"
                   )}
                   title="畫廊視圖 (Grid)"
+                  aria-pressed={viewType === "grid"}
                 >
                   <LayoutGrid className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => setViewType("board")}
                   className={cn(
-                    "p-2 rounded-full transition-all cursor-pointer",
+                    "p-2 rounded-md transition-all cursor-pointer",
                     viewType === "board" ? "bg-orange-500 text-white shadow-xs" : "text-fg-muted hover:text-foreground"
                   )}
                   title="看板視圖 (Board)"
+                  aria-pressed={viewType === "board"}
                 >
                   <Kanban className="w-3.5 h-3.5" />
                 </button>
@@ -1311,12 +1324,12 @@ export default function PlansOverview() {
  className="w-full"
  >
  {filteredPlans.length === 0 ? (
-              <div data-testid="plans-empty-state" className="border border-stone-200/80 dark:border-white/10 bg-white/40 dark:bg-white/[0.02] backdrop-blur-md rounded-3xl p-12 sm:p-24 flex flex-col items-center justify-center text-center shadow-xs min-h-[420px] relative overflow-hidden">
+              <div data-testid="plans-empty-state" className="border border-stone-200/80 dark:border-white/10 bg-white/40 dark:bg-white/[0.02] backdrop-blur-md rounded-[16px] p-12 sm:p-24 flex flex-col items-center justify-center text-center shadow-xs min-h-[420px] relative overflow-hidden">
                 <div className="text-[10px] font-mono tracking-widest text-fg-muted uppercase mb-4 flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
                   // NO MATCHING PLANS FOUND //
                 </div>
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white dark:bg-white/[0.05] border border-stone-200/80 dark:border-white/10 flex items-center justify-center mb-6 shadow-xs">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg bg-white dark:bg-white/[0.05] border border-stone-200/80 dark:border-white/10 flex items-center justify-center mb-6 shadow-xs">
                   <FileText className="w-8 h-8 text-stone-300 dark:text-stone-600" />
                 </div>
                 <h3 className="text-xl sm:text-2xl font-normal text-foreground mb-3 tracking-tight">
@@ -1340,7 +1353,7 @@ export default function PlansOverview() {
                             });
                           }
                         }}
-                        className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-xs font-mono font-medium uppercase tracking-wider text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 cursor-pointer"
+                        className="inline-flex items-center gap-2 px-6 py-3 rounded-md text-xs font-mono font-medium uppercase tracking-wider text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 cursor-pointer"
                       >
                         <Plus className="w-4 h-4" />
                         <span>立即新增教案</span>
@@ -1350,7 +1363,7 @@ export default function PlansOverview() {
                       align="center"
                       side="bottom"
                       sideOffset={8}
-                      className="w-56 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-2xl p-1.5 z-50"
+                      className="w-56 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl rounded-lg p-1.5 z-50"
                     >
                       {groups.map((group) => {
                         const params = getUnifiedGroupBadgeParams(group.slug, group.nameZh);
@@ -1359,7 +1372,7 @@ export default function PlansOverview() {
                             key={group.id}
                             data-testid={`plans-empty-add-group-${group.slug}`}
                             onSelect={() => handleCreatePlan(group.slug)}
-                            className="cursor-pointer font-medium text-xs py-2.5 px-3 rounded-xl hover:bg-orange-500/10 hover:text-orange-600 transition-colors flex items-center gap-2"
+                            className="cursor-pointer font-medium text-xs py-2.5 px-3 rounded-md hover:bg-orange-500/10 hover:text-orange-600 transition-colors flex items-center gap-2"
                           >
                             <span className={cn("w-2 h-2 rounded-full shadow-xs shrink-0", params.colorDot)} />
                             {language === 'zh' ? group.nameZh : group.nameEn}
@@ -1396,7 +1409,7 @@ export default function PlansOverview() {
                                 {indexStr}
                               </span>
                               <span className={cn(
-                                "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium tracking-wider uppercase border",
+                                "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-sm text-[10px] font-mono font-medium tracking-wider uppercase border",
                                 groupBadge.softBg,
                                 groupBadge.softText,
                                 groupBadge.softBorder
@@ -1427,7 +1440,7 @@ export default function PlansOverview() {
                               <span>{plan.updatedAt ? format(new Date(plan.updatedAt), "MM/dd HH:mm") : "—"}</span>
                             </div>
                             {getPlanDisplayMembers(plan) && (
-                              <div className="flex items-center gap-1 px-2.5 py-0.5 bg-stone-100 dark:bg-white/5 rounded-full text-[10px] text-fg-secondary font-sans truncate max-w-[130px] border border-stone-200/50 dark:border-white/5">
+                              <div className="flex items-center gap-1 px-2.5 py-0.5 bg-stone-100 dark:bg-white/5 rounded-sm text-[10px] text-fg-secondary font-sans truncate max-w-[130px] border border-stone-200/50 dark:border-white/5">
                                 <Users className="w-3 h-3 text-stone-400 shrink-0" />
                                 <span className="truncate">{getPlanDisplayMembers(plan)}</span>
                               </div>
@@ -1446,7 +1459,7 @@ export default function PlansOverview() {
                     return (
                       <div
                         key={group.id}
-                        className="flex-1 min-w-[320px] max-w-[380px] flex flex-col bg-white/40 dark:bg-white/[0.02] border border-stone-200/80 dark:border-white/10 rounded-3xl p-5 snap-center transition-colors backdrop-blur-sm"
+                        className="flex-1 min-w-[320px] max-w-[380px] flex flex-col bg-white/40 dark:bg-white/[0.02] border border-stone-200/80 dark:border-white/10 rounded-[16px] p-5 snap-center transition-colors backdrop-blur-sm"
                       >
                         <div className="flex items-center justify-between mb-5 px-1 shrink-0">
                           <div className="flex items-center gap-2">
@@ -1455,7 +1468,7 @@ export default function PlansOverview() {
                               {language === 'zh' ? group.nameZh : group.nameEn}
                             </h3>
                           </div>
-                          <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-stone-200/60 dark:bg-white/10 text-fg-muted font-medium">
+                          <span className="font-mono text-xs px-2.5 py-0.5 rounded-sm bg-stone-200/60 dark:bg-white/10 text-fg-muted font-medium">
                             {items.length}
                           </span>
                         </div>
@@ -1470,7 +1483,7 @@ export default function PlansOverview() {
                             >
                               <div
                                 onClick={() => handleOpenPlan(plan.id)}
-                                className="bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 rounded-2xl p-4 cursor-pointer group hover:border-orange-500/50 hover:shadow-lg transition-all duration-200 relative overflow-hidden"
+                                className="bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 rounded-lg p-4 cursor-pointer group hover:border-orange-500/50 hover:shadow-lg transition-all duration-200 relative overflow-hidden"
                               >
                                 <div className="flex items-start justify-between gap-3 mb-2 relative z-10">
                                   <h4 className="font-normal text-sm text-foreground group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors line-clamp-2">
@@ -1573,7 +1586,7 @@ export default function PlansOverview() {
                           {/* 03: Division */}
                           <div>
                             <span className={cn(
-                              "inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-[11px] font-mono font-medium tracking-wider uppercase border",
+                              "inline-flex items-center gap-2 px-3.5 py-1 rounded-sm text-[11px] font-mono font-medium tracking-wider uppercase border",
                               groupBadge.softBg,
                               groupBadge.softText,
                               groupBadge.softBorder
@@ -1640,7 +1653,7 @@ export default function PlansOverview() {
                               </h3>
                             </div>
                             <span className={cn(
-                              "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium tracking-wider uppercase border shrink-0",
+                              "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-sm text-[10px] font-mono font-medium tracking-wider uppercase border shrink-0",
                               groupBadge.softBg,
                               groupBadge.softText,
                               groupBadge.softBorder
@@ -1698,7 +1711,7 @@ export default function PlansOverview() {
               exit={{ scale: 0.95, opacity: 0 }}
               transition={{ duration: 0.15 }}
               data-testid="plan-delete-dialog"
-              className="bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 p-8 rounded-3xl max-w-sm w-full relative space-y-6 shadow-2xl"
+              className="bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 p-8 rounded-xl max-w-sm w-full relative space-y-6 shadow-2xl"
             >
               <div className="space-y-2">
                 <div className="text-[10px] font-mono tracking-widest text-rose-500 uppercase flex items-center gap-1.5">
@@ -1716,13 +1729,13 @@ export default function PlansOverview() {
                 value={deleteInput}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDeleteInput(e.target.value)}
                 placeholder="delete"
-                className="w-full h-11 px-4 rounded-xl bg-stone-100 dark:bg-white/[0.05] border border-stone-200/80 dark:border-white/10 font-mono text-sm text-foreground placeholder:text-fg-muted focus:outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 transition-all"
+                className="w-full h-11 px-4 rounded-lg bg-stone-100 dark:bg-white/[0.05] border border-stone-200/80 dark:border-white/10 font-mono text-sm text-foreground placeholder:text-fg-muted focus:outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 transition-all"
               />
               <div className="flex justify-end gap-3 pt-2">
                 <button
                   data-testid="plan-delete-cancel"
                   onClick={() => setDeleteTarget(null)}
-                  className="px-4 py-2 rounded-full text-xs font-mono text-fg-muted hover:text-foreground hover:bg-stone-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                  className="px-4 py-2 rounded-md text-xs font-mono text-fg-muted hover:text-foreground hover:bg-stone-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
                 >
                   取消 CANCEL
                 </button>
@@ -1730,7 +1743,7 @@ export default function PlansOverview() {
                   data-testid="plan-delete-confirm"
                   onClick={confirmDelete}
                   disabled={deleteInput !== "delete"}
-                  className="px-5 py-2 rounded-full text-xs font-mono font-medium text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-rose-600/20 transition-all cursor-pointer"
+                  className="px-5 py-2 rounded-md text-xs font-mono font-medium text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-rose-600/20 transition-all cursor-pointer"
                 >
                   確認刪除 DELETE
                 </button>

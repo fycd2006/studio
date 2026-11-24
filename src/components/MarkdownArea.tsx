@@ -215,7 +215,7 @@ export function MarkdownArea({ label, value, onChange, onFocus: onFocusProp, onB
             )}>
                 {selectedImage && !readOnly && (
                     <div
-                        className="fixed z-[9999] flex flex-col gap-2 p-2 bg-slate-900/95 backdrop-blur-md rounded-2xl shadow-2xl shadow-sm animate-in fade-in zoom-in-95 duration-200"
+                        className="fixed z-[9999] flex flex-col gap-2 p-2 bg-slate-900/95 backdrop-blur-md rounded-lg shadow-2xl shadow-sm animate-in fade-in zoom-in-95 duration-200"
                         style={{
                             top: `${imageMenuPos.top}px`,
                             left: `${imageMenuPos.left}px`,
@@ -254,7 +254,7 @@ export function MarkdownArea({ label, value, onChange, onFocus: onFocusProp, onB
                                 <div className="flex items-center gap-1 px-1">
                                     <Tooltip>
                                         <TooltipTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20 shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none" onClick={() => toggleStyle('borderRadius', '24px')}><CircleIcon className="h-4 w-4" /></Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20 shadow-[0_8px_30px_rgba(140,120,100,0.05)] border-none" onClick={() => toggleStyle('borderRadius', '8px')}><CircleIcon className="h-4 w-4" /></Button>
                                         </TooltipTrigger>
                                         <TooltipContent className="text-[10px] font-bold">圓角 / Round</TooltipContent>
                                     </Tooltip>

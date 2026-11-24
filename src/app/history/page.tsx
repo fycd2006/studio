@@ -52,7 +52,7 @@ export default function HistoryOverview() {
                 variant="ghost"
                 size="sm"
                 onClick={() => router.push("/")}
-                className="h-8 px-2.5 rounded-full text-xs font-mono text-fg-muted hover:text-foreground hover:bg-stone-500/10 dark:hover:bg-white/5 uppercase tracking-wider -ml-1 gap-1.5"
+                className="h-8 px-2.5 rounded-md text-xs font-mono text-fg-muted hover:text-foreground hover:bg-stone-500/10 dark:hover:bg-white/5 uppercase tracking-wider -ml-1 gap-1.5"
               >
                 <ArrowLeft className="w-3.5 h-3.5" /> 返回首頁
               </Button>
@@ -72,11 +72,11 @@ export default function HistoryOverview() {
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="flex bg-white/80 dark:bg-white/[0.03] backdrop-blur-md p-1 rounded-2xl border border-stone-200/80 dark:border-white/10 shadow-xs">
+            <div className="flex bg-white/80 dark:bg-white/[0.03] backdrop-blur-md p-1 rounded-lg border border-stone-200/80 dark:border-white/10 shadow-xs">
               <button
                 onClick={() => setViewType("grid")}
                 className={cn(
-                  "p-2 rounded-xl transition-all cursor-pointer",
+                  "p-2 rounded-lg transition-all cursor-pointer",
                   viewType === "grid"
                     ? "bg-stone-200/80 dark:bg-white/15 text-orange-600 dark:text-orange-400 shadow-xs"
                     : "text-fg-muted hover:text-foreground"
@@ -88,7 +88,7 @@ export default function HistoryOverview() {
               <button
                 onClick={() => setViewType("list")}
                 className={cn(
-                  "p-2 rounded-xl transition-all cursor-pointer",
+                  "p-2 rounded-lg transition-all cursor-pointer",
                   viewType === "list"
                     ? "bg-stone-200/80 dark:bg-white/15 text-orange-600 dark:text-orange-400 shadow-xs"
                     : "text-fg-muted hover:text-foreground"
@@ -106,9 +106,9 @@ export default function HistoryOverview() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="rounded-3xl bg-white/80 dark:bg-white/[0.02] backdrop-blur-md border border-stone-200/80 dark:border-white/10 p-16 sm:p-20 flex flex-col items-center justify-center text-center shadow-xs"
+            className="rounded-xl bg-white/80 dark:bg-white/[0.02] backdrop-blur-md border border-stone-200/80 dark:border-white/10 p-16 sm:p-20 flex flex-col items-center justify-center text-center shadow-xs"
           >
-            <div className="w-16 h-16 rounded-2xl bg-stone-100 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 flex items-center justify-center mb-4 text-fg-muted shadow-xs">
+            <div className="w-16 h-16 rounded-lg bg-stone-100 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 flex items-center justify-center mb-4 text-fg-muted shadow-xs">
               <History className="w-7 h-7" />
             </div>
             <h3 className="text-lg font-normal text-foreground mb-1">最近無修改紀錄</h3>
@@ -129,15 +129,15 @@ export default function HistoryOverview() {
                   transition={{ delay: i * 0.03, duration: 0.3 }}
                 >
                   <div
-                    className="rounded-3xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 p-6 text-left w-full group transition-all duration-300 hover:border-orange-500/40 hover:-translate-y-0.5 flex flex-col h-full cursor-pointer relative shadow-xs"
+                    className="rounded-xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 p-6 text-left w-full group transition-all duration-300 hover:border-orange-500/40 hover:-translate-y-0.5 flex flex-col h-full cursor-pointer relative shadow-xs"
                     onClick={() => handleOpenPlan(plan.id)}
                   >
                     <div className="flex justify-between items-start mb-4">
-                      <div className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono border", badge.softBg, badge.softText, badge.softBorder)}>
+                      <div className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-xs font-mono border", badge.softBg, badge.softText, badge.softBorder)}>
                         <span className={cn("w-1.5 h-1.5 rounded-full", badge.colorDot)} />
                         <span>{categoryName}</span>
                       </div>
-                      <div className="w-8 h-8 rounded-full bg-stone-100 dark:bg-white/5 border border-stone-200/60 dark:border-white/10 flex items-center justify-center text-fg-muted group-hover:bg-orange-500 group-hover:text-white group-hover:border-transparent transition-all">
+                      <div className="w-8 h-8 rounded-md bg-stone-100 dark:bg-white/5 border border-stone-200/60 dark:border-white/10 flex items-center justify-center text-fg-muted group-hover:bg-orange-500 group-hover:text-white group-hover:border-transparent transition-all">
                         <ChevronRight className="w-4 h-4" />
                       </div>
                     </div>
@@ -172,7 +172,7 @@ export default function HistoryOverview() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="rounded-3xl bg-white/80 dark:bg-white/[0.02] backdrop-blur-md border border-stone-200/80 dark:border-white/10 overflow-hidden shadow-xs"
+            className="rounded-xl bg-white/80 dark:bg-white/[0.02] backdrop-blur-md border border-stone-200/80 dark:border-white/10 overflow-hidden shadow-xs"
           >
             <table className="w-full text-sm text-left">
               <thead className="bg-[#FAF8F5]/90 dark:bg-[#12171A]/90 backdrop-blur-xl border-b border-stone-200/80 dark:border-white/10">
@@ -200,7 +200,7 @@ export default function HistoryOverview() {
                         {stripHtml(plan.activityName) || "未命名文件"}
                       </td>
                       <td className="px-6 py-4">
-                        <div className={cn("inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono border", badge.softBg, badge.softText, badge.softBorder)}>
+                        <div className={cn("inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-sm text-xs font-mono border", badge.softBg, badge.softText, badge.softBorder)}>
                           <span className={cn("w-1.5 h-1.5 rounded-full", badge.colorDot)} />
                           <span>{categoryName}</span>
                         </div>

@@ -4,10 +4,13 @@ import PDFDocument from "pdfkit";
 import { LessonPlan } from "@/types/plan";
 import { stripHtml } from "@/lib/utils";
 import {
-  htmlToStructuredLines,
   resolvePlanMembers,
   stripInvalidXmlChars,
 } from "@/lib/export-filename";
+
+import {
+  decodeRichImage, imageDisplayWidth, parseRichBlocks, richBlockText, type RichRun,
+} from "@/lib/rich-export";
 
 const A4_WIDTH = 595.28;
 const A4_HEIGHT = 841.89;
@@ -227,81 +230,136 @@ export async function generatePlanPdfBuffer(plan: LessonPlan): Promise<Buffer> {
       doc.y = cardTop + cardHeight + 16;
     }
 
-    // ── Section Renderer ──
-    const renderRichSection = (title: string, html?: string | null) => {
-      ensureSpace(64);
-      const headingY = doc.y;
-
-      doc.save();
-      doc.rect(MARGIN_LEFT, headingY + 2, 3, 14).fill(PRIMARY_COLOR);
-      doc.restore();
-
-      doc
-        .font(FONT_BOLD)
-        .fontSize(12.5)
-        .fillColor(HEADING_DARK)
-        .text(title, MARGIN_LEFT + 10, headingY, { width: CONTENT_WIDTH - 10 });
-
-      doc.y += 3;
-      doc.save();
-      doc
-        .moveTo(MARGIN_LEFT, doc.y)
-        .lineTo(A4_WIDTH - MARGIN_RIGHT, doc.y)
-        .lineWidth(0.6)
-        .strokeColor(BORDER_COLOR)
-        .stroke();
-      doc.restore();
-      doc.y += 8;
-
-      const blocks = htmlToStructuredLines(html);
-      if (blocks.length === 0) {
-        doc
-          .font(FONT_REGULAR)
-          .fontSize(10)
-          .fillColor(MUTED_COLOR)
-          .text("無內容", MARGIN_LEFT, doc.y, { width: CONTENT_WIDTH });
-        doc.y += 12;
-        return;
+    const selectRunFont = (run: RichRun) => {
+      const ascii = /^[\u0020-\u007e]*$/.test(run.text);
+      if (ascii && run.font && /^(Arial|Georgia|Courier New)$/i.test(run.font)) {
+        const family = run.font.toLowerCase() === "georgia" ? "Times"
+          : run.font.toLowerCase() === "courier new" ? "Courier" : "Helvetica";
+        const italic = family === "Times" ? "Italic" : "Oblique";
+        return { name: family + (run.bold && run.italic ? "-Bold" + italic
+          : run.bold ? "-Bold" : run.italic ? "-" + italic : family === "Times" ? "-Roman" : ""), oblique: false };
       }
+      return { name: run.bold ? FONT_BOLD : FONT_REGULAR, oblique: Boolean(run.italic) };
+    };
 
-      for (const block of blocks) {
-        if (block.type === "heading") {
-          ensureSpace(28);
-          doc
-            .font(FONT_BOLD)
-            .fontSize(11)
-            .fillColor(HEADING_DARK)
-            .text(block.text, MARGIN_LEFT, doc.y, {
-              width: CONTENT_WIDTH,
-              lineGap: 3,
+    const renderParagraph = (block: Extract<ReturnType<typeof parseRichBlocks>[number], { type: "paragraph" }>) => {
+      const indent = block.list ? Math.min(8, block.list.level) * 12 + 12 : 0;
+      const x = MARGIN_LEFT + indent;
+      const width = CONTENT_WIDTH - indent;
+      const prefix = block.list?.type === "bullet" ? "• " : block.list ? block.list.index + ". " : "";
+      type Piece = { run: RichRun; text: string; width: number; size: number; font: ReturnType<typeof selectRunFont> };
+      let line: Piece[] = [];
+      let occupied = 0;
+      let firstLine = true;
+
+      const drawLine = (last: boolean) => {
+        const lineHeight = Math.max(13, ...line.map(({ size }) => size * 1.38));
+        ensureSpace(lineHeight);
+        const y = doc.y;
+        let cursor = block.align === "center" ? x + (width - occupied) / 2
+          : block.align === "right" ? x + width - occupied : x;
+        const spaces = line.filter(({ text }) => /^ +$/.test(text)).length;
+        const extra = block.align === "justify" && !last && spaces ? Math.max(0, width - occupied) / spaces : 0;
+        for (const piece of line) {
+          const add = /^ +$/.test(piece.text) ? extra : 0;
+          const top = y + (lineHeight - piece.size * 1.35);
+          if (piece.run.background) doc.rect(cursor, top, piece.width + add, piece.size * 1.25).fill("#" + piece.run.background);
+          doc.font(piece.font.name).fontSize(piece.size).fillColor(piece.run.color ? "#" + piece.run.color : TEXT_COLOR)
+            .text(piece.text, cursor, top, {
+              lineBreak: false, oblique: piece.font.oblique, underline: piece.run.underline, strike: piece.run.strike,
             });
-          doc.y += 4;
-        } else if (block.type === "bullet" || block.type === "numbered") {
-          ensureSpace(20);
-          doc
-            .font(FONT_REGULAR)
-            .fontSize(10.5)
-            .fillColor(TEXT_COLOR)
-            .text(block.text, MARGIN_LEFT + 10, doc.y, {
-              width: CONTENT_WIDTH - 10,
-              lineGap: 3.5,
-            });
-          doc.y += 3;
-        } else {
-          ensureSpace(20);
-          doc
-            .font(FONT_REGULAR)
-            .fontSize(10.5)
-            .fillColor(TEXT_COLOR)
-            .text(block.text, MARGIN_LEFT, doc.y, {
-              width: CONTENT_WIDTH,
-              lineGap: 3.5,
-            });
-          doc.y += 4;
+          cursor += piece.width + add;
+        }
+        doc.y = y + lineHeight;
+        line = [];
+        occupied = 0;
+        firstLine = false;
+      };
+
+      for (const run of prefix ? [{ text: prefix }, ...block.runs] : block.runs) {
+        const font = selectRunFont(run);
+        const size = (run.size ?? 14) * 0.75;
+        const tokens = run.text.match(/\n| +|[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]|(?:(?![\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}])[^\s])+/gu) ?? [];
+        for (const text of tokens) {
+          if (text === "\n") {
+            drawLine(true);
+            continue;
+          }
+          doc.font(font.name).fontSize(size);
+          const measure = (value: string) => doc.font(font.name).fontSize(size).widthOfString(value);
+          const parts = measure(text) > width ? Array.from(text) : [text];
+          for (const part of parts) {
+            const next = measure(part);
+            if (line.length && occupied + next > width) drawLine(false);
+            if (!line.length && !firstLine && /^ +$/.test(part)) continue;
+            line.push({ run, text: part, width: next, size, font });
+            occupied += next;
+          }
         }
       }
+      if (line.length || firstLine) drawLine(true);
+      doc.y += 4;
+    };
 
-      doc.y += 10;
+    const renderRichSection = (title: string, html?: string | null) => {
+      renderSectionHeader(title);
+      const blocks = parseRichBlocks(html);
+      if (!blocks.length) {
+        doc.font(FONT_REGULAR).fontSize(10).fillColor(MUTED_COLOR)
+          .text("無內容", MARGIN_LEFT, doc.y, { width: CONTENT_WIDTH });
+      }
+      for (const block of blocks) {
+        if (block.type === "paragraph") {
+          renderParagraph(block);
+        } else if (block.type === "image") {
+          const image = decodeRichImage(block.src);
+          if (image) {
+            const width = Math.min(imageDisplayWidth(block.width, CONTENT_WIDTH / 0.75, image.width) * 0.75,
+              (PAGE_BOTTOM - MARGIN_TOP - 20) * image.width / image.height);
+            const height = width * image.height / image.width;
+            ensureSpace(height + 8);
+            const x = MARGIN_LEFT + (block.align === "center" ? (CONTENT_WIDTH - width) / 2
+              : block.align === "right" ? CONTENT_WIDTH - width : 0);
+            try {
+              const top = doc.y;
+              doc.image(Buffer.from(image.bytes), x, top, { width, height });
+              doc.y = top + height + 8;
+              continue;
+            } catch {
+              // Render the accessible image label for a damaged attachment.
+            }
+          }
+          doc.font(FONT_REGULAR).fontSize(10).fillColor(MUTED_COLOR).text("[" + block.alt + "]", MARGIN_LEFT, doc.y, {
+            width: CONTENT_WIDTH, align: block.align,
+            link: /^https?:\/\//i.test(block.src) ? block.src : undefined,
+          });
+        } else {
+          const columnCount = Math.max(block.widths.length, ...block.rows.map((row) => row.reduce((sum, cell) => sum + cell.columns, 0)));
+          if (!columnCount) continue;
+          const sizes = Array.from({ length: columnCount }, (_, index) =>
+            imageDisplayWidth(block.widths[index], CONTENT_WIDTH, CONTENT_WIDTH / columnCount));
+          const total = sizes.reduce((sum, width) => sum + width, 0);
+          ensureSpace(26);
+          doc.font(FONT_REGULAR).fontSize(10);
+          doc.table({
+            position: { x: MARGIN_LEFT, y: doc.y },
+            maxWidth: CONTENT_WIDTH,
+            columnStyles: sizes.map((size) => size * CONTENT_WIDTH / total),
+            defaultStyle: { padding: 5, border: 0.5, borderColor: BORDER_COLOR },
+            data: block.rows.map((row) => row.map((cell): PDFKit.Mixins.CellOptions => ({
+              text: cell.blocks.map(richBlockText).join("\n"),
+              colSpan: cell.columns, rowSpan: cell.rows,
+              align: { x: cell.align, y: "top" },
+              font: { src: cell.header ? bold : regular, size: 10 },
+              backgroundColor: cell.header ? LIGHT_BG : undefined,
+              textColor: TEXT_COLOR,
+              type: cell.header ? "TH" : "TD",
+            }))),
+          });
+          doc.y += 5;
+        }
+      }
+      doc.y += 8;
     };
 
     const renderSectionHeader = (title: string) => {
@@ -371,7 +429,7 @@ export async function generatePlanPdfBuffer(plan: LessonPlan): Promise<Buffer> {
 
     renderRichSection("【教案內容說明】", plan.content);
 
-    if (!isScriptMode && htmlToStructuredLines(plan.divisionOfLabor).length > 0) {
+    if (!isScriptMode && parseRichBlocks(plan.divisionOfLabor).length > 0) {
       renderRichSection("【分工】", plan.divisionOfLabor);
     }
 

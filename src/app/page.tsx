@@ -104,7 +104,7 @@ function FluidBottomPill({
       animate={{ y: 0, opacity: 1, x: "-50%" }}
       exit={{ y: 40, opacity: 0, x: "-50%" }}
       transition={{ duration: 0.3 }}
-      className="fixed bottom-6 left-1/2 z-40 flex items-center gap-3 px-4 py-2 rounded-full bg-white/80 dark:bg-[#0B1012]/80 backdrop-blur-2xl border border-stone-200/80 dark:border-white/10 shadow-2xl text-xs font-mono select-none"
+      className="fixed bottom-6 left-1/2 z-40 flex items-center gap-3 px-4 py-2 rounded-lg bg-white/80 dark:bg-[#0B1012]/80 backdrop-blur-2xl border border-stone-200/80 dark:border-white/10 shadow-2xl text-xs font-mono select-none"
     >
       <div className="flex items-center gap-2 pr-3 border-r border-stone-200/80 dark:border-white/10">
         <span className="w-1.5 h-1.5 rotate-45 bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.8)]" />
@@ -119,7 +119,7 @@ function FluidBottomPill({
 
       <button
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-        className="ml-1 p-1 rounded-full hover:bg-orange-500/10 text-fg-muted hover:text-orange-500 transition-colors"
+        className="ml-1 p-1 rounded-md hover:bg-orange-500/10 text-fg-muted hover:text-orange-500 transition-colors"
         title="Scroll to top"
       >
         <ArrowUp className="w-3.5 h-3.5" />
@@ -409,7 +409,7 @@ export default function Home() {
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             className="relative z-20 flex flex-wrap items-center justify-between gap-4 mb-6 sm:mb-8"
           >
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/80 dark:bg-white/[0.04] border border-stone-200/80 dark:border-white/10 backdrop-blur-md shadow-xs">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-sm bg-white/80 dark:bg-white/[0.04] border border-stone-200/80 dark:border-white/10 backdrop-blur-md shadow-xs">
               <span className="w-1.5 h-1.5 rotate-45 bg-orange-500" />
               <span className="text-[11px] font-mono tracking-widest uppercase text-foreground/80 font-medium">
                 {activeCamp ? activeCamp.name : "NTUT CHONG DE STUDIO"}
@@ -478,7 +478,7 @@ export default function Home() {
             >
               <button
                 onClick={() => router.push("/plans")}
-                className="group relative inline-flex items-center gap-3 px-8 sm:px-10 py-3.5 sm:py-4 rounded-full text-xs font-mono font-medium uppercase tracking-widest text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-[0_8px_24px_rgba(249,115,22,0.3)] hover:shadow-[0_12px_32px_rgba(249,115,22,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300"
+                className="group relative inline-flex items-center gap-3 px-8 sm:px-10 py-3.5 sm:py-4 rounded-md text-xs font-mono font-medium uppercase tracking-widest text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-[0_8px_24px_rgba(249,115,22,0.3)] hover:shadow-[0_12px_32px_rgba(249,115,22,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300"
               >
                 <span>{t("HOME_BTN_PLANS")}</span>
                 <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
@@ -486,7 +486,7 @@ export default function Home() {
 
               <button
                 onClick={() => router.push("/admin")}
-                className="inline-flex items-center gap-2.5 px-6 sm:px-8 py-3.5 sm:py-4 rounded-full text-xs font-mono font-normal uppercase tracking-widest text-foreground/80 hover:text-foreground bg-white/80 dark:bg-white/[0.04] hover:bg-white dark:hover:bg-white/10 border border-stone-200/90 dark:border-white/15 backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5"
+                className="inline-flex items-center gap-2.5 px-6 sm:px-8 py-3.5 sm:py-4 rounded-md text-xs font-mono font-normal uppercase tracking-widest text-foreground/80 hover:text-foreground bg-white/80 dark:bg-white/[0.04] hover:bg-white dark:hover:bg-white/10 border border-stone-200/90 dark:border-white/15 backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5"
               >
                 <span>{t("HOME_BTN_ADMIN")}</span>
                 <ArrowUpRight className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100" />
@@ -597,7 +597,7 @@ export default function Home() {
             <div className="flex items-center gap-4 text-xs font-mono">
               <Link
                 href="/admin?tab=timer"
-                className="group inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-orange-500/10 hover:bg-orange-500/15 border border-orange-500/30 text-orange-600 dark:text-orange-400 font-medium transition-colors"
+                className="group inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md bg-orange-500/10 hover:bg-orange-500/15 border border-orange-500/30 text-orange-600 dark:text-orange-400 font-medium transition-colors"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
                 <span>當前進行：{timeline[currentFocusedIdx]?.label} ({timeline[currentFocusedIdx]?.code})</span>
@@ -608,10 +608,10 @@ export default function Home() {
 
           {/* Laser Progress Rail (Scroll-driven dynamic line) */}
           <div className="hidden md:block w-full mb-6">
-            <div className="relative w-full h-[2.5px] bg-stone-200/80 dark:bg-white/10 rounded-full overflow-hidden">
+            <div className="relative w-full h-[2.5px] bg-stone-200/80 dark:bg-white/10 rounded-sm overflow-hidden">
               <motion.div
                 style={{ width: animatedLaserWidth }}
-                className="absolute inset-y-0 left-0 bg-gradient-to-r from-orange-500 via-amber-400 to-orange-600 rounded-full shadow-[0_0_12px_rgba(249,115,22,0.8)]"
+                className="absolute inset-y-0 left-0 bg-gradient-to-r from-orange-500 via-amber-400 to-orange-600 rounded-sm shadow-[0_0_12px_rgba(249,115,22,0.8)]"
               />
             </div>
           </div>
@@ -650,7 +650,7 @@ export default function Home() {
                             // 0{i + 1} STAGE • {node.code}
                           </span>
                           {isLive && (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-orange-500/15 border border-orange-500/30 text-orange-600 dark:text-orange-400 font-mono text-[10px] font-bold uppercase tracking-wider">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-sm bg-orange-500/15 border border-orange-500/30 text-orange-600 dark:text-orange-400 font-mono text-[10px] font-bold uppercase tracking-wider">
                               <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
                               進行中
                             </span>
@@ -658,7 +658,7 @@ export default function Home() {
                         </div>
 
                         {/* Large Glowing Icon */}
-                        <div className="w-12 h-12 lg:w-14 lg:h-14 rounded-2xl bg-gradient-to-tr from-orange-500 to-amber-500 text-white shadow-[0_8px_24px_rgba(249,115,22,0.45)] flex items-center justify-center shrink-0">
+                        <div className="w-12 h-12 lg:w-14 lg:h-14 rounded-lg bg-gradient-to-tr from-orange-500 to-amber-500 text-white shadow-[0_8px_24px_rgba(249,115,22,0.45)] flex items-center justify-center shrink-0">
                           <Icon className="w-6 h-6 lg:w-7 lg:h-7" />
                         </div>
                       </div>
@@ -704,7 +704,7 @@ export default function Home() {
                       <div className="flex flex-col items-center gap-2.5 my-auto py-4">
                         <div
                           className={cn(
-                            "w-11 h-11 rounded-full flex items-center justify-center transition-all duration-300",
+                            "w-11 h-11 rounded-md flex items-center justify-center transition-all duration-300",
                             isPassed
                               ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/25"
                               : "bg-stone-100 dark:bg-white/5 text-fg-muted border border-stone-200 dark:border-white/10 group-hover:border-orange-500/40 group-hover:text-orange-500"
@@ -754,7 +754,7 @@ export default function Home() {
                     key={node.code}
                     onClick={() => setSelectedStage(i)}
                     className={cn(
-                      "shrink-0 px-3.5 py-2 rounded-full text-xs font-mono transition-all flex items-center gap-1.5",
+                      "shrink-0 px-3.5 py-2 rounded-md text-xs font-mono transition-all flex items-center gap-1.5",
                       isFocused
                         ? "bg-orange-500 text-white font-medium shadow-md shadow-orange-500/20"
                         : "bg-white dark:bg-white/5 border border-stone-200 dark:border-white/10 text-fg-muted"
@@ -785,7 +785,7 @@ export default function Home() {
                         // 0{selectedStage + 1} STAGE • {activeNode.code}
                       </span>
                       {isLive && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-600 dark:text-orange-400 font-mono text-[9px] font-bold uppercase">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm bg-orange-500/15 text-orange-600 dark:text-orange-400 font-mono text-[9px] font-bold uppercase">
                           <span className="w-1 h-1 rounded-full bg-orange-500 animate-pulse" />
                           進行中
                         </span>
@@ -905,7 +905,7 @@ export default function Home() {
                     </div>
 
                     <div className="flex items-center gap-4 text-xs font-mono text-fg-muted">
-                      <span className="px-3 py-1 rounded-full border border-stone-200 dark:border-white/10 group-hover:border-orange-500/40 text-foreground transition-colors">
+                      <span className="px-3 py-1 rounded-sm border border-stone-200 dark:border-white/10 group-hover:border-orange-500/40 text-foreground transition-colors">
                         {groupPlansCount} PLANS
                       </span>
                       <ArrowRight className="w-4 h-4 text-fg-muted group-hover:text-orange-500 group-hover:translate-x-1.5 transition-all" />
@@ -916,7 +916,7 @@ export default function Home() {
             </div>
 
             {/* Right: Live Stream & Philosophy (5 cols) */}
-            <div className="lg:col-span-5 flex flex-col justify-between p-7 sm:p-9 rounded-3xl bg-white/70 dark:bg-white/[0.02] border border-stone-200/80 dark:border-white/10 backdrop-blur-md shadow-xs">
+            <div className="lg:col-span-5 flex flex-col justify-between p-7 sm:p-9 rounded-xl bg-white/70 dark:bg-white/[0.02] border border-stone-200/80 dark:border-white/10 backdrop-blur-md shadow-xs">
               <div>
                 <div className="flex items-center justify-between mb-6 pb-4 border-b border-stone-200/80 dark:border-white/10">
                   <div className="flex items-center gap-2">
@@ -933,7 +933,7 @@ export default function Home() {
                     <Link
                       key={plan.id}
                       href={`/plans/${encodeURIComponent(plan.id)}`}
-                      className="group flex items-center justify-between p-3.5 rounded-2xl bg-stone-50/60 dark:bg-white/[0.02] hover:bg-white dark:hover:bg-white/[0.06] border border-stone-200/60 dark:border-white/10 hover:border-orange-500/40 transition-all duration-200"
+                      className="group flex items-center justify-between p-3.5 rounded-lg bg-stone-50/60 dark:bg-white/[0.02] hover:bg-white dark:hover:bg-white/[0.06] border border-stone-200/60 dark:border-white/10 hover:border-orange-500/40 transition-all duration-200"
                     >
                       <div className="min-w-0 flex-1 pr-3">
                         <div className="flex items-center gap-2 text-[10px] font-mono text-fg-muted uppercase mb-1">

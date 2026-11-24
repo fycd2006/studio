@@ -224,11 +224,11 @@ export function PlanSidebar({
  <TooltipTrigger asChild>
  <Link href={item.href}
  className={cn(
- "group/nav relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 cursor-pointer",
+ "group/nav relative flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 cursor-pointer",
  "group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0",
  isActive ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium" : "text-fg-muted hover:text-foreground hover:bg-stone-500/10 dark:hover:bg-white/5"
  )}>
- {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-orange-500 rounded-r-full" />}
+ {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-orange-500 rounded-r-sm" />}
  <Icon className={cn("h-[18px] w-[18px] shrink-0", isActive ? "text-orange-600 dark:text-orange-400" : "text-fg-muted group-hover/nav:text-foreground")} />
  <span className="text-[11px] font-mono tracking-wide group-data-[collapsible=icon]:hidden uppercase">{item.label}</span>
  </Link>
@@ -244,7 +244,7 @@ export function PlanSidebar({
 
  {/* ═══ PROJECT INFO (expanded only) ═══ */}
  <div className="mt-6 mb-2 px-3 group-data-[collapsible=icon]:hidden">
- <div className="flex flex-col gap-2 p-3 bg-stone-500/[0.04] dark:bg-white/[0.03] rounded-2xl border border-stone-200/80 dark:border-white/10">
+ <div className="flex flex-col gap-2 p-3 bg-stone-500/[0.04] dark:bg-white/[0.03] rounded-lg border border-stone-200/80 dark:border-white/10">
  <div className="flex items-center justify-between">
  <label className="text-[9px] font-mono text-fg-muted uppercase tracking-widest leading-none">
  Active Project
@@ -329,7 +329,7 @@ export function PlanSidebar({
  if (pathname !== `/plans/${plan.id}`) router.push(`/plans/${plan.id}`);
  }}
  >
- {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-orange-500 rounded-r-full shadow-xs" />}
+ {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-orange-500 rounded-r-sm shadow-xs" />}
  {isAdmin && (
  <div {...provided.dragHandleProps} className="opacity-0 group-hover/item:opacity-40">
  <GripVertical className="h-3.5 w-3.5" />
@@ -402,68 +402,68 @@ export function PlanSidebar({
 
  {/* ═══ TYPE-DELETE PLAN MODAL ═══ */}
  <Dialog open={!!deletePlanTarget} onOpenChange={(open) => { if (!open) { setDeletePlanTarget(null); setDeleteInput(""); } }}>
- <DialogContent className="rounded-3xl p-6 sm:p-8 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl max-w-md">
+ <DialogContent className="rounded-xl p-6 sm:p-8 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl max-w-md">
  <DialogHeader><DialogTitle className="text-lg font-normal tracking-tight text-foreground">刪除教案 / Delete Plan</DialogTitle></DialogHeader>
  <div className="space-y-4 py-2">
  <p className="text-xs font-mono text-fg-muted">確認刪除「<strong className="text-foreground">{deletePlanTarget?.name}</strong>」？此操作無法復原。</p>
  <div className="space-y-2">
  <label className="text-[10px] font-mono uppercase tracking-widest text-fg-muted">請輸入 <span className="text-rose-500 font-mono">delete</span> 確認</label>
  <Input type="text" value={deleteInput} onChange={e => setDeleteInput(e.target.value)} placeholder="delete"
- className="font-mono h-11 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 text-foreground" />
+ className="font-mono h-11 rounded-lg bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 text-foreground" />
  </div>
  </div>
  <DialogFooter className="gap-2">
- <Button variant="ghost" onClick={() => { setDeletePlanTarget(null); setDeleteInput(""); }} className="rounded-xl font-mono text-xs uppercase tracking-wider h-11 cursor-pointer">取消</Button>
+ <Button variant="ghost" onClick={() => { setDeletePlanTarget(null); setDeleteInput(""); }} className="rounded-lg font-mono text-xs uppercase tracking-wider h-11 cursor-pointer">取消</Button>
  <Button variant="destructive" onClick={handleConfirmDeletePlan} disabled={deleteInput !== "delete"}
- className="rounded-xl font-mono text-xs uppercase tracking-wider h-11 px-8 cursor-pointer disabled:opacity-40">確認刪除</Button>
+ className="rounded-lg font-mono text-xs uppercase tracking-wider h-11 px-8 cursor-pointer disabled:opacity-40">確認刪除</Button>
  </DialogFooter>
  </DialogContent>
  </Dialog>
 
  {/* ═══ ADD CAMP DIALOG ═══ */}
  <Dialog open={isAddCampOpen} onOpenChange={setIsAddCampOpen}>
- <DialogContent className="rounded-3xl p-6 sm:p-8 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl">
+ <DialogContent className="rounded-xl p-6 sm:p-8 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl">
  <DialogHeader><DialogTitle className="text-lg font-normal tracking-tight text-foreground">建立營隊專案 / Create Project</DialogTitle></DialogHeader>
  <div className="py-4 space-y-5">
  <div className="space-y-2">
  <label className="text-[10px] font-mono text-fg-muted uppercase tracking-widest">名稱 / Name</label>
- <Input placeholder="科學夏令營 / Camp Name" value={tempCamp.name || ""} onChange={(e) => setTempCamp({ ...tempCamp, name: e.target.value })} className="h-11 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 font-normal text-foreground" />
+ <Input placeholder="科學夏令營 / Camp Name" value={tempCamp.name || ""} onChange={(e) => setTempCamp({ ...tempCamp, name: e.target.value })} className="h-11 rounded-lg bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 font-normal text-foreground" />
  </div>
  <div className="grid grid-cols-2 gap-4">
  <div className="space-y-2">
  <label className="text-[10px] font-mono text-fg-muted uppercase tracking-widest">開始 / Start</label>
- <Input type="date" value={tempCamp.campStartDate || ""} onChange={(e) => setTempCamp({ ...tempCamp, campStartDate: e.target.value })} className="h-11 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 font-mono text-xs text-foreground" />
+ <Input type="date" value={tempCamp.campStartDate || ""} onChange={(e) => setTempCamp({ ...tempCamp, campStartDate: e.target.value })} className="h-11 rounded-lg bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 font-mono text-xs text-foreground" />
  </div>
  <div className="space-y-2">
  <label className="text-[10px] font-mono text-fg-muted uppercase tracking-widest">結束 / End</label>
- <Input type="date" value={tempCamp.campEndDate || ""} onChange={(e) => setTempCamp({ ...tempCamp, campEndDate: e.target.value })} className="h-11 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 font-mono text-xs text-foreground" />
+ <Input type="date" value={tempCamp.campEndDate || ""} onChange={(e) => setTempCamp({ ...tempCamp, campEndDate: e.target.value })} className="h-11 rounded-lg bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 font-mono text-xs text-foreground" />
  </div>
  </div>
  </div>
  <DialogFooter className="gap-2">
- <Button variant="outline" onClick={() => setIsAddCampOpen(false)} className="rounded-xl font-mono text-xs uppercase tracking-wider h-11 cursor-pointer">取消</Button>
- <Button onClick={handleCreateCamp} className="rounded-xl font-mono text-xs uppercase tracking-wider h-11 px-8 cursor-pointer bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-xs">確認 / Confirm</Button>
+ <Button variant="outline" onClick={() => setIsAddCampOpen(false)} className="rounded-lg font-mono text-xs uppercase tracking-wider h-11 cursor-pointer">取消</Button>
+ <Button onClick={handleCreateCamp} className="rounded-lg font-mono text-xs uppercase tracking-wider h-11 px-8 cursor-pointer bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-xs">確認 / Confirm</Button>
  </DialogFooter>
  </DialogContent>
  </Dialog>
 
  {/* ═══ CAMP SETTINGS DIALOG ═══ */}
  <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
- <DialogContent className="rounded-3xl p-6 sm:p-8 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl max-w-lg">
+ <DialogContent className="rounded-xl p-6 sm:p-8 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl max-w-lg">
  <DialogHeader><DialogTitle className="text-lg font-normal tracking-tight text-foreground">專案設定 / Project Settings</DialogTitle></DialogHeader>
  <div className="py-4 space-y-6">
  <div className="space-y-2">
  <label className="text-[10px] font-mono text-fg-muted uppercase tracking-widest">專案名稱 / Name</label>
- <Input value={tempCamp.name || ""} onChange={(e) => setTempCamp({ ...tempCamp, name: e.target.value })} className="h-11 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 font-normal text-foreground" />
+ <Input value={tempCamp.name || ""} onChange={(e) => setTempCamp({ ...tempCamp, name: e.target.value })} className="h-11 rounded-lg bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 font-normal text-foreground" />
  </div>
  <div className="grid grid-cols-2 gap-4">
  <div className="space-y-2">
  <label className="text-[10px] font-mono text-fg-muted uppercase tracking-widest">營期開始 / Start</label>
- <Input type="date" value={tempCamp.campStartDate || ""} onChange={(e) => setTempCamp({ ...tempCamp, campStartDate: e.target.value })} className="h-11 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 font-mono text-xs text-foreground" />
+ <Input type="date" value={tempCamp.campStartDate || ""} onChange={(e) => setTempCamp({ ...tempCamp, campStartDate: e.target.value })} className="h-11 rounded-lg bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 font-mono text-xs text-foreground" />
  </div>
  <div className="space-y-2">
  <label className="text-[10px] font-mono text-fg-muted uppercase tracking-widest">營期結束 / End</label>
- <Input type="date" value={tempCamp.campEndDate || ""} onChange={(e) => setTempCamp({ ...tempCamp, campEndDate: e.target.value })} className="h-11 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 font-mono text-xs text-foreground" />
+ <Input type="date" value={tempCamp.campEndDate || ""} onChange={(e) => setTempCamp({ ...tempCamp, campEndDate: e.target.value })} className="h-11 rounded-lg bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 font-mono text-xs text-foreground" />
  </div>
  </div>
  <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-6 pt-6">

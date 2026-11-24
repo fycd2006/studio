@@ -1,806 +1,519 @@
+"use client";
 
-"use client"
-
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { fabric } from "fabric";
-import { 
- Pencil, 
- Type, 
- Square, 
- Circle as CircleIcon, 
- Triangle, 
- Image as ImageIcon,
- Trash2,
- MousePointer2,
- Minus,
- Hand
+import {
+  Circle, Focus, Hand, Image as ImageIcon, Minus, MousePointer2, Pencil, Plus,
+  Redo2, Square, Trash2, Triangle, Type, Undo2,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Separator } from "@/components/ui/separator";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useTheme } from "next-themes";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Slider } from "@/components/ui/slider";
+import { prepareClipboardImage } from "@/lib/editor-image";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 interface FabricCanvasProps {
- initialData?: string | null;
- initialHeight?: number | null;
- onSave: (data: string, height: number, image: string) => void;
+  initialData?: string | null;
+  initialHeight?: number | null;
+  onSave: (data: string, height: number, image: string) => void;
 }
 
-export function FabricCanvas({ initialData, initialHeight = 500, onSave }: FabricCanvasProps) {
- const wrapperRef = useRef<HTMLDivElement>(null);
- const canvasRef = useRef<HTMLCanvasElement>(null);
- const fabricRef = useRef<fabric.Canvas | null>(null);
- const onSaveRef = useRef(onSave);
- const clipboard = useRef<any>(null);
- const isInitialLoad = useRef(true);
- const isInternalUpdate = useRef(false);
- 
- const { resolvedTheme } = useTheme();
- const [brushColor, setBrushColor] = useState("");
- const [userPickedColor, setUserPickedColor] = useState(false);
- const [brushSize, setBrushSize] = useState(3);
- const [activeTool, setActiveTool] = useState<'pen' | 'select' | 'pan' | 'shape'>('pen');
- const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
- const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
- const [canvasMounted, setCanvasMounted] = useState(0);
-
- useEffect(() => {
- if (!userPickedColor) {
- setBrushColor(resolvedTheme === 'dark' ? '#f8fafc' : '#336699');
- }
- }, [resolvedTheme, userPickedColor]);
-
- // Use effective color so UI renders immediately without waiting for effect
- const activeColor = brushColor || (resolvedTheme === 'dark' ? '#f8fafc' : '#336699');
-
- const activeToolRef = useRef(activeTool);
- const brushColorRef = useRef(activeColor);
- const brushSizeRef = useRef(brushSize);
- const pendingShapeRef = useRef<'rect' | 'circle' | 'triangle' | 'line' | 'text' | null>(null);
- const lastSavedData = useRef(initialData);
-
- useEffect(() => {
- activeToolRef.current = activeTool;
- brushColorRef.current = activeColor;
- brushSizeRef.current = brushSize;
- }, [activeTool, activeColor, brushSize]);
-
- // Sync initialData changes from external sources (like Undo/Redo)
- useEffect(() => {
- if (
- fabricRef.current && 
- initialData && 
- initialData !== lastSavedData.current && 
- typeof initialData === 'string' && 
- initialData.trim().startsWith('{')
- ) {
- isInternalUpdate.current = true;
- fabricRef.current.loadFromJSON(initialData, () => {
- fabricRef.current?.renderAll();
- lastSavedData.current = initialData;
- isInternalUpdate.current = false;
- });
- }
- }, [initialData]);
-
- useEffect(() => {
- onSaveRef.current = onSave;
- }, [onSave]);
-
- const copy = useCallback(() => {
- if (!fabricRef.current) return;
- fabricRef.current.getActiveObject()?.clone((cloned: any) => {
- clipboard.current = cloned;
- });
- }, []);
-
- const cut = useCallback(() => {
- if (!fabricRef.current) return;
- const activeObject = fabricRef.current.getActiveObject();
- if (!activeObject) return;
- activeObject.clone((cloned: any) => {
- clipboard.current = cloned;
- fabricRef.current?.remove(activeObject);
- fabricRef.current?.discardActiveObject().renderAll();
- });
- }, []);
-
- const paste = useCallback(() => {
- if (!fabricRef.current || !clipboard.current) return;
- clipboard.current.clone((clonedObj: any) => {
- fabricRef.current?.discardActiveObject();
- clonedObj.set({
- left: (clonedObj.left || 0) + 20,
- top: (clonedObj.top || 0) + 20,
- evented: true,
- });
- if (clonedObj.type === 'activeSelection') {
- clonedObj.canvas = fabricRef.current;
- clonedObj.forEachObject((obj: any) => {
- fabricRef.current?.add(obj);
- });
- clonedObj.setCoords();
- } else {
- fabricRef.current?.add(clonedObj);
- }
- clipboard.current.top += 20;
- clipboard.current.left += 20;
- fabricRef.current?.setActiveObject(clonedObj);
- fabricRef.current?.requestRenderAll();
- });
- }, []);
-
- useEffect(() => {
- const wrapper = wrapperRef.current;
- if (!wrapper) return;
-
- const updateSize = () => {
- const nextWidth = Math.max(0, Math.floor(wrapper.clientWidth));
- const nextHeight = Math.max(0, Math.floor(wrapper.clientHeight));
- if (nextWidth === 0 || nextHeight === 0) return;
- setContainerSize((prev) =>
- prev.width === nextWidth && prev.height === nextHeight
- ? prev
- : { width: nextWidth, height: nextHeight }
- );
- };
-
- updateSize();
- const observer = new ResizeObserver(updateSize);
- observer.observe(wrapper);
-
- return () => observer.disconnect();
- }, []);
-
- useEffect(() => {
- if (!canvasRef.current) return;
-
- const canvas = new fabric.Canvas(canvasRef.current, {
- backgroundColor: "transparent",
- });
-
- // Prevent browser scroll/back gestures while drawing on touch devices.
- (canvas as any).lowerCanvasEl.style.touchAction = "none";
- if ((canvas as any).upperCanvasEl) {
- (canvas as any).upperCanvasEl.style.touchAction = "none";
- }
-
- (canvas as any).uniScaleTransform = true;
-
- fabricRef.current = canvas;
- setCanvasMounted((v) => v + 1);
-
- // Apply initial viewport dimensions immediately so the first render is drawable
- // even before the first ResizeObserver callback.
- const wrapper = wrapperRef.current;
- if (wrapper) {
- const initialWidth = Math.max(0, Math.floor(wrapper.clientWidth));
- const initialHeight = Math.max(0, Math.floor(wrapper.clientHeight));
- if (initialWidth > 0 && initialHeight > 0) {
- canvas.setDimensions({ width: initialWidth, height: initialHeight });
- }
- }
-
- const syncCanvasSize = () => {
- const el = wrapperRef.current;
- if (!el) return;
- const width = Math.max(0, Math.floor(el.clientWidth));
- const height = Math.max(0, Math.floor(el.clientHeight));
- if (width > 0 && height > 0) {
- canvas.setDimensions({ width, height });
- canvas.calcOffset();
- canvas.requestRenderAll();
- }
- };
-
- // Guard against delayed layout passes where initial clientHeight is still small.
- const rafId = requestAnimationFrame(syncCanvasSize);
- const timeoutId = window.setTimeout(syncCanvasSize, 120);
-
- // Default to drawing mode for faster canvas interaction.
- const initialBrush = new fabric.PencilBrush(canvas);
- initialBrush.color = brushColorRef.current;
- initialBrush.width = brushSizeRef.current;
- canvas.isDrawingMode = true;
- canvas.selection = false;
- canvas.defaultCursor = 'default';
- canvas.freeDrawingBrush = initialBrush;
- setTool('pen');
-
- if (isInitialLoad.current && initialData && typeof initialData === 'string' && initialData.trim().startsWith('{')) {
- try {
- isInternalUpdate.current = true;
- canvas.loadFromJSON(initialData, () => {
- canvas.renderAll();
- isInitialLoad.current = false;
- isInternalUpdate.current = false;
- });
- } catch (e) {
- isInitialLoad.current = false;
- isInternalUpdate.current = false;
- }
- } else if (isInitialLoad.current) {
- isInitialLoad.current = false;
- }
-
- // Zoom & Pan Event Listeners
- let isDragging = false;
- let lastPosX = 0;
- let lastPosY = 0;
-
- canvas.on('mouse:down', function (opt) {
- const evt = opt.e as any;
-
- if (activeToolRef.current === 'shape' && pendingShapeRef.current) {
- const type = pendingShapeRef.current;
- const color = brushColorRef.current;
- const size = brushSizeRef.current;
- const pointer = canvas.getPointer(opt.e);
- 
- const common = { 
- left: pointer.x, 
- top: pointer.y, 
- originX: 'center',
- originY: 'center',
- fill: color + "20", 
- stroke: color, 
- strokeWidth: 2,
- lockScalingFlip: true 
- };
-
- let object: fabric.Object | undefined;
- switch (type) {
- case 'rect': object = new fabric.Rect({ ...common, width: 100, height: 100 }); break;
- case 'circle': object = new fabric.Circle({ ...common, radius: 50 }); break;
- case 'triangle': object = new fabric.Triangle({ ...common, width: 100, height: 100 }); break;
- case 'line': object = new fabric.Line([pointer.x - 50, pointer.y, pointer.x + 50, pointer.y], { stroke: color, strokeWidth: size }); break;
- case 'text': object = new fabric.IText('雙擊編輯', { ...common, fill: color, strokeWidth: size > 5 ? 2 : 0, fontWeight: size > 5 ? 'bold' : 'normal', fontSize: 22 }); break;
- }
-
- if (object) {
- canvas.add(object);
- canvas.setActiveObject(object);
- canvas.renderAll();
- }
-
- pendingShapeRef.current = null;
- // Need to use state setter, but we can't reliably call it from inside the useEffect without ref. Just dispatch event.
- window.dispatchEvent(new CustomEvent('fabric:tool_reset'));
- return;
- }
-
- if (activeToolRef.current === 'pan' || evt.altKey || evt.button === 1) {
- isDragging = true;
- canvas.selection = false;
- lastPosX = evt.clientX || (evt.touches && evt.touches[0].clientX) || 0;
- lastPosY = evt.clientY || (evt.touches && evt.touches[0].clientY) || 0;
- }
- });
-
- canvas.on('mouse:move', function (opt) {
- if (isDragging) {
- const e = opt.e as any;
- const vpt = canvas.viewportTransform;
- const clientX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
- const clientY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
- if (vpt) {
- vpt[4] += clientX - lastPosX;
- vpt[5] += clientY - lastPosY;
- canvas.requestRenderAll();
- lastPosX = clientX;
- lastPosY = clientY;
- }
- }
- });
-
- canvas.on('mouse:up', function (opt) {
- if (isDragging) {
- if (canvas.viewportTransform) {
- canvas.setViewportTransform(canvas.viewportTransform);
- }
- isDragging = false;
- canvas.selection = activeToolRef.current === 'select';
- }
- });
-
- canvas.on('mouse:wheel', function (opt) {
- const delta = opt.e.deltaY;
- let zoom = canvas.getZoom();
- zoom *= 0.999 ** delta;
- if (zoom > 20) zoom = 20;
- if (zoom < 0.05) zoom = 0.05;
- canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
- opt.e.preventDefault();
- opt.e.stopPropagation();
- });
-
- const handleSave = () => {
- if (fabricRef.current && !isInitialLoad.current && !isInternalUpdate.current) {
- const json = JSON.stringify(fabricRef.current.toJSON());
- lastSavedData.current = json;
- // 產生 PNG 快照供 Word 匯出使用
- const pngDataUrl = fabricRef.current.toDataURL({ format: 'png', multiplier: 2 });
- onSaveRef.current(json, fabricRef.current.getHeight(), pngDataUrl);
- }
- };
-
- canvas.on('object:modified', handleSave);
- canvas.on('object:added', handleSave);
- canvas.on('object:removed', handleSave);
- canvas.on('path:created', handleSave);
-
- const handleKeyDown = (e: KeyboardEvent) => {
- const isInput = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName || '') || 
- (document.activeElement as HTMLElement)?.isContentEditable;
- if (isInput) return;
-
- if ((e.key === 'Delete' || e.key === 'Backspace')) {
- const activeObjects = canvas.getActiveObjects();
- if (activeObjects.length > 0) {
- canvas.remove(...activeObjects);
- canvas.discardActiveObject().renderAll();
- }
- }
- if (e.ctrlKey || e.metaKey) {
- if (e.key === 'c') { e.preventDefault(); copy(); }
- if (e.key === 'v') { e.preventDefault(); paste(); }
- if (e.key === 'x') { e.preventDefault(); cut(); }
- }
- };
-
- const handleBeforePrint = () => {
- if (!fabricRef.current) return;
- const canvas = fabricRef.current;
- const canvasAny = canvas as any;
- 
- // Save current state
- canvasAny.originalViewportTransform = [...(canvas.viewportTransform || [])];
- canvasAny.originalWidth = canvas.getWidth();
- canvasAny.originalHeight = canvas.getHeight();
- 
- // Calculate bounding box of all objects
- const objects = canvas.getObjects();
- if (objects.length > 0) {
- // Reset viewport temporarily to calculate true bounds
- canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
- 
- let minX = Infinity, minY = Infinity, mxX = -Infinity, mxY = -Infinity;
- objects.forEach(obj => {
- const br = obj.getBoundingRect(true, true);
- if (br.left < minX) minX = br.left;
- if (br.top < minY) minY = br.top;
- if (br.left + br.width > mxX) mxX = br.left + br.width;
- if (br.top + br.height > mxY) mxY = br.top + br.height;
- });
-
- const padding = 20;
- const contentWidth = mxX - minX + padding * 2;
- const contentHeight = mxY - minY + padding * 2;
- 
- // Target max width for A4 print
- const printWidth = 800;
- const scale = Math.min(1, printWidth / contentWidth);
- const printHeight = contentHeight * scale;
-
- canvas.setDimensions({ width: printWidth, height: printHeight });
- canvas.setViewportTransform([scale, 0, 0, scale, -(minX - padding) * scale, -(minY - padding) * scale]);
- }
- canvas.renderAll();
- };
-
- const handleAfterPrint = () => {
- if (!fabricRef.current) return;
- const canvas = fabricRef.current;
- const canvasAny = canvas as any;
- const origVpt = canvasAny.originalViewportTransform as number[];
- const origWidth = canvasAny.originalWidth as number;
- const origHeight = canvasAny.originalHeight as number;
-
- if (origVpt && origWidth && origHeight) {
- canvas.setDimensions({ width: origWidth, height: origHeight });
- canvas.setViewportTransform(origVpt);
- canvas.renderAll();
- }
- };
-
- window.addEventListener('keydown', handleKeyDown);
- window.addEventListener('beforeprint', handleBeforePrint);
- window.addEventListener('afterprint', handleAfterPrint);
-
- const handleToolReset = () => {
- setTool('select');
- };
- window.addEventListener('fabric:tool_reset', handleToolReset as EventListener);
-
- return () => {
- cancelAnimationFrame(rafId);
- clearTimeout(timeoutId);
- window.removeEventListener('keydown', handleKeyDown);
- window.removeEventListener('beforeprint', handleBeforePrint);
- window.removeEventListener('afterprint', handleAfterPrint);
- window.removeEventListener('fabric:tool_reset', handleToolReset as EventListener);
- if (fabricRef.current) {
- fabricRef.current.dispose();
- }
- fabricRef.current = null;
- };
- }, [copy, cut, paste]);
-
- useEffect(() => {
- const canvas = fabricRef.current;
- if (!canvas || containerSize.width === 0 || containerSize.height === 0) return;
-
- const prevWidth = canvas.getWidth() || containerSize.width;
- const prevHeight = canvas.getHeight() || containerSize.height;
- const viewport = canvas.viewportTransform
- ? [...canvas.viewportTransform]
- : [1, 0, 0, 1, 0, 0];
-
- canvas.setDimensions({
- width: containerSize.width,
- height: containerSize.height,
- });
-
- // Keep pan position proportional when viewport size changes.
- if (prevWidth > 0 && prevHeight > 0) {
- viewport[4] = viewport[4] * (containerSize.width / prevWidth);
- viewport[5] = viewport[5] * (containerSize.height / prevHeight);
- }
-
- canvas.setViewportTransform(viewport as number[]);
- canvas.calcOffset();
- canvas.requestRenderAll();
- }, [containerSize, canvasMounted]);
-
- const setTool = (tool: 'pen' | 'select' | 'pan' | 'shape') => {
- setActiveTool(tool);
- if (!fabricRef.current) return;
- 
- if (tool === 'select') {
- fabricRef.current.isDrawingMode = false;
- fabricRef.current.selection = true;
- fabricRef.current.defaultCursor = 'default';
- fabricRef.current.getObjects().forEach(obj => {
- obj.selectable = true;
- obj.evented = true;
- });
- pendingShapeRef.current = null;
- } else if (tool === 'pen') {
- fabricRef.current.isDrawingMode = true;
- fabricRef.current.selection = false;
- fabricRef.current.defaultCursor = 'default';
- const brush = new fabric.PencilBrush(fabricRef.current);
- brush.color = activeColor;
- brush.width = brushSize;
- fabricRef.current.freeDrawingBrush = brush;
- } else if (tool === 'pan') {
- fabricRef.current.isDrawingMode = false;
- fabricRef.current.selection = false;
- fabricRef.current.defaultCursor = 'grab';
- fabricRef.current.getObjects().forEach(obj => {
- obj.selectable = false;
- obj.evented = false;
- });
- } else if (tool === 'shape') {
- fabricRef.current.isDrawingMode = false;
- fabricRef.current.selection = false;
- fabricRef.current.defaultCursor = 'crosshair';
- fabricRef.current.getObjects().forEach(obj => {
- obj.selectable = false;
- obj.evented = false;
- });
- }
- };
-
- const handleZoomIn = () => {
- if (!fabricRef.current) return;
- let zoom = fabricRef.current.getZoom();
- zoom *= 1.2;
- if (zoom > 20) zoom = 20;
- fabricRef.current.zoomToPoint(
- { x: fabricRef.current.width! / 2, y: fabricRef.current.height! / 2 }, 
- zoom
- );
- };
-
- const handleZoomOut = () => {
- if (!fabricRef.current) return;
- let zoom = fabricRef.current.getZoom();
- zoom /= 1.2;
- if (zoom < 0.05) zoom = 0.05;
- fabricRef.current.zoomToPoint(
- { x: fabricRef.current.width! / 2, y: fabricRef.current.height! / 2 }, 
- zoom
- );
- };
-
- const handleFitAll = () => {
- const canvas = fabricRef.current;
- if (!canvas) return;
-
- const objects = canvas.getObjects();
- if (objects.length === 0) {
- // If empty, reset to default zoom and center
- canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
- return;
- }
-
- // Temporarily reset viewport to measure true absolute bounding box
- const currentVpt = [...(canvas.viewportTransform || [])];
- canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
-
- let minX = Infinity, minY = Infinity, mxX = -Infinity, mxY = -Infinity;
- objects.forEach(obj => {
- const br = obj.getBoundingRect(true, true);
- if (br.left < minX) minX = br.left;
- if (br.top < minY) minY = br.top;
- if (br.left + br.width > mxX) mxX = br.left + br.width;
- if (br.top + br.height > mxY) mxY = br.top + br.height;
- });
-
- // Restore old viewport back before applying new one
- canvas.setViewportTransform(currentVpt);
-
- const padding = 40;
- const contentWidth = mxX - minX + padding * 2;
- const contentHeight = mxY - minY + padding * 2;
-
- const vpWidth = canvas.getWidth();
- const vpHeight = canvas.getHeight();
-
- // Calculate scale required to fit both width and height
- const scaleX = vpWidth / contentWidth;
- const scaleY = vpHeight / contentHeight;
- let scale = Math.min(scaleX, scaleY);
- 
- if (scale > 2) scale = 2; // don't zoom in too much on tiny items
- if (scale < 0.05) scale = 0.05;
-
- // Calculate the pan required to center the bounding box
- const scaledContentWidth = (mxX - minX) * scale;
- const scaledContentHeight = (mxY - minY) * scale;
- 
- const panX = (vpWidth - scaledContentWidth) / 2 - (minX * scale);
- const panY = (vpHeight - scaledContentHeight) / 2 - (minY * scale);
-
- canvas.setViewportTransform([scale, 0, 0, scale, panX, panY]);
- canvas.requestRenderAll();
- };
-
- const selectShape = (type: 'rect' | 'circle' | 'triangle' | 'line' | 'text') => {
- pendingShapeRef.current = type;
- setTool('shape');
- };
-
- const addImage = () => {
- const input = document.createElement('input');
- input.type = 'file';
- input.accept = 'image/*';
- input.onchange = (e: any) => {
- const file = e.target.files[0];
- if (!file) return;
- const reader = new FileReader();
- reader.onload = (event: any) => {
- const imgObj = new Image();
- imgObj.onload = () => {
- const canvas = document.createElement('canvas');
- const MAX_SIDE = 800;
- let width = imgObj.width;
- let height = imgObj.height;
-
- if (width > height && width > MAX_SIDE) {
- height = Math.round((height * MAX_SIDE) / width);
- width = MAX_SIDE;
- } else if (height > width && height > MAX_SIDE) {
- width = Math.round((width * MAX_SIDE) / height);
- height = MAX_SIDE;
- }
-
- canvas.width = width;
- canvas.height = height;
- const ctx = canvas.getContext('2d');
- ctx?.drawImage(imgObj, 0, 0, width, height);
-
- // Compress to JPEG with 75% quality to significantly reduce base64 size
- const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.75);
-
- fabric.Image.fromURL(compressedDataUrl, (img) => {
- if (img && fabricRef.current) {
- img.set({ lockScalingFlip: true });
- img.scaleToWidth(300);
- 
- const vpt = fabricRef.current.viewportTransform;
- const zoom = fabricRef.current.getZoom();
- const width = fabricRef.current.getWidth();
- const height = fabricRef.current.getHeight();
-
- if (vpt && width && height) {
- const screenCenterX = (width / 2 - vpt[4]) / zoom;
- const screenCenterY = (height / 2 - vpt[5]) / zoom;
- 
- img.set({
- left: screenCenterX,
- top: screenCenterY,
- originX: 'center',
- originY: 'center'
- });
- }
- 
- fabricRef.current.add(img);
- fabricRef.current.setActiveObject(img);
- fabricRef.current.renderAll();
- }
- });
- };
- imgObj.src = event.target.result;
- };
- reader.readAsDataURL(file);
- };
- input.click();
- };
-
- useEffect(() => {
- if (fabricRef.current && activeTool === 'pen') {
- (fabricRef.current.freeDrawingBrush as fabric.PencilBrush).color = activeColor;
- (fabricRef.current.freeDrawingBrush as fabric.PencilBrush).width = brushSize;
- }
- }, [activeColor, brushSize, activeTool]);
-
- return (
- <div className="flex h-full w-full min-h-0 flex-col gap-0 overflow-hidden rounded-xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 shadow-sm">
- <div className="flex flex-wrap items-center gap-1 p-1 bg-white/60 dark:bg-white/[0.02] backdrop-blur-md sticky top-0 z-10 border-b border-stone-200/80 dark:border-white/10">
- <TooltipProvider>
- <Tooltip>
- <TooltipTrigger asChild>
- <Button variant={activeTool === 'select' ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-lg border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={() => setTool('select')}><MousePointer2 className="h-4 w-4" /></Button>
- </TooltipTrigger>
- <TooltipContent className="text-[10px] font-bold">選取 / Select</TooltipContent>
- </Tooltip>
- <Tooltip>
- <TooltipTrigger asChild>
- <Button variant={activeTool === 'pan' ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-lg border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={() => setTool('pan')}><Hand className="h-4 w-4" /></Button>
- </TooltipTrigger>
- <TooltipContent className="text-[10px] font-bold">平移 / Pan</TooltipContent>
- </Tooltip>
- <Tooltip>
- <TooltipTrigger asChild>
- <Button variant={activeTool === 'pen' ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-lg border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={() => setTool('pen')}><Pencil className="h-4 w-4" /></Button>
- </TooltipTrigger>
- <TooltipContent className="text-[10px] font-bold">筆記 / Pen</TooltipContent>
- </Tooltip>
- </TooltipProvider>
- 
- <Separator orientation="vertical" className="h-4 mx-1" />
-
- <Popover open={isColorPickerOpen} onOpenChange={setIsColorPickerOpen}>
- <PopoverTrigger asChild>
- <div className="w-5 h-5 rounded-full cursor-pointer transition-all border-none" style={{ backgroundColor: activeColor }} />
- </PopoverTrigger>
- <PopoverContent className="w-48 p-3 rounded-2xl shadow-2xl bg-white/95 dark:bg-[#14191C]/95 backdrop-blur-xl border border-stone-200/80 dark:border-white/10 shadow-2xl">
- <div className="grid grid-cols-4 gap-2">
- {['#336699', '#3b82f6', '#ef4444', '#22c55e', '#f97316', '#a855f7', '#000000', '#f8fafc'].map(c => (
- <div key={c} className="w-8 h-8 rounded-full cursor-pointer hover:opacity-90 transition-all shadow-sm" style={{ backgroundColor: c }} onClick={() => {
- setBrushColor(c);
- setUserPickedColor(true);
- setIsColorPickerOpen(false);
- if (fabricRef.current) {
- const activeObjects = fabricRef.current.getActiveObjects();
- if (activeObjects.length > 0) {
- activeObjects.forEach(obj => {
- if (obj.type === 'i-text' || obj.type === 'text') {
- obj.set('fill', c);
- obj.set('stroke', c);
- } else if (obj.type === 'line') {
- obj.set('stroke', c);
- } else {
- obj.set('stroke', c);
- obj.set('fill', c + "20");
- }
- });
- fabricRef.current.requestRenderAll();
- fabricRef.current.fire('object:modified');
- }
- }
- }} />
- ))}
- </div>
- </PopoverContent>
- </Popover>
-
- {activeTool !== 'pan' && (
- <div 
- className="flex items-center gap-2 px-2 w-32 ml-1"
- onPointerUp={() => {
- if (fabricRef.current && fabricRef.current.getActiveObjects().length > 0) {
- fabricRef.current.fire('object:modified');
- }
- }}
- >
- <span className="text-[10px] font-mono font-bold text-fg-muted whitespace-nowrap">粗細</span>
- <Slider 
- value={[brushSize]} 
- min={1} 
- max={30} 
- step={1} 
- onValueChange={([v]) => {
- setBrushSize(v);
- if (fabricRef.current) {
- const activeObjects = fabricRef.current.getActiveObjects();
- if (activeObjects.length > 0) {
- activeObjects.forEach(obj => {
- if (obj.type === 'i-text' || obj.type === 'text') {
- const textObj = obj as fabric.IText;
- textObj.set('strokeWidth', v > 5 ? 2 : 0);
- textObj.set('fontWeight', v > 5 ? 'bold' : 'normal');
- } else {
- obj.set('strokeWidth', v);
- }
- });
- fabricRef.current.requestRenderAll();
- }
- }
- }} 
- />
- </div>
- )}
-
- <Separator orientation="vertical" className="h-4 mx-1" />
-
- <TooltipProvider>
- <Tooltip>
- <TooltipTrigger asChild>
- <Button variant={activeTool === 'shape' && pendingShapeRef.current === 'text' ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-lg border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={() => selectShape('text')}><Type className="h-4 w-4" /></Button>
- </TooltipTrigger>
- <TooltipContent className="text-[10px] font-bold">文字 / Text</TooltipContent>
- </Tooltip>
- <Tooltip>
- <TooltipTrigger asChild>
- <Button variant={activeTool === 'shape' && pendingShapeRef.current === 'rect' ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-lg border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={() => selectShape('rect')}><Square className="h-4 w-4" /></Button>
- </TooltipTrigger>
- <TooltipContent className="text-[10px] font-bold">矩形 / Rect</TooltipContent>
- </Tooltip>
- <Tooltip>
- <TooltipTrigger asChild>
- <Button variant={activeTool === 'shape' && pendingShapeRef.current === 'circle' ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-lg border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={() => selectShape('circle')}><CircleIcon className="h-4 w-4" /></Button>
- </TooltipTrigger>
- <TooltipContent className="text-[10px] font-bold">圓形 / Circle</TooltipContent>
- </Tooltip>
- <Tooltip>
- <TooltipTrigger asChild>
- <Button variant={activeTool === 'shape' && pendingShapeRef.current === 'triangle' ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-lg border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={() => selectShape('triangle')}><Triangle className="h-4 w-4" /></Button>
- </TooltipTrigger>
- <TooltipContent className="text-[10px] font-bold">三角形 / Tri</TooltipContent>
- </Tooltip>
- <Tooltip>
- <TooltipTrigger asChild>
- <Button variant={activeTool === 'shape' && pendingShapeRef.current === 'line' ? "secondary" : "ghost"} size="icon" className="h-8 w-8 rounded-lg border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={() => selectShape('line')}><Minus className="h-4 w-4" /></Button>
- </TooltipTrigger>
- <TooltipContent className="text-[10px] font-bold">直線 / Line</TooltipContent>
- </Tooltip>
- <Tooltip>
- <TooltipTrigger asChild>
- <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={addImage}><ImageIcon className="h-4 w-4" /></Button>
- </TooltipTrigger>
- <TooltipContent className="text-[10px] font-bold">圖片 / Image</TooltipContent>
- </Tooltip>
- </TooltipProvider>
-
- <div className="flex-1" />
-
- <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-500 hover:bg-rose-50 rounded-lg border-none shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow" onClick={() => {
- const activeObjects = fabricRef.current?.getActiveObjects();
- if (activeObjects && activeObjects.length > 0) {
- fabricRef.current?.remove(...activeObjects);
- fabricRef.current?.discardActiveObject().renderAll();
- }
- }}><Trash2 className="h-4 w-4" /></Button>
- </div>
-
- <div ref={wrapperRef} className="relative flex-1 w-full min-h-0 overflow-hidden bg-[#FAF8F5] dark:bg-[#0B1012] dot-grid">
- <canvas ref={canvasRef} className="absolute inset-0 w-full h-full touch-none" />
- </div>
- </div>
- );
+const shapes = [
+  ["text", "文字", Type], ["rect", "矩形", Square], ["circle", "圓形", Circle],
+  ["triangle", "三角形", Triangle], ["line", "直線", Minus],
+] as const;
+const tools = [["select", "選取", MousePointer2], ["pan", "平移", Hand], ["pen", "畫筆", Pencil]] as const;
+type Tool = (typeof tools)[number][0] | (typeof shapes)[number][0];
+const identity = () => [1, 0, 0, 1, 0, 0];
+const iconButton = "h-8 w-8 shrink-0 rounded-md";
+const palette = ["#336699", "#3b82f6", "#ef4444", "#22c55e", "#f97316", "#a855f7", "#000000", "#f8fafc"];
+
+function bounds(canvas: fabric.Canvas, padding: number) {
+  const objects = canvas.getObjects().map((object) => object.getBoundingRect(true, true));
+  if (!objects.length) return null;
+  const left = Math.min(...objects.map((object) => object.left)) - padding;
+  const top = Math.min(...objects.map((object) => object.top)) - padding;
+  const right = Math.max(...objects.map((object) => object.left + object.width)) + padding;
+  const bottom = Math.max(...objects.map((object) => object.top + object.height)) + padding;
+  return { left, top, width: right - left, height: bottom - top };
+}
+
+function fitDrawing(canvas: fabric.Canvas, onlyWhenClipped = false) {
+  const area = bounds(canvas, 28);
+  if (onlyWhenClipped) {
+    const visible = area && area.left >= 0 && area.top >= 0 &&
+      area.left + area.width <= canvas.getWidth() && area.top + area.height <= canvas.getHeight();
+    if (!area || visible) return canvas.getZoom();
+  }
+  const scale = area ? Math.max(0.2, Math.min(1.5, canvas.getWidth() / area.width, canvas.getHeight() / area.height)) : 1;
+  canvas.setViewportTransform(area
+    ? [scale, 0, 0, scale, (canvas.getWidth() - area.width * scale) / 2 - area.left * scale,
+      (canvas.getHeight() - area.height * scale) / 2 - area.top * scale]
+    : identity());
+  canvas.requestRenderAll();
+  return scale;
+}
+
+function preview(canvas: fabric.Canvas) {
+  const area = bounds(canvas, 18);
+  if (!area) return "";
+  const viewport = canvas.viewportTransform ?? identity();
+  const multiplier = Math.min(1.5, 1000 / Math.max(area.width, area.height));
+  canvas.setViewportTransform(identity());
+  try {
+    const thumbnail = canvas.toCanvasElement(multiplier, area);
+    const png = thumbnail.toDataURL("image/png");
+    if (png.length < 155_000) return png;
+    const context = thumbnail.getContext("2d");
+    if (context) {
+      context.globalCompositeOperation = "destination-over";
+      context.fillStyle = "#fff";
+      context.fillRect(0, 0, thumbnail.width, thumbnail.height);
+    }
+    return thumbnail.toDataURL("image/jpeg", 0.72);
+  } finally {
+    canvas.setViewportTransform(viewport);
+  }
+}
+
+function pointerScreen(event: Event) {
+  const pointer = "touches" in event ? (event as TouchEvent).touches[0] : event as MouseEvent;
+  return pointer ? { x: pointer.clientX, y: pointer.clientY } : null;
+}
+
+type CanvasText = fabric.IText & { hiddenTextareaContainer?: HTMLElement };
+
+function createShape(tool: Tool, point: { x: number; y: number }, color: string, strokeWidth: number) {
+  const position = { left: point.x, top: point.y, originX: "center", originY: "center", lockScalingFlip: true };
+  const style = { ...position, stroke: color, fill: color + "20", strokeWidth };
+  switch (tool) {
+    case "rect": return new fabric.Rect({ ...style, width: 100, height: 72 });
+    case "circle": return new fabric.Circle({ ...style, radius: 44 });
+    case "triangle": return new fabric.Triangle({ ...style, width: 100, height: 92 });
+    case "line": return new fabric.Line([point.x - 48, point.y, point.x + 48, point.y], { stroke: color, strokeWidth });
+    case "text": return new fabric.IText("輸入文字", { ...position, fill: color, fontSize: 22 });
+    default: return null;
+  }
+}
+
+export function FabricCanvas({ initialData, initialHeight, onSave }: FabricCanvasProps) {
+  const board = useRef<HTMLDivElement>(null);
+  const canvasElement = useRef<HTMLCanvasElement>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const instance = useRef<fabric.Canvas | null>(null);
+  const saved = useRef("");
+  const incoming = useRef(initialData);
+  const save = useRef(onSave);
+  const loading = useRef(false);
+  const history = useRef<{ past: string[]; future: string[] }>({ past: [], future: [] });
+  const clipboard = useRef<fabric.Object | null>(null);
+  const command = useRef<Tool>("pen");
+  const { resolvedTheme } = useTheme();
+  const { toast } = useToast();
+  const [tool, setActiveTool] = useState<Tool>("pen");
+  const [color, setColor] = useState("");
+  const [brushSize, setBrushSize] = useState(3);
+  const [zoom, setZoom] = useState(1);
+  const [hasSelection, setHasSelection] = useState(false);
+  const [historyState, setHistoryState] = useState({ undo: false, redo: false });
+  const ink = color || (resolvedTheme === "dark" ? "#f8fafc" : "#336699");
+  const brush = useRef({ color: ink, width: brushSize });
+  const height = Math.min(720, Math.max(380, initialHeight ?? 500));
+  const drawingHeight = useRef(height);
+
+  useEffect(() => { save.current = onSave; }, [onSave]);
+  useEffect(() => { drawingHeight.current = height; }, [height]);
+
+  const updateHistory = useCallback(() => {
+    setHistoryState({ undo: history.current.past.length > 0, redo: history.current.future.length > 0 });
+  }, []);
+
+  const setTool = useCallback((next: Tool) => {
+    command.current = next;
+    setActiveTool(next);
+    const canvas = instance.current;
+    if (!canvas) return;
+    canvas.isDrawingMode = next === "pen";
+    canvas.selection = next === "select";
+    canvas.skipTargetFind = next !== "select";
+    canvas.defaultCursor = next === "pan" ? "grab" : next === "select" ? "default" : "crosshair";
+    if (next !== "select") canvas.discardActiveObject();
+    canvas.requestRenderAll();
+  }, []);
+
+  const publish = useCallback((canvas: fabric.Canvas, data: string) => {
+    saved.current = data;
+    save.current(data, drawingHeight.current, preview(canvas));
+  }, []);
+
+  const loadDrawing = useCallback((canvas: fabric.Canvas, data: string | null | undefined, done: () => void) => {
+    loading.current = true;
+    canvas.discardActiveObject();
+    const finish = () => {
+      if (instance.current !== canvas) return;
+      loading.current = false;
+      canvas.requestRenderAll();
+      done();
+    };
+    try {
+      canvas.loadFromJSON(data?.trim().startsWith("{") ? data : { objects: [] }, finish);
+    } catch {
+      canvas.clear();
+      finish();
+    }
+  }, []);
+
+  const changeHistory = (direction: "past" | "future") => {
+    const canvas = instance.current;
+    if (!canvas || loading.current) return;
+    const data = history.current[direction].pop();
+    if (!data) return;
+    history.current[direction === "past" ? "future" : "past"].push(saved.current);
+    setTool("select");
+    loadDrawing(canvas, data, () => {
+      publish(canvas, data);
+      updateHistory();
+    });
+  };
+
+  useEffect(() => {
+    const element = canvasElement.current;
+    const host = board.current;
+    if (!element || !host) return;
+    const canvas = new fabric.Canvas(element, { backgroundColor: "transparent", preserveObjectStacking: true });
+    instance.current = canvas;
+    const pen = new fabric.PencilBrush(canvas);
+    pen.color = brush.current.color;
+    pen.width = brush.current.width;
+    canvas.freeDrawingBrush = pen;
+    canvas.getSelectionElement().style.touchAction = "none";
+    setTool("pen");
+
+    const resize = () => {
+      const { clientWidth: width, clientHeight: height } = host;
+      if (!width || !height || (canvas.getWidth() === width && canvas.getHeight() === height)) return;
+      canvas.setDimensions({ width, height });
+      canvas.calcOffset();
+      canvas.requestRenderAll();
+    };
+    resize();
+    const observer = new ResizeObserver(resize);
+    observer.observe(host);
+
+    let drag: { x: number; y: number } | null = null;
+    canvas.on("mouse:down", ({ e, target }) => {
+      if (loading.current) return;
+      if (target instanceof fabric.IText) (target as CanvasText).hiddenTextareaContainer = host;
+      if (!(target instanceof fabric.IText && target.isEditing)) host.focus({ preventScroll: true });
+      if (command.current === "pan") {
+        drag = pointerScreen(e);
+        canvas.setCursor("grabbing");
+        return;
+      }
+      const shape = createShape(command.current, canvas.getPointer(e), brush.current.color, brush.current.width);
+      if (!shape) return;
+      setTool("select");
+      canvas.add(shape);
+      canvas.setActiveObject(shape);
+      if (shape instanceof fabric.IText) {
+        (shape as CanvasText).hiddenTextareaContainer = host;
+        shape.enterEditing();
+        shape.selectAll();
+      }
+      canvas.requestRenderAll();
+    });
+    canvas.on("mouse:move", ({ e }) => {
+      if (!drag || !canvas.viewportTransform) return;
+      const point = pointerScreen(e);
+      if (!point) return;
+      const scale = host.getBoundingClientRect().width / host.clientWidth || 1;
+      canvas.viewportTransform[4] += (point.x - drag.x) / scale;
+      canvas.viewportTransform[5] += (point.y - drag.y) / scale;
+      drag = point;
+      canvas.requestRenderAll();
+    });
+    canvas.on("mouse:up", () => {
+      if (!drag) return;
+      drag = null;
+      canvas.setViewportTransform(canvas.viewportTransform ?? identity());
+      canvas.setCursor("grab");
+    });
+    canvas.on("mouse:wheel", ({ e }) => {
+      if (!(e instanceof WheelEvent) || (!e.ctrlKey && !e.metaKey)) return;
+      const next = Math.max(0.2, Math.min(4, canvas.getZoom() * 0.998 ** e.deltaY));
+      canvas.zoomToPoint(canvas.getPointer(e, true), next);
+      setZoom(next);
+      e.preventDefault();
+    });
+
+    let queued = false;
+    const collectChange = () => {
+      if (loading.current || queued) return;
+      queued = true;
+      queueMicrotask(() => {
+        queued = false;
+        if (instance.current !== canvas || loading.current) return;
+        const data = JSON.stringify(canvas.toJSON());
+        if (data === saved.current) return;
+        history.current = { past: [...history.current.past.slice(-29), saved.current], future: [] };
+        publish(canvas, data);
+        updateHistory();
+      });
+    };
+    canvas.on("object:modified", collectChange);
+    canvas.on("object:added", collectChange);
+    canvas.on("object:removed", collectChange);
+    canvas.on("path:created", collectChange);
+    canvas.on("text:changed", collectChange);
+    canvas.on("text:editing:exited", collectChange);
+    for (const event of ["selection:created", "selection:updated", "selection:cleared"]) {
+      canvas.on(event, () => setHasSelection(canvas.getActiveObjects().length > 0));
+    }
+
+    let printView: { width: number; height: number; viewport: number[] } | undefined;
+    const beforePrint = () => {
+      const area = bounds(canvas, 20);
+      if (!area) return;
+      printView = { width: canvas.getWidth(), height: canvas.getHeight(), viewport: canvas.viewportTransform ?? identity() };
+      const scale = Math.min(1, 800 / area.width);
+      canvas.setDimensions({ width: area.width * scale, height: area.height * scale });
+      canvas.setViewportTransform([scale, 0, 0, scale, -area.left * scale, -area.top * scale]);
+      canvas.renderAll();
+    };
+    const afterPrint = () => {
+      if (!printView) return;
+      canvas.setDimensions({ width: printView.width, height: printView.height });
+      canvas.setViewportTransform(printView.viewport);
+      canvas.renderAll();
+      printView = undefined;
+    };
+    window.addEventListener("beforeprint", beforePrint);
+    window.addEventListener("afterprint", afterPrint);
+    loadDrawing(canvas, incoming.current, () => {
+      saved.current = incoming.current ?? JSON.stringify(canvas.toJSON());
+      setZoom(fitDrawing(canvas, true));
+    });
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("beforeprint", beforePrint);
+      window.removeEventListener("afterprint", afterPrint);
+      instance.current = null;
+      canvas.dispose();
+    };
+  }, [loadDrawing, publish, setTool, updateHistory]);
+
+  useEffect(() => {
+    const previous = incoming.current;
+    incoming.current = initialData;
+    const canvas = instance.current;
+    if (!canvas || initialData === previous || initialData === saved.current) return;
+    loadDrawing(canvas, initialData, () => {
+      saved.current = initialData ?? JSON.stringify(canvas.toJSON());
+      setZoom(fitDrawing(canvas, true));
+      history.current = { past: [], future: [] };
+      updateHistory();
+    });
+  }, [initialData, loadDrawing, updateHistory]);
+
+  useEffect(() => {
+    brush.current = { color: ink, width: brushSize };
+    if (instance.current?.freeDrawingBrush) {
+      instance.current.freeDrawingBrush.color = ink;
+      instance.current.freeDrawingBrush.width = brushSize;
+    }
+  }, [ink, brushSize]);
+
+  const deleteSelection = () => {
+    const canvas = instance.current;
+    if (!canvas || loading.current) return;
+    const objects = canvas.getActiveObjects();
+    canvas.discardActiveObject();
+    canvas.remove(...objects).requestRenderAll();
+  };
+
+  const onCanvasKeys = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const canvas = instance.current;
+    if (!canvas || loading.current || event.target !== board.current) return;
+    const key = event.key.toLowerCase();
+    if (key === "delete" || key === "backspace") {
+      if (!canvas.getActiveObjects().length) return;
+      event.preventDefault();
+      deleteSelection();
+      return;
+    }
+    if (!(event.ctrlKey || event.metaKey)) {
+      if (key === "escape") setTool("select");
+      return;
+    }
+    if (key === "z" || key === "y") {
+      event.preventDefault();
+      event.stopPropagation();
+      changeHistory(key === "y" || event.shiftKey ? "future" : "past");
+    } else if (key === "c" || key === "x") {
+      const object = canvas.getActiveObject();
+      if (!object) return;
+      event.preventDefault();
+      object.clone((copy: fabric.Object) => { clipboard.current = copy; });
+      if (key === "x") deleteSelection();
+    } else if (key === "v" && clipboard.current) {
+      event.preventDefault();
+      clipboard.current.clone((copy: fabric.Object) => {
+        if (canvas !== instance.current) return;
+        setTool("select");
+        canvas.discardActiveObject();
+        copy.set({ left: (copy.left ?? 0) + 18, top: (copy.top ?? 0) + 18, evented: true, selectable: true });
+        if (copy instanceof fabric.ActiveSelection) {
+          copy.canvas = canvas;
+          copy.forEachObject((object) => { canvas.add(object); });
+          copy.setCoords();
+        } else canvas.add(copy);
+        canvas.setActiveObject(copy).requestRenderAll();
+      });
+    }
+  };
+
+  const changeZoom = (factor: number) => {
+    const canvas = instance.current;
+    if (!canvas) return;
+    const next = Math.max(0.2, Math.min(4, canvas.getZoom() * factor));
+    canvas.zoomToPoint({ x: canvas.getWidth() / 2, y: canvas.getHeight() / 2 }, next);
+    setZoom(next);
+  };
+
+  const fit = () => {
+    if (instance.current) setZoom(fitDrawing(instance.current));
+  };
+
+  const addImage = async (file?: File) => {
+    const canvas = instance.current;
+    if (!file || !canvas) return;
+    try {
+      const { src } = await prepareClipboardImage(file, 145_000);
+      fabric.Image.fromURL(src, (image) => {
+        if (canvas !== instance.current || !image.width) return;
+        const viewport = canvas.viewportTransform ?? identity();
+        const zoom = canvas.getZoom();
+        image.scaleToWidth(Math.min(320 / zoom, image.width));
+        image.set({
+          left: (canvas.getWidth() / 2 - viewport[4]) / zoom,
+          top: (canvas.getHeight() / 2 - viewport[5]) / zoom,
+          originX: "center", originY: "center", lockScalingFlip: true,
+        });
+        setTool("select");
+        canvas.add(image);
+        canvas.setActiveObject(image).requestRenderAll();
+      });
+    } catch {
+      toast({ title: "無法加入圖片", description: "請改用其他圖片檔案。", variant: "destructive" });
+    }
+  };
+
+  const chooseColor = (next: string) => {
+    setColor(next);
+    const canvas = instance.current;
+    if (!canvas || tool !== "select" || !hasSelection) return;
+    for (const object of canvas.getActiveObjects()) {
+      if (object.type === "i-text" || object.type === "text") object.set("fill", next);
+      else if (object.type === "line" || object.type === "path") object.set("stroke", next);
+      else if (object.type !== "image") object.set({ stroke: next, fill: next + "20" });
+    }
+    canvas.requestRenderAll();
+    canvas.fire("object:modified");
+  };
+
+  const updateBrushSize = (value: number) => {
+    setBrushSize(value);
+    const canvas = instance.current;
+    if (!canvas || tool !== "select" || !hasSelection) return;
+    for (const object of canvas.getActiveObjects()) {
+      if (object.type === "i-text" || object.type === "text") {
+        (object as fabric.Text).set("fontWeight", value > 5 ? "bold" : "normal");
+      } else if (object.type !== "image") {
+        object.set("strokeWidth", value);
+      }
+    }
+    canvas.requestRenderAll();
+  };
+
+  const activeShape = shapes.find(([mode]) => tool === mode);
+  const modeButton = ([mode, label, Icon]: (typeof tools)[number] | (typeof shapes)[number]) => (
+    <Button key={mode} variant={tool === mode ? "secondary" : "ghost"} size="icon" className={iconButton}
+      title={label} aria-label={label} aria-pressed={tool === mode} onClick={() => setTool(mode)}>
+      <Icon className="h-4 w-4" />
+    </Button>
+  );
+
+  return (
+    <div className="w-full overflow-hidden rounded-xl border bg-card">
+      <div role="toolbar" aria-label="手繪工具" className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b p-1.5">
+        <div className="flex gap-0.5">{tools.map(modeButton)}</div>
+        <div className="flex gap-0.5 border-l pl-2">{shapes.map(modeButton)}
+          <Button variant="ghost" size="icon" className={iconButton} aria-label="加入圖片" title="加入圖片"
+            onClick={() => fileInput.current?.click()}><ImageIcon className="h-4 w-4" /></Button>
+          <input ref={fileInput} type="file" accept="image/*" hidden
+            onChange={(event) => { void addImage(event.target.files?.[0]); event.target.value = ""; }} />
+        </div>
+        <div className="flex items-center gap-1 border-l pl-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className={iconButton} aria-label="手繪顏色" title="手繪顏色">
+                <span className="h-4 w-4 rounded-full border" style={{ backgroundColor: ink }} />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="grid w-36 grid-cols-4 gap-2 rounded-lg border p-2">
+              {palette.map((value) => (
+                <button type="button" key={value} title={value} aria-label={value} aria-pressed={ink === value}
+                  className="h-6 w-6 rounded-md border" style={{ backgroundColor: value }} onClick={() => chooseColor(value)} />
+              ))}
+            </PopoverContent>
+          </Popover>
+          {(tool === "pen" || (activeShape && tool !== "text") || (tool === "select" && hasSelection)) && (
+            <Slider aria-label="筆畫粗細" value={[brushSize]} min={1} max={30} step={1}
+              className="w-16 sm:w-20" onValueChange={([value]) => updateBrushSize(value)}
+              onValueCommit={() => {
+                if (tool === "select" && hasSelection) instance.current?.fire("object:modified");
+              }} />
+          )}
+        </div>
+        <div className="ml-auto flex items-center gap-0.5">
+          <Button variant="ghost" size="icon" className={iconButton} aria-label="復原畫布" title="復原畫布"
+            disabled={!historyState.undo} onClick={() => changeHistory("past")}><Undo2 className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" className={iconButton} aria-label="重做畫布" title="重做畫布"
+            disabled={!historyState.redo} onClick={() => changeHistory("future")}><Redo2 className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" className={cn(iconButton, "text-destructive")} aria-label="刪除選取物件"
+            title="刪除選取物件" disabled={!hasSelection} onClick={deleteSelection}><Trash2 className="h-4 w-4" /></Button>
+        </div>
+      </div>
+
+      <div className="relative">
+        <div ref={board} tabIndex={0} aria-label="手繪畫布" onKeyDown={onCanvasKeys}
+          style={{ "--drawing-height": height + "px" } as React.CSSProperties}
+          onBlur={(event) => {
+            if (event.currentTarget.contains(event.relatedTarget)) return;
+            const target = instance.current?.getActiveObject();
+            if (target instanceof fabric.IText && target.isEditing) target.exitEditing();
+          }}
+          className="dot-grid relative h-[min(var(--drawing-height),max(380px,52dvh))] w-full overflow-hidden bg-muted/25 outline-none focus-visible:ring-2 md:h-[var(--drawing-height)] focus-visible:ring-inset focus-visible:ring-ring">
+          <canvas ref={canvasElement} />
+        </div>
+        {activeShape && (
+          <span className="pointer-events-none absolute left-3 top-3 rounded-md border bg-card px-2 py-1 text-xs text-muted-foreground">
+            點一下放置{activeShape[1]}
+          </span>
+        )}
+        <div role="group" aria-label="畫布縮放" className="absolute bottom-3 right-3 flex items-center gap-0.5 rounded-lg border bg-card p-0.5 shadow-sm">
+          <Button variant="ghost" size="icon" className={iconButton} aria-label="縮小畫布" title="縮小畫布"
+            disabled={zoom <= 0.2} onClick={() => changeZoom(1 / 1.2)}><Minus className="h-4 w-4" /></Button>
+          <span className="min-w-9 text-center text-xs tabular-nums">{Math.round(zoom * 100)}%</span>
+          <Button variant="ghost" size="icon" className={iconButton} aria-label="放大畫布" title="放大畫布"
+            disabled={zoom >= 4} onClick={() => changeZoom(1.2)}><Plus className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" className={iconButton} aria-label="顯示全部內容" title="顯示全部內容"
+            onClick={fit}><Focus className="h-4 w-4" /></Button>
+        </div>
+      </div>
+    </div>
+  );
 }

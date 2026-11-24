@@ -324,14 +324,14 @@ export function AdminTimer({
  <div
   data-testid="timer-audio-status"
   className={cn(
-  "w-full p-6 sm:p-8 rounded-3xl backdrop-blur-md border transition-all duration-300 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xs",
+  "w-full p-6 sm:p-8 rounded-xl backdrop-blur-md border transition-all duration-300 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xs",
   audioUnlocked 
    ? "bg-emerald-500/[0.06] border-emerald-500/30" 
    : "bg-white/80 dark:bg-white/[0.03] border-stone-200/80 dark:border-white/10"
  )}>
   <div className="flex items-center gap-5 text-center md:text-left">
    <div className={cn(
-    "w-12 h-12 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-xs",
+    "w-12 h-12 rounded-lg flex items-center justify-center text-white shrink-0 shadow-xs",
     audioUnlocked ? "bg-emerald-500" : "bg-stone-800 dark:bg-white/10 text-stone-400"
    )}>
     {audioUnlocked ? <Volume2 className="h-6 w-6" /> : <VolumeX className="h-6 w-6" />}
@@ -358,7 +358,7 @@ export function AdminTimer({
    onClick={testAudio}
    variant={audioUnlocked ? "outline" : "default"}
    className={cn(
-    "rounded-full px-8 h-10 font-mono text-xs uppercase tracking-wider transition-all",
+    "rounded-md px-8 h-10 font-mono text-xs uppercase tracking-wider transition-all",
     audioUnlocked 
      ? "border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10" 
      : "bg-orange-500 hover:bg-orange-600 text-white shadow-xs"
@@ -369,10 +369,10 @@ export function AdminTimer({
  </div>
 
  {!isLocked && (
-  <Card data-testid="timer-console" className="w-full p-6 sm:p-10 rounded-3xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 flex flex-col space-y-8 shadow-xs">
+  <Card data-testid="timer-console" className="w-full p-6 sm:p-10 rounded-xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 flex flex-col space-y-8 shadow-xs">
    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-stone-200/60 dark:border-white/5">
     <div className="flex items-center gap-4">
-     <div className="p-3 bg-orange-500/10 border border-orange-500/20 text-orange-600 dark:text-orange-400 rounded-2xl">
+     <div className="p-3 bg-orange-500/10 border border-orange-500/20 text-orange-600 dark:text-orange-400 rounded-lg">
       <ShieldCheck className="h-6 w-6" />
      </div>
      <div>
@@ -407,13 +407,13 @@ export function AdminTimer({
           type="number" 
           value={item.val || ''} 
           onChange={(e) => item.set(Math.min(99, parseInt(e.target.value) || 0))} 
-          className="h-12 rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 font-mono text-center text-lg focus:border-orange-500 text-foreground w-full" 
+          className="h-12 rounded-lg bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 font-mono text-center text-lg focus:border-orange-500 text-foreground w-full"
          />
          <span className="absolute -top-2.5 right-3 px-1.5 bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 text-[9px] font-mono text-fg-muted rounded-md uppercase">{item.label}</span>
         </div>
        ))}
       </div>
-      <Button onClick={updateDuration} className="w-full md:w-auto h-12 px-8 rounded-xl font-mono text-xs uppercase tracking-wider bg-stone-900 dark:bg-white text-white dark:text-[#0B1012] hover:opacity-90 shrink-0 shadow-xs">
+      <Button onClick={updateDuration} className="w-full md:w-auto h-12 px-8 rounded-lg font-mono text-xs uppercase tracking-wider bg-stone-900 dark:bg-white text-white dark:text-[#0B1012] hover:opacity-90 shrink-0 shadow-xs">
        {t('APPLY')}
       </Button>
      </div>
@@ -424,7 +424,7 @@ export function AdminTimer({
       data-testid="timer-start"
       onClick={toggleTimer} 
       className={cn(
-       "h-14 rounded-2xl font-mono text-xs uppercase tracking-wider gap-2.5 shadow-lg transition-all",
+       "h-14 rounded-lg font-mono text-xs uppercase tracking-wider gap-2.5 shadow-lg transition-all",
        timer.isRunning 
         ? "bg-rose-500 hover:bg-rose-600 text-white shadow-rose-500/25" 
         : "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-orange-500/25"
@@ -435,7 +435,7 @@ export function AdminTimer({
      </Button>
      <Button 
       variant="outline" 
-      className="h-14 rounded-2xl font-mono text-xs uppercase tracking-wider gap-2 border border-stone-200/80 dark:border-white/10 hover:border-orange-500/40 text-foreground transition-all shadow-xs" 
+      className="h-14 rounded-lg font-mono text-xs uppercase tracking-wider gap-2 border border-stone-200/80 dark:border-white/10 hover:border-orange-500/40 text-foreground transition-all shadow-xs"
       data-testid="timer-reset"
       onClick={resetTimer}
      >
@@ -449,9 +449,9 @@ export function AdminTimer({
       {!isLocked && (
         <div data-testid="timer-broadcast-console" className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full mt-6">
           {/* Broadcast Console Card */}
-          <Card className="p-6 sm:p-8 rounded-3xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 flex flex-col space-y-6 shadow-xs text-left">
+          <Card className="p-6 sm:p-8 rounded-xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 flex flex-col space-y-6 shadow-xs text-left">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-orange-500/10 border border-orange-500/20 text-orange-600 dark:text-orange-400 rounded-2xl shrink-0">
+              <div className="p-3 bg-orange-500/10 border border-orange-500/20 text-orange-600 dark:text-orange-400 rounded-lg shrink-0">
                 <Megaphone className="h-6 w-6" />
               </div>
               <div>
@@ -467,20 +467,20 @@ export function AdminTimer({
                   value={broadcastInput}
                   onChange={(e) => setBroadcastInput(e.target.value)}
                   placeholder="輸入即時公告文字...（例如：全體到操場集合！）"
-                  className="rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 h-11 text-xs font-normal text-foreground flex-1"
+                  className="rounded-lg bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 h-11 text-xs font-normal text-foreground flex-1"
                 />
                 {currentBroadcastText && (
                   <Button 
                     variant="outline"
                     onClick={() => { handlePublishBroadcast(""); setBroadcastInput(""); }}
-                    className="h-11 rounded-xl text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 border border-stone-200/80 dark:border-white/10 font-mono text-xs px-4"
+                    className="h-11 rounded-lg text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 border border-stone-200/80 dark:border-white/10 font-mono text-xs px-4"
                   >
                     清除
                   </Button>
                 )}
                 <Button 
                   onClick={() => handlePublishBroadcast(broadcastInput)}
-                  className="h-11 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-mono text-xs px-6 shadow-xs"
+                  className="h-11 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-mono text-xs px-6 shadow-xs"
                 >
                   發布
                 </Button>
@@ -502,7 +502,7 @@ export function AdminTimer({
                       setBroadcastInput(tpl.text);
                       handlePublishBroadcast(tpl.text);
                     }}
-                    className="px-3 py-2 text-left rounded-xl text-[10px] font-mono border border-stone-200/60 dark:border-white/10 bg-stone-50/50 dark:bg-white/[0.02] hover:bg-stone-100/60 dark:hover:bg-white/5 transition-colors text-fg-secondary leading-relaxed truncate cursor-pointer"
+                    className="px-3 py-2 text-left rounded-lg text-[10px] font-mono border border-stone-200/60 dark:border-white/10 bg-stone-50/50 dark:bg-white/[0.02] hover:bg-stone-100/60 dark:hover:bg-white/5 transition-colors text-fg-secondary leading-relaxed truncate cursor-pointer"
                     title={tpl.text}
                   >
                     {tpl.label}
@@ -521,9 +521,9 @@ export function AdminTimer({
           </Card>
 
           {/* Active Round Stepper Card */}
-          <Card className="p-6 sm:p-8 rounded-3xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 flex flex-col space-y-6 shadow-xs text-left">
+          <Card className="p-6 sm:p-8 rounded-xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 flex flex-col space-y-6 shadow-xs text-left">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-2xl shrink-0">
+              <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-lg shrink-0">
                 <Compass className="h-6 w-6" />
               </div>
               <div>
@@ -541,13 +541,13 @@ export function AdminTimer({
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between bg-stone-50 dark:bg-white/5 border border-stone-200/60 dark:border-white/10 rounded-2xl p-4">
+                <div className="flex items-center justify-between bg-stone-50 dark:bg-white/5 border border-stone-200/60 dark:border-white/10 rounded-lg p-4">
                   <Button
                     variant="ghost"
                     size="icon"
                     disabled={currentRoundIndex <= 0}
                     onClick={() => handleUpdateRound(currentRoundIndex - 1)}
-                    className="h-10 w-10 rounded-xl bg-white dark:bg-white/10 border border-stone-200/60 dark:border-white/10 text-foreground"
+                    className="h-10 w-10 rounded-lg bg-white dark:bg-white/10 border border-stone-200/60 dark:border-white/10 text-foreground"
                   >
                     <ChevronLeft className="h-5 w-5" />
                   </Button>
@@ -562,7 +562,7 @@ export function AdminTimer({
                     size="icon"
                     disabled={currentRoundIndex >= activeTable.rounds.length - 1}
                     onClick={() => handleUpdateRound(currentRoundIndex + 1)}
-                    className="h-10 w-10 rounded-xl bg-white dark:bg-white/10 border border-stone-200/60 dark:border-white/10 text-foreground"
+                    className="h-10 w-10 rounded-lg bg-white dark:bg-white/10 border border-stone-200/60 dark:border-white/10 text-foreground"
                   >
                     <ChevronRight className="h-5 w-5" />
                   </Button>
@@ -596,11 +596,11 @@ export function AdminTimer({
         </div>
       )}
 
- <Card className="w-full rounded-3xl md:rounded-[2.5rem] shadow-2xl bg-[#0B1012] border border-stone-200/80 dark:border-white/10 text-white flex flex-col items-center justify-between p-6 md:p-12 lg:p-16 min-h-[450px] relative overflow-hidden transition-all duration-700">
+ <Card className="w-full rounded-xl md:rounded-xl shadow-2xl bg-[#0B1012] border border-stone-200/80 dark:border-white/10 text-white flex flex-col items-center justify-between p-6 md:p-12 lg:p-16 min-h-[450px] relative overflow-hidden transition-all duration-700">
   <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-stone-900/60 to-transparent opacity-80 pointer-events-none" />
   <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-6 mb-8 relative z-10">
    <div className="flex items-center gap-4 w-full sm:w-auto overflow-hidden">
-    <div className="p-3 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md shrink-0">
+    <div className="p-3 bg-white/5 rounded-lg border border-white/10 backdrop-blur-md shrink-0">
      <BellRing className="h-6 w-6 text-amber-500" />
     </div>
     <div className="flex flex-col min-w-0">
@@ -619,7 +619,7 @@ export function AdminTimer({
    <Button 
     onClick={() => toggleSaverMode(true)}
     variant="outline"
-    className="w-full sm:w-auto bg-white/5 border border-white/15 text-white hover:bg-white/10 hover:text-white rounded-full h-11 px-6 font-mono text-xs uppercase tracking-wider transition-all shrink-0 cursor-pointer"
+    className="w-full sm:w-auto bg-white/5 border border-white/15 text-white hover:bg-white/10 hover:text-white rounded-md h-11 px-6 font-mono text-xs uppercase tracking-wider transition-all shrink-0 cursor-pointer"
    >
     <Moon className="h-4 w-4 mr-2" />
     {t('SAVER_MODE')}
@@ -643,9 +643,9 @@ export function AdminTimer({
     <div className="text-xs sm:text-sm font-mono text-stone-400 mt-4 tracking-widest">
       {now ? now.toLocaleTimeString('zh-TW', { hour12: false }) : "--:--:--"}
     </div>
-    <div className="w-full max-w-2xl h-2 bg-white/10 rounded-full overflow-hidden mt-8 p-0 relative">
+    <div className="w-full max-w-2xl h-2 bg-white/10 rounded-sm overflow-hidden mt-8 p-0 relative">
       <div className={cn(
-        "h-full transition-all duration-1000 rounded-full",
+        "h-full transition-all duration-1000 rounded-sm",
         isCritical ? "bg-rose-500" : isFinished ? "bg-rose-600" : "bg-gradient-to-r from-orange-500 to-amber-400"
       )} style={{ width: `${progress}%` }} />
     </div>
@@ -661,7 +661,7 @@ export function AdminTimer({
       onTouchEnd={handleSaverTouchEnd}
     >
       <div className="flex flex-col items-center space-y-2 mt-4">
-        <span className="px-3 py-1 rounded-full border border-white/10 bg-white/5 text-[10px] font-mono tracking-widest text-stone-400 uppercase">
+        <span className="px-3 py-1 rounded-sm border border-white/10 bg-white/5 text-[10px] font-mono tracking-widest text-stone-400 uppercase">
           // SCREEN SAVER MODE //
         </span>
         <div className={cn(
@@ -683,7 +683,7 @@ export function AdminTimer({
         </div>
         <div className="flex items-center gap-3 mt-6">
           <span className={cn(
-            "text-[10px] font-mono uppercase tracking-widest px-3 py-1 rounded-full border",
+            "text-[10px] font-mono uppercase tracking-widest px-3 py-1 rounded-sm border",
             audioUnlocked 
               ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" 
               : "bg-amber-500/10 border-amber-500/30 text-amber-400"

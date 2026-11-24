@@ -211,7 +211,7 @@ export function SmartRotationWizardModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-xl max-h-[85vh] flex flex-col p-0 overflow-hidden rounded-2xl studio-sheet shadow-2xl">
+      <DialogContent className="max-w-xl max-h-[85vh] flex flex-col p-0 overflow-hidden rounded-xl studio-sheet shadow-2xl">
         {/* ── Header ── */}
         <DialogHeader className="px-5 pt-5 pb-3">
           <DialogTitle className="text-sm font-bold text-foreground flex items-center gap-2">
@@ -237,7 +237,7 @@ export function SmartRotationWizardModal({
             <div className="space-y-1">
               <span className="architectural-tag text-[10px]">天數</span>
               <Select value={day} onValueChange={setDay}>
-                <SelectTrigger className="h-8 rounded-xl text-xs bg-background border-border text-foreground cursor-pointer">
+                <SelectTrigger className="h-8 rounded-lg text-xs bg-background border-border text-foreground cursor-pointer">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -252,7 +252,7 @@ export function SmartRotationWizardModal({
             <div className="space-y-1">
               <span className="architectural-tag text-[10px]">教案類型</span>
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="h-8 rounded-xl text-xs bg-background border-border text-foreground cursor-pointer">
+                <SelectTrigger className="h-8 rounded-lg text-xs bg-background border-border text-foreground cursor-pointer">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -272,7 +272,7 @@ export function SmartRotationWizardModal({
               <div className="flex items-center gap-1">
                 <Button
                   type="button" variant="outline" size="icon"
-                  className="h-8 w-7 rounded-xl shrink-0"
+                  className="h-8 w-7 rounded-lg shrink-0"
                   disabled={teamCount <= 2}
                   onClick={() => setTeamCount((prev) => Math.max(2, prev - 2))}
                 >
@@ -283,7 +283,7 @@ export function SmartRotationWizardModal({
                 </div>
                 <Button
                   type="button" variant="outline" size="icon"
-                  className="h-8 w-7 rounded-xl shrink-0"
+                  className="h-8 w-7 rounded-lg shrink-0"
                   disabled={teamCount >= 16}
                   onClick={() => setTeamCount((prev) => prev + 2)}
                 >
@@ -299,7 +299,7 @@ export function SmartRotationWizardModal({
                 value={String(checkedCount || targetStationCount)}
                 onValueChange={(val) => handleStationCountChange(parseInt(val, 10))}
               >
-                <SelectTrigger className="h-8 rounded-xl text-xs bg-background border-border text-foreground cursor-pointer">
+                <SelectTrigger className="h-8 rounded-lg text-xs bg-background border-border text-foreground cursor-pointer">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -323,7 +323,7 @@ export function SmartRotationWizardModal({
           <Input
             value={tableTitle}
             onChange={(e) => setTableTitle(e.target.value)}
-            className="h-8 rounded-xl text-xs bg-background border-border text-foreground"
+            className="h-8 rounded-lg text-xs bg-background border-border text-foreground"
             placeholder="闖關表標題"
           />
 
@@ -350,7 +350,7 @@ export function SmartRotationWizardModal({
                   )}
                   <span
                     className={cn(
-                      "text-[10px] px-2 py-0.5 rounded-full font-medium transition-colors",
+                      "text-[10px] px-2 py-0.5 rounded-sm font-medium transition-colors",
                       firstRoundRestPlanIds.length >= maxRestCount
                         ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30"
                         : "bg-muted text-muted-foreground"
@@ -385,7 +385,7 @@ export function SmartRotationWizardModal({
                       )}
                       title={isDisabled ? `已達第一輪輪空上限 (${maxRestCount} 關)` : undefined}
                     >
-                      <span className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 bg-black/5 dark:bg-white/10">
+                      <span className="w-4 h-4 rounded-sm flex items-center justify-center text-[10px] font-bold shrink-0 bg-black/5 dark:bg-white/10">
                         {idx + 1}
                       </span>
                       <span className="truncate max-w-[130px]">{item.name}</span>
@@ -423,7 +423,7 @@ export function SmartRotationWizardModal({
           {/* ── Stations Checklist ── */}
           <div className="space-y-2">
             {stationItems.length === 0 ? (
-              <div className="p-6 text-center border border-dashed border-border rounded-2xl">
+              <div className="p-6 text-center border border-dashed border-border rounded-lg">
                 <p className="text-xs text-muted-foreground">此分類無活動教案</p>
               </div>
             ) : (
@@ -523,14 +523,14 @@ export function SmartRotationWizardModal({
         <div className="px-5 py-3 flex items-center justify-end gap-2">
           <Button
             type="button" variant="ghost" onClick={onClose} disabled={isSubmitting}
-            className="rounded-full text-xs h-8 px-4"
+            className="rounded-md text-xs h-8 px-4"
           >
             取消
           </Button>
           <Button
             type="button" onClick={handleGenerate}
             disabled={isSubmitting || checkedCount === 0}
-            className="rounded-full text-xs font-medium h-8 px-5 bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 btn-tactile cursor-pointer"
+            className="rounded-md text-xs font-medium h-8 px-5 bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 btn-tactile cursor-pointer"
           >
             <Zap className="w-3 h-3" />
             {isSubmitting ? "生成中..." : "生成"}

@@ -38,6 +38,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn, getUnifiedGroupBadgeParams } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { useSearchParams } from "next/navigation";
+import { campNicknameStorageKey } from "@/hooks/use-presence";
 import { VERSION_HISTORY } from "@/data/version-history";
 
 export default function SettingsPage() {
@@ -53,7 +54,7 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const searchParams = useSearchParams();
 
-  const [profileName, setProfileName] = useState(role === 'admin' ? "STUDIO_ADMIN" : "CREW_MEMBER");
+  const [profileName, setProfileName] = useState("");
   const [isDeleting, setIsDeleting] = useState<boolean | "downloading">(false);
   const [isAddingProject, setIsAddingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
@@ -74,6 +75,10 @@ export default function SettingsPage() {
   // crew 看不到被鎖定的專案。這張清單原本直接渲染 camps —— 教案總覽與側欄
   // 都有濾，只有這裡漏了，於是 crew 在這裡看得到也點得進去（issue #9）。
   const visibleCamps = useMemo(() => accessibleCamps(camps, role), [camps, role]);
+
+  useEffect(() => {
+    setProfileName(localStorage.getItem(campNicknameStorageKey) ?? "");
+  }, []);
 
   useEffect(() => {
     if (searchParams.get('createProject') === '1' && isAdmin) {
@@ -178,7 +183,7 @@ export default function SettingsPage() {
             variant="ghost"
             size="sm"
             onClick={logout}
-            className="self-start sm:self-center h-10 px-4 rounded-xl text-stone-500 dark:text-stone-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 border border-stone-200/80 dark:border-white/10 hover:border-rose-500/30 transition-all font-mono text-xs gap-2"
+            className="self-start sm:self-center h-10 px-4 rounded-lg text-stone-500 dark:text-stone-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 border border-stone-200/80 dark:border-white/10 hover:border-rose-500/30 transition-all font-mono text-xs gap-2"
           >
             <LogOut className="w-4 h-4" />
             <span>登出系統</span>
@@ -186,7 +191,7 @@ export default function SettingsPage() {
         </div>
 
         {/* ── SEGMENTED TAB SELECTOR ─────── */}
-        <div className="mb-10 p-1.5 rounded-2xl bg-white/70 dark:bg-white/[0.02] border border-stone-200/80 dark:border-white/10 backdrop-blur-md shadow-xs">
+        <div className="mb-10 p-1.5 rounded-xl bg-white/70 dark:bg-white/[0.02] border border-stone-200/80 dark:border-white/10 backdrop-blur-md shadow-xs">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1.5">
             {tabItems.map((tab) => {
               const Icon = tab.icon;
@@ -198,7 +203,7 @@ export default function SettingsPage() {
                   data-testid={`settings-tab-${tab.key}`}
                   onClick={() => setActiveTab(tab.key)}
                   className={cn(
-                    "flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-left transition-all duration-200 cursor-pointer border text-xs font-mono",
+                    "flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg text-left transition-all duration-200 cursor-pointer border text-xs font-mono",
                     isActive
                       ? isDanger
                         ? "bg-rose-500/15 border-rose-500/30 text-rose-600 dark:text-rose-400 font-medium shadow-xs"
@@ -227,24 +232,32 @@ export default function SettingsPage() {
                   {t('IDENTITY_GOVERNANCE')}
                 </h2>
               </div>
-              <div className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 rounded-3xl p-6 sm:p-8">
+              <div className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 rounded-xl p-6 sm:p-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
                   <div className="space-y-3">
-                    <label className="block text-xs font-mono tracking-wider text-fg-muted uppercase">
-                      Identity Designation
+                    <label htmlFor="camp-nickname" className="block text-xs font-mono tracking-wider text-fg-muted">
+                      營隊綽號
                     </label>
                     <input
+                      id="camp-nickname"
                       type="text"
                       value={profileName}
-                      onChange={(e) => setProfileName(e.target.value)}
-                      className="w-full bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 rounded-xl px-4 py-3 font-normal text-foreground focus:border-orange-500 dark:focus:border-orange-500 focus:outline-none transition-all text-sm"
+                      maxLength={40}
+                      onChange={(event) => setProfileName(event.target.value)}
+                      onBlur={() => {
+                        const nickname = profileName.trim();
+                        setProfileName(nickname);
+                        if (nickname) localStorage.setItem(campNicknameStorageKey, nickname);
+                        else localStorage.removeItem(campNicknameStorageKey);
+                      }}
+                      className="w-full bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 rounded-lg px-4 py-3 font-normal text-foreground focus:border-orange-500 dark:focus:border-orange-500 focus:outline-none transition-all text-sm"
                     />
                     <p className="text-[11px] font-mono text-fg-muted">
-                      當前會話顯示名稱，用於記錄變更與修訂者辨識。
+                      綽號儲存在此瀏覽器，會顯示在協作狀態與新建立的版本紀錄。
                     </p>
                   </div>
-                  <div className="flex items-center gap-5 p-6 bg-stone-50/60 dark:bg-white/[0.02] border border-stone-200/60 dark:border-white/5 rounded-2xl">
-                    <div className="w-14 h-14 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
+                  <div className="flex items-center gap-5 p-6 bg-stone-50/60 dark:bg-white/[0.02] border border-stone-200/60 dark:border-white/5 rounded-lg">
+                    <div className="w-14 h-14 rounded-md bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
                       <ShieldCheck className="w-7 h-7 text-orange-600 dark:text-orange-400" />
                     </div>
                     <div>
@@ -278,7 +291,7 @@ export default function SettingsPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-9 px-4 rounded-full font-mono text-xs uppercase tracking-wider border-orange-500/40 text-orange-600 dark:text-orange-400 hover:bg-orange-500/10 transition-all gap-1.5"
+                      className="h-9 px-4 rounded-md font-mono text-xs uppercase tracking-wider border-orange-500/40 text-orange-600 dark:text-orange-400 hover:bg-orange-500/10 transition-all gap-1.5"
                       onClick={() => {
                         setIsAddingProject((prev) => !prev);
                         if (isAddingProject) setNewProjectName("");
@@ -304,16 +317,16 @@ export default function SettingsPage() {
                             setNewProjectName("");
                           }
                         }}
-                        className="h-10 bg-stone-50 dark:bg-white/5 text-foreground border-stone-200/80 dark:border-white/10 rounded-xl"
+                        className="h-10 bg-stone-50 dark:bg-white/5 text-foreground border-stone-200/80 dark:border-white/10 rounded-lg"
                         autoFocus
                       />
                       <div className="flex items-center gap-2 shrink-0">
-                        <Button className="h-10 px-5 font-mono text-xs bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-xs" onClick={handleCreateProject}>
+                        <Button className="h-10 px-5 font-mono text-xs bg-orange-500 hover:bg-orange-600 text-white rounded-lg shadow-xs" onClick={handleCreateProject}>
                           <Check className="w-4 h-4 mr-1.5" /> {t('CREATE')}
                         </Button>
                         <Button
                           variant="ghost"
-                          className="h-10 px-4 font-mono text-xs text-fg-muted hover:bg-stone-100 dark:hover:bg-white/5 rounded-xl"
+                          className="h-10 px-4 font-mono text-xs text-fg-muted hover:bg-stone-100 dark:hover:bg-white/5 rounded-lg"
                           onClick={() => {
                             setIsAddingProject(false);
                             setNewProjectName("");
@@ -326,7 +339,7 @@ export default function SettingsPage() {
                   </div>
                 )}
 
-                <div className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 rounded-3xl overflow-hidden">
+                <div className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 rounded-xl overflow-hidden">
                   <div className="divide-y divide-stone-200/60 dark:divide-white/5">
                     {visibleCamps.length === 0 && (
                       <div
@@ -388,7 +401,7 @@ export default function SettingsPage() {
                                     if (e.key === "Enter") submitRenameCamp(camp.id);
                                     if (e.key === "Escape") cancelRenameCamp();
                                   }}
-                                  className="h-9 w-[220px] sm:w-[280px] bg-white dark:bg-white/10 text-foreground border-orange-500 rounded-xl"
+                                  className="h-9 w-[220px] sm:w-[280px] bg-white dark:bg-white/10 text-foreground border-orange-500 rounded-lg"
                                   autoFocus
                                 />
                               ) : (
@@ -487,13 +500,13 @@ export default function SettingsPage() {
                               </>
                             )}
                             {isDefault && (
-                              <span className="font-mono text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1 shrink-0">
+                              <span className="font-mono text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-sm bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1 shrink-0">
                                 <Star className="w-2.5 h-2.5 fill-amber-500 text-amber-500" />
                                 {t('DEFAULT_PROJECT')}
                               </span>
                             )}
                             {isCurrent && (
-                              <span className="font-mono text-[10px] uppercase tracking-wider px-3 py-0.5 rounded-full bg-orange-500/15 text-orange-700 dark:text-orange-400 border border-orange-500/30 shrink-0">
+                              <span className="font-mono text-[10px] uppercase tracking-wider px-3 py-0.5 rounded-sm bg-orange-500/15 text-orange-700 dark:text-orange-400 border border-orange-500/30 shrink-0">
                                 {t('ACTIVE_CORE')}
                               </span>
                             )}
@@ -519,7 +532,7 @@ export default function SettingsPage() {
                       {t('TIMELINE_SETUP')}
                     </h2>
                   </div>
-                  <div className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 rounded-3xl p-6 sm:p-8">
+                  <div className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 rounded-xl p-6 sm:p-8">
                     <div className="divide-y divide-stone-200/60 dark:divide-white/5">
                       {timelineFields.map((field) => {
                         const Icon = field.icon;
@@ -535,7 +548,7 @@ export default function SettingsPage() {
                                   type="date"
                                   value={(activeCamp as any)[field.startKey] || ""}
                                   onChange={(e) => handleUpdate({ [field.startKey]: e.target.value })}
-                                  className="w-full bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 hover:border-orange-500/50 focus:border-orange-500 rounded-xl px-4 py-2 font-mono text-xs outline-none transition-all text-foreground text-center cursor-pointer"
+                                  className="w-full bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 hover:border-orange-500/50 focus:border-orange-500 rounded-lg px-4 py-2 font-mono text-xs outline-none transition-all text-foreground text-center cursor-pointer"
                                 />
                               ) : (
                                 <div className="flex items-center w-full bg-stone-50 dark:bg-white/5 rounded-xl border border-stone-200/80 dark:border-white/10 hover:border-orange-500/50 focus-within:border-orange-500 transition-all">
@@ -543,14 +556,14 @@ export default function SettingsPage() {
                                     type="date"
                                     value={(activeCamp as any)[field.startKey] || ""}
                                     onChange={(e) => handleUpdate({ [field.startKey]: e.target.value })}
-                                    className="flex-1 w-full min-w-0 bg-transparent border-none rounded-l-xl px-3 py-2 font-mono text-xs outline-none text-foreground text-center cursor-pointer"
+                                    className="flex-1 w-full min-w-0 bg-transparent border-none rounded-l-lg px-3 py-2 font-mono text-xs outline-none text-foreground text-center cursor-pointer"
                                   />
                                   <span className="text-stone-300 dark:text-stone-600 font-mono text-xs px-1">➔</span>
                                   <input
                                     type="date"
                                     value={(activeCamp as any)[field.endKey] || ""}
                                     onChange={(e) => handleUpdate({ [field.endKey]: e.target.value })}
-                                    className="flex-1 w-full min-w-0 bg-transparent border-none rounded-r-xl px-3 py-2 font-mono text-xs outline-none text-foreground text-center cursor-pointer"
+                                    className="flex-1 w-full min-w-0 bg-transparent border-none rounded-r-lg px-3 py-2 font-mono text-xs outline-none text-foreground text-center cursor-pointer"
                                   />
                                 </div>
                               )}
@@ -573,7 +586,7 @@ export default function SettingsPage() {
                       {language === 'zh' ? '組別架構管理' : 'Division Structure Management'}
                     </h2>
                   </div>
-                  <div className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 rounded-3xl p-6 sm:p-8">
+                  <div className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 rounded-xl p-6 sm:p-8">
                     {/* Desktop Headers */}
                     <div className="hidden md:grid md:grid-cols-[1.2fr_1.5fr_1fr_auto] gap-4 pb-3 border-b border-stone-200/60 dark:border-white/5 mb-3 px-2 text-[10px] font-mono tracking-widest text-fg-muted uppercase">
                       <div>{language === 'zh' ? '中文名稱' : 'Chinese Name'}</div>
@@ -589,7 +602,7 @@ export default function SettingsPage() {
                         return (
                           <div
                             key={group.id}
-                            className="flex flex-col md:grid md:grid-cols-[1.2fr_1.5fr_1fr_auto] gap-3 md:gap-4 md:items-center p-3 rounded-2xl bg-stone-50/50 dark:bg-white/[0.02] border border-stone-200/60 dark:border-white/5"
+                            className="flex flex-col md:grid md:grid-cols-[1.2fr_1.5fr_1fr_auto] gap-3 md:gap-4 md:items-center p-3 rounded-lg bg-stone-50/50 dark:bg-white/[0.02] border border-stone-200/60 dark:border-white/5"
                           >
                             <div className="flex items-center gap-2">
                               <span className={cn("w-2 h-2 rounded-full shrink-0 shadow-xs", badgeParams.colorDot)} />
@@ -597,19 +610,19 @@ export default function SettingsPage() {
                                 placeholder={language === 'zh' ? '中文名稱' : 'Chinese Name'}
                                 value={group.nameZh}
                                 onChange={(e) => updateGroup(group.id, { nameZh: e.target.value })}
-                                className="bg-white dark:bg-white/5 border-stone-200/80 dark:border-white/10 rounded-xl h-9 text-xs font-normal"
+                                className="bg-white dark:bg-white/5 border-stone-200/80 dark:border-white/10 rounded-lg h-9 text-xs font-normal"
                               />
                             </div>
                             <Input
                               placeholder="English Name"
                               value={group.nameEn}
                               onChange={(e) => updateGroup(group.id, { nameEn: e.target.value })}
-                              className="bg-white dark:bg-white/5 border-stone-200/80 dark:border-white/10 rounded-xl h-9 text-xs font-normal"
+                              className="bg-white dark:bg-white/5 border-stone-200/80 dark:border-white/10 rounded-lg h-9 text-xs font-normal"
                             />
                             {isDefault ? (
                               <div className="flex items-center px-3 py-1.5 h-9">
                                 <span className={cn(
-                                  "inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[10px] font-mono tracking-wider uppercase border",
+                                  "inline-flex items-center gap-1.5 px-3 py-0.5 rounded-sm text-[10px] font-mono tracking-wider uppercase border",
                                   badgeParams.softBg,
                                   badgeParams.softText,
                                   badgeParams.softBorder
@@ -622,7 +635,7 @@ export default function SettingsPage() {
                                 placeholder="Slug"
                                 value={group.slug}
                                 onChange={(e) => updateGroup(group.id, { slug: e.target.value })}
-                                className="bg-white dark:bg-white/5 border-stone-200/80 dark:border-white/10 rounded-xl h-9 font-mono text-xs"
+                                className="bg-white dark:bg-white/5 border-stone-200/80 dark:border-white/10 rounded-lg h-9 font-mono text-xs"
                               />
                             )}
                             <div className="flex justify-end w-full md:w-10">
@@ -645,18 +658,18 @@ export default function SettingsPage() {
                     </div>
 
                     {/* Add Group Row */}
-                    <div className="p-4 rounded-2xl bg-orange-500/[0.04] border border-orange-500/20 flex flex-col md:grid md:grid-cols-[1.2fr_1.5fr_1fr_auto] gap-3 md:gap-4 md:items-center">
+                    <div className="p-4 rounded-lg bg-orange-500/[0.04] border border-orange-500/20 flex flex-col md:grid md:grid-cols-[1.2fr_1.5fr_1fr_auto] gap-3 md:gap-4 md:items-center">
                       <Input
                         placeholder={language === 'zh' ? '新增中文名稱' : 'New Chinese Name'}
                         value={newGroupNameZh}
                         onChange={(e) => setNewGroupNameZh(e.target.value)}
-                        className="bg-white dark:bg-white/5 border-stone-200/80 dark:border-white/10 rounded-xl h-9 text-xs"
+                        className="bg-white dark:bg-white/5 border-stone-200/80 dark:border-white/10 rounded-lg h-9 text-xs"
                       />
                       <Input
                         placeholder="New English Name"
                         value={newGroupNameEn}
                         onChange={(e) => setNewGroupNameEn(e.target.value)}
-                        className="bg-white dark:bg-white/5 border-stone-200/80 dark:border-white/10 rounded-xl h-9 text-xs"
+                        className="bg-white dark:bg-white/5 border-stone-200/80 dark:border-white/10 rounded-lg h-9 text-xs"
                       />
                       <div className="flex items-center px-1">
                         <span className="text-[11px] font-mono text-fg-muted italic">
@@ -672,7 +685,7 @@ export default function SettingsPage() {
                           }
                         }}
                         size="sm"
-                        className="bg-orange-500 hover:bg-orange-600 text-white font-mono text-xs rounded-xl h-9 px-4 shadow-xs"
+                        className="bg-orange-500 hover:bg-orange-600 text-white font-mono text-xs rounded-lg h-9 px-4 shadow-xs"
                       >
                         {language === 'zh' ? '新增組別' : 'Add'}
                       </Button>
@@ -691,12 +704,12 @@ export default function SettingsPage() {
                       {language === 'zh' ? '活動類別標籤' : 'Activity Category Tags'}
                     </h2>
                   </div>
-                  <div className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 rounded-3xl p-6 sm:p-8">
+                  <div className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 rounded-xl p-6 sm:p-8">
                     <div className="flex flex-wrap gap-2.5 mb-6">
                       {activityTypes?.map((type) => (
                         <span
                           key={type}
-                          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-stone-100 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 text-xs font-mono text-foreground"
+                          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-sm bg-stone-100 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 text-xs font-mono text-foreground"
                         >
                           <span>{type}</span>
                           <button
@@ -713,7 +726,7 @@ export default function SettingsPage() {
                         placeholder={language === 'zh' ? '新增活動類型 (例如: 晚會活動)' : 'Add activity type'}
                         value={newActivityType}
                         onChange={(e) => setNewActivityType(e.target.value)}
-                        className="bg-stone-50 dark:bg-white/5 border-stone-200/80 dark:border-white/10 rounded-xl h-10 text-xs"
+                        className="bg-stone-50 dark:bg-white/5 border-stone-200/80 dark:border-white/10 rounded-lg h-10 text-xs"
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && newActivityType.trim()) {
                             addActivityType(newActivityType.trim());
@@ -728,7 +741,7 @@ export default function SettingsPage() {
                             setNewActivityType("");
                           }
                         }}
-                        className="h-10 px-5 font-mono text-xs bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-xs shrink-0"
+                        className="h-10 px-5 font-mono text-xs bg-orange-500 hover:bg-orange-600 text-white rounded-lg shadow-xs shrink-0"
                       >
                         {language === 'zh' ? '新增' : 'Add'}
                       </Button>
@@ -751,7 +764,7 @@ export default function SettingsPage() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Theme Switcher */}
-                <div className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 rounded-3xl p-6 sm:p-8 flex items-center justify-between">
+                <div className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 rounded-xl p-6 sm:p-8 flex items-center justify-between">
                   <div>
                     <h4 className="font-normal text-base text-foreground mb-1">{t('THEME_MODE')}</h4>
                     <p className="text-xs font-mono text-fg-muted">Appearance / Visual Scheme</p>
@@ -785,7 +798,7 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Language Switcher */}
-                <div className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 rounded-3xl p-6 sm:p-8 flex items-center justify-between">
+                <div className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 rounded-xl p-6 sm:p-8 flex items-center justify-between">
                   <div>
                     <h4 className="font-normal text-base text-foreground mb-1">{t('LANGUAGE_SWITCH')}</h4>
                     <p className="text-xs font-mono text-fg-muted">Locale / Internationalization</p>
@@ -829,7 +842,7 @@ export default function SettingsPage() {
                   {language === 'zh' ? '版本規格資訊' : 'Version Specification'}
                 </h2>
               </div>
-              <div className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+              <div className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 rounded-xl p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
                 <div>
                   <p className="text-xs font-mono uppercase tracking-widest text-fg-muted mb-1.5">
                     {language === 'zh' ? '目前執行版本' : 'Active Deployment Version'}
@@ -838,7 +851,7 @@ export default function SettingsPage() {
                     <span className="font-mono text-xl sm:text-2xl text-foreground font-normal">
                       v{currentVersion}
                     </span>
-                    <span className="font-mono text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
+                    <span className="font-mono text-[10px] px-2.5 py-0.5 rounded-sm bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
                       LIVE PRODUCTION
                     </span>
                   </div>
@@ -846,7 +859,7 @@ export default function SettingsPage() {
                 <Button
                   onClick={() => setIsVersionHistoryOpen(true)}
                   variant="outline"
-                  className="h-10 px-6 rounded-full font-mono text-xs uppercase tracking-wider border-stone-200/80 dark:border-white/10 hover:border-orange-500/40 text-foreground transition-all"
+                  className="h-10 px-6 rounded-md font-mono text-xs uppercase tracking-wider border-stone-200/80 dark:border-white/10 hover:border-orange-500/40 text-foreground transition-all"
                 >
                   {language === 'zh' ? '檢視版本歷程時間軸' : 'View Release Timeline'}
                 </Button>
@@ -864,7 +877,7 @@ export default function SettingsPage() {
                   {t('DANGER_ZONE')}
                 </h2>
               </div>
-              <div className="bg-rose-500/[0.04] border border-rose-500/25 rounded-3xl p-6 sm:p-8">
+              <div className="bg-rose-500/[0.04] border border-rose-500/25 rounded-xl p-6 sm:p-8">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                   <div className="space-y-2 max-w-xl">
                     <h4 className="font-normal text-lg text-rose-700 dark:text-rose-400">
@@ -879,7 +892,7 @@ export default function SettingsPage() {
                   <Button
                     variant="destructive"
                     onClick={() => setIsDeleting(true)}
-                    className="font-mono text-xs uppercase tracking-wider h-11 px-6 rounded-xl bg-rose-600 hover:bg-rose-700 shadow-lg shadow-rose-500/25 shrink-0"
+                    className="font-mono text-xs uppercase tracking-wider h-11 px-6 rounded-lg bg-rose-600 hover:bg-rose-700 shadow-lg shadow-rose-500/25 shrink-0"
                   >
                     Delete Project
                   </Button>
@@ -903,7 +916,7 @@ export default function SettingsPage() {
                             value={deleteInput}
                             onChange={(e) => setDeleteInput(e.target.value)}
                             placeholder="delete"
-                            className="bg-white dark:bg-black/30 border-rose-500/40 font-mono text-xs rounded-xl"
+                            className="bg-white dark:bg-black/30 border-rose-500/40 font-mono text-xs rounded-lg"
                           />
                           <Button
                             variant="destructive"
@@ -923,13 +936,13 @@ export default function SettingsPage() {
                                 setDeleteInput("");
                               }
                             }}
-                            className="font-mono text-xs rounded-xl shrink-0"
+                            className="font-mono text-xs rounded-lg shrink-0"
                           >
                             {isDeleting === "downloading" ? "Archiving..." : "Confirm"}
                           </Button>
                           <Button
                             variant="ghost"
-                            className="font-mono text-xs rounded-xl"
+                            className="font-mono text-xs rounded-lg"
                             onClick={() => { setIsDeleting(false); setDeleteInput(""); }}
                           >
                             Cancel
@@ -962,7 +975,7 @@ export default function SettingsPage() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.95 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="relative w-full max-w-3xl flex flex-col max-h-[85vh] overflow-hidden rounded-3xl bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl"
+              className="relative w-full max-w-3xl flex flex-col max-h-[85vh] overflow-hidden rounded-xl bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 shadow-2xl"
             >
               <div className="px-8 py-6 border-b border-stone-200/80 dark:border-white/10 flex items-center justify-between">
                 <div>
@@ -977,7 +990,7 @@ export default function SettingsPage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9 rounded-full text-stone-400 hover:text-foreground hover:bg-stone-100 dark:hover:bg-white/5"
+                  className="h-9 w-9 rounded-md text-stone-400 hover:text-foreground hover:bg-stone-100 dark:hover:bg-white/5"
                   onClick={() => setIsVersionHistoryOpen(false)}
                 >
                   <X className="w-4 h-4" />
@@ -995,7 +1008,7 @@ export default function SettingsPage() {
                         <p className="font-mono text-xs text-fg-muted">{entry.date}</p>
                         <h4 className="text-base font-normal text-foreground mt-0.5">{entry.title}</h4>
                       </div>
-                      <span className="font-mono text-[10px] px-2.5 py-0.5 rounded-full bg-orange-500/15 text-orange-700 dark:text-orange-400 border border-orange-500/30">
+                      <span className="font-mono text-[10px] px-2.5 py-0.5 rounded-sm bg-orange-500/15 text-orange-700 dark:text-orange-400 border border-orange-500/30">
                         v{entry.version}
                       </span>
                     </div>

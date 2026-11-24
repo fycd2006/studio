@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import JSZip from "jszip";
+import * as docx from "docx";
 import {
   AlignmentType,
   BorderStyle,
@@ -24,6 +25,8 @@ import {
   resolvePlanMembers,
   stripInvalidXmlChars,
 } from "@/lib/export-filename";
+import { createRichDocxRenderer } from "@/lib/rich-docx";
+import { parseRichBlocks } from "@/lib/rich-export";
 import { generatePlanPdfBuffer } from "@/lib/pdf-generator";
 
 const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
@@ -62,6 +65,7 @@ const sectionBody = (value?: string) => {
 };
 
 const buildDocxBuffer = async (plan: LessonPlan) => {
+  const rich = createRichDocxRenderer(docx);
   const scheduledName = stripHtml(stripInvalidXmlChars(plan.scheduledName)).trim() || "教案";
   const activityName = stripHtml(stripInvalidXmlChars(plan.activityName)).trim() || "未命名教案";
   const isScriptMode = scheduledName === "劇本";
@@ -137,10 +141,10 @@ const buildDocxBuffer = async (plan: LessonPlan) => {
     );
   }
 
-  children.push(sectionTitle("【教案目的】"), ...sectionBody(plan.purpose));
+  children.push(sectionTitle("【教案目的】"), ...rich.section(plan.purpose));
 
   if (!isScriptMode) {
-    children.push(sectionTitle("【教案流程】"), ...sectionBody(plan.process));
+    children.push(sectionTitle("【教案流程】"), ...rich.section(plan.process));
   }
 
   if (plan.canvasImage && typeof plan.canvasImage === "string") {
@@ -169,19 +173,20 @@ const buildDocxBuffer = async (plan: LessonPlan) => {
     }
   }
 
-  children.push(sectionTitle("【教案內容說明】"), ...sectionBody(plan.content));
+  children.push(sectionTitle("【教案內容說明】"), ...rich.section(plan.content));
 
-  if (!isScriptMode && htmlToPlainText(plan.divisionOfLabor)) {
-    children.push(sectionTitle("【分工】"), ...sectionBody(plan.divisionOfLabor));
+  if (!isScriptMode && parseRichBlocks(plan.divisionOfLabor).length) {
+    children.push(sectionTitle("【分工】"), ...rich.section(plan.divisionOfLabor));
   }
 
-  children.push(sectionTitle("【道具表】"), propsTable, sectionTitle("【備註】"), ...sectionBody(plan.remarks));
+  children.push(sectionTitle("【道具表】"), propsTable, sectionTitle("【備註】"), ...rich.section(plan.remarks));
 
   if (!isScriptMode) {
-    children.push(sectionTitle("【開場結語】"), ...sectionBody(plan.openingClosingRemarks));
+    children.push(sectionTitle("【開場結語】"), ...rich.section(plan.openingClosingRemarks));
   }
 
   const doc = new Document({
+    numbering: rich.numbering,
     sections: [
       {
         children,

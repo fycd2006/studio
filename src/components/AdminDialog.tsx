@@ -44,7 +44,7 @@ export function AdminDialog({ open, onOpenChange, onConfirm, title }: AdminDialo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-3xl border border-stone-200/80 dark:border-white/10 bg-white dark:bg-[#14191C] shadow-2xl p-6 sm:p-8">
+      <DialogContent className="sm:max-w-md rounded-xl border border-stone-200/80 dark:border-white/10 bg-white dark:bg-[#14191C] shadow-2xl p-6 sm:p-8">
         <DialogHeader>
           <div className="flex items-center gap-2 mb-1.5">
             <span className="architectural-tag">
@@ -71,7 +71,7 @@ export function AdminDialog({ open, onOpenChange, onConfirm, title }: AdminDialo
 
         <div className="py-4 space-y-3">
           {isDeleteCamp && (
-            <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center gap-3">
+            <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center gap-3">
               <div className="w-8 h-8 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
                 <Download className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               </div>
@@ -84,7 +84,7 @@ export function AdminDialog({ open, onOpenChange, onConfirm, title }: AdminDialo
             value={deleteText}
             onChange={(e) => setDeleteText(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleConfirm()}
-            className="h-11 rounded-xl font-mono text-xs bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 text-foreground"
+            className="h-11 rounded-lg font-mono text-xs bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 text-foreground"
             autoFocus
           />
         </div>
@@ -93,14 +93,14 @@ export function AdminDialog({ open, onOpenChange, onConfirm, title }: AdminDialo
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="rounded-xl font-mono text-xs h-10 border border-stone-200/80 dark:border-white/10"
+            className="rounded-lg font-mono text-xs h-10 border border-stone-200/80 dark:border-white/10"
           >
             取消 / Cancel
           </Button>
           <Button
             onClick={handleConfirm}
             className={cn(
-              "rounded-xl font-mono text-xs h-10 px-6",
+              "rounded-lg font-mono text-xs h-10 px-6",
               isDeleteCamp ? "bg-rose-600 hover:bg-rose-700 text-white" : "bg-orange-500 hover:bg-orange-600 text-white"
             )}
           >

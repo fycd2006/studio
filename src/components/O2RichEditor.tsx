@@ -15,14 +15,10 @@ import {
   Palette,
   Trash2,
   Eraser,
-  Circle as CircleIcon,
-  Layers,
-  RectangleHorizontal,
   RotateCcw,
   Type as FontIcon,
   ALargeSmall,
   CaseSensitive,
-  Layout,
   Table as TableIcon,
   Plus,
   Link as LinkIcon,
@@ -33,62 +29,59 @@ import {
   ChevronDown,
   Sparkles,
   ExternalLink,
-  TableProperties,
-  ArrowDownToLine,
-  ArrowUpToLine,
-  ArrowLeftToLine,
-  ArrowRightToLine,
   Grid,
   Undo2,
   Redo2,
-  Merge,
-  Split
+  MoreHorizontal
 } from "lucide-react";
+import { createPortal } from "react-dom";
+import { useToast } from "@/hooks/use-toast";
+import { parseEditorHtml } from "@/lib/editor-html";
+import { maxEmbeddedImageBytes, prepareClipboardImage, utf8Length } from "@/lib/editor-image";
+import {
+  createEditorTableHtml, deleteEditorColumn, deleteEditorRow, insertEditorColumn, insertEditorRow,
+  mergeEditorCellRight, setTableColumnSizes, splitEditorCell, tableColumnSizes, tableGrid,
+} from "@/lib/editor-table";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 
-// Safe HTML sanitizer utilizing browser DOMParser (#15)
-const sanitizeHtml = (html: string): string => {
-  if (typeof window === 'undefined') return html;
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
-  
-  const cleanNode = (node: Node) => {
-    if (node.nodeType === Node.ELEMENT_NODE) {
-      const el = node as HTMLElement;
-      const tagName = el.tagName.toUpperCase();
-      
-      // Remove script/style/embed/link/iframe elements
-      if (['SCRIPT', 'OBJECT', 'EMBED', 'APPLET', 'LINK', 'STYLE', 'IFRAME', 'META', 'BASE'].includes(tagName)) {
-        el.remove();
-        return;
-      }
+const objectTools = "fixed z-50 flex items-center gap-0.5 rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-md";
+const objectButton = "h-7 w-7 rounded-md";
+const selectedObjectButton = "bg-orange-100 text-orange-800 dark:bg-orange-400/20 dark:text-orange-200";
 
-      // Remove inline event attributes & javascript: links
-      const attribs = Array.from(el.attributes);
-      for (const attr of attribs) {
-        const name = attr.name.toLowerCase();
-        if (name.startsWith('on')) {
-          el.removeAttribute(attr.name);
-        } else if ((name === 'href' || name === 'src') && 
-                   (attr.value.trim().toLowerCase().startsWith('javascript:') || 
-                    attr.value.trim().toLowerCase().startsWith('data:text/html'))) {
-          el.removeAttribute(attr.name);
-        }
-      }
-    }
-    
-    const children = Array.from(node.childNodes);
-    for (const child of children) {
-      cleanNode(child);
-    }
-  };
+const isEmpty = (html: string) => !/<(img|table|iframe|video)\b/i.test(html) &&
+  !html.replace(/<[^>]*>|&nbsp;|\s/g, "").length;
 
-  cleanNode(doc.body);
-  return doc.body.innerHTML;
-};
+const editableHtml = (editor: HTMLDivElement) => editor.innerHTML.replace(/\u200b/g, "");
+
+function selectCell(cell: HTMLTableCellElement, end = false) {
+  const range = document.createRange();
+  range.selectNodeContents(cell);
+  range.collapse(!end);
+  const selection = window.getSelection();
+  selection?.removeAllRanges();
+  selection?.addRange(range);
+}
+
+function imageToolsPosition(target: DOMRect, menu: HTMLElement | null) {
+  const height = menu?.offsetHeight || 38;
+  const width = menu?.offsetWidth || 156;
+  const topLimit = window.innerWidth >= 768 ? 96 : 56;
+  const bottomLimit = window.innerHeight - (window.innerWidth >= 768 ? 16 : 62);
+  if (target.bottom < topLimit || target.top > bottomLimit) return null;
+
+  const below = target.bottom + 6;
+  const above = target.top - height - 6;
+  const left = Math.min(window.innerWidth - width - 8, Math.max(8, target.left));
+  if (below + height <= bottomLimit) return { top: below, left };
+  if (above >= topLimit) return { top: above, left };
+  if (target.right + width + 14 < window.innerWidth) {
+    return { top: Math.max(topLimit, target.top), left: target.right + 6 };
+  }
+  return { top: bottomLimit - height, left };
+}
 
 interface O2RichEditorProps {
   label?: string;
@@ -101,6 +94,7 @@ interface O2RichEditorProps {
   readOnly?: boolean;
   simplified?: boolean;
   hideToolbar?: boolean;
+  getPasteBudget?: () => number;
 }
 
 export function O2RichEditor({
@@ -113,16 +107,23 @@ export function O2RichEditor({
   minHeight = '300px',
   readOnly = false,
   simplified = false,
-  hideToolbar = true
+  hideToolbar = true,
+  getPasteBudget
 }: O2RichEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
+  const imageMenuRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
   const isInternalChange = useRef(false);
   const savedRangeRef = useRef<Range | null>(null);
   const [isFocused, setIsFocused] = useState(false);
   const [selectedImage, setSelectedImage] = useState<HTMLImageElement | null>(null);
-  const [imageMenuPos, setImageMenuPos] = useState({ top: 0, left: 0 });
+  const [imageMenuPos, setImageMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const [activeCell, setActiveCell] = useState<HTMLTableCellElement | null>(null);
+  const [columnHandle, setColumnHandle] = useState<{ top: number; left: number; height: number } | null>(null);
   const [activeTable, setActiveTable] = useState<HTMLTableElement | null>(null);
-  const [tableMenuPos, setTableMenuPos] = useState({ top: 0, left: 0 });
+  const [tableMenuPos, setTableMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const [tableActionsOpen, setTableActionsOpen] = useState(false);
+  const [imageOptionsOpen, setImageOptionsOpen] = useState(false);
 
   // Link dialog state
   const [isLinkOpen, setIsLinkOpen] = useState(false);
@@ -176,7 +177,7 @@ export function O2RichEditor({
     handleInput();
   };
 
-  const isEditorEmpty = !value || value.replace(/<(img|table|iframe|video)[^>]*>/gi, 'HAS_MEDIA').replace(/<[^>]*>|&nbsp;|\s/gi, '').length === 0;
+  const [isEditorEmpty, setIsEditorEmpty] = useState(() => isEmpty(value || ""));
 
   // Update active formatting state from current selection
   const updateActiveFormats = useCallback(() => {
@@ -204,6 +205,7 @@ export function O2RichEditor({
     if (editorRef.current && editorRef.current.innerHTML !== value) {
       editorRef.current.innerHTML = value || "<div><br></div>";
     }
+    setIsEditorEmpty(isEmpty(value || ""));
   }, [value]);
 
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -221,7 +223,10 @@ export function O2RichEditor({
   const handleInput = useCallback(() => {
     if (readOnly) return;
     // 同步記下來（不是等 debounce）—— 卸載補送就是靠這一行
-    if (editorRef.current) latestHtmlRef.current = editorRef.current.innerHTML;
+    if (editorRef.current) {
+      latestHtmlRef.current = editableHtml(editorRef.current);
+      setIsEditorEmpty(isEmpty(latestHtmlRef.current));
+    }
     setIsSaving(true);
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(() => {
@@ -236,7 +241,7 @@ export function O2RichEditor({
       debounceTimer.current = null;
       if (editorRef.current) {
         isInternalChange.current = true;
-        onChange(editorRef.current.innerHTML);
+        onChange(editableHtml(editorRef.current));
         setIsSaving(false);
       }
     }, 350);
@@ -263,7 +268,7 @@ export function O2RichEditor({
     clearTimeout(debounceTimer.current);
     debounceTimer.current = null;
     // editorRef 在卸載時已經是 null，所以這裡要能退回 latestHtmlRef
-    const html = editorRef.current?.innerHTML ?? latestHtmlRef.current;
+    const html = editorRef.current ? editableHtml(editorRef.current) : latestHtmlRef.current;
     if (html === null) return;
     isInternalChange.current = true;
     onChange(html);
@@ -300,57 +305,39 @@ export function O2RichEditor({
     return () => el.removeEventListener('input', handleInput);
   }, [handleInput]);
 
-  // Helper: check selection parent element type
   const getSelectedTableCell = () => {
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return null;
-    let node = selection.getRangeAt(0).startContainer as HTMLElement | null;
-    while (node && node.nodeName !== 'TD' && node.nodeName !== 'TH' && node.nodeName !== 'BODY') {
-      node = node.parentNode as HTMLElement | null;
-    }
-    return (node && (node.nodeName === 'TD' || node.nodeName === 'TH')) ? (node as HTMLTableCellElement) : null;
+    const anchor = window.getSelection()?.anchorNode;
+    const editor = editorRef.current;
+    if (!editor || !anchor || !editor.contains(anchor)) return null;
+    const element = anchor instanceof HTMLElement ? anchor : anchor.parentElement;
+    const cell = element?.closest<HTMLTableCellElement>("td,th");
+    return cell && editor.contains(cell) ? cell : null;
   };
 
-  const getSelectedTable = () => {
-    let node: HTMLElement | null = getSelectedTableCell();
-    while (node && node.nodeName !== 'TABLE' && node.nodeName !== 'BODY') {
-      node = node.parentNode as HTMLElement | null;
-    }
-    return (node && node.nodeName === 'TABLE') ? (node as HTMLTableElement) : null;
-  };
-
-  // Update floating positions (use viewport coords only — menus are position:fixed)
   const updateMenuPosition = useCallback(() => {
-    if (selectedImage) {
+    if (selectedImage?.isConnected) {
       const rect = selectedImage.getBoundingClientRect();
-      const rawTop = rect.top - 60;
-      const rawLeft = rect.left + (rect.width / 2);
-      setImageMenuPos({
-        top: Math.max(8, rawTop),
-        left: Math.max(120, Math.min(window.innerWidth - 120, rawLeft))
-      });
-      const containerRect = editorRef.current?.parentElement?.getBoundingClientRect();
-      if (containerRect) {
-        setImageRect({
-          top: rect.top - containerRect.top,
-          left: rect.left - containerRect.left,
-          width: rect.width,
-          height: rect.height
-        });
-      }
+      setImageMenuPos(imageToolsPosition(rect, imageMenuRef.current));
+      setImageRect({ top: rect.top, left: rect.left, width: rect.width, height: rect.height });
     } else {
+      setImageMenuPos(null);
       setImageRect(null);
     }
-    if (activeTable) {
-      const rect = activeTable.getBoundingClientRect();
-      const rawTop = rect.top - 55;
-      const rawLeft = rect.left + (rect.width / 2);
-      setTableMenuPos({
-        top: Math.max(8, rawTop),
-        left: Math.max(120, Math.min(window.innerWidth - 120, rawLeft))
-      });
+    if (activeTable?.isConnected && activeCell?.isConnected) {
+      const rect = activeCell.getBoundingClientRect();
+      const topLimit = window.innerWidth >= 768 ? 94 : 52;
+      const top = Math.max(topLimit, rect.top - 10);
+      setTableMenuPos(rect.bottom > topLimit + 6 && top < window.innerHeight - 55
+        ? { top, left: Math.max(8, Math.min(window.innerWidth - 34, rect.right - 32)) } : null);
+      const { cells, width } = tableGrid(activeTable);
+      const position = cells.find(({ cell }) => cell === activeCell);
+      setColumnHandle(position && position.column + position.columns < width
+        ? { top: rect.top, left: rect.right, height: rect.height } : null);
+    } else {
+      setTableMenuPos(null);
+      setColumnHandle(null);
     }
-  }, [selectedImage, activeTable]);
+  }, [selectedImage, activeTable, activeCell]);
 
   // Handle document click/selection change to detect active elements
   // Scoped: only react when selection is inside this editor instance (#8 multi-instance perf)
@@ -360,12 +347,15 @@ export function O2RichEditor({
       if (!sel || sel.rangeCount === 0) return;
       const anchor = sel.anchorNode;
       if (!editorRef.current || !anchor || !editorRef.current.contains(anchor)) {
+        if (tableActionsOpen || imageOptionsOpen) return;
         setActiveTable(null);
+        setActiveCell(null);
         return;
       }
-      const table = getSelectedTable();
-      setActiveTable(table);
-      updateActiveFormats();
+      const cell = getSelectedTableCell();
+      setActiveTable(cell?.closest("table") ?? null);
+      setActiveCell(cell);
+      if (!hideToolbar) updateActiveFormats();
       // Save the current selection range so toolbar actions can restore it
       if (sel.rangeCount > 0) {
         savedRangeRef.current = sel.getRangeAt(0).cloneRange();
@@ -376,12 +366,23 @@ export function O2RichEditor({
     return () => {
       document.removeEventListener("selectionchange", handleSelectionChange);
     };
-  }, [updateActiveFormats]);
+  }, [updateActiveFormats, hideToolbar, tableActionsOpen, imageOptionsOpen]);
 
   useEffect(() => {
     if (!selectedImage && !activeTable) return;
 
     const update = () => updateMenuPosition();
+    const clearOutside = (event: PointerEvent) => {
+      if (event.target instanceof Element && (editorRef.current?.contains(event.target) ||
+        event.target.closest("[data-editor-floating]"))) return;
+      setSelectedImage(null);
+      setActiveTable(null);
+      setActiveCell(null);
+      setTableActionsOpen(false);
+      setImageOptionsOpen(false);
+    };
+    update();
+    document.addEventListener("pointerdown", clearOutside);
     window.addEventListener('scroll', update, true);
     window.addEventListener('resize', update);
 
@@ -402,6 +403,7 @@ export function O2RichEditor({
     }
 
     return () => {
+      document.removeEventListener('pointerdown', clearOutside);
       window.removeEventListener('scroll', update, true);
       window.removeEventListener('resize', update);
       if (observer) {
@@ -410,39 +412,57 @@ export function O2RichEditor({
     };
   }, [selectedImage, activeTable, updateMenuPosition]);
 
-  // Drag resize handler for images (#11) — supports both mouse and touch
-  const handleResizeStart = (e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!selectedImage) return;
-
-    const isTouch = 'touches' in e;
-    const startX = isTouch ? (e as React.TouchEvent).touches[0].clientX : (e as React.MouseEvent).clientX;
-    const startWidth = selectedImage.getBoundingClientRect().width;
-    const editorWidth = editorRef.current?.getBoundingClientRect().width || 800;
-
-    const handleMove = (moveEvent: MouseEvent | TouchEvent) => {
-      const clientX = 'touches' in moveEvent ? moveEvent.touches[0].clientX : (moveEvent as MouseEvent).clientX;
-      const deltaX = clientX - startX;
-      const newWidth = Math.max(50, startWidth + deltaX);
-      selectedImage.style.maxWidth = 'none';
-      selectedImage.style.width = `${newWidth}px`;
-      selectedImage.style.height = 'auto';
+  const dragHorizontally = (event: React.PointerEvent<HTMLElement>, apply: (delta: number) => void) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const handle = event.currentTarget;
+    const start = event.clientX;
+    handle.setPointerCapture(event.pointerId);
+    const move = (next: PointerEvent) => {
+      apply(next.clientX - start);
       updateMenuPosition();
     };
-
-    const handleEnd = () => {
-      window.removeEventListener('mousemove', handleMove);
-      window.removeEventListener('mouseup', handleEnd);
-      window.removeEventListener('touchmove', handleMove);
-      window.removeEventListener('touchend', handleEnd);
+    const end = () => {
+      handle.removeEventListener("pointermove", move);
       handleInput();
     };
+    handle.addEventListener("pointermove", move);
+    handle.addEventListener("lostpointercapture", end, { once: true });
+  };
 
-    window.addEventListener('mousemove', handleMove);
-    window.addEventListener('mouseup', handleEnd);
-    window.addEventListener('touchmove', handleMove, { passive: false });
-    window.addEventListener('touchend', handleEnd);
+  const startImageResize = (event: React.PointerEvent<HTMLElement>, direction: number) => {
+    const editor = editorRef.current;
+    if (!selectedImage || !editor) return;
+    const base = selectedImage.offsetWidth;
+    const scale = editor.getBoundingClientRect().width / editor.offsetWidth || 1;
+    const style = getComputedStyle(editor);
+    const max = editor.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+    dragHorizontally(event, (delta) => {
+      selectedImage.style.maxWidth = "100%";
+      selectedImage.style.width = Math.min(max, Math.max(32, base + direction * delta / scale)) + "px";
+      selectedImage.style.height = "auto";
+      selectedImage.style.aspectRatio = "";
+    });
+  };
+
+  const startColumnResize = (event: React.PointerEvent<HTMLElement>) => {
+    if (!activeTable || !activeCell) return;
+    const { cells } = tableGrid(activeTable);
+    const selected = cells.find(({ cell }) => cell === activeCell);
+    if (!selected) return;
+    const column = selected.column + selected.columns - 1;
+    const widths = tableColumnSizes(activeTable);
+    const neighbor = widths[column + 1];
+    if (!neighbor) return;
+    const scale = activeTable.getBoundingClientRect().width / activeTable.offsetWidth || 1;
+    const minimum = Math.min(40, widths[column], neighbor);
+    dragHorizontally(event, (delta) => {
+      const shift = Math.max(minimum - widths[column], Math.min(neighbor - minimum, delta / scale));
+      const next = [...widths];
+      next[column] += shift;
+      next[column + 1] -= shift;
+      setTableColumnSizes(activeTable, next);
+    });
   };
 
   const handleEditorClick = (e: React.MouseEvent) => {
@@ -454,50 +474,67 @@ export function O2RichEditor({
     if (target.tagName === 'IMG') {
       const img = target as HTMLImageElement;
       setSelectedImage(img);
-      setActiveTable(null); // hide table menu when image clicked
-      setTimeout(updateMenuPosition, 10);
+      setActiveTable(null);
+      setActiveCell(null);
     } else {
       setSelectedImage(null);
     }
   };
 
-  const execCommand = (command: string, val: string | undefined = undefined) => {
-    if (readOnly) return;
-    
-    // Save selection range before executing command
+  const execCommand = (command: string, value?: string) => {
+    const editor = editorRef.current;
+    if (readOnly || !editor) return;
     const selection = window.getSelection();
-    let savedRange: Range | null = null;
-    if (selection && selection.rangeCount > 0) {
-      savedRange = selection.getRangeAt(0).cloneRange();
-    }
-
-    document.execCommand(command, false, val);
-
-    // Restore selection range
-    if (savedRange && selection) {
+    if (!selection?.anchorNode || !editor.contains(selection.anchorNode)) {
+      const saved = savedRangeRef.current;
+      if (!saved || !editor.contains(saved.commonAncestorContainer) || !selection) return;
+      editor.focus({ preventScroll: true });
       selection.removeAllRanges();
-      selection.addRange(savedRange);
+      selection.addRange(saved);
     }
-
+    document.execCommand(command, false, value);
     handleInput();
-    updateActiveFormats();
+    if (!hideToolbar) updateActiveFormats();
   };
 
-  // Keyboard shortcuts (#9)
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (readOnly) return;
-    const mod = e.ctrlKey || e.metaKey;
-    if (!mod) return;
-    switch (e.key.toLowerCase()) {
-      case 'b': e.preventDefault(); execCommand('bold'); break;
-      case 'i': e.preventDefault(); execCommand('italic'); break;
-      case 'u': e.preventDefault(); execCommand('underline'); break;
-      case 'z':
-        e.preventDefault();
-        if (e.shiftKey) execCommand('redo');
-        else execCommand('undo');
-        break;
-      case 'y': e.preventDefault(); execCommand('redo'); break;
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (readOnly || event.nativeEvent.isComposing) return;
+    if (event.key === "Escape") {
+      setSelectedImage(null);
+      setTableActionsOpen(false);
+      setImageOptionsOpen(false);
+      return;
+    }
+    if (selectedImage && ["Delete", "Backspace"].includes(event.key)) {
+      event.preventDefault();
+      selectedImage.remove();
+      setSelectedImage(null);
+      handleInput();
+      return;
+    }
+    if (event.key === "Tab" && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      const cell = getSelectedTableCell();
+      const table = cell?.closest("table");
+      if (!cell || !table) return;
+      const { cells } = tableGrid(table);
+      const index = cells.findIndex((position) => position.cell === cell);
+      let target: HTMLTableCellElement | null | undefined = cells[index + (event.shiftKey ? -1 : 1)]?.cell;
+      if (!target && !event.shiftKey) {
+        target = insertEditorRow(table, cell, true);
+        handleInput();
+      }
+      if (target) {
+        event.preventDefault();
+        selectCell(target, event.shiftKey);
+      }
+      return;
+    }
+    if (!event.ctrlKey && !event.metaKey) return;
+    const commands: Record<string, string> = { b: "bold", i: "italic", u: "underline", y: "redo", z: event.shiftKey ? "redo" : "undo" };
+    const command = commands[event.key.toLowerCase()];
+    if (command) {
+      event.preventDefault();
+      execCommand(command);
     }
   };
 
@@ -528,7 +565,7 @@ export function O2RichEditor({
     e.preventDefault();
     if (!imageUrl) return;
     setIsImageOpen(false);
-    const imgHtml = `<img src="${imageUrl}" loading="lazy" style="width: 100%; max-width: 500px; height: auto; display: block; margin: 12px auto; border-radius: 12px; cursor: pointer; transition: all 0.3s; vertical-align: top;" />`;
+    const imgHtml = `<img src="${imageUrl}" loading="lazy" style="width: 100%; max-width: 500px; height: auto; display: block; margin: 12px auto; border-radius: 8px; cursor: pointer; transition: all 0.3s; vertical-align: top;" />`;
     execCommand("insertHTML", imgHtml);
     setImageUrl("");
   };
@@ -615,236 +652,86 @@ export function O2RichEditor({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedImage, deleteImage, isFocused]);
 
-  // Clipboard Paste event handler (Sanitized Rich Text & Local image pasting) (#15, #17)
-  const handlePaste = (e: React.ClipboardEvent) => {
+  const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
     if (readOnly) {
-      e.preventDefault();
+      event.preventDefault();
       return;
     }
-    const items = e.clipboardData.items;
-    let imageFound = false;
-    for (let i = 0; i < items.length; i++) {
-      if (items[i].type.indexOf("image") !== -1) {
-        imageFound = true;
-        const file = items[i].getAsFile();
+    const file = Array.from(event.clipboardData.files).find((item) => item.type.startsWith("image/"))
+      ?? Array.from(event.clipboardData.items).find((item) => item.type.startsWith("image/"))?.getAsFile();
+    const html = event.clipboardData.getData("text/html");
+    if (!file && !html) return;
+    event.preventDefault();
+
+    const editor = event.currentTarget;
+    const selection = window.getSelection();
+    const range = selection?.rangeCount ? selection.getRangeAt(0).cloneRange() : null;
+    if (!range || !editor.contains(range.commonAncestorContainer)) return;
+    const budget = () => getPasteBudget?.() ?? Math.max(0, 900_000 - utf8Length(editor.innerHTML));
+
+    const paste = async () => {
+      try {
+        const template = parseEditorHtml(file ? "" : html);
         if (file) {
-          e.preventDefault();
-          const reader = new FileReader();
-          reader.onload = (event) => {
-            const dataUri = event.target?.result as string;
-            const imgHtml = `<img src="${dataUri}" loading="lazy" style="width: 75%; height: auto; display: block; margin: 12px auto; border-radius: 12px; cursor: pointer; transition: all 0.3s; vertical-align: top;" />`;
-            execCommand("insertHTML", imgHtml);
-          };
-          reader.readAsDataURL(file);
+          const image = document.createElement("img");
+          image.alt = "貼上的圖片";
+          image.style.cssText = "width:75%; max-width:100%; height:auto; display:block; margin:12px auto;";
+          template.content.append(image);
         }
-        break;
-      }
-    }
-
-    if (!imageFound) {
-      const html = e.clipboardData.getData("text/html");
-      if (html) {
-        e.preventDefault();
-        const cleanHtml = sanitizeHtml(html);
-        execCommand("insertHTML", cleanHtml);
-      } else {
-        setTimeout(handleInput, 50);
-      }
-    }
-  };
-
-  // Table manipulation helper functions
-  const insertTable = (rows: number, cols: number) => {
-    let tableHtml = `<table style="border-collapse: collapse; width: 100%; border: 1px solid currentColor; margin: 16px 0; font-size: 14px;"><tbody>`;
-    for (let r = 0; r < rows; r++) {
-      tableHtml += "<tr>";
-      for (let c = 0; c < cols; c++) {
-        tableHtml += `<td style="border: 1px solid currentColor; padding: 10px; min-width: 60px; vertical-align: top; opacity: 0.85;">&nbsp;</td>`;
-      }
-      tableHtml += "</tr>";
-    }
-    tableHtml += `</tbody></table>`;
-    execCommand("insertHTML", tableHtml);
-  };
-
-  const getCellIndex = (cell: HTMLTableCellElement) => {
-    return cell.cellIndex;
-  };
-
-  const getRowIndex = (cell: HTMLTableCellElement) => {
-    const row = cell.parentNode as HTMLTableRowElement;
-    return row.rowIndex;
-  };
-
-  const addRowAbove = () => {
-    const cell = getSelectedTableCell();
-    const table = getSelectedTable();
-    if (!cell || !table) return;
-    const rowIndex = getRowIndex(cell);
-    const newRow = table.insertRow(rowIndex);
-    const colCount = table.rows[rowIndex + 1].cells.length;
-    for (let i = 0; i < colCount; i++) {
-      const newCell = newRow.insertCell(i);
-      newCell.innerHTML = "&nbsp;";
-      newCell.style.border = "1px solid currentColor";
-      newCell.style.padding = "10px";
-      newCell.style.verticalAlign = "top";
-      newCell.style.opacity = "0.85";
-    }
-    handleInput();
-    setTimeout(updateMenuPosition, 50);
-  };
-
-  const addRowBelow = () => {
-    const cell = getSelectedTableCell();
-    const table = getSelectedTable();
-    if (!cell || !table) return;
-    const rowIndex = getRowIndex(cell);
-    const newRow = table.insertRow(rowIndex + 1);
-    const colCount = table.rows[rowIndex].cells.length;
-    for (let i = 0; i < colCount; i++) {
-      const newCell = newRow.insertCell(i);
-      newCell.innerHTML = "&nbsp;";
-      newCell.style.border = "1px solid currentColor";
-      newCell.style.padding = "10px";
-      newCell.style.verticalAlign = "top";
-      newCell.style.opacity = "0.85";
-    }
-    handleInput();
-    setTimeout(updateMenuPosition, 50);
-  };
-
-  const addColumnLeft = () => {
-    const cell = getSelectedTableCell();
-    const table = getSelectedTable();
-    if (!cell || !table) return;
-    const colIndex = getCellIndex(cell);
-    for (let i = 0; i < table.rows.length; i++) {
-      const row = table.rows[i];
-      const newCell = row.insertCell(colIndex);
-      newCell.innerHTML = "&nbsp;";
-      newCell.style.border = "1px solid currentColor";
-      newCell.style.padding = "10px";
-      newCell.style.verticalAlign = "top";
-      newCell.style.opacity = "0.85";
-    }
-    handleInput();
-    setTimeout(updateMenuPosition, 50);
-  };
-
-  const addColumnRight = () => {
-    const cell = getSelectedTableCell();
-    const table = getSelectedTable();
-    if (!cell || !table) return;
-    const colIndex = getCellIndex(cell);
-    for (let i = 0; i < table.rows.length; i++) {
-      const row = table.rows[i];
-      const newCell = row.insertCell(colIndex + 1);
-      newCell.innerHTML = "&nbsp;";
-      newCell.style.border = "1px solid currentColor";
-      newCell.style.padding = "10px";
-      newCell.style.verticalAlign = "top";
-      newCell.style.opacity = "0.85";
-    }
-    handleInput();
-    setTimeout(updateMenuPosition, 50);
-  };
-
-  const deleteRow = () => {
-    const cell = getSelectedTableCell();
-    const table = getSelectedTable();
-    if (!cell || !table) return;
-    const rowIndex = getRowIndex(cell);
-    table.deleteRow(rowIndex);
-    if (table.rows.length === 0) {
-      table.remove();
-      setActiveTable(null);
-    }
-    handleInput();
-    setTimeout(updateMenuPosition, 50);
-  };
-
-  const deleteColumn = () => {
-    const cell = getSelectedTableCell();
-    const table = getSelectedTable();
-    if (!cell || !table) return;
-    const colIndex = getCellIndex(cell);
-    for (let i = 0; i < table.rows.length; i++) {
-      table.rows[i].deleteCell(colIndex);
-    }
-    if (table.rows[0]?.cells.length === 0) {
-      table.remove();
-      setActiveTable(null);
-    }
-    handleInput();
-    setTimeout(updateMenuPosition, 50);
-  };
-
-  const deleteTable = () => {
-    const table = getSelectedTable();
-    if (table) {
-      table.remove();
-      setActiveTable(null);
-      handleInput();
-    }
-  };
-
-  // Table cell merge & split helpers (#12)
-  const mergeCellRight = () => {
-    const cell = getSelectedTableCell();
-    if (!cell) return;
-    const row = cell.parentNode as HTMLTableRowElement;
-    if (!row) return;
-    const nextCell = row.cells[cell.cellIndex + 1];
-    if (!nextCell) return;
-
-    cell.innerHTML = cell.innerHTML + (nextCell.innerHTML === "&nbsp;" ? "" : nextCell.innerHTML);
-    cell.colSpan = (cell.colSpan || 1) + (nextCell.colSpan || 1);
-    nextCell.remove();
-    handleInput();
-    setTimeout(updateMenuPosition, 50);
-  };
-
-  const splitCell = () => {
-    const cell = getSelectedTableCell();
-    if (!cell) return;
-    const row = cell.parentNode as HTMLTableRowElement;
-    if (!row) return;
-
-    const colSpan = cell.colSpan || 1;
-    const rowSpan = cell.rowSpan || 1;
-
-    if (colSpan > 1) {
-      for (let i = 1; i < colSpan; i++) {
-        const newCell = row.insertCell(cell.cellIndex + 1);
-        newCell.innerHTML = "&nbsp;";
-        newCell.style.border = "1px solid currentColor";
-        newCell.style.padding = "10px";
-        newCell.style.verticalAlign = "top";
-        newCell.style.opacity = "0.85";
-      }
-      cell.colSpan = 1;
-    }
-
-    if (rowSpan > 1) {
-      const table = row.parentNode as HTMLTableSectionElement | HTMLTableElement;
-      const rowIndex = row.rowIndex;
-      for (let r = 1; r < rowSpan; r++) {
-        const targetRow = (table as HTMLTableElement).rows[rowIndex + r];
-        if (targetRow) {
-          const newCell = targetRow.insertCell(Math.min(cell.cellIndex, targetRow.cells.length));
-          newCell.innerHTML = "&nbsp;";
-          newCell.style.border = "1px solid currentColor";
-          newCell.style.padding = "10px";
-          newCell.style.verticalAlign = "top";
-          newCell.style.opacity = "0.85";
+        const embedded = [...template.content.querySelectorAll<HTMLImageElement>(file ? "img" : "img[src^='data:']")];
+        for (const image of embedded) {
+          const source = file ?? await (await fetch(image.src)).blob();
+          const compressed = await prepareClipboardImage(source,
+            Math.min(maxEmbeddedImageBytes, Math.floor((budget() - 512) / embedded.length)));
+          image.src = compressed.src;
+          image.width = compressed.width;
+          image.height = compressed.height;
+          image.style.height = "auto";
         }
+        if (!editor.isConnected || !editor.isContentEditable || !editor.contains(range.commonAncestorContainer)) return;
+        if (utf8Length(template.innerHTML) > budget()) throw new Error("Clipboard content exceeds the available document size");
+        if (document.activeElement === editor && selection) {
+          selection.removeAllRanges();
+          selection.addRange(range);
+          document.execCommand("insertHTML", false, template.innerHTML);
+        } else {
+          range.deleteContents();
+          range.insertNode(template.content);
+        }
+        handleInput();
+      } catch {
+        toast({ title: "無法貼上內容", description: "請縮小圖片或減少貼上的內容後再試一次。", variant: "destructive" });
       }
-      cell.rowSpan = 1;
-    }
+    };
+    void paste();
+  };
 
+  const mutateTable = (mutate: (table: HTMLTableElement, cell: HTMLTableCellElement) => void) => {
+    const cell = getSelectedTableCell() ?? activeCell;
+    const table = cell?.closest("table");
+    if (!cell || !table || !editorRef.current?.isContentEditable) return;
+    mutate(table, cell);
+    if (!table.querySelector("td,th")) table.remove();
+    const next = table.isConnected ? (cell.isConnected ? cell : table.rows[0]?.cells[0]) : null;
+    if (next) {
+      editorRef.current?.focus({ preventScroll: true });
+      selectCell(next);
+      setActiveCell(next);
+      updateMenuPosition();
+    } else {
+      setActiveTable(null);
+      setActiveCell(null);
+    }
     handleInput();
-    setTimeout(updateMenuPosition, 50);
+  };
+
+  const alignImage = (alignment: "left" | "center" | "right") => {
+    if (!selectedImage) return;
+    selectedImage.style.display = "block";
+    selectedImage.style.marginLeft = alignment === "left" ? "0px" : "auto";
+    selectedImage.style.marginRight = alignment === "right" ? "0px" : "auto";
+    handleInput();
+    updateMenuPosition();
   };
 
   const handleClearFormat = () => {
@@ -922,7 +809,7 @@ export function O2RichEditor({
           }
         }}
         className={cn(
-          "bg-white/50 dark:bg-slate-800/50 border border-stone-200 dark:border-slate-700/50 shadow-sm transition-all duration-300 relative group overflow-visible",
+          "rounded-lg bg-white/50 dark:bg-slate-800/50 border border-stone-200 dark:border-slate-700/50 shadow-sm transition-all duration-300 relative group overflow-visible",
           isFocused ? "ring-2 ring-orange-500/20 border-orange-500/40 dark:border-amber-400/40" : "hover:border-stone-300 dark:hover:border-slate-600"
         )}
       >
@@ -950,7 +837,7 @@ export function O2RichEditor({
                       <ChevronDown className="h-3 w-3 opacity-60" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-40 p-1.5 rounded-xl border border-stone-200 dark:border-slate-700 z-[99]" align="start">
+                  <PopoverContent className="w-40 p-1.5 rounded-lg border border-stone-200 dark:border-slate-700 z-[99]" align="start">
                     <div className="flex flex-col gap-1">
                       <Button variant="ghost" size="sm" className="justify-start text-xs font-medium h-8 rounded-lg" onClick={() => setHeading("p")}>
                         段落 / Paragraph
@@ -980,7 +867,7 @@ export function O2RichEditor({
                       <ChevronDown className="h-3 w-3 opacity-60" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-40 p-1.5 rounded-xl border border-stone-200 dark:border-slate-700 z-[99]" align="start">
+                  <PopoverContent className="w-40 p-1.5 rounded-lg border border-stone-200 dark:border-slate-700 z-[99]" align="start">
                     <div className="flex flex-col gap-1 max-h-60 overflow-y-auto no-scrollbar">
                       {[
                         { label: "預設字型", value: "inherit" },
@@ -1017,7 +904,7 @@ export function O2RichEditor({
                       <ChevronDown className="h-3 w-3 opacity-60" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-40 p-1.5 rounded-xl border border-stone-200 dark:border-slate-700 z-[99]" align="start">
+                  <PopoverContent className="w-40 p-1.5 rounded-lg border border-stone-200 dark:border-slate-700 z-[99]" align="start">
                     <div className="flex flex-col gap-1 max-h-56 overflow-y-auto no-scrollbar">
                       {[
                         { size: "1", label: "12px" },
@@ -1113,7 +1000,7 @@ export function O2RichEditor({
                           </Button>
                         </PopoverTrigger>
                       </TooltipTrigger>
-                      <PopoverContent className="w-48 p-3 rounded-2xl shadow-xl z-[99] border border-stone-200 dark:border-slate-700" side="bottom" align="start">
+                      <PopoverContent className="w-48 p-3 rounded-lg shadow-xl z-[99] border border-stone-200 dark:border-slate-700" side="bottom" align="start">
                         <div className="space-y-3">
                           <div>
                             <span className="text-[10px] font-bold text-stone-400 dark:text-slate-500 uppercase tracking-widest block mb-1.5">文字顏色 / Text Color</span>
@@ -1128,10 +1015,10 @@ export function O2RichEditor({
                                 { value: '#7c3aed', className: 'bg-[#7c3aed] dark:bg-[#c084fc]' },
                                 { value: '#db2777', className: 'bg-[#db2777] dark:bg-[#f472b6]' }
                               ].map((item) => (
-                                <button key={item.value} type="button" className={cn("w-6 h-6 rounded-full cursor-pointer hover:scale-105 border-none shadow-sm transition-transform", item.className)} onClick={() => execCommand("foreColor", item.value)} />
+                                <button key={item.value} type="button" className={cn("w-6 h-6 rounded-md cursor-pointer hover:scale-105 border-none shadow-sm transition-transform", item.className)} onClick={() => execCommand("foreColor", item.value)} />
                               ))}
                               {/* Custom Text Color Button */}
-                              <button type="button" className="w-6 h-6 rounded-full cursor-pointer hover:scale-105 border border-stone-200 dark:border-slate-700 shadow-sm flex items-center justify-center bg-gradient-to-tr from-rose-400 via-amber-400 to-blue-500" onClick={() => textColorInputRef.current?.click()} title="自訂顏色">
+                              <button type="button" className="w-6 h-6 rounded-md cursor-pointer hover:scale-105 border border-stone-200 dark:border-slate-700 shadow-sm flex items-center justify-center bg-gradient-to-tr from-rose-400 via-amber-400 to-blue-500" onClick={() => textColorInputRef.current?.click()} title="自訂顏色">
                                 <span className="text-[12px] font-bold text-white shadow-sm">+</span>
                               </button>
                             </div>
@@ -1148,12 +1035,12 @@ export function O2RichEditor({
                                 { value: '#e9d5ff', className: 'bg-[#e9d5ff] dark:bg-purple-950/80 dark:border-purple-400 border border-stone-200' },
                                 { value: '#fecdd3', className: 'bg-[#fecdd3] dark:bg-rose-950/80 dark:border-rose-400 border border-stone-200' }
                               ].map((item) => (
-                                <button key={item.value} type="button" className={cn("w-6 h-6 rounded-full cursor-pointer hover:scale-105 shadow-sm flex items-center justify-center transition-all", item.className)} onClick={() => execCommand("hiliteColor", item.value)}>
+                                <button key={item.value} type="button" className={cn("w-6 h-6 rounded-md cursor-pointer hover:scale-105 shadow-sm flex items-center justify-center transition-all", item.className)} onClick={() => execCommand("hiliteColor", item.value)}>
                                   {item.value === 'transparent' && <span className="text-[9px] font-black text-stone-400">✕</span>}
                                 </button>
                               ))}
                               {/* Custom Highlight Color Button */}
-                              <button type="button" className="w-6 h-6 rounded-full cursor-pointer hover:scale-105 border border-stone-200 dark:border-slate-700 shadow-sm flex items-center justify-center bg-gradient-to-tr from-rose-400 via-amber-400 to-blue-500" onClick={() => highlightColorInputRef.current?.click()} title="自訂高亮">
+                              <button type="button" className="w-6 h-6 rounded-md cursor-pointer hover:scale-105 border border-stone-200 dark:border-slate-700 shadow-sm flex items-center justify-center bg-gradient-to-tr from-rose-400 via-amber-400 to-blue-500" onClick={() => highlightColorInputRef.current?.click()} title="自訂高亮">
                                 <span className="text-[12px] font-bold text-white shadow-sm">+</span>
                               </button>
                             </div>
@@ -1202,7 +1089,7 @@ export function O2RichEditor({
                           <TableIcon className="h-4 w-4" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-40 p-2 rounded-xl z-[99] border border-stone-200 dark:border-slate-700" side="bottom" align="start">
+                      <PopoverContent className="w-40 p-2 rounded-lg z-[99] border border-stone-200 dark:border-slate-700" side="bottom" align="start">
                         <span className="text-[10px] font-bold text-stone-400 dark:text-slate-500 uppercase tracking-widest block mb-2">插入表格 / Table</span>
                         <div className="grid grid-cols-1 gap-1 text-xs">
                           {[
@@ -1216,7 +1103,7 @@ export function O2RichEditor({
                               variant="ghost"
                               size="sm"
                               className="h-8 rounded-lg justify-start text-xs font-medium"
-                              onClick={() => insertTable(tbl.r, tbl.c)}
+                              onClick={() => execCommand("insertHTML", createEditorTableHtml(tbl.r, tbl.c))}
                             >
                               <Grid className="h-3.5 w-3.5 mr-2 opacity-65" />
                               {tbl.label}
@@ -1236,7 +1123,7 @@ export function O2RichEditor({
                           <LinkIcon className="h-4 w-4" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-64 p-3 rounded-2xl z-[99] border border-stone-200 dark:border-slate-700 shadow-xl" side="bottom" align="start">
+                      <PopoverContent className="w-64 p-3 rounded-lg z-[99] border border-stone-200 dark:border-slate-700 shadow-xl" side="bottom" align="start">
                         <form onSubmit={insertLink} className="space-y-2">
                           <span className="text-[10px] font-bold text-stone-400 dark:text-slate-500 uppercase tracking-widest block mb-1">插入連結 / Insert Link</span>
                           <Input
@@ -1272,7 +1159,7 @@ export function O2RichEditor({
                           <ImageIcon className="h-4 w-4" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-64 p-3 rounded-2xl z-[99] border border-stone-200 dark:border-slate-700 shadow-xl" side="bottom" align="start">
+                      <PopoverContent className="w-64 p-3 rounded-lg z-[99] border border-stone-200 dark:border-slate-700 shadow-xl" side="bottom" align="start">
                         <form onSubmit={insertImageUrl} className="space-y-2">
                           <span className="text-[10px] font-bold text-stone-400 dark:text-slate-500 uppercase tracking-widest block mb-1">插入圖片 URL / Image</span>
                           <Input
@@ -1346,243 +1233,174 @@ export function O2RichEditor({
           </div>
         )}
 
-        {/* Selected Image Floating Menu */}
-        {selectedImage && !readOnly && (
-          <div
-            className="fixed z-[9999] flex flex-col gap-2 p-2 bg-slate-900/95 backdrop-blur-md shadow-2xl animate-in fade-in zoom-in-95 duration-200"
-            style={{
-              top: `${imageMenuPos.top}px`,
-              left: `${imageMenuPos.left}px`,
-              transform: 'translate(-50%, -100%)'
-            }}
-          >
-            <div className="flex items-center gap-1.5">
-              <TooltipProvider>
-                <div className="flex items-center gap-1 pr-1 border-r border-slate-700/60">
-                  {[
-                    { w: '25%', label: '25%' },
-                    { w: '33%', label: '33%' },
-                    { w: '50%', label: '50%' },
-                    { w: '75%', label: '75%' },
-                    { w: '100%', label: '100%' },
-                  ].map((size) => (
-                    <Tooltip key={size.w}>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className={cn(
-                            "h-7 px-1 min-w-[28px] text-[9px] font-black text-white hover:bg-white/20 transition-all rounded-lg",
-                            selectedImage.style.width === size.w && "bg-orange-600 shadow-inner"
-                          )}
-                          onClick={() => resizeImage(size.w)}
-                        >
-                          {size.label}
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent className="text-[10px] font-bold">縮放 / Scale</TooltipContent>
-                    </Tooltip>
+        {selectedImage && imageMenuPos && !readOnly && createPortal(
+          <div ref={imageMenuRef} data-editor-floating role="toolbar" aria-label="圖片工具"
+            onPointerDown={(event) => { if (event.pointerType === "mouse") event.preventDefault(); }}
+            className={objectTools} style={imageMenuPos}>
+            {([
+              ["left", "圖片靠左", AlignLeft], ["center", "圖片置中", AlignCenter], ["right", "圖片靠右", AlignRight],
+            ] as const).map(([alignment, label, Icon]) => {
+              const { display, marginLeft, marginRight } = selectedImage.style;
+              const active = display === "block" && (alignment === "center" ? marginLeft === "auto" && marginRight === "auto"
+                : alignment === "left" ? marginLeft !== "auto" && marginRight === "auto" : marginLeft === "auto" && marginRight !== "auto");
+              return (
+                <Button key={alignment} variant="ghost" size="icon" title={label} aria-label={label} aria-pressed={active}
+                  className={cn(objectButton, active && selectedObjectButton)} onClick={() => alignImage(alignment)}>
+                  <Icon className="h-4 w-4" />
+                </Button>
+              );
+            })}
+            <Popover open={imageOptionsOpen} onOpenChange={setImageOptionsOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label="圖片選項" title="圖片選項" className={objectButton}>
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent data-editor-floating align="start" className="w-56 space-y-2 rounded-lg border p-2"
+                onOpenAutoFocus={(event) => event.preventDefault()} onCloseAutoFocus={(event) => event.preventDefault()}
+                onPointerDown={(event) => { if (event.pointerType === "mouse" && event.target instanceof Element && event.target.closest("button")) event.preventDefault(); }}>
+                <div aria-label="圖片寬度" role="group" className="grid grid-cols-5 gap-0.5">
+                  {["25%", "33%", "50%", "75%", "100%"].map((width) => (
+                    <Button key={width} variant="ghost" size="sm" aria-pressed={selectedImage.style.width === width}
+                      className={cn("h-7 px-1 text-xs", selectedImage.style.width === width && selectedObjectButton)}
+                      onClick={() => resizeImage(width)}>{width}</Button>
                   ))}
                 </div>
-
-                <div className="flex items-center gap-1 px-1.5 border-r border-slate-700/60">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:bg-white/20 rounded-lg border-none" onClick={() => toggleImageStyle('borderRadius', '24px')}><CircleIcon className="h-3.5 w-3.5" /></Button>
-                    </TooltipTrigger>
-                    <TooltipContent className="text-[10px] font-bold">圓角 / Round</TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:bg-white/20 rounded-lg border-none" onClick={() => toggleImageStyle('boxShadow', '0 20px 25px -5px rgba(0,0,0,0.25)')}><Layers className="h-3.5 w-3.5" /></Button>
-                    </TooltipTrigger>
-                    <TooltipContent className="text-[10px] font-bold">陰影 / Shadow</TooltipContent>
-                  </Tooltip>
+                <div className="grid grid-cols-2 border-y py-1">
+                  {[
+                    { label: "與文字同行", apply: () => toggleImageStyle("display", "inline-block") },
+                    { label: "獨立一行", apply: () => toggleImageStyle("display", "block") },
+                    { label: "圓角", apply: () => toggleImageStyle("borderRadius", "8px") },
+                    { label: "陰影", apply: () => toggleImageStyle("boxShadow", "0 20px 25px -5px rgba(0,0,0,0.25)") },
+                    { label: "16:9 比例", apply: () => toggleImageStyle("aspectRatio", "16/9") },
+                    { label: "重設格式", apply: clearImageFormat },
+                  ].map(({ label, apply }) => (
+                    <Button key={label} variant="ghost" size="sm" className="h-8 justify-start px-2 text-xs" onClick={apply}>{label}</Button>
+                  ))}
                 </div>
+                <Button variant="ghost" size="sm" className="h-8 w-full justify-start text-destructive" onClick={() => {
+                  setImageOptionsOpen(false);
+                  deleteImage();
+                }}><Trash2 className="h-4 w-4" />刪除圖片</Button>
+              </PopoverContent>
+            </Popover>
+          </div>, document.body
+        )}
 
-                <div className="flex items-center gap-1 px-1.5 border-r border-slate-700/60">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:bg-white/20 rounded-lg border-none" onClick={() => toggleImageStyle('aspectRatio', '16/9')}><RectangleHorizontal className="h-3.5 w-3.5" /></Button>
-                    </TooltipTrigger>
-                    <TooltipContent className="text-[10px] font-bold">16:9 比例</TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className={cn("h-7 w-7 text-white hover:bg-white/20 rounded-lg", selectedImage.style.display === 'inline-block' && "bg-orange-600")} onClick={() => toggleImageStyle('display', 'inline-block')}><Layout className="h-3.5 w-3.5" /></Button>
-                    </TooltipTrigger>
-                    <TooltipContent className="text-[10px] font-bold">行內 / Inline</TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className={cn("h-7 w-7 text-white hover:bg-white/20 rounded-lg", selectedImage.style.display === 'block' && "bg-orange-600")} onClick={() => toggleImageStyle('display', 'block')}><AlignCenter className="h-3.5 w-3.5" /></Button>
-                    </TooltipTrigger>
-                    <TooltipContent className="text-[10px] font-bold">置中 / Center</TooltipContent>
-                  </Tooltip>
-                </div>
-
-                <div className="flex items-center gap-1 pl-1">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:bg-white/20 rounded-lg border-none" onClick={clearImageFormat}><RotateCcw className="h-3.5 w-3.5" /></Button>
-                    </TooltipTrigger>
-                    <TooltipContent className="text-[10px] font-bold">重設 / Reset</TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-rose-400 hover:bg-rose-500 hover:text-white rounded-lg border-none" onClick={deleteImage}><Trash2 className="h-3.5 w-3.5" /></Button>
-                    </TooltipTrigger>
-                    <TooltipContent className="text-[10px] font-bold">刪除 / Delete</TooltipContent>
-                  </Tooltip>
-                </div>
-              </TooltipProvider>
+        {activeTable && !selectedImage && !readOnly && tableMenuPos && createPortal(
+          <>
+            <div data-editor-floating role="toolbar" aria-label="表格工具" className="fixed z-50" style={tableMenuPos}
+              onPointerDown={(event) => { if (event.pointerType === "mouse") event.preventDefault(); }}>
+              <Popover open={tableActionsOpen} onOpenChange={setTableActionsOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="icon" aria-label="表格操作" title="表格操作（或按右鍵）"
+                    className="h-6 w-6 rounded-md bg-popover text-muted-foreground shadow-sm hover:text-foreground">
+                    <ChevronDown className="h-3.5 w-3.5" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent data-editor-floating align="end" className="w-48 rounded-lg border p-1.5"
+                  onOpenAutoFocus={(event) => event.preventDefault()} onCloseAutoFocus={(event) => event.preventDefault()}
+                  onPointerDown={(event) => { if (event.pointerType === "mouse" && event.target instanceof Element && event.target.closest("button")) event.preventDefault(); }}>
+                  {[
+                    [
+                      { label: "上方插入列", action: () => mutateTable((table, cell) => insertEditorRow(table, cell, false)) },
+                      { label: "下方插入列", action: () => mutateTable((table, cell) => insertEditorRow(table, cell, true)) },
+                      { label: "左方插入欄", action: () => mutateTable((table, cell) => insertEditorColumn(table, cell, false)) },
+                      { label: "右方插入欄", action: () => mutateTable((table, cell) => insertEditorColumn(table, cell, true)) },
+                    ], [
+                      { label: "合併右側儲存格", action: () => mutateTable(mergeEditorCellRight) },
+                      { label: "分割儲存格", action: () => mutateTable(splitEditorCell) },
+                    ], [
+                      { label: "刪除這列", action: () => mutateTable(deleteEditorRow) },
+                      { label: "刪除這欄", action: () => mutateTable(deleteEditorColumn) },
+                      { label: "刪除表格", action: () => mutateTable((table) => table.remove()) },
+                    ],
+                  ].map((group, i) => (
+                    <div key={group[0].label} className={cn(i > 0 && "mt-1 border-t pt-1")}>
+                      {group.map(({ label, action }) => (
+                        <Button key={label} variant="ghost" size="sm"
+                          className={cn("h-8 w-full justify-start px-2 text-xs", i === 2 && "text-destructive")}
+                          onClick={() => { action(); setTableActionsOpen(false); }}>{label}</Button>
+                      ))}
+                    </div>
+                  ))}
+                  <div className="mt-1 flex justify-between border-t px-1 pt-1" role="group" aria-label="儲存格對齊">
+                    {([
+                      ["left", "儲存格靠左", AlignLeft], ["center", "儲存格置中", AlignCenter], ["right", "儲存格靠右", AlignRight],
+                    ] as const).map(([align, label, Icon]) => (
+                      <Button key={align} variant="ghost" size="icon" aria-label={label} title={label} className={objectButton}
+                        onClick={() => { mutateTable((_, cell) => { cell.style.textAlign = align; }); setTableActionsOpen(false); }}>
+                        <Icon className="h-4 w-4" />
+                      </Button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
-          </div>
+            {columnHandle && !tableActionsOpen && (
+              <div data-editor-floating onPointerDown={startColumnResize}
+                className="fixed z-40 w-2 -translate-x-1/2 cursor-col-resize touch-none hover:bg-orange-500/70 active:bg-orange-500"
+                title="拖曳以調整欄寬" style={columnHandle} />
+            )}
+          </>, document.body
         )}
 
-        {/* Selected Table Floating Menu */}
-        {activeTable && !readOnly && (
-          <div
-            className="fixed z-[9999] flex items-center gap-1.5 p-1.5 bg-slate-900/95 backdrop-blur-md shadow-2xl animate-in fade-in zoom-in-95 duration-200"
-            style={{
-              top: `${tableMenuPos.top}px`,
-              left: `${tableMenuPos.left}px`,
-              transform: 'translate(-50%, -100%)'
-            }}
-          >
-            <TooltipProvider>
-              <div className="flex items-center gap-1 pr-1 border-r border-slate-700/60">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:bg-white/20 rounded-lg border-none" onClick={addRowAbove}><ArrowUpToLine className="h-3.5 w-3.5" /></Button>
-                  </TooltipTrigger>
-                  <TooltipContent className="text-[10px] font-bold">上方插入列 / Insert Row Above</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:bg-white/20 rounded-lg border-none" onClick={addRowBelow}><ArrowDownToLine className="h-3.5 w-3.5" /></Button>
-                  </TooltipTrigger>
-                  <TooltipContent className="text-[10px] font-bold">下方插入列 / Insert Row Below</TooltipContent>
-                </Tooltip>
-              </div>
-
-              <div className="flex items-center gap-1 px-1 border-r border-slate-700/60">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:bg-white/20 rounded-lg border-none" onClick={addColumnLeft}><ArrowLeftToLine className="h-3.5 w-3.5" /></Button>
-                  </TooltipTrigger>
-                  <TooltipContent className="text-[10px] font-bold">左方插入欄 / Insert Column Left</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:bg-white/20 rounded-lg border-none" onClick={addColumnRight}><ArrowRightToLine className="h-3.5 w-3.5" /></Button>
-                  </TooltipTrigger>
-                  <TooltipContent className="text-[10px] font-bold">右方插入欄 / Insert Column Right</TooltipContent>
-                </Tooltip>
-              </div>
-
-              {/* Table cell merge / split options (#12) */}
-              <div className="flex items-center gap-1 px-1 border-r border-slate-700/60">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:bg-white/20 rounded-lg border-none" onClick={mergeCellRight}><Merge className="h-3.5 w-3.5" /></Button>
-                  </TooltipTrigger>
-                  <TooltipContent className="text-[10px] font-bold">合併右側儲存格 / Merge Right</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:bg-white/20 rounded-lg border-none" onClick={splitCell}><Split className="h-3.5 w-3.5" /></Button>
-                  </TooltipTrigger>
-                  <TooltipContent className="text-[10px] font-bold">拆分儲存格 / Split Cell</TooltipContent>
-                </Tooltip>
-              </div>
-
-              <div className="flex items-center gap-1 px-1 border-r border-slate-700/60">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" className="h-7 w-auto px-2 text-rose-300 hover:bg-rose-500/30 hover:text-white rounded-lg border-none flex items-center gap-1" onClick={deleteRow}>
-                      <Trash2 className="h-3.5 w-3.5 text-rose-400" />
-                      <span className="text-[10px] font-bold">列</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent className="text-[10px] font-bold">刪除列 / Delete Row</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" className="h-7 w-auto px-2 text-rose-300 hover:bg-rose-500/30 hover:text-white rounded-lg border-none flex items-center gap-1" onClick={deleteColumn}>
-                      <Trash2 className="h-3.5 w-3.5 text-rose-400" />
-                      <span className="text-[10px] font-bold">欄</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent className="text-[10px] font-bold">刪除欄 / Delete Column</TooltipContent>
-                </Tooltip>
-              </div>
-
-              <div className="flex items-center gap-1 pl-1">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-rose-400 hover:bg-rose-500 hover:text-white rounded-lg border-none" onClick={deleteTable}><TableProperties className="h-3.5 w-3.5" /></Button>
-                  </TooltipTrigger>
-                  <TooltipContent className="text-[10px] font-bold">刪除整張表 / Delete Table</TooltipContent>
-                </Tooltip>
-              </div>
-            </TooltipProvider>
-          </div>
-        )}
-
-        {/* Editor Body */}
-        <div style={{ minHeight }} className="h-auto relative">
+        <div style={{ minHeight }} className="relative h-auto">
           {isEditorEmpty && (
-            <div className="absolute top-3 left-3 md:top-4 md:left-4 p-0 m-0 pointer-events-none text-stone-400 dark:text-slate-500 font-medium text-[14px] select-none z-10 w-full whitespace-pre-wrap break-words transition-colors">
-              {placeholder || `撰寫教案內容... (支援貼上與插入圖片、表格與格式)`}
+            <div className="pointer-events-none absolute left-3 top-3 z-10 text-sm text-muted-foreground md:left-4 md:top-4">
+              {placeholder || "撰寫教案內容..."}
             </div>
           )}
           <div
             ref={editorRef}
             contentEditable={!readOnly}
-            onInput={handleInput}
+            data-rich-text-editor
+            onDragStart={(event) => { if (event.target instanceof HTMLImageElement) event.preventDefault(); }}
             onClick={handleEditorClick}
+            onContextMenu={(event) => {
+              const cell = event.target instanceof Element ? event.target.closest<HTMLTableCellElement>("td,th") : null;
+              if (readOnly || !cell || !event.currentTarget.contains(cell)) return;
+              event.preventDefault();
+              setSelectedImage(null);
+              if (getSelectedTableCell() !== cell) selectCell(cell);
+              setActiveCell(cell);
+              setActiveTable(cell.closest("table"));
+              setTableActionsOpen(true);
+            }}
             onPaste={handlePaste}
             onKeyDown={handleKeyDown}
             style={{ minHeight }}
             className={cn(
               "relative w-full max-w-full h-auto p-3 md:p-4 bg-transparent text-stone-800 dark:text-slate-100 outline-none prose prose-p:bg-transparent prose-li:bg-transparent prose-sm text-[14px] transition-all duration-300",
-              "dark:prose-invert break-words whitespace-pre-wrap",
+              "dark:prose-invert break-words whitespace-pre-wrap [--editor-default-font:var(--font-inter,Inter),sans-serif] [--editor-default-color:#292524] dark:[--editor-default-color:#f1f5f9]",
               readOnly && "cursor-default",
               "focus:ring-0",
               "[&_ul]:list-disc [&_ol]:list-decimal [&_ul]:list-inside [&_ol]:list-inside [&_ul]:!pl-4 [&_ol]:!pl-4 [&_ul]:!ml-0 [&_ol]:!ml-0 [&_ol]:my-3",
               "[&_font[size='1']]:text-[12px] [&_font[size='1']]:leading-[1.5] [&_font[size='2']]:text-[14px] [&_font[size='2']]:leading-[1.6] [&_font[size='3']]:text-[16px] [&_font[size='3']]:leading-[1.7] [&_font[size='4']]:text-[18px] [&_font[size='4']]:leading-[1.7] [&_font[size='5']]:text-[20px] [&_font[size='5']]:leading-[1.6] [&_font[size='6']]:text-[24px] [&_font[size='6']]:leading-[1.5] [&_font[size='7']]:text-[32px] [&_font[size='7']]:leading-[1.4]",
-              "[&_font[size='5']]:block [&_font[size='6']]:block [&_font[size='7']]:block [&_font[size='5']]:my-1 [&_font[size='6']]:my-1.5 [&_font[size='7']]:my-2",
               "[&_p]:leading-[1.5] [&_p]:mb-3 [&_p:last-child]:mb-0 [&_p]:text-inherit",
               "[&_div]:text-inherit [&_span]:text-inherit [&_div]:leading-[1.5]",
               "[&_h1]:text-2xl [&_h1]:font-black [&_h1]:mt-6 [&_h1]:mb-3 [&_h1]:text-stone-900 dark:[&_h1]:text-white [&_h1]:leading-[1.25]",
               "[&_h2]:text-xl [&_h2]:font-extrabold [&_h2]:mt-4 [&_h2]:mb-2.5 [&_h2]:text-stone-800 dark:[&_h2]:text-slate-100 [&_h2]:leading-[1.3]",
               "[&_h3]:text-lg [&_h3]:font-bold [&_h3]:mt-3 [&_h3]:mb-2 [&_h3]:text-stone-700 dark:[&_h3]:text-slate-200 [&_h3]:leading-[1.4]",
-              "[&_img]:cursor-pointer [&_img]:transition-all [&_img]:duration-300 [&_img]:shadow-md [&_img:hover]:shadow-lg [&_img]:rounded-xl [&_img]:inline-block [&_img]:max-w-full [&_img]:h-auto [&_img]:object-contain [&_img]:align-top",
-              "[&_table]:w-full [&_table]:max-w-full [&_table]:my-4 [&_table]:border-collapse [&_table]:table-fixed [&_table_td]:border [&_table_td]:border-stone-300 dark:[&_table_td]:border-slate-600 [&_table_td]:p-2.5 [&_table_td]:min-w-[65px]"
+              "[&_img]:cursor-pointer [&_img]:shadow-md [&_img:hover]:shadow-lg [&_img]:rounded-xl [&_img]:inline-block [&_img]:max-w-full [&_img]:h-auto [&_img]:object-contain [&_img]:align-top",
+              "[&_table]:w-full [&_table]:max-w-full [&_table]:my-4 [&_table]:border-collapse [&_table]:table-fixed [&_table_td]:border [&_table_td]:border-stone-300 dark:[&_table_td]:border-slate-600 [&_table_td]:p-2.5 [&_table_td]:align-top [&_table_td]:break-words [&_table_th]:border [&_table_th]:p-2.5"
             )}
             data-placeholder={placeholder || `撰寫教案內容... (支援貼上與插入圖片、表格與格式)`}
           />
 
-          {/* Image Resize Overlay Box (#11) */}
-          {selectedImage && imageRect && !readOnly && (
-            <div
-              className="absolute border border-dashed border-orange-500 pointer-events-none z-[80]"
-              style={{
-                top: `${imageRect.top}px`,
-                left: `${imageRect.left}px`,
-                width: `${imageRect.width}px`,
-                height: `${imageRect.height}px`
-              }}
-            >
-              {/* Bottom-right resize handle */}
-              <div
-                onMouseDown={handleResizeStart}
-                onTouchStart={handleResizeStart}
-                className="absolute bottom-0 right-0 w-3 h-3 bg-orange-600 border border-white pointer-events-auto cursor-se-resize translate-x-1/2 translate-y-1/2 shadow-md hover:scale-110 active:scale-95 transition-transform"
-                title="拖曳以縮放圖片"
-              />
-            </div>
+          {selectedImage && imageRect && !readOnly && createPortal(
+            <div data-editor-floating className="pointer-events-none fixed z-40 border border-orange-500" style={imageRect}>
+              {[
+                { x: -1, corner: "left-0 top-0 -translate-x-1/2 -translate-y-1/2 cursor-nwse-resize" },
+                { x: 1, corner: "right-0 top-0 translate-x-1/2 -translate-y-1/2 cursor-nesw-resize" },
+                { x: -1, corner: "bottom-0 left-0 -translate-x-1/2 translate-y-1/2 cursor-nesw-resize" },
+                { x: 1, corner: "bottom-0 right-0 translate-x-1/2 translate-y-1/2 cursor-nwse-resize" },
+              ].map(({ x, corner }) => (
+                <div key={corner} onPointerDown={(event) => startImageResize(event, x)}
+                  className={cn("pointer-events-auto absolute h-4 w-4 touch-none rounded-sm after:absolute after:inset-[3px] after:rounded-sm after:border after:border-white after:bg-orange-600", corner)}
+                  title="拖曳以縮放圖片" />
+              ))}
+            </div>, document.body
           )}
           {/* Custom color input tags (hidden) */}
           <input type="color" ref={textColorInputRef} className="sr-only" onChange={handleCustomTextColor} />

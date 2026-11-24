@@ -42,7 +42,7 @@ export default function PlanEditorPage() {
   if (!plan) {
     return (
       <div data-testid="editor-plan-not-found" className="min-h-screen flex flex-col items-center justify-center bg-[#FAF8F5] dark:bg-[#0B1012] text-foreground transition-colors p-6">
-        <div className="w-16 h-16 rounded-2xl bg-white/80 dark:bg-white/[0.04] border border-stone-200/80 dark:border-white/10 flex items-center justify-center mb-6 shadow-xs">
+        <div className="w-16 h-16 rounded-lg bg-white/80 dark:bg-white/[0.04] border border-stone-200/80 dark:border-white/10 flex items-center justify-center mb-6 shadow-xs">
           <Loader2 className="w-7 h-7 animate-spin text-orange-500" />
         </div>
         <div className="text-[10px] font-mono tracking-widest text-fg-muted uppercase mb-2">
@@ -56,7 +56,7 @@ export default function PlanEditorPage() {
         </p>
         <button
           onClick={() => router.push("/plans")}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-mono font-medium uppercase tracking-wider text-foreground bg-white/80 dark:bg-white/[0.05] hover:bg-white dark:hover:bg-white/10 border border-stone-200/90 dark:border-white/15 transition-all shadow-xs cursor-pointer"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md text-xs font-mono font-medium uppercase tracking-wider text-foreground bg-white/80 dark:bg-white/[0.05] hover:bg-white dark:hover:bg-white/10 border border-stone-200/90 dark:border-white/15 transition-all shadow-xs cursor-pointer"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>返回教案總覽</span>

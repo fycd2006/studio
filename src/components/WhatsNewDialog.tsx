@@ -79,21 +79,21 @@ export function WhatsNewDialog() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="relative w-full max-w-lg bg-white/95 dark:bg-[#14191C]/95 backdrop-blur-3xl rounded-[32px] shadow-2xl overflow-hidden border border-stone-200/80 dark:border-white/10 flex flex-col max-h-[85vh]"
+            className="relative w-full max-w-lg bg-white/95 dark:bg-[#14191C]/95 backdrop-blur-3xl rounded-xl shadow-2xl overflow-hidden border border-stone-200/80 dark:border-white/10 flex flex-col max-h-[85vh]"
           >
             {/* Header */}
-            <div className="relative pt-10 pb-6 px-8 text-center bg-gradient-to-br from-amber-500/10 to-transparent dark:from-white/[0.04] dark:to-transparent rounded-t-[32px]">
+            <div className="relative pt-10 pb-6 px-8 text-center bg-gradient-to-br from-amber-500/10 to-transparent dark:from-white/[0.04] dark:to-transparent rounded-t-[inherit]">
               <div className="absolute top-4 right-4">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 rounded-full text-fg-muted hover:bg-stone-200/50 dark:hover:bg-white/10 transition-colors"
+                  className="h-8 w-8 rounded-md text-fg-muted hover:bg-stone-200/50 dark:hover:bg-white/10 transition-colors"
                   onClick={handleDismiss}
                 >
                   <X className="w-4 h-4" />
                 </Button>
               </div>
-              <div className="w-16 h-16 mx-auto bg-gradient-to-br from-orange-400 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/20 mb-6 rotate-3">
+              <div className="w-16 h-16 mx-auto bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center shadow-lg shadow-orange-500/20 mb-6 rotate-3">
                 <Rocket className="w-8 h-8 text-white -rotate-3" />
               </div>
               <h2 className="text-2xl font-black text-foreground tracking-tight mb-2 flex items-center justify-center gap-2">
@@ -141,7 +141,7 @@ export function WhatsNewDialog() {
             <div className="p-6 pt-4 bg-white/50 dark:bg-[#0B1012]/50 backdrop-blur-md border-t border-stone-200/80 dark:border-white/10">
               <Button
                 onClick={handleDismiss}
-                className="w-full h-12 rounded-2xl bg-foreground text-background font-bold text-sm shadow-xl shadow-black/10 dark:shadow-white/5 hover:opacity-90 active:scale-[0.98] transition-all"
+                className="w-full h-12 rounded-lg bg-foreground text-background font-bold text-sm shadow-xl shadow-black/10 dark:shadow-white/5 hover:opacity-90 active:scale-[0.98] transition-all"
               >
                 開始體驗 / Let's Go
               </Button>

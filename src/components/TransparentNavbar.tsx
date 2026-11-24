@@ -259,7 +259,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
           <div className="pointer-events-auto flex items-center gap-2 sm:gap-3">
             {/* Active Camp Badge */}
             {activeCamp && (
-              <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono tracking-wider text-primary bg-primary/10 border border-primary/20">
+              <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-sm text-[11px] font-mono tracking-wider text-primary bg-primary/10 border border-primary/20">
                 <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse inline-block" />
                 <span className="max-w-[140px] truncate uppercase">{activeCamp.name}</span>
               </div>
@@ -289,7 +289,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 rounded-full glass-pill border border-hairline-light hover:border-hairline-hover transition-all btn-tactile"
+                  className="h-8 w-8 rounded-md glass-pill border border-hairline-light hover:border-hairline-hover transition-all btn-tactile"
                   aria-label="System Menu"
                 >
                   <Menu className="w-4 h-4 text-foreground" />
@@ -297,7 +297,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
-                className="w-[320px] rounded-2xl glass-pill shadow-2xl p-3 border border-hairline-light"
+                className="w-[320px] rounded-lg glass-pill shadow-2xl p-3 border border-hairline-light"
               >
                 <div className="flex flex-col gap-2.5">
                   <div className="rounded-xl bg-black/5 dark:bg-white/5 p-3 border border-hairline-light">
@@ -340,7 +340,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                   <button
                     type="button"
                     onClick={toggleAudioUnlock}
-                    className="flex items-center justify-between px-3.5 py-2.5 rounded-xl font-medium text-sm text-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-all btn-tactile"
+                    className="flex items-center justify-between px-3.5 py-2.5 rounded-lg font-medium text-sm text-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-all btn-tactile"
                   >
                     <span className="inline-flex items-center gap-2.5">
                       <Volume2 className="w-4 h-4 text-primary" />
@@ -358,7 +358,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                   <button
                     type="button"
                     onClick={enterBlackoutMode}
-                    className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl font-medium text-sm text-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-all btn-tactile"
+                    className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg font-medium text-sm text-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-all btn-tactile"
                   >
                     <Monitor className="w-4 h-4 text-primary" />
                     {t('ENTER_SAVER_MODE')}
@@ -366,7 +366,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
 
                   <Link
                     href="/settings"
-                    className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl font-medium text-sm text-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-all btn-tactile"
+                    className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg font-medium text-sm text-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-all btn-tactile"
                   >
                     <Settings className="w-4 h-4 text-primary" />
                     <span>{t('SETTINGS')}</span>
@@ -415,11 +415,11 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                 aria-label={t(item.labelKey)}
               >
                 {/* M3 Active Oval Pill Capsule behind Icon */}
-                <div className="relative w-11 sm:w-13 h-7 flex items-center justify-center rounded-full transition-all">
+                <div className="relative w-11 sm:w-13 h-7 flex items-center justify-center rounded-md transition-all">
                   {active && (
                     <motion.div
                       layoutId="mobile-m3-active-pill"
-                      className="absolute inset-0 rounded-full bg-orange-500/15 dark:bg-orange-500/25 border border-orange-500/20"
+                      className="absolute inset-0 rounded-md bg-orange-500/15 dark:bg-orange-500/25 border border-orange-500/20"
                       transition={{ type: "spring", stiffness: 500, damping: 35 }}
                     />
                   )}
@@ -471,7 +471,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                 exit={{ opacity: 0, y: 8, x: "-50%", scale: 0.96 }}
                 transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                 className={cn(
-                  "absolute bottom-full mb-3 left-1/2 rounded-2xl p-3 backdrop-blur-[24px] z-50",
+                  "absolute bottom-full mb-3 left-1/2 rounded-lg p-3 backdrop-blur-[24px] z-50",
                   "bg-white/95 dark:bg-[#121619]/95 border border-stone-200/90 dark:border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.12)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)]",
                   "before:absolute before:top-full before:left-0 before:w-full before:h-4 before:content-['']",
                   planDropdownGroups.length <= 2
@@ -504,7 +504,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                         key={group.id}
                         href={`/plans?group=${encodeURIComponent(group.slug)}`}
                         onClick={() => setActiveSubmenu(null)}
-                        className="p-3 rounded-xl bg-stone-50 hover:bg-white dark:bg-white/5 dark:hover:bg-white/10 border border-stone-200/80 dark:border-white/10 hover:border-primary/50 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group flex flex-col justify-between"
+                        className="p-3 rounded-lg bg-stone-50 hover:bg-white dark:bg-white/5 dark:hover:bg-white/10 border border-stone-200/80 dark:border-white/10 hover:border-primary/50 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group flex flex-col justify-between"
                       >
                         <div>
                           <div className="architectural-tag mb-1.5 flex items-center gap-1.5">
@@ -532,7 +532,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
           </AnimatePresence>
 
           {/* Desktop Fluid Glass Capsule */}
-          <nav className="glass-pill rounded-full border border-hairline-light shadow-[0_20px_50px_rgba(0,0,0,0.6)] p-1.5 flex items-center gap-1 sm:gap-1.5">
+          <nav className="glass-pill rounded-xl border border-hairline-light shadow-[0_20px_50px_rgba(0,0,0,0.6)] p-1.5 flex items-center gap-1 sm:gap-1.5">
             {NAV_ITEMS.map((item) => {
               const active = isItemActive(item);
               const Icon = item.icon;
@@ -547,7 +547,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                       type="button"
                       onClick={() => handleNavClick(item.href)}
                       className={cn(
-                        "px-3.5 py-1.5 rounded-full text-xs font-mono uppercase tracking-wider transition-all duration-200 btn-tactile inline-flex items-center justify-center gap-1.5 cursor-pointer",
+                        "px-3.5 py-1.5 rounded-md text-xs font-mono uppercase tracking-wider transition-all duration-200 btn-tactile inline-flex items-center justify-center gap-1.5 cursor-pointer",
                         active || activeSubmenu === "plans"
                           ? "bg-white dark:bg-white/15 text-foreground font-semibold shadow-sm"
                           : "text-fg-secondary hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10"
@@ -572,7 +572,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                   type="button"
                   onClick={() => handleNavClick(item.href, item.adminTab)}
                   className={cn(
-                    "px-3.5 py-1.5 rounded-full text-xs font-mono uppercase tracking-wider transition-all duration-200 btn-tactile inline-flex items-center justify-center gap-1.5 cursor-pointer",
+                    "px-3.5 py-1.5 rounded-md text-xs font-mono uppercase tracking-wider transition-all duration-200 btn-tactile inline-flex items-center justify-center gap-1.5 cursor-pointer",
                     active
                       ? "bg-white dark:bg-white/15 text-foreground font-semibold shadow-sm"
                       : "text-fg-secondary hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10"

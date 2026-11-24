@@ -92,6 +92,32 @@ describe('教案總覽 (Plans Overview)', () => {
     activity.forEach((p) => cy.getByTestId(`plan-row-${p.id}`).should('be.visible'));
   });
 
+  it('編輯返回與切換站內頁面後應保留總覽篩選', () => {
+    cy.viewport(1400, 900);
+    cy.visitApp('/plans?group=activity', { campId: scenario.campId });
+
+    const target = scenario.plans[2];
+    cy.getByTestId('plans-group-tab-teaching').click();
+    cy.getByTestId('plans-search-input').type(target.activityName);
+    cy.get('button[title="畫廊視圖 (Grid)"]').click();
+    cy.contains('h3', target.activityName).click();
+    cy.getByTestId('editor-title-input').should('have.value', target.activityName);
+    cy.getByTestId('editor-back').click();
+
+    const assertPreferences = () => {
+      cy.getByTestId('plans-group-tab-teaching').should('have.attr', 'aria-pressed', 'true');
+      cy.getByTestId('plans-search-input').should('have.value', target.activityName);
+      cy.get('button[title="畫廊視圖 (Grid)"]').should('have.attr', 'aria-pressed', 'true');
+      cy.contains('h3', target.activityName).should('be.visible');
+    };
+
+    assertPreferences();
+    cy.visitApp('/settings', { campId: scenario.campId });
+    cy.getByTestId('settings-tab-account').should('be.visible');
+    cy.visitApp('/plans', { campId: scenario.campId });
+    assertPreferences();
+  });
+
   it('搜尋找不到東西時應顯示空狀態', () => {
     cy.visitApp('/plans', { campId: scenario.campId });
 
