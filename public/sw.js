@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ntut-cd-camp-v5';
+const CACHE_NAME = 'ntut-cd-camp-v6';
 const STATIC_ASSETS = [
   '/offline.html',
   '/beep.wav',
@@ -49,6 +49,17 @@ self.addEventListener('fetch', function(event) {
       url.hostname.includes('googleapis') ||
       url.hostname.includes('google-analytics') ||
       url.pathname.startsWith('/api/')) {
+    return;
+  }
+
+  // Skip Next.js App Router RSC / prefetch requests so SPA navigation never
+  // receives a stale cached flight payload and falls back to a hard reload.
+  if (
+    event.request.headers.get('RSC') === '1' ||
+    event.request.headers.get('Next-Router-Prefetch') === '1' ||
+    event.request.headers.get('Next-Router-State-Tree') ||
+    url.searchParams.has('_rsc')
+  ) {
     return;
   }
 

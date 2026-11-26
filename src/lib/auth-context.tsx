@@ -1,6 +1,7 @@
 "use client";
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import { signInWithCustomToken, signOut } from "firebase/auth";
 import { collection, doc, onSnapshot } from "firebase/firestore";
 import { useFirebase, useMemoFirebase } from "@/firebase/provider";
@@ -166,9 +167,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       {path === "/login" || role ? (
         children
       ) : (
-        <p role="status" className="p-6">
-          正在確認登入狀態…
-        </p>
+        <div
+          role="status"
+          aria-live="polite"
+          className="h-screen w-full flex flex-col gap-4 items-center justify-center bg-[#FAF8F5] dark:bg-[#0B1012] font-sans"
+        >
+          <div className="relative">
+            <Loader2 className="w-12 h-12 animate-spin text-primary opacity-80" />
+            <div className="absolute inset-0 w-12 h-12 rounded-full border-4 border-primary/20 animate-pulse" />
+          </div>
+          <div className="text-primary font-mono font-medium tracking-technical text-xs uppercase flex items-center gap-2">
+            <span className="inline-block w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "0s" }} />
+            <span className="inline-block w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "0.15s" }} />
+            <span className="inline-block w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "0.3s" }} />
+          </div>
+          <p className="text-xs font-medium text-muted-foreground tracking-wide">
+            正在確認登入狀態…
+          </p>
+        </div>
       )}
     </AuthContext.Provider>
   );
