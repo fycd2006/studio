@@ -45,6 +45,7 @@ interface PlanDoc {
   purpose: string;
   activityName: string;
   updatedAt: number;
+  leadAssignees?: { name: string; uid: string | null }[];
 }
 
 interface VersionDoc {
@@ -313,12 +314,20 @@ describe('教案編輯器：版本存檔與還原 (admin)', () => {
 
     // V2 → 離開 → 自動存檔。這一筆是 patch 型（只存跟基準版的差異）
     typePurpose(V2);
+    // 新增人員陣列時 jsondiffpatch 會把陣列包在變更 tuple 裡。
+    const lead = '版本測試關主';
+    cy.getByTestId('editor-field-leadMember').find('input').type(lead).blur();
+    cy.dbDocsUntil<PlanDoc>('lessonPlans',
+      docs => docs.find(doc => doc.id === target())?.leadAssignees?.[0]?.name === lead,
+      { reason: '關主配對欄位應該先寫入，才能測到陣列差異' },
+    );
     leaveEditor();
 
     let autoVersionId = '';
     patchesUntil(1, '按返回離開應該自動補一筆 patch 型版本（PlanEditor.tsx:585 的卸載處理器）').then(
       (patches) => {
         expect(patches[0].delta, 'patch 型版本必須有 delta，否則還原時無從重建').to.exist;
+        expect(JSON.parse(String(patches[0].delta)).leadAssignees).to.deep.equal([[{ name: lead, uid: null }]]);
         expect(patches[0].snapshot, 'patch 型版本不該帶整份快照').to.not.exist;
         autoVersionId = patches[0].id;
       },
@@ -340,6 +349,7 @@ describe('教案編輯器：版本存檔與還原 (admin)', () => {
 
     cy.toastText().should('include', '已還原版本');
     cy.editorField('purpose').should('contain.text', V2);
+    cy.getByTestId('editor-field-leadMember').find('input').should('have.value', lead);
     cy.editorField('purpose').should('not.contain.text', V3);
 
     waitPurposeInDb(V2, '還原 patch 型版本後，資料庫應該回到 V2（基準快照 ＋ 一個 delta）').then(

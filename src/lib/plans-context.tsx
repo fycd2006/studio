@@ -1,7 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from 'react';
-import { LessonPlan, PlanCategory, Camp, RotationTableData, UserSettings, PlanVersion, Group, CampItem } from '@/types/plan';
+import { DEFAULT_GROUPS, LessonPlan, PlanCategory, Camp, RotationTableData, UserSettings, PlanVersion, Group, CampItem } from '@/types/plan';
 import { 
   useUser, 
   useFirestore, 
@@ -11,15 +11,14 @@ import {
   setDocumentNonBlocking,
   updateDocumentNonBlocking,
   deleteDocumentNonBlocking,
-  initiateAnonymousSignIn,
-  useAuth as useFirebaseAuth
 } from '@/firebase';
-import { collection, query, doc, orderBy, where, limit, getDocs, getDoc, setDoc, updateDoc, writeBatch, deleteField } from 'firebase/firestore';
-import { getCampEditorName, getRandomNickname } from '@/hooks/use-presence';
+import { collection, query, doc, orderBy, where, limit, getDocs, getDoc, setDoc, updateDoc, writeBatch, deleteField, runTransaction } from 'firebase/firestore';
 import { getCorrectedNow, getServerTimeOffset } from '@/hooks/use-server-time';
 import { format } from 'date-fns';
 import * as jsondiffpatch from 'jsondiffpatch';
 import { useAuth } from '@/lib/auth-context';
+import { isAssigneeEdit, mergePlanUpdate } from '@/lib/plan-personnel';
+import { toast } from '@/hooks/use-toast';
 import { isCampAccessible, pickFallbackCamp } from '@/lib/camp-access';
 import { applyCampItemEdit, type CampItemEdit } from '@/lib/camp-items';
 
@@ -47,11 +46,6 @@ const SNAPSHOT_INTERVAL = 10; // Save full snapshot every 10 versions
 
 const USER_COLORS = [
   '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef', '#f43f5e'
-];
-
-const DEFAULT_GROUPS: Group[] = [
-  { id: 'group-activity', slug: 'activity', nameZh: '活動組', nameEn: 'Activity', createdAt: 0 },
-  { id: 'group-teaching', slug: 'teaching', nameZh: '教學組', nameEn: 'Teaching', createdAt: 0 },
 ];
 
 const DEFAULT_CAMP_ITEMS: Omit<CampItem, 'id'>[] = [
@@ -170,16 +164,10 @@ interface PlansContextType {
 const PlansContext = createContext<PlansContextType | undefined>(undefined);
 
 export function PlansProvider({ children }: { children: ReactNode }) {
-  const { user, isUserLoading } = useUser();
-  const auth = useFirebaseAuth();
+  const { user: identity, isUserLoading } = useUser();
   const db = useFirestore();
-  const { role } = useAuth();
-  
-  useEffect(() => {
-    if (!isUserLoading && !user && auth) {
-      initiateAnonymousSignIn(auth);
-    }
-  }, [user, isUserLoading, auth]);
+  const { role, member } = useAuth();
+  const user = member ? identity : null;
 
   const [activeCampId, setActiveCampId] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
@@ -251,11 +239,7 @@ export function PlansProvider({ children }: { children: ReactNode }) {
     return query(collection(db, 'planVersions'), where('planId', '==', activePlanId), orderBy('createdAt', 'desc'));
   }, [db, user, activePlanId]);
   const { data: versionsData } = useCollection<PlanVersion>(versionsQuery);
-  const activePlanVersions = useMemo(() => (versionsData ?? []).map((version) =>
-    (!version.authorName || version.authorName === 'Anonymous') && version.authorId
-      ? { ...version, authorName: version.authorId === user?.uid ? getCampEditorName(user) : getRandomNickname(version.authorId) }
-      : version
-  ), [versionsData, user]);
+  const activePlanVersions = useMemo(() => versionsData ?? [], [versionsData]);
 
   // History state for plans
   const [planHistory, setPlanHistory] = useState<{ past: LessonPlan[][], future: LessonPlan[][] }>({ past: [], future: [] });
@@ -331,7 +315,7 @@ export function PlansProvider({ children }: { children: ReactNode }) {
     });
 
     previous.forEach(p => {
-      setDocumentNonBlocking(doc(db, 'lessonPlans', p.id), { ...p, updatedAt: Date.now() }, { merge: true });
+      setDocumentNonBlocking(doc(db, 'lessonPlans', p.id), { ...p, leadAssignees: p.leadAssignees ?? null, assistantAssignees: p.assistantAssignees ?? null, updatedAt: Date.now() }, { merge: true });
     });
   }, [planHistory, db]);
 
@@ -353,7 +337,7 @@ export function PlansProvider({ children }: { children: ReactNode }) {
     });
 
     next.forEach(p => {
-      setDocumentNonBlocking(doc(db, 'lessonPlans', p.id), { ...p, updatedAt: Date.now() }, { merge: true });
+      setDocumentNonBlocking(doc(db, 'lessonPlans', p.id), { ...p, leadAssignees: p.leadAssignees ?? null, assistantAssignees: p.assistantAssignees ?? null, updatedAt: Date.now() }, { merge: true });
     });
   }, [planHistory, db]);
 
@@ -510,13 +494,36 @@ export function PlansProvider({ children }: { children: ReactNode }) {
     return planId;
   }, [db, user, activeCampId, pushPlanHistory, groups]);
 
+  const pendingAssigneeWrites = useRef(new Map<string, Promise<void>>());
   const updatePlan = useCallback((id: string, updates: Partial<LessonPlan>) => {
     if (!db) return;
     pushPlanHistory();
     const filteredUpdates = Object.fromEntries(
       Object.entries(updates).filter(([_, v]) => v !== undefined)
     );
-    updateDocumentNonBlocking(doc(db, 'lessonPlans', id), { ...filteredUpdates, updatedAt: Date.now() });
+    const ref = doc(db, 'lessonPlans', id);
+    const changes = { ...filteredUpdates, updatedAt: Date.now() };
+    if (!isAssigneeEdit(updates)) {
+      updateDocumentNonBlocking(ref, changes);
+      return;
+    }
+    // Rebuild the combined legacy field from both roles at commit time.
+    const writes = pendingAssigneeWrites.current;
+    const queued = (writes.get(id) ?? Promise.resolve())
+      .then(() => runTransaction(db, async transaction => {
+        const snapshot = await transaction.get(ref);
+        if (!snapshot.exists()) throw new Error('教案已移除');
+        const merged = mergePlanUpdate(snapshot.data() as LessonPlan, updates);
+        transaction.update(ref, {
+          ...changes,
+          members: merged.members,
+          leadMember: merged.leadMember,
+          assistantMember: merged.assistantMember,
+        });
+      }))
+      .catch(() => { toast({ title: '無法儲存關主人員，請重新編輯', variant: 'destructive' }); })
+      .finally(() => { if (writes.get(id) === queued) writes.delete(id); });
+    writes.set(id, queued);
   }, [db, pushPlanHistory]);
 
   const deletePlan = useCallback((id: string) => {
@@ -544,17 +551,19 @@ export function PlansProvider({ children }: { children: ReactNode }) {
     const state = JSON.parse(JSON.stringify(chain[base].snapshot)) as LessonPlan;
     for (const patch of chain.slice(0, base).reverse()) {
       if (patch.type !== 'patch' || !patch.delta) throw new Error('版本 ' + patch.id + ' 缺少差異資料');
-      jdp.patch(state, patch.delta);
+      const delta = typeof patch.delta === 'string' ? JSON.parse(patch.delta) as jsondiffpatch.Delta : patch.delta;
+      if (!delta || typeof delta !== 'object') throw new Error('版本 ' + patch.id + ' 的差異資料格式無效');
+      jdp.patch(state, delta);
     }
     return state;
   }, [db]);
 
   /** 回傳 true 代表真的建了一筆版本；false 代表沒有（呼叫端要據此決定提示什麼）。 */
   const saveNewVersion = useCallback(async (currentPlan: LessonPlan, now: number, name: string, isAuto: boolean): Promise<boolean> => {
-    if (!db || !user || !activePlanId) return false;
+    if (!db || !user || !activePlanId || !member?.nickname) return false;
     const latestVersion = activePlanVersions[0];
 
-    let precomputedDelta: any = undefined;
+    let precomputedDelta: jsondiffpatch.Delta;
     // 前一版重建不出來（版本鏈斷了）時，改存一份完整快照 —— 見下面的 catch
     let mustBeSnapshot = false;
 
@@ -605,21 +614,21 @@ export function PlansProvider({ children }: { children: ReactNode }) {
       type: shouldBeSnapshot ? 'snapshot' : 'patch',
       authorId: user.uid,
       isAuto,
-      authorName: getCampEditorName(user),
+      authorName: member.nickname,
       authorColor: getAuthorColor(user.uid),
     };
 
     if (shouldBeSnapshot) {
       newVersion.snapshot = JSON.parse(JSON.stringify(currentPlan));
     } else {
-      newVersion.delta = sanitizeForFirestore(precomputedDelta);
+      // A delta can contain arrays inside its change tuples, which Firestore cannot store directly.
+      newVersion.delta = JSON.stringify(precomputedDelta);
     }
 
     const versionRef = doc(db, 'planVersions', versionId);
-    if (isAuto) setDocumentNonBlocking(versionRef, newVersion, { merge: true });
-    else await setDoc(versionRef, newVersion);
+    await setDoc(versionRef, newVersion);
     return true;
-  }, [db, user, activePlanId, activePlanVersions, getFullVersionState]);
+  }, [db, user, member?.nickname, activePlanId, activePlanVersions, getFullVersionState]);
 
   const savePlanVersion = useCallback(async (name: string, isAuto = false, draft?: LessonPlan): Promise<boolean> => {
     if (!db || !user || !activePlanId) return false;
@@ -631,7 +640,10 @@ export function PlansProvider({ children }: { children: ReactNode }) {
   }, [db, user, activePlanId, allPlans, saveNewVersion]);
 
   const autoSaveCurrentState = useCallback(() => {
-    savePlanVersion('Auto Save (Exit)', true);
+    void savePlanVersion('Auto Save (Exit)', true).catch(error => {
+      console.warn('[savePlanVersion] 無法儲存自動版本', error);
+      toast({ title: '無法儲存自動版本', variant: 'destructive' });
+    });
   }, [savePlanVersion]);
 
   const restorePlanVersion = useCallback(async (versionId: string): Promise<LessonPlan | null> => {
@@ -712,7 +724,7 @@ export function PlansProvider({ children }: { children: ReactNode }) {
       id: tableId, campId: activeCampId, ownerId: user.uid, title: '大地遊戲闖關表', day,
       stations: Array.from({ length: 4 }, (_, i) => ({ id: Math.random().toString(36).substr(2, 9), name: `關卡${i + 1}`, location: '', lead: '', assistant: '' })),
       rounds: Array.from({ length: 2 }, () => ({ cells: Array(4).fill('') })), 
-      teamOrders: Array.from({ length: 4 }, (_, i) => ({ id: Math.random().toString(36).substr(2, 9), name: `第${i + 1}小隊`, stations: Array(4).fill('') })),
+      teamOrders: Array.from({ length: 4 }, (_, i) => ({ id: Math.random().toString(36).substr(2, 9), name: `第${i + 1}小隊`, stations: Array(2).fill('') })),
     };
     setDocumentNonBlocking(doc(db, 'rotationTables', tableId), newTable, { merge: true });
   }, [db, user, activeCampId, pushTableHistory]);

@@ -133,7 +133,7 @@ describe('行政中心 — 同步計時器', () => {
     cy.getByTestId('timer-reset').should('be.visible');
   });
 
-  it('A2 · crew 在計時頁看不到解鎖鈕與控制台；但總表頁的行為一個字都沒變', () => {
+  it('A2 · crew 在計時頁看不到解鎖鈕與控制台；可切換查看唯讀總表', () => {
     cy.loginAs('crew');
     cy.visitApp('/admin?tab=timer', { campId: scenario.campId });
 
@@ -144,9 +144,8 @@ describe('行政中心 — 同步計時器', () => {
     cy.getByTestId('timer-console').should('not.exist');
     cy.getByTestId('timer-broadcast-console').should('not.exist');
 
-    // issue 只講計時頁。總表頁對 crew 的行為刻意維持原樣 —— 這一句同時是
-    // 「沒有過度隱藏」的證據，也是「上面那些 not.exist 不是 testid 打錯」的對照。
     cy.visitApp('/admin?tab=tables', { campId: scenario.campId });
+    cy.contains('button', '完整總表').click();
     cy.getByTestId('admin-lock-toggle').should('be.visible');
   });
 

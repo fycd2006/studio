@@ -1,4 +1,5 @@
-import { RotationRound, Station, TeamOrder } from "@/types/plan";
+import { REST, teamInCell } from "./rotation-itinerary";
+import type { RotationRound, Station, TeamOrder } from "@/types/plan";
 
 export interface PlanStationInput {
   planId: string;
@@ -315,40 +316,11 @@ export function generateRotationSchedule(options: SchedulerOptions): GeneratedSc
     }
   }
 
-  // ── AUTO-DERIVE TEAM ORDERS (小隊視角對應表) ──
-  // For each team, inspect every round to find which station they were assigned to
-  for (let tIdx = 0; tIdx < teamCount; tIdx++) {
-    const teamNum = tIdx + 1;
-    const teamSchedule: string[] = [];
-
-    for (let rIdx = 0; rIdx < rounds.length; rIdx++) {
-      const roundCells = rounds[rIdx].cells;
-      let foundStation = "—";
-
-      for (let sIdx = 0; sIdx < stationCount; sIdx++) {
-        const cell = roundCells[sIdx];
-        if (!cell || cell === "—") continue;
-
-        // Parse e.g. "1 vs 2" or "第 1 小隊"
-        const match = cell.match(/(\d+)\s*vs\s*(\d+)/i);
-        if (match) {
-          const a = parseInt(match[1], 10);
-          const b = parseInt(match[2], 10);
-          if (a === teamNum) {
-            foundStation = `${stations[sIdx].name} (vs ${b})`;
-            break;
-          } else if (b === teamNum) {
-            foundStation = `${stations[sIdx].name} (vs ${a})`;
-            break;
-          }
-        } else if (cell.includes(`第 ${teamNum} 小隊`)) {
-          foundStation = stations[sIdx].name;
-          break;
-        }
-      }
-      teamSchedule.push(foundStation);
-    }
-    teams[tIdx].stations = teamSchedule;
+  for (const team of teams) {
+    team.stations = rounds.map(round => {
+      const column = round.cells.findIndex(cell => teamInCell(cell, team));
+      return stations[column]?.id ?? REST;
+    });
   }
 
   return {

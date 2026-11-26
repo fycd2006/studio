@@ -1,4 +1,5 @@
 import { defineConfig } from 'cypress';
+import { VERSION_HISTORY } from './src/data/version-history';
 import * as fs from 'fs';
 import * as path from 'path';
 import {
@@ -152,15 +153,7 @@ export default defineConfig({
          * 把真正的最新 id 預先寫進去才是乾淨的做法（寫假值會讓它走
          * 「找不到這個 id」分支、照樣跳出來）。
          */
-        'app:latestReleaseId': () => {
-          const file = path.join(__dirname, 'src', 'data', 'version-history.ts');
-          const src = fs.readFileSync(file, 'utf8');
-          const match = src.match(/id:\s*["'`]([^"'`]+)["'`]/);
-          if (!match) {
-            throw new Error(`在 ${file} 找不到任何 id —— WhatsNewDialog 的抑制會失效`);
-          }
-          return match[1];
-        },
+        'app:latestReleaseId': () => VERSION_HISTORY[0].id,
 
         log: (message: string) => {
           console.log(message);

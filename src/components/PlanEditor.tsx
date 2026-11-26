@@ -46,7 +46,10 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import dynamic from "next/dynamic";
 import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { cn, getUnifiedGroupBadgeParams, stripHtml } from "@/lib/utils";
+import { cn, getUnifiedGroupBadgeParams } from "@/lib/utils";
+import { PlanAssigneeInput } from "@/components/PlanAssigneeInput";
+import { mergePlanUpdate, readPlanPersonnel, withPersonnelNames, type PersonnelRole } from "@/lib/plan-personnel";
+import type { PlanAssignee } from "@/types/plan";
 import { useRouter } from "next/navigation";
 import { actionBarTheme } from "@/lib/actionbar-theme";
 import { useTranslation } from "@/lib/i18n-context";
@@ -62,6 +65,8 @@ import { DiffHighlighter } from "./DiffHighlighter";
 import { exportToDocx, exportToPdf } from "@/lib/export-utils";
 import { utf8Length } from "@/lib/editor-image";
 import { usePresence } from "@/hooks/use-presence";
+import { useAuth } from "@/lib/auth-context";
+import { LEGACY_VERSION_AUTHOR, resolveMemberNickname } from "@/lib/member";
 
 const FabricCanvas = dynamic(
   () => import("@/components/FabricCanvas").then((mod) => mod.FabricCanvas),
@@ -182,6 +187,7 @@ export function PlanEditor({
   versions = [], onSaveVersion, onRestoreVersion, onDeleteVersion, onAutoSave, getFullVersionState, onUpdateVersionName, activityTypes = []
 }: PlanEditorProps) {
   const { t, language } = useTranslation();
+  const { memberNicknames, nicknameIndex, accountHints, memberDirectoryReady } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const { lockField, unlockField, forceTakeoverField, isLockedByOther, getLockInfo } = usePresence(plan.id);
@@ -390,7 +396,7 @@ export function PlanEditor({
   const handlePrint = async () => {
     try {
       toast({ title: "匯出中", description: "正在產生 PDF 檔案..." });
-      await exportToPdf(getLiveDraft(), { useSaveDialog: false });
+      await exportToPdf(withPersonnelNames(getLiveDraft(), memberNicknames, nicknameIndex), { useSaveDialog: false });
       toast({ title: "匯出成功", description: "已下載 PDF 檔案" });
     } catch (err) {
       console.error("PDF export failed", err);
@@ -400,7 +406,7 @@ export function PlanEditor({
   const handleExportWord = async () => {
     try {
       toast({ title: "匯出中", description: "正在產生 Word 檔案..." });
-      await exportToDocx(getLiveDraft(), undefined, { useSaveDialog: false });
+      await exportToDocx(withPersonnelNames(getLiveDraft(), memberNicknames, nicknameIndex), undefined, { useSaveDialog: false });
       toast({ title: "匯出成功", description: "已經成功下載 Word 檔案" });
     } catch (err) {
       console.error("Word export failed", err);
@@ -448,7 +454,7 @@ export function PlanEditor({
   useEffect(() => {
     // Merge remote plan with pending local changes so stale server echoes
     // don't revert immediate local actions.
-    setLocalPlan({ ...plan, ...pendingUpdatesRef.current });
+    setLocalPlan(mergePlanUpdate(plan, pendingUpdatesRef.current));
   }, [plan]);
 
   // Ensure any pending typing updates are flushed to Firestore before unmount or tab close
@@ -479,7 +485,7 @@ export function PlanEditor({
       // Record snapshot right before a new burst of typing
       recordHistory();
     }
-    setLocalPlan(prev => ({ ...prev, ...updates }));
+    setLocalPlan(prev => mergePlanUpdate(prev, updates));
 
     // Merge into pending
     pendingUpdatesRef.current = { ...pendingUpdatesRef.current, ...updates };
@@ -509,7 +515,7 @@ export function PlanEditor({
       past: prev.past.slice(0, -1),
       future: [localPlan, ...prev.future]
     }));
-    handlePlanUpdateImmediate(previous);
+    handlePlanUpdateImmediate({ ...previous, leadAssignees: previous.leadAssignees ?? null, assistantAssignees: previous.assistantAssignees ?? null });
   };
 
   const handleLocalRedo = () => {
@@ -519,7 +525,7 @@ export function PlanEditor({
       past: [...prev.past, localPlan],
       future: localHistory.future.slice(1)
     }));
-    handlePlanUpdateImmediate(next);
+    handlePlanUpdateImmediate({ ...next, leadAssignees: next.leadAssignees ?? null, assistantAssignees: next.assistantAssignees ?? null });
   };
 
   const handleLocalUndoRef = useRef(handleLocalUndo);
@@ -555,7 +561,7 @@ export function PlanEditor({
   }, []);
 
   const getLiveDraft = () => {
-    const current = { ...localPlan, ...pendingUpdatesRef.current };
+    const current = mergePlanUpdate(localPlan, pendingUpdatesRef.current);
     for (const element of planEditorRef.current?.querySelectorAll<HTMLElement>("[data-editor-field]") ?? []) {
       const field = element.dataset.editorField as keyof LessonPlan;
       const richText = element.querySelector<HTMLElement>("[data-rich-text-editor]");
@@ -572,49 +578,18 @@ export function PlanEditor({
   const currentPlan = isHistoryMode ? (previewPlan || plan) : localPlan;
   const isScriptMode = currentPlan.scheduledName === '劇本';
 
-  // Decoupled Lead and Assistant member handling
-  const parsedLegacyMembers = useMemo(() => {
-    const raw = stripHtml(currentPlan.members || '');
-    if (!raw) return { lead: '', assistant: '' };
-    const parts = raw.split('、').map(s => s.trim()).filter(Boolean);
-    return {
-      lead: parts[0] || '',
-      assistant: parts.slice(1).join('、')
-    };
-  }, [currentPlan.members]);
+  const personnel = readPlanPersonnel(currentPlan);
+  const historyPersonnel = (entry?: LessonPlan | null) => entry
+    ? withPersonnelNames(entry, memberNicknames, nicknameIndex, memberDirectoryReady)
+    : undefined;
+  const previousPersonnel = isHistoryMode ? historyPersonnel(previousPlan ?? previewPlan) : undefined;
+  const previewPersonnel = isHistoryMode ? historyPersonnel(previewPlan) : undefined;
 
-  const leadDisplayValue = currentPlan.leadMember !== undefined
-    ? stripHtml(currentPlan.leadMember)
-    : parsedLegacyMembers.lead;
-
-  const assistantDisplayValue = currentPlan.assistantMember !== undefined
-    ? stripHtml(currentPlan.assistantMember)
-    : parsedLegacyMembers.assistant;
-
-  const handleLeadMemberChange = (val: string) => {
-    const cleanLead = stripHtml(val);
-    const currentAsst = currentPlan.assistantMember !== undefined
-      ? stripHtml(currentPlan.assistantMember)
-      : parsedLegacyMembers.assistant;
-    const combined = [cleanLead.trim(), currentAsst.trim()].filter(Boolean).join('、');
-    handlePlanUpdate({
-      leadMember: cleanLead,
-      assistantMember: currentAsst,
-      members: combined
-    });
-  };
-
-  const handleAssistantMemberChange = (val: string) => {
-    const cleanAsst = stripHtml(val);
-    const currentLead = currentPlan.leadMember !== undefined
-      ? stripHtml(currentPlan.leadMember)
-      : parsedLegacyMembers.lead;
-    const combined = [currentLead.trim(), cleanAsst.trim()].filter(Boolean).join('、');
-    handlePlanUpdate({
-      leadMember: currentLead,
-      assistantMember: cleanAsst,
-      members: combined
-    });
+  const updatePersonnel = (role: PersonnelRole, assignees: PlanAssignee[]) => {
+    const names = assignees.map(entry => entry.name).join("、");
+    handlePlanUpdate(role === "lead"
+      ? { leadMember: names, leadAssignees: assignees }
+      : { assistantMember: names, assistantAssignees: assignees });
   };
 
   // Auto-Save Trigger
@@ -856,7 +831,7 @@ export function PlanEditor({
               </p>
               {selectedVersion && (
                 <p className="text-xs text-muted-foreground">
-                  {format(selectedVersion.createdAt, "yyyy/MM/dd HH:mm:ss")} · {selectedVersion.authorName || "未知修改者"}
+                  {format(selectedVersion.createdAt, "yyyy/MM/dd HH:mm:ss")} · {resolveMemberNickname(memberNicknames, selectedVersion.authorId, selectedVersion.authorName, LEGACY_VERSION_AUTHOR)}
                 </p>
               )}
             </div>
@@ -1249,78 +1224,70 @@ export function PlanEditor({
                             <section>
                               <SectionHeader title={t('CASE_PERSONNEL')} icon={Users} tag="CREW" />
                               {isHistoryMode ? (
-                                <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
                                   <div>
-                                    <div className="text-xs font-mono font-medium text-stone-500 dark:text-stone-400 mb-1.5 flex items-center gap-1.5">
+                                    <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                                       <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
                                       <span>{t('LEAD')}</span>
                                     </div>
                                     <DiffHighlighter
                                       type="text"
-                                      oldValue={stripHtml((previousPlan ?? previewPlan)?.leadMember || (previousPlan ?? previewPlan)?.members)}
-                                      newValue={stripHtml(previewPlan?.leadMember || previewPlan?.members)}
+                                      oldValue={previousPersonnel?.leadMember ?? ''}
+                                      newValue={previewPersonnel?.leadMember ?? ''}
                                     />
                                   </div>
                                   <div>
-                                    <div className="text-xs font-mono font-medium text-stone-500 dark:text-stone-400 mb-1.5 flex items-center gap-1.5">
+                                    <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                                       <span className="w-1.5 h-1.5 rounded-full bg-stone-400" />
                                       <span>{t('ASSISTANT')}</span>
                                     </div>
                                     <DiffHighlighter
                                       type="text"
-                                      oldValue={stripHtml((previousPlan ?? previewPlan)?.assistantMember)}
-                                      newValue={stripHtml(previewPlan?.assistantMember)}
+                                      oldValue={previousPersonnel?.assistantMember ?? ''}
+                                      newValue={previewPersonnel?.assistantMember ?? ''}
                                     />
                                   </div>
                                 </div>
                               ) : (
-                                <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
                                   <div>
-                                    <div className="text-xs font-mono font-medium text-stone-500 dark:text-stone-400 mb-1.5 flex items-center gap-1.5">
+                                    <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                                       <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
                                       <span>{t('LEAD')}</span>
                                     </div>
                                     <FieldContainer field="leadMember" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
-                                      <div className={cn(
-                                        "w-full rounded-lg border bg-white/50 dark:bg-slate-800/50 border-stone-200 dark:border-slate-700/50 shadow-2xs transition-all duration-300 relative group overflow-hidden",
-                                        "focus-within:ring-2 focus-within:ring-orange-500/20 focus-within:border-orange-500/40 dark:focus-within:border-amber-400/40 hover:border-stone-300 dark:hover:border-slate-600",
-                                        isInteractionLocked && "opacity-80 cursor-default"
-                                      )}>
-                                        <input
-                                          type="text"
-                                          value={leadDisplayValue}
-                                          onChange={(e) => handleLeadMemberChange(e.target.value)}
-                                          onFocus={() => handleFocus('leadMember')}
-                                          onBlur={() => handleBlur('leadMember')}
-                                          placeholder="主關主姓名 / Lead..."
-                                          disabled={isInteractionLocked}
-                                          className="w-full h-[38px] px-3 md:px-4 bg-transparent text-stone-800 dark:text-slate-100 outline-none text-[14px] placeholder:text-stone-400 dark:placeholder:text-slate-500 font-medium transition-colors"
-                                        />
-                                      </div>
+                                      <PlanAssigneeInput
+                                        label={t("LEAD")}
+                                        value={personnel.lead}
+                                        nicknames={memberNicknames}
+                                        byName={nicknameIndex}
+                                        accountHints={accountHints}
+                                        directoryReady={memberDirectoryReady}
+                                        disabled={isInteractionLocked || isLockedByOther("leadMember")}
+                                        onUpdate={entries => updatePersonnel("lead", entries)}
+                                        onFocus={() => handleFocus("leadMember")}
+                                        onBlur={() => handleBlur("leadMember")}
+                                      />
                                     </FieldContainer>
                                   </div>
                                   <div>
-                                    <div className="text-xs font-mono font-medium text-stone-500 dark:text-stone-400 mb-1.5 flex items-center gap-1.5">
+                                    <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                                       <span className="w-1.5 h-1.5 rounded-full bg-stone-400" />
                                       <span>{t('ASSISTANT')}</span>
                                     </div>
                                     <FieldContainer field="assistantMember" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
-                                      <div className={cn(
-                                        "w-full rounded-lg border bg-white/50 dark:bg-slate-800/50 border-stone-200 dark:border-slate-700/50 shadow-2xs transition-all duration-300 relative group overflow-hidden",
-                                        "focus-within:ring-2 focus-within:ring-orange-500/20 focus-within:border-orange-500/40 dark:focus-within:border-amber-400/40 hover:border-stone-300 dark:hover:border-slate-600",
-                                        isInteractionLocked && "opacity-80 cursor-default"
-                                      )}>
-                                        <input
-                                          type="text"
-                                          value={assistantDisplayValue}
-                                          onChange={(e) => handleAssistantMemberChange(e.target.value)}
-                                          onFocus={() => handleFocus('assistantMember')}
-                                          onBlur={() => handleBlur('assistantMember')}
-                                          placeholder="副關主姓名 / Assistant..."
-                                          disabled={isInteractionLocked}
-                                          className="w-full h-[38px] px-3 md:px-4 bg-transparent text-stone-800 dark:text-slate-100 outline-none text-[14px] placeholder:text-stone-400 dark:placeholder:text-slate-500 font-medium transition-colors"
-                                        />
-                                      </div>
+                                      <PlanAssigneeInput
+                                        label={t("ASSISTANT")}
+                                        value={personnel.assistant}
+                                        nicknames={memberNicknames}
+                                        byName={nicknameIndex}
+                                        accountHints={accountHints}
+                                        directoryReady={memberDirectoryReady}
+                                        disabled={isInteractionLocked || isLockedByOther("assistantMember")}
+                                        onUpdate={entries => updatePersonnel("assistant", entries)}
+                                        onFocus={() => handleFocus("assistantMember")}
+                                        onBlur={() => handleBlur("assistantMember")}
+                                      />
                                     </FieldContainer>
                                   </div>
                                 </div>
@@ -1705,6 +1672,7 @@ export function PlanEditor({
             <VersionHistorySidebar
               versions={versions}
               selectedVersionId={selectedVersionId}
+              memberNicknames={memberNicknames}
               onSelectVersion={(version) => {
                 if (isRestoring) return;
                 if (version.id !== selectedVersionId) {

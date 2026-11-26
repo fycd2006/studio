@@ -2,47 +2,60 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isAuthenticated() {
-      return request.auth != null;
+    function isActiveMember() {
+      return request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == "active";
+    }
+
+    function activeAdmin() {
+      return isActiveMember() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
     // 營隊專案資料
     match /camps/{campId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isActiveMember();
+      allow write: if activeAdmin();
     }
 
     // 教案集合 (lessonPlans)
     match /lessonPlans/{planId} {
-      allow read, write: if isAuthenticated();
+      allow read, write: if isActiveMember();
     }
 
     match /plans/{planId} {
-      allow read, write: if isAuthenticated();
+      allow read, write: if isActiveMember();
     }
 
     // 闖關輪替表
     match /rotationTables/{tableId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isActiveMember();
+      allow write: if activeAdmin();
     }
 
     // 版本歷程
     match /planVersions/{versionId} {
-      allow read, write: if isAuthenticated();
+      allow read, write: if isActiveMember();
     }
 
     // 在線協同狀態（心跳）
     match /planPresence/{planId} {
-      allow read, write: if isAuthenticated();
+      allow read, write: if isActiveMember();
     }
 
     // 使用者與全域設定
     match /userSettings/{settingId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isActiveMember();
+      allow write: if activeAdmin();
     }
 
-    // 其他未知集合預設限制需登入
-    match /{document=**} {
-      allow read, write: if isAuthenticated();
+    // 成員本人訂閱權限變動，啟用中的管理員可查看成員名單。
+    match /users/{uid} {
+      allow get: if request.auth != null && (request.auth.uid == uid || activeAdmin());
+      allow list: if activeAdmin();
+    }
+
+    // 供成員配對與協作顯示使用，只提供綽號與遮蔽後的註冊帳號提示。
+    match /memberNames/{uid} {
+      allow read: if isActiveMember();
     }
   }
 }

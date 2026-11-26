@@ -6,6 +6,7 @@ import { Check, ChevronDown, ChevronRight, History, Pencil, Trash2, X } from "lu
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { LEGACY_VERSION_AUTHOR, resolveMemberNickname } from "@/lib/member";
 import type { PlanVersion } from "@/types/plan";
 
 const autoSaveInterval = 10 * 60 * 1000;
@@ -21,6 +22,7 @@ function isNamed(version: PlanVersion) {
 interface VersionHistorySidebarProps {
   versions: PlanVersion[];
   selectedVersionId: string | null;
+  memberNicknames: ReadonlyMap<string, string>;
   onSelectVersion: (version: PlanVersion) => void;
   onDelete?: (versionId: string) => void | Promise<void>;
   onBackToCurrent: () => void;
@@ -30,7 +32,7 @@ interface VersionHistorySidebarProps {
 }
 
 export function VersionHistorySidebar({
-  versions, selectedVersionId, onSelectVersion, onDelete, onBackToCurrent,
+  versions, selectedVersionId, memberNicknames, onSelectVersion, onDelete, onBackToCurrent,
   onUpdateVersionName, onSaveVersion, onClose,
 }: VersionHistorySidebarProps) {
   const [namedOnly, setNamedOnly] = useState(false);
@@ -120,7 +122,7 @@ export function VersionHistorySidebar({
             <span className="min-w-0">
               <span className="block truncate text-sm font-semibold">{version.versionName || version.name}</span>
               <span className="block truncate text-xs text-muted-foreground">
-                {version.authorName || "未知修改者"} · <time dateTime={new Date(version.createdAt).toISOString()}>
+                {resolveMemberNickname(memberNicknames, version.authorId, version.authorName, LEGACY_VERSION_AUTHOR)} · <time dateTime={new Date(version.createdAt).toISOString()}>
                   {format(version.createdAt, "HH:mm:ss")}
                 </time>
               </span>

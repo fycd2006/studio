@@ -4,10 +4,48 @@ export type VersionHistoryEntry = {
   label: string;
   date: string;
   title: string;
-  highlights: string[];
-};
+} & (
+  | { summary: string; changes: ReleaseChanges }
+  | { highlights: string[] }
+);
+
+export const RELEASE_SECTIONS = [
+  ["added", "新發布"],
+  ["improved", "改善項目"],
+  ["fixed", "修正項目"],
+] as const;
+
+type ReleaseChanges = Record<(typeof RELEASE_SECTIONS)[number][0], string[]>;
 
 export const VERSION_HISTORY: VersionHistoryEntry[] = [
+  {
+    "id": "release-2.0.0",
+    "version": "2.0.0",
+    "label": "更新項目",
+    "date": "2026-11-26",
+    "title": "個人營隊帳號、智慧教案總覽與闖關視圖",
+    "summary": "這版加入個人營隊帳號，可用 Google 或 Email 登入並管理密碼。教案總覽會優先顯示與自己及所屬組別相關的教案。闖關表新增小隊行程與關主視圖，現場可直接查看每輪目的地或即將到站的小隊。",
+    "changes": {
+      "added": [
+        "可用 Google 帳戶授權或 Email 註冊登入，首次綁定時使用營隊通行碼加入。",
+        "帳號設定可為 Google 帳號設定網站密碼，已有密碼的成員可修改，忘記密碼時可從登入頁寄送重設連結。",
+        "小隊行程依輪次顯示關卡、地點及正副關主。選好小隊後，網站會在這台裝置記住選擇。",
+        "關主視圖預設顯示自己擔任主關主或副關主的關卡，可按日查看每輪到站的小隊，也可切換至全部關卡。"
+      ],
+      "improved": [
+        "教案總覽會優先排列自己主責、協作及同組的教案，可在帳號設定選擇各營隊的組別。",
+        "教案編輯時，主關主與副關主可配對成員。遇到相同綽號可選擇正確帳號，協作與版本紀錄會顯示成員綽號。",
+        "調整登入表單、帳號設定與教案總覽的手機版排版及鍵盤操作。",
+        "管理員可編輯完整闖關表並預覽小隊或關主視圖。小隊輔可切回唯讀總表。"
+      ],
+      "fixed": [
+        "修正教案儲存版本時，包含主副關主等資料的變更可能無法寫入的問題。",
+        "修正成員名單載入前，行政道具表可能無法開啟的問題。",
+        "修正計時頁的「當前小隊分佈」可能把已排關的小隊顯示為休息的問題。",
+        "修正完整闖關表的行程欄數跟著關卡數變動，以及刪除關卡可能移動其他輪次行程的問題。"
+      ]
+    }
+  },
   {
     id: "build-d866e71",
     version: "1.0.42",

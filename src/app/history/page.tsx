@@ -3,6 +3,7 @@
 import { usePlans } from "@/hooks/use-plans";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { withPersonnelNames } from "@/lib/plan-personnel";
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import {
@@ -20,7 +21,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 
 export default function HistoryOverview() {
-  const { role } = useAuth();
+  const { role, memberNicknames, nicknameIndex } = useAuth();
   const { plans, setActivePlanId, activeCampId, camps } = usePlans();
   const router = useRouter();
   const activeCamp = camps.find(c => c.id === activeCampId);
@@ -158,7 +159,7 @@ export default function HistoryOverview() {
                       {plan.members && (
                         <div className="flex items-center gap-1.5">
                           <Users className="w-3.5 h-3.5" />
-                          <span className="truncate max-w-[100px]">{stripHtml(plan.members)}</span>
+                          <span className="truncate max-w-[100px]">{withPersonnelNames(plan, memberNicknames, nicknameIndex).members}</span>
                         </div>
                       )}
                     </div>
@@ -214,7 +215,7 @@ export default function HistoryOverview() {
                       <td className="px-6 py-4 text-xs font-mono text-fg-muted">
                         <div className="flex items-center gap-1.5">
                           <Users className="w-3.5 h-3.5 text-stone-300 dark:text-stone-600 shrink-0" />
-                          <span className="truncate max-w-[120px]">{stripHtml(plan.members) || "—"}</span>
+                          <span className="truncate max-w-[120px]">{withPersonnelNames(plan, memberNicknames, nicknameIndex).members || "—"}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-xs font-mono text-fg-muted text-right">

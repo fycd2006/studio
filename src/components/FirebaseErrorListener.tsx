@@ -1,39 +1,17 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useEffect } from "react";
+import { toast } from "@/hooks/use-toast";
+import { errorEmitter } from "@/firebase/error-emitter";
 
-/**
- * An invisible component that listens for globally emitted 'permission-error' events.
- * It throws any received error to be caught by Next.js's global-error.tsx.
- */
 export function FirebaseErrorListener() {
- // Use the specific error type for the state for type safety.
- const [error, setError] = useState<FirestorePermissionError | null>(null);
-
- useEffect(() => {
- // The callback now expects a strongly-typed error, matching the event payload.
- const handleError = (error: FirestorePermissionError) => {
- // Set error in state to trigger a re-render.
- setError(error);
- };
-
- // The typed emitter will enforce that the callback for 'permission-error'
- // matches the expected payload type (FirestorePermissionError).
- errorEmitter.on('permission-error', handleError);
-
- // Unsubscribe on unmount to prevent memory leaks.
- return () => {
- errorEmitter.off('permission-error', handleError);
- };
- }, []);
-
- // On re-render, if an error exists in state, throw it.
- if (error) {
- throw error;
- }
-
- // This component renders nothing.
- return null;
+  useEffect(() => {
+    // A pending save can be denied while the membership listener signs a disabled user out.
+    const handleError = () => {
+      toast({ variant: "destructive", title: "無法存取營隊資料", description: "請確認登入狀態與操作權限。" });
+    };
+    errorEmitter.on("permission-error", handleError);
+    return () => { errorEmitter.off("permission-error", handleError); };
+  }, []);
+  return null;
 }

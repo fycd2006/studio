@@ -1,10 +1,10 @@
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useMemo, useSyncExternalStore } from "react";
 
 export interface OverviewPreferences {
   viewType: "grid" | "list" | "board";
   searchQuery: string;
   filterGroup: string;
-  sortBy: "updatedAt" | "name" | "category";
+  sortBy: "smart" | "updatedAt" | "name" | "category";
   sortDirection: "asc" | "desc";
 }
 
@@ -12,7 +12,7 @@ const defaults: OverviewPreferences = {
   viewType: "list",
   searchQuery: "",
   filterGroup: "all",
-  sortBy: "updatedAt",
+  sortBy: "smart",
   sortDirection: "desc",
 };
 
@@ -37,7 +37,8 @@ function parsePreferences(snapshot: string | null): OverviewPreferences {
       viewType: value.viewType === "grid" || value.viewType === "board" ? value.viewType : "list",
       searchQuery: typeof value.searchQuery === "string" ? value.searchQuery : "",
       filterGroup: typeof value.filterGroup === "string" ? value.filterGroup : "all",
-      sortBy: value.sortBy === "name" || value.sortBy === "category" ? value.sortBy : "updatedAt",
+      sortBy: value.sortBy === "name" || value.sortBy === "category" || value.sortBy === "updatedAt"
+        ? value.sortBy : "smart",
       sortDirection: value.sortDirection === "asc" ? "asc" : "desc",
     };
   } catch {
@@ -54,14 +55,23 @@ function getServerSnapshot() {
   return null;
 }
 
-export function useOverviewPreferences(campId: string | null, role: string | null) {
-  const key = campId && role ? "studio:plans-overview:" + role + ":" + campId : null;
+export function useOverviewPreferences(campId: string | null, uid?: string, role?: string | null) {
+  const key = campId && uid ? "studio:plans-overview:member:" + uid + ":" + campId : null;
+  const legacyKey = campId && role ? "studio:plans-overview:" + role + ":" + campId : null;
   const snapshot = useSyncExternalStore(subscribe, () => readSnapshot(key), getServerSnapshot);
+  const legacySnapshot = useSyncExternalStore(subscribe, () => readSnapshot(legacyKey), getServerSnapshot);
+  const preferences = useMemo(() => {
+    if (snapshot) return parsePreferences(snapshot);
+    const legacy = parsePreferences(legacySnapshot);
+    return legacy.sortBy === "updatedAt" && legacy.sortDirection === "desc"
+      ? { ...legacy, sortBy: "smart" as const }
+      : legacy;
+  }, [snapshot, legacySnapshot]);
 
   const update = useCallback((changes: Partial<OverviewPreferences>) => {
     if (!key) return;
     const previous = readSnapshot(key);
-    const next = JSON.stringify({ ...parsePreferences(previous), ...changes });
+    const next = JSON.stringify({ ...(previous ? parsePreferences(previous) : preferences), ...changes });
     if (next === previous) return;
 
     inMemory.set(key, next);
@@ -71,7 +81,7 @@ export function useOverviewPreferences(campId: string | null, role: string | nul
       // Keep preferences for client-side navigation when browser storage is unavailable.
     }
     window.dispatchEvent(new Event(changed));
-  }, [key]);
+  }, [key, preferences]);
 
-  return [parsePreferences(snapshot), update] as const;
+  return [preferences, update] as const;
 }

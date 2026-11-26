@@ -1,4 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useAuth as useAccount } from "@/lib/auth-context";
+import { resolveMemberNickname } from "@/lib/member";
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useFirestore, useUser, setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
 import { doc, onSnapshot, deleteField } from 'firebase/firestore';
 
@@ -10,41 +12,25 @@ export interface FieldPresence {
 
 export type PresenceData = Record<string, FieldPresence>;
 
-const ADJECTIVES = ['熱情', '活力', '勇敢', '聰明', '溫暖', '開心', '熱血', '溫柔', '積極', '樂觀'];
-const ANIMALS = ['企鵝', '棕熊', '松鼠', '小鹿', '海豚', '樹懶', '狐狸', '無尾熊', '小貓', '兔子'];
-
-export function getRandomNickname(uid: string): string {
-  if (!uid) return '神秘協協協協作員';
-  let hash = 0;
-  for (let i = 0; i < uid.length; i++) {
-    hash = uid.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const adj = ADJECTIVES[Math.abs(hash) % ADJECTIVES.length];
-  const anim = ANIMALS[Math.abs(hash * 31) % ANIMALS.length];
-  return `${adj}的${anim}`;
-}
-
-export const campNicknameStorageKey = 'camp-user-nickname';
-
-export function getCampEditorName(user: { uid: string; displayName: string | null }) {
-  const savedName = typeof window === 'undefined' ? undefined : localStorage.getItem(campNicknameStorageKey)?.trim();
-  return savedName || user.displayName?.trim() || getRandomNickname(user.uid);
-}
-
 export function usePresence(planId: string | null) {
-  const { user } = useUser();
+  const { user: firebaseUser } = useUser();
+  const { member, memberNicknames } = useAccount();
+  const user = member ? firebaseUser : null;
+  const nickname = member?.nickname;
   const db = useFirestore();
   const [presenceData, setPresenceData] = useState<PresenceData>({});
-  const [activeViewers, setActiveViewers] = useState<FieldPresence[]>([]);
+  const [viewers, setActiveViewers] = useState<FieldPresence[]>([]);
+  const activeViewers = useMemo(() => viewers.map(viewer => ({
+    ...viewer,
+    name: resolveMemberNickname(memberNicknames, viewer.uid, viewer.name, "營隊成員"),
+  })), [viewers, memberNicknames]);
   
   // Track fields locked by THIS user defensively so we can unlock them on unmount
   const lockedFieldsRef = useRef<Set<string>>(new Set());
   const lockTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
-  const getMyName = useCallback(() => user ? getCampEditorName(user) : '訪客', [user]);
-
   useEffect(() => {
-    if (!db || !planId) {
+    if (!db || !planId || !user) {
       setPresenceData({});
       setActiveViewers([]);
       return;
@@ -101,16 +87,15 @@ export function usePresence(planId: string | null) {
 
   // Handle active viewer registration & heartbeat (every 30 seconds)
   useEffect(() => {
-    if (!db || !user || !planId) return;
+    if (!db || !user || !planId || !nickname) return;
 
     const docRef = doc(db, 'planPresence', planId);
-    const myName = getMyName();
     
     const registerViewer = () => {
       setDocumentNonBlocking(docRef, {
         [`viewer_${user.uid}`]: {
           uid: user.uid,
-          name: myName,
+          name: nickname,
           timestamp: Date.now(),
         }
       }, { merge: true });
@@ -126,10 +111,10 @@ export function usePresence(planId: string | null) {
         [`viewer_${user.uid}`]: deleteField()
       }, { merge: true });
     };
-  }, [db, user, planId, getMyName]);
+  }, [db, user, planId, nickname]);
 
   const lockField = useCallback((fieldName: string) => {
-    if (!db || !user || !planId) return;
+    if (!db || !user || !planId || !nickname) return;
 
     // Clear any pending timer for this field
     const existing = lockTimersRef.current.get(fieldName);
@@ -143,19 +128,18 @@ export function usePresence(planId: string | null) {
       lockTimersRef.current.delete(fieldName);
       lockedFieldsRef.current.add(fieldName);
       const docRef = doc(db, 'planPresence', planId);
-      const myName = getMyName();
       
       setDocumentNonBlocking(docRef, {
         [fieldName]: {
           uid: user.uid,
-          name: myName,
+          name: nickname,
           timestamp: Date.now(),
         }
       }, { merge: true });
     }, 150);
 
     lockTimersRef.current.set(fieldName, timer);
-  }, [db, user, planId, getMyName]);
+  }, [db, user, planId, nickname]);
 
   const unlockField = useCallback((fieldName: string) => {
     if (!db || !user || !planId) return;
@@ -187,24 +171,26 @@ export function usePresence(planId: string | null) {
     if (!user) return null;
     const presence = presenceData[fieldName];
     if (presence && presence.uid !== user.uid) {
-      return presence;
+      return {
+        ...presence,
+        name: resolveMemberNickname(memberNicknames, presence.uid, presence.name, "營隊成員"),
+      };
     }
     return null;
-  }, [presenceData, user]);
+  }, [memberNicknames, presenceData, user]);
 
   const forceTakeoverField = useCallback((fieldName: string) => {
-    if (!db || !user || !planId) return;
+    if (!db || !user || !planId || !nickname) return;
     const docRef = doc(db, 'planPresence', planId);
-    const myName = getMyName();
     lockedFieldsRef.current.add(fieldName);
     setDocumentNonBlocking(docRef, {
       [fieldName]: {
         uid: user.uid,
-        name: myName,
+        name: nickname,
         timestamp: Date.now(),
       }
     }, { merge: true });
-  }, [db, user, planId, getMyName]);
+  }, [db, user, planId, nickname]);
 
-  return { lockField, unlockField, forceTakeoverField, isLockedByOther, getLockInfo, presenceData, activeViewers };
+  return { lockField, unlockField, forceTakeoverField, isLockedByOther, getLockInfo, activeViewers };
 }

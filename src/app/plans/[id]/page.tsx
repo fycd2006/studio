@@ -6,10 +6,17 @@ import { PlanEditor } from "@/components/PlanEditor";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useEffect } from "react";
+import { doc, runTransaction } from "firebase/firestore";
+import { useFirestore } from "@/firebase";
+import { useAuth } from "@/lib/auth-context";
+import { matchAssignee, readPlanPersonnel } from "@/lib/plan-personnel";
+import type { LessonPlan } from "@/types/plan";
 
 export default function PlanEditorPage() {
  const { id } = useParams() as { id: string };
  const router = useRouter();
+ const db = useFirestore();
+ const { nicknameIndex, memberDirectoryReady } = useAuth();
  
  const { 
  plans, 
@@ -39,6 +46,27 @@ export default function PlanEditorPage() {
  }
  }, [id, setActivePlanId]);
 
+ const loadedPlanId = plan?.id;
+ useEffect(() => {
+   if (!db || !loadedPlanId || !memberDirectoryReady) return;
+   const ref = doc(db, "lessonPlans", loadedPlanId);
+   // Bind legacy names from the latest document without advancing its update time.
+   void runTransaction(db, async transaction => {
+     const snapshot = await transaction.get(ref);
+     if (!snapshot.exists()) return;
+     const { lead, assistant } = readPlanPersonnel(snapshot.data() as LessonPlan);
+     const updates: Partial<LessonPlan> = {};
+     for (const role of ["lead", "assistant"] as const) {
+       const entries = role === "lead" ? lead : assistant;
+       const matched = entries.map(entry => matchAssignee(entry, nicknameIndex));
+       if (!matched.some((entry, index) => entry.uid !== entries[index].uid)) continue;
+       updates[role === "lead" ? "leadAssignees" : "assistantAssignees"] = matched;
+       updates[role === "lead" ? "leadMember" : "assistantMember"] = matched.map(entry => entry.name).join("、");
+     }
+     if (Object.keys(updates).length) transaction.update(ref, updates);
+   }).catch(error => console.warn("無法配對舊教案的關主人員", error));
+ }, [db, loadedPlanId, memberDirectoryReady, nicknameIndex]);
+
   if (!plan) {
     return (
       <div data-testid="editor-plan-not-found" className="min-h-screen flex flex-col items-center justify-center bg-[#FAF8F5] dark:bg-[#0B1012] text-foreground transition-colors p-6">
@@ -65,7 +93,7 @@ export default function PlanEditorPage() {
     );
   }
 
-  const handleUpdate = (id: string, updates: any) => {
+  const handleUpdate = (id: string, updates: Partial<LessonPlan>) => {
     updatePlan(id, updates);
   };
 

@@ -34,6 +34,7 @@ import { useServerTime, getCorrectedNow } from "@/hooks/use-server-time";
 import { useTranslation } from "@/lib/i18n-context";
 import { useTimer } from "@/lib/timer-context";
 import { useAlarmAudio } from "@/lib/alarm-audio";
+import { rotationStop } from "@/lib/rotation-itinerary";
 import { RotationTableData, LessonPlan, Camp } from "@/types/plan";
 
 interface AdminTimerProps {
@@ -94,8 +95,10 @@ export function AdminTimer({
 
   const activeCamp = camps.find(c => c.id === activeCampId);
   const currentBroadcastText = activeCamp?.broadcastText || "";
-  const currentRoundIndex = activeCamp?.activeRoundIndex !== undefined ? activeCamp.activeRoundIndex : 0;
-  const activeTable = tables.find(tb => tb.day === selectedDay);
+  const dayTables = tables.filter(table => (table.day || "Day 1") === selectedDay);
+  const [selectedTableId, setSelectedTableId] = useState("");
+  const activeTable = dayTables.find(table => table.id === selectedTableId) || dayTables[0];
+  const currentRoundIndex = Math.max(0, Math.min(activeCamp?.activeRoundIndex ?? 0, (activeTable?.rounds.length || 1) - 1));
 
   const handlePublishBroadcast = (text: string) => {
     if (!activeCampId || !onUpdateCamp) return;
@@ -536,6 +539,12 @@ export function AdminTimer({
               <div className="flex-1 flex flex-col justify-between space-y-4">
                 <div className="space-y-1">
                   <div className="text-[10px] font-mono text-fg-muted uppercase tracking-wider px-1">行政輪替表名稱</div>
+                  {dayTables.length > 1 && (
+                    <select aria-label="計時闖關表" value={activeTable.id} onChange={e => setSelectedTableId(e.target.value)}
+                      className="w-full rounded-md border border-input bg-card p-2 text-sm">
+                      {dayTables.map(table => <option key={table.id} value={table.id}>{table.title || "闖關表"}</option>)}
+                    </select>
+                  )}
                   <div className="text-sm font-normal text-foreground px-1">
                     {activeTable.title || `${selectedDay} 輪替表`} ({activeTable.rounds.length} 個輪次)
                   </div>
@@ -554,7 +563,7 @@ export function AdminTimer({
                   <div className="text-center">
                     <span className="text-[10px] font-mono text-fg-muted uppercase tracking-widest block">當前進度</span>
                     <span className="text-xl font-mono text-orange-600 dark:text-orange-400 block mt-0.5">
-                      第 {currentRoundIndex + 1} 輪 / Round {currentRoundIndex + 1}
+                      {activeTable.rounds.length ? `第 ${currentRoundIndex + 1} 輪 / Round ${currentRoundIndex + 1}` : "尚未安排輪次"}
                     </span>
                   </div>
                   <Button
@@ -573,12 +582,11 @@ export function AdminTimer({
                     <div className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400 uppercase tracking-widest mb-1.5 font-medium">當前小隊分佈</div>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                       {activeTable.teamOrders.map((team) => {
-                        const stationId = team.stations[currentRoundIndex];
-                        const station = activeTable.stations.find(st => st.id === stationId);
+                        const stop = rotationStop(activeTable, team, currentRoundIndex);
                         return (
                           <div key={team.id} className="text-xs font-mono text-foreground flex items-center justify-between py-1 border-b border-stone-200/40 dark:border-white/5 last:border-b-0">
                             <span className="truncate">{team.name}</span>
-                            <span className="text-orange-600 dark:text-orange-400 font-medium truncate ml-2">→ {station?.name || "休息"}</span>
+                            <span className="text-orange-600 dark:text-orange-400 font-medium truncate ml-2">→ {stop.label}{!stop.station && stop.detail ? `（${stop.detail}）` : ""}</span>
                           </div>
                         );
                       })}

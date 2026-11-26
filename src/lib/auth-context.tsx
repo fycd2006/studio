@@ -1,91 +1,181 @@
-"use client"
+"use client";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { signInWithCustomToken, signOut } from "firebase/auth";
+import { collection, doc, onSnapshot } from "firebase/firestore";
+import { useFirebase, useMemoFirebase } from "@/firebase/provider";
+import { useCollection } from "@/firebase/firestore/use-collection";
+import { isEmulatorEnabled } from "@/firebase/emulator";
+import type { Member } from "@/lib/member";
+import { indexMemberNicknames } from "@/lib/plan-personnel";
+import { updateAccount } from "@/lib/update-account";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
-
-type Role = 'admin' | 'crew' | null;
-
-interface AuthContextType {
-  role: Role;
-  login: (username: string, password: string) => Promise<boolean>;
-  logout: () => Promise<void>;
+interface AccountState {
+  member: Member | null;
+  memberNicknames: ReadonlyMap<string, string>;
+  nicknameIndex: ReadonlyMap<string, readonly string[]> | undefined;
+  accountHints: ReadonlyMap<string, string>;
+  memberDirectoryReady: boolean;
+  role: Member["role"] | null;
   isLoading: boolean;
+  needsBinding: boolean;
+  notice: string;
+  logout: () => Promise<void>;
 }
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AccountState | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [role, setRole] = useState<Role>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { auth, firestore, user, isUserLoading } = useFirebase();
+  const [observed, setObserved] = useState<{
+    uid: string;
+    member: Member | null;
+  } | null>(null);
+  const [restoring, setRestoring] = useState(isEmulatorEnabled);
+  const [notice, setNotice] = useState("");
+  const path = usePathname();
   const router = useRouter();
-  const pathname = usePathname();
-
   useEffect(() => {
-    const savedRole = localStorage.getItem("studio_role") as Role;
-    if (savedRole) {
-      setRole(savedRole);
-    }
-    setIsLoading(false);
-  }, []);
-
-  useEffect(() => {
-    if (!isLoading) {
-      if (!role && pathname !== "/login") {
-        router.push("/login");
-      } else if (role && pathname === "/login") {
-        router.push("/");
+    if (!isEmulatorEnabled()) return;
+    let cancelled = false;
+    async function restoreTestSession() {
+      await auth.authStateReady();
+      if (cancelled) return;
+      const current = auth.currentUser;
+      const testUser = current?.uid === "e2e-admin" || current?.uid === "e2e-crew";
+      if (!localStorage.getItem("studio_role")) {
+        if (testUser) await signOut(auth);
+        return;
       }
+      const response = await fetch("/api/auth/login", { cache: "no-store" });
+      const { token } = await response.json();
+      if (cancelled) return;
+      if (token) await signInWithCustomToken(auth, token);
+      else if (testUser) await signOut(auth);
     }
-  }, [role, isLoading, pathname, router]);
+    restoreTestSession()
+      .catch(() => { if (!cancelled) setNotice("無法還原測試登入"); })
+      .finally(() => { if (!cancelled) setRestoring(false); });
+    return () => { cancelled = true; };
+  }, [auth]);
 
-  const login = async (username: string, password: string): Promise<boolean> => {
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+  useEffect(() => {
+    if (restoring || !user) {
+      setObserved(null);
+      return;
+    }
+    if (user.isAnonymous) {
+      void signOut(auth);
+      return;
+    }
+    return onSnapshot(
+      doc(firestore, "users", user.uid),
+      { includeMetadataChanges: true },
+      (snapshot) => {
+        if (snapshot.metadata.fromCache) return;
+        const data = snapshot.exists() ? { ...(snapshot.data() as Member), uid: snapshot.id } : null;
+        if (data?.status === "disabled") {
+          setNotice("帳號已停用，請聯絡營隊管理員");
+          setObserved(null);
+          void signOut(auth);
+        } else {
+          setObserved({ uid: user.uid, member: data });
+          setNotice("");
+        }
+      },
+      () => {
+        setNotice("無法讀取成員資料，請重新登入");
+        void signOut(auth);
+      },
+    );
+  }, [auth, firestore, restoring, user]);
+
+  const ready = !!user && observed?.uid === user.uid;
+  const member = ready ? (observed?.member ?? null) : null;
+  const memberId = member ? user?.uid : undefined;
+  const directoryRef = useMemoFirebase(
+    () => memberId ? collection(firestore, "memberNames") : null,
+    [firestore, memberId],
+  );
+  const { data: directory } = useCollection<{ nickname: string; emailHint?: string }>(directoryRef);
+  const currentNickname = member?.nickname;
+  const needsNicknameSync = Boolean(
+    directory && memberId && currentNickname && !directory.some(
+      entry => entry.id === memberId && typeof entry.emailHint === "string",
+    ),
+  );
+  useEffect(() => {
+    if (user && needsNicknameSync) {
+      void updateAccount(user, { action: "sync-nickname" }).catch(() => {
+        console.warn("無法同步營隊綽號");
       });
-
-      if (!res.ok) return false;
-
-      const data = await res.json();
-      if (data.role) {
-        setRole(data.role);
-        localStorage.setItem("studio_role", data.role);
-        sessionStorage.setItem("studio_just_logged_in", "true");
-        localStorage.removeItem("activeCampId");
-        return true;
-      }
-      return false;
-    } catch {
-      return false;
     }
-  };
+  }, [user, needsNicknameSync]);
+
+  const memberNicknames = useMemo(() => {
+    const names = new Map<string, string>();
+    if (memberId) {
+      for (const entry of directory ?? []) {
+        if (entry.nickname) names.set(entry.id, entry.nickname);
+      }
+      if (currentNickname) names.set(memberId, currentNickname);
+    }
+    return names;
+  }, [directory, memberId, currentNickname]);
+  const nicknameIndex = useMemo(
+    () => directory ? indexMemberNicknames(memberNicknames) : undefined,
+    [directory, memberNicknames],
+  );
+  const accountHints = useMemo(() => new Map(
+    (directory ?? []).flatMap(entry => entry.emailHint ? [[entry.id, entry.emailHint]] : []),
+  ), [directory]);
+  const isLoading = isUserLoading || restoring || (!!user && !ready);
+  const role = member?.role ?? null;
+  useEffect(() => {
+    if (isLoading) return;
+    if (role) localStorage.setItem("studio_role", role);
+    else localStorage.removeItem("studio_role");
+    if (!role && path !== "/login") router.replace("/login");
+    if (role && path === "/login") {
+      sessionStorage.setItem("studio_just_logged_in", "true");
+      router.replace("/");
+    }
+  }, [isLoading, role, path, router]);
 
   const logout = async () => {
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-    } catch {
-      // Ignore network error on logout
-    }
-    setRole(null);
     localStorage.removeItem("studio_role");
     localStorage.removeItem("activeCampId");
     sessionStorage.removeItem("studio_just_logged_in");
-    router.push("/login");
+    await signOut(auth);
+    await fetch("/api/auth/logout", { method: "POST" });
   };
-
   return (
-    <AuthContext.Provider value={{ role, login, logout, isLoading }}>
-      {children}
+    <AuthContext.Provider
+      value={{
+        member,
+        memberNicknames,
+        nicknameIndex,
+        accountHints,
+        memberDirectoryReady: nicknameIndex !== undefined,
+        role,
+        isLoading,
+        needsBinding: ready && !member,
+        notice,
+        logout,
+      }}
+    >
+      {path === "/login" || role ? (
+        children
+      ) : (
+        <p role="status" className="p-6">
+          正在確認登入狀態…
+        </p>
+      )}
     </AuthContext.Provider>
   );
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
+  const value = useContext(AuthContext);
+  if (!value) throw new Error("AuthProvider is required");
+  return value;
 }

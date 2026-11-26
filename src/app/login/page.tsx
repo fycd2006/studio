@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useAuth } from "@/lib/auth-context";
-import { Tent, Mail, Lock, Facebook, Instagram, Eye, EyeOff, Loader2 } from "lucide-react";
+import { AccountLogin } from "@/components/AccountLogin";
+import { Tent, Facebook, Instagram } from "lucide-react";
 
 const FALLBACK_IMAGES = [
  "https://images.unsplash.com/photo-1504280395970-822064719f78?auto=format&fit=crop&w=1200&q=80",
@@ -60,14 +60,9 @@ const GhibliFilter = () => (
 );
 
 export default function LoginPage() {
- const [username, setUsername] = useState("");
- const [password, setPassword] = useState("");
- const [showPassword, setShowPassword] = useState(false);
- const [isSubmitting, setIsSubmitting] = useState(false);
- const [error, setError] = useState(false);
  const [imagePool, setImagePool] = useState<string[]>(FALLBACK_IMAGES);
  const [tiles, setTiles] = useState<string[]>(() => Array.from({ length: TILE_COUNT }, (_, i) => FALLBACK_IMAGES[i % FALLBACK_IMAGES.length]));
- const { login } = useAuth();
+
 
  useEffect(() => {
  let mounted = true;
@@ -112,21 +107,6 @@ export default function LoginPage() {
 
  return () => clearInterval(timer);
  }, [imagePool]);
-
- const handleSubmit = async (e: React.FormEvent) => {
- e.preventDefault();
- setIsSubmitting(true);
- setError(false);
- 
- // Professional handshaking delay
- await new Promise(resolve => setTimeout(resolve, 800));
- 
- const success = await login(username, password);
- if (!success) {
- setError(true);
- setIsSubmitting(false);
- }
- };
 
  return (
  <div className="relative min-h-screen w-full overflow-hidden bg-slate-900 font-sans">
@@ -175,7 +155,7 @@ export default function LoginPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }}
         data-testid="login-card"
-        className="relative z-10 mx-auto flex min-h-screen w-full max-w-sm flex-col items-center justify-center px-4 py-8"
+        className="relative z-10 mx-auto flex min-h-screen w-full max-w-md flex-col items-center justify-center px-4 py-8"
       >
         <div className="mb-6 flex flex-col items-center">
           <div className="w-16 h-16 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white mb-3 shadow-lg">
@@ -192,75 +172,8 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <div className="w-full rounded-xl bg-white/90 dark:bg-[#0B1012]/90 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-2xl p-6 sm:p-7">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-mono uppercase tracking-wider text-fg-muted px-1">帳號 (Username)</label>
-              <div className="relative flex items-center">
-                <Mail className="absolute left-3.5 h-4 w-4 text-fg-muted" strokeWidth={1.5} />
-                <input 
-                  data-testid="login-username-input"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="請輸入帳號"
-                  className="w-full pl-10 pr-4 h-11 rounded-lg bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 text-xs font-normal text-foreground outline-none focus:border-orange-500 transition-colors"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-mono uppercase tracking-wider text-fg-muted px-1">密碼 (Password)</label>
-              <div className="relative flex items-center">
-                <Lock className="absolute left-3.5 h-4 w-4 text-fg-muted" strokeWidth={1.5} />
-                <input 
-                  data-testid="login-password-input"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full pl-10 pr-10 h-11 rounded-lg bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 text-xs font-normal text-foreground outline-none focus:border-orange-500 transition-colors"
-                  required
-                />
-                <button
-                  data-testid="login-password-reveal"
-                  type="button"
-                  className="absolute right-3 text-fg-muted hover:text-foreground transition-colors p-1"
-                  onMouseDown={() => setShowPassword(true)}
-                  onMouseUp={() => setShowPassword(false)}
-                  onMouseLeave={() => setShowPassword(false)}
-                  onTouchStart={() => setShowPassword(true)}
-                  onTouchEnd={() => setShowPassword(false)}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" strokeWidth={1.5} /> : <Eye className="h-4 w-4" strokeWidth={1.5} />}
-                </button>
-              </div>
-            </div>
-
-            <AnimatePresence>
-              {error && (
-                <motion.div 
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  data-testid="login-error"
-                  className="rounded-xl bg-rose-500/10 border border-rose-500/20 p-2.5 text-center text-xs font-mono text-rose-600 dark:text-rose-400"
-                >
-                  帳號或密碼錯誤，請重新輸入。
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <button
-              data-testid="login-submit"
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full h-11 rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-mono text-xs uppercase tracking-wider transition-all disabled:opacity-50 shadow-xs flex items-center justify-center cursor-pointer mt-2"
-            >
-              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "登入系統 / Sign in"}
-            </button>
-          </form>
+        <div className="w-full rounded-lg border border-border bg-card px-5 pb-4 pt-6 text-card-foreground shadow-xl sm:px-7 sm:pb-5 sm:pt-7">
+          <AccountLogin />
         </div>
 
         <div className="mt-6 w-full space-y-2">

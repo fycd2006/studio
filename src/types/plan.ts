@@ -1,3 +1,4 @@
+import type { Delta } from "jsondiffpatch";
 
 export type PlanCategory = 'activity' | 'teaching';
 
@@ -8,6 +9,11 @@ export interface Group {
   nameEn: string;
   createdAt?: number;
 }
+
+export const DEFAULT_GROUPS: Group[] = [
+  { id: "group-activity", slug: "activity", nameZh: "活動組", nameEn: "Activity", createdAt: 0 },
+  { id: "group-teaching", slug: "teaching", nameZh: "教學組", nameEn: "Teaching", createdAt: 0 },
+];
 
 export interface PropItem {
   id: string;
@@ -60,6 +66,8 @@ export interface Station {
   location: string;
   lead: string;
   assistant: string;
+  leadAssignees?: PlanAssignee[];
+  assistantAssignees?: PlanAssignee[];
 }
 
 export interface RotationRound {
@@ -69,6 +77,7 @@ export interface RotationRound {
 export interface TeamOrder {
   id: string;
   name: string;
+  /** One station ID per round. Older tables may contain a station name and opponent. */
   stations: string[];
 }
 
@@ -97,6 +106,11 @@ export interface UserSettings {
   defaultCampId?: string;
 }
 
+export interface PlanAssignee {
+  name: string;
+  uid: string | null;
+}
+
 export interface LessonPlan {
   id: string;
   campId: string;
@@ -108,6 +122,8 @@ export interface LessonPlan {
   members: string;
   leadMember?: string;
   assistantMember?: string;
+  leadAssignees?: PlanAssignee[] | null;
+  assistantAssignees?: PlanAssignee[] | null;
   time: string;
   location: string;
   purpose: string;
@@ -139,7 +155,7 @@ export interface PlanVersion {
   authorName: string;
   authorColor: string;
   snapshot?: LessonPlan; // Present only if type is 'snapshot'
-  delta?: any; // JSON diff from the previous version, present if type is 'patch'
+  delta?: string | Delta; // JSON text for new patches, inline delta for legacy patches
 }
 
 /** 

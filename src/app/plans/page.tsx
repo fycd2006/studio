@@ -2,8 +2,10 @@
 
 import { usePlans } from "@/hooks/use-plans";
 import { accessibleCamps } from "@/lib/camp-access";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { planPersonalRelationship, withPersonnelNames, type PlanPersonalRelationship } from "@/lib/plan-personnel";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import {
@@ -57,6 +59,15 @@ import { exportPlansAsZip, exportToDocx, exportToPdf } from "@/lib/export-utils"
 import fallbackImagesData from "@/data/fallback-images.json";
 import { useOverviewPreferences, type OverviewPreferences } from "./overview-preferences";
 
+const personalPriority: Record<PlanPersonalRelationship, number> = {
+  lead: 0, draft: 0, assistant: 1, participant: 2,
+};
+const savedGroupPriority = 3;
+const inferredGroupPriority = 4;
+const otherPlanPriority = 5;
+const planTableColumns = "grid-cols-[28px_minmax(0,1.6fr)_minmax(72px,.75fr)_minmax(0,1.1fr)_70px_36px] gap-3 px-4 lg:grid-cols-[40px_minmax(0,1.75fr)_minmax(94px,.75fr)_minmax(0,1.1fr)_90px_44px] lg:gap-5 lg:px-6 xl:gap-8";
+const sortControlClass = "inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+
 function getDeterministicIndex(str: string): number {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
@@ -66,7 +77,7 @@ function getDeterministicIndex(str: string): number {
 }
 
 export default function PlansOverview() {
- const { role } = useAuth();
+ const { role, member, memberNicknames, nicknameIndex, memberDirectoryReady } = useAuth();
  const { plans, addPlan, groups, setActivePlanId, activeCampId, setActiveCampId, defaultCampId, camps, deletePlan, updatePlan } = usePlans();
  const { language, t } = useTranslation();
  const router = useRouter();
@@ -102,7 +113,7 @@ export default function PlansOverview() {
 
  const isViewingOtherProject = !!(defaultCampId && activeCampId && activeCampId !== defaultCampId);
 
- const [preferences, updatePreferences] = useOverviewPreferences(activeCampId, role);
+ const [preferences, updatePreferences] = useOverviewPreferences(activeCampId, member?.uid, role);
  const { viewType, searchQuery, sortBy, sortDirection } = preferences;
  const setViewType = (viewType: OverviewPreferences["viewType"]) => updatePreferences({ viewType });
  const setSearchQuery = (searchQuery: string) => updatePreferences({ searchQuery });
@@ -118,6 +129,10 @@ export default function PlansOverview() {
  const tabRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
 
  const handleSortClick = (nextSortBy: OverviewPreferences["sortBy"]) => {
+  if (nextSortBy === "smart") {
+    updatePreferences({ sortBy: "smart", sortDirection: "desc" });
+    return;
+  }
   const direction = sortBy === nextSortBy
     ? (sortDirection === "asc" ? "desc" : "asc")
     : (nextSortBy === "updatedAt" ? "desc" : "asc");
@@ -138,14 +153,11 @@ export default function PlansOverview() {
  toPlainText(plan.activityName) || "未命名文件";
  const getPlanDisplayCategory = (plan: typeof plans[number]) =>
  toPlainText(plan.scheduledName) || "無分類";
- const getPlanDisplayMembers = (plan: typeof plans[number]) => {
-   const lead = toPlainText(plan.leadMember);
-   const assistant = toPlainText(plan.assistantMember);
-   if (lead || assistant) {
-     return [lead, assistant].filter(Boolean).join('、');
-   }
-   return toPlainText(plan.members);
- };
+ const personnelByPlan = useMemo(() => new Map(plans.map(plan => [
+   plan.id, withPersonnelNames(plan, memberNicknames, nicknameIndex, memberDirectoryReady).members,
+ ])), [plans, memberNicknames, nicknameIndex, memberDirectoryReady]);
+ const getPlanDisplayMembers = (plan: LessonPlan) => personnelByPlan.get(plan.id) ?? "";
+ const exportPersonnel = (plan: LessonPlan) => withPersonnelNames(plan, memberNicknames, nicknameIndex);
 
  const mapCategoryToSlug = (value?: string | null) => {
  const key = normalizeKey(value);
@@ -166,6 +178,33 @@ export default function PlansOverview() {
  const fallbackSlug = mapCategoryToSlug(plan.category);
  return groups.find(g => normalizeKey(g.slug) === fallbackSlug) || null;
  };
+
+ const smartRanks = useMemo(() => {
+   const ranks = new Map<string, number>();
+   if (sortBy !== "smart" || !member || !activeCampId) return ranks;
+
+   const campPlans = plans.filter(plan => plan.campId === activeCampId);
+   const assignedGroups = new Set<string>();
+   for (const plan of campPlans) {
+     const relationship = planPersonalRelationship(plan, member.uid, nicknameIndex);
+     if (relationship) ranks.set(plan.id, personalPriority[relationship]);
+     if (relationship === "lead") {
+       const groupId = getPlanGroup(plan)?.id;
+       if (groupId) assignedGroups.add(groupId);
+     }
+   }
+
+   const savedGroupIds = new Set(member.campGroups?.[activeCampId]);
+   const inferredGroupId = assignedGroups.size === 1 ? [...assignedGroups][0] : undefined;
+   for (const plan of campPlans) {
+     if (ranks.has(plan.id)) continue;
+     const groupId = getPlanGroup(plan)?.id;
+     if (!groupId) continue;
+     if (savedGroupIds.has(groupId)) ranks.set(plan.id, savedGroupPriority);
+     else if (groupId === inferredGroupId) ranks.set(plan.id, inferredGroupPriority);
+   }
+   return ranks;
+ }, [plans, groups, sortBy, activeCampId, member, nicknameIndex]);
 
  const groupParam = searchParams.get("group");
  const resolveGroup = (value: string) => normalizeKey(value) === "all"
@@ -263,14 +302,19 @@ export default function PlansOverview() {
  });
  }
  if (searchQuery.trim()) {
- const q = searchQuery.toLowerCase();
+ const q = searchQuery.trim().toLowerCase();
  result = result.filter(p => 
  toPlainText(p.activityName).toLowerCase().includes(q) ||
  toPlainText(p.scheduledName).toLowerCase().includes(q) ||
+ (personnelByPlan.get(p.id) ?? "").toLowerCase().includes(q) ||
  toPlainText(p.members).toLowerCase().includes(q) ||
  toPlainText(p.leadMember).toLowerCase().includes(q) ||
  toPlainText(p.assistantMember).toLowerCase().includes(q)
  );
+ }
+ if (sortBy === "smart") {
+   const rank = (planId: string) => smartRanks.get(planId) ?? otherPlanPriority;
+   return [...result].sort((a, b) => rank(a.id) - rank(b.id) || (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
  }
  result = [...result].sort((a, b) => {
   if (sortBy === "updatedAt") {
@@ -287,7 +331,7 @@ export default function PlansOverview() {
   }
  });
  return result;
- }, [plans, filterGroup, searchQuery, sortBy, sortDirection, groups]);
+ }, [plans, filterGroup, searchQuery, sortBy, sortDirection, groups, smartRanks, personnelByPlan]);
 
  const crewToast = () => toast({
  title: "🔒 唯讀模式",
@@ -329,6 +373,21 @@ export default function PlansOverview() {
  router.push(`/plans/${encodeURIComponent(id)}`);
  };
 
+ const renderPlanLink = (plan: LessonPlan, className?: string) => (
+   <Link href={`/plans/${encodeURIComponent(plan.id)}`} prefetch={false}
+     onClick={event => event.stopPropagation()}
+     onNavigate={() => setActivePlanId(plan.id)}
+     onFocus={event => {
+       const link = event.currentTarget;
+       if (link.matches(":focus-visible") && link.getBoundingClientRect().bottom > window.innerHeight - 96) {
+         link.scrollIntoView({ block: "center" });
+       }
+     }}
+     className={cn("min-w-0 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", className)}>
+     {getPlanDisplayName(plan)}
+   </Link>
+ );
+
  const handleDeletePlan = (id: string, name: string) => {
  if (!isAdmin) { crewToast(); return; }
  setDeleteTarget({ id, name });
@@ -364,12 +423,12 @@ export default function PlansOverview() {
  const handleDownloadPlan = async (plan: LessonPlan, format: "word" | "pdf") => {
  try {
  if (format === "word") {
- await exportToDocx(plan);
+ await exportToDocx(exportPersonnel(plan));
  toast({ title: "匯出成功", description: "已下載 Word 教案。" });
  return;
  }
 
- await exportToPdf(plan);
+ await exportToPdf(exportPersonnel(plan));
  toast({ title: "匯出成功", description: "已下載 PDF 教案。" });
  } catch {
  toast({
@@ -404,7 +463,7 @@ export default function PlansOverview() {
  scope === "filtered"
  ? `plans_filtered_${format}_${Date.now()}.zip`
  : `plans_all_${format}_${Date.now()}.zip`;
- await exportPlansAsZip(targetPlans, format, { useSaveDialog: false, zipName });
+ await exportPlansAsZip(targetPlans.map(exportPersonnel), format, { useSaveDialog: false, zipName });
  successCount = targetPlans.length;
  } catch {
  failCount = targetPlans.length;
@@ -958,7 +1017,7 @@ export default function PlansOverview() {
                   <button
                     className={cn(
                       "w-9 h-9 rounded-md flex items-center justify-center active:scale-95 transition-all cursor-pointer relative",
-                      sortBy !== 'updatedAt' || sortDirection !== 'desc'
+                      sortBy !== 'smart'
                         ? "text-orange-500 bg-orange-500/10"
                         : "text-stone-700 dark:text-stone-300 hover:text-foreground hover:bg-stone-200/50 dark:hover:bg-white/10"
                     )}
@@ -974,15 +1033,23 @@ export default function PlansOverview() {
                       <span className="w-1.5 h-1.5 rotate-45 bg-orange-500" />
                       排序方式 SORT
                     </div>
-                    {(sortBy !== 'updatedAt' || sortDirection !== 'desc') && (
+                    {(sortBy !== 'smart') && (
                       <button
-                        onClick={() => { updatePreferences({ sortBy: 'updatedAt', sortDirection: 'desc' }); }}
+                        onClick={() => handleSortClick('smart')}
                         className="text-[10px] text-orange-600 dark:text-orange-400 hover:underline cursor-pointer"
                       >
                         重設
                       </button>
                     )}
                   </div>
+                  <DropdownMenuItem
+                    onSelect={() => handleSortClick('smart')}
+                    className={cn("flex items-center gap-2 px-3 py-2 text-xs rounded-md cursor-pointer",
+                      sortBy === 'smart' && "bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium")}
+                  >
+                    <Star className="w-3.5 h-3.5" />
+                    {language === 'zh' ? '智慧排序' : 'Smart sort'}
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     onSelect={(e) => { e.preventDefault(); handleSortClick('updatedAt'); }}
                     className={cn(
@@ -1201,13 +1268,14 @@ export default function PlansOverview() {
         </div>
 
         {/* ── TOOLBAR (Filter, Search & Controls) ─────────── */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6 sm:mb-12">
+        <div className="mb-6 flex flex-col justify-between gap-3 sm:mb-12 lg:flex-row lg:items-center">
           {/* Search Input */}
           <div className="relative flex-1 group">
             <Search className="w-4 h-4 sm:w-5 sm:h-5 absolute left-4 top-1/2 -translate-y-1/2 text-stone-500 dark:text-stone-400 group-focus-within:text-orange-500 transition-colors pointer-events-none z-10" />
             <input
               data-testid="plans-search-input"
               type="text"
+              aria-label={language === 'zh' ? '搜尋教案' : 'Search plans'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="請搜尋教案名稱、類別或人員..."
@@ -1225,13 +1293,25 @@ export default function PlansOverview() {
           </div>
 
           {/* Secondary Controls (Sort & View Mode) */}
-          <div className="hidden md:flex items-center gap-3 shrink-0 self-end lg:self-auto">
+          <div className="hidden flex-wrap items-center gap-3 self-end md:flex lg:shrink-0 lg:self-auto">
               {/* Sort Controls */}
               <div className="flex items-center gap-1 bg-white/60 dark:bg-white/[0.03] p-1 rounded-lg border border-stone-200/80 dark:border-white/10">
                 <button
-                  onClick={() => handleSortClick('updatedAt')}
+                  onClick={() => handleSortClick('smart')}
+                  aria-pressed={sortBy === 'smart'}
                   className={cn(
-                    "px-3 py-1.5 rounded-md text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer",
+                    sortControlClass, "whitespace-nowrap",
+                    sortBy === 'smart' ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium" : "text-fg-muted hover:text-foreground"
+                  )}
+                >
+                  <Star className="w-3.5 h-3.5" />
+                  {language === 'zh' ? '智慧排序' : 'Smart sort'}
+                </button>
+                <button
+                  onClick={() => handleSortClick('updatedAt')}
+                  aria-pressed={sortBy === 'updatedAt'}
+                  className={cn(
+                    sortControlClass,
                     sortBy === 'updatedAt' ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium" : "text-fg-muted hover:text-foreground"
                   )}
                 >
@@ -1244,8 +1324,9 @@ export default function PlansOverview() {
 
                 <button
                   onClick={() => handleSortClick('name')}
+                  aria-pressed={sortBy === 'name'}
                   className={cn(
-                    "px-3 py-1.5 rounded-md text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer",
+                    sortControlClass,
                     sortBy === 'name' ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium" : "text-fg-muted hover:text-foreground"
                   )}
                 >
@@ -1258,8 +1339,9 @@ export default function PlansOverview() {
 
                 <button
                   onClick={() => handleSortClick('category')}
+                  aria-pressed={sortBy === 'category'}
                   className={cn(
-                    "px-3 py-1.5 rounded-md text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer",
+                    sortControlClass,
                     sortBy === 'category' ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium" : "text-fg-muted hover:text-foreground"
                   )}
                 >
@@ -1425,11 +1507,11 @@ export default function PlansOverview() {
 
                           {/* Title & Category */}
                           <div className="mb-6 flex-1">
-                            <h3 className="font-normal text-base sm:text-lg text-foreground group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors line-clamp-2 leading-snug mb-1">
-                              {getPlanDisplayName(plan)}
+                            <h3 className="mb-1 text-base font-normal leading-snug text-foreground group-hover:text-orange-600 dark:group-hover:text-orange-400 sm:text-lg">
+                              {renderPlanLink(plan, "line-clamp-2")}
                             </h3>
                             <p className="text-xs text-fg-muted font-mono line-clamp-2 leading-relaxed">
-                              {getPlanDisplayCategory(plan) || "暫無細節說明"}
+                              {getPlanDisplayCategory(plan)}
                             </p>
                           </div>
 
@@ -1486,15 +1568,15 @@ export default function PlansOverview() {
                                 className="bg-white dark:bg-[#14191C] border border-stone-200/80 dark:border-white/10 rounded-lg p-4 cursor-pointer group hover:border-orange-500/50 hover:shadow-lg transition-all duration-200 relative overflow-hidden"
                               >
                                 <div className="flex items-start justify-between gap-3 mb-2 relative z-10">
-                                  <h4 className="font-normal text-sm text-foreground group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors line-clamp-2">
-                                    {getPlanDisplayName(plan)}
+                                  <h4 className="min-w-0 text-sm font-normal text-foreground group-hover:text-orange-600 dark:group-hover:text-orange-400">
+                                    {renderPlanLink(plan, "line-clamp-2")}
                                   </h4>
-                                  <div className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                                  <div className="opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
                                     {renderPlanActions(plan)}
                                   </div>
                                 </div>
-                                <p className="text-xs text-fg-muted font-mono mb-4 line-clamp-1">
-                                  {getPlanDisplayCategory(plan) || "暫無細節"}
+                                <p className="mb-4 truncate text-xs text-fg-muted font-mono">
+                                  {getPlanDisplayCategory(plan)}
                                 </p>
                                 <div className="flex items-center justify-between border-t border-stone-200/60 dark:border-white/5 pt-3">
                                   <div className="text-[11px] text-fg-secondary font-sans truncate max-w-[150px] flex items-center gap-1">
@@ -1530,7 +1612,7 @@ export default function PlansOverview() {
                 /* ── LIST VIEW (FLUID.GLASS FEATURED-PROJECTS 1PX HAIRLINE TABLE) ── */
                 <div className="w-full">
                   {/* Desktop Table Header */}
-                  <div className="hidden md:grid grid-cols-[48px_minmax(240px,2fr)_150px_160px_110px_48px] items-center gap-6 xl:gap-8 px-6 py-4 border-b border-stone-200/80 dark:border-white/10 text-[10px] font-mono tracking-widest text-fg-muted uppercase">
+                  <div className={cn("hidden items-center border-b border-border py-4 font-mono text-[10px] uppercase tracking-wider text-fg-muted md:grid", planTableColumns)}>
                     <div>#</div>
                     <div>PLAN / ACTIVITY NAME</div>
                     <div>DIVISION</div>
@@ -1553,7 +1635,7 @@ export default function PlansOverview() {
                           key={plan.id}
                           data-testid={`plan-row-${plan.id}`}
                           onClick={() => handleOpenPlan(plan.id)}
-                          className="group grid grid-cols-[48px_minmax(240px,2fr)_150px_160px_110px_48px] items-center gap-6 xl:gap-8 px-6 py-5 hover:bg-orange-500/[0.03] dark:hover:bg-orange-500/[0.04] transition-all duration-200 cursor-pointer"
+                          className={cn("group grid cursor-pointer items-center py-5 transition-colors focus-within:bg-primary/5 hover:bg-primary/5", planTableColumns)}
                         >
                           {/* 01: Monospace index */}
                           <div
@@ -1565,28 +1647,22 @@ export default function PlansOverview() {
 
                           {/* 02: Plan name & category */}
                           <div className="pr-4 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="font-normal text-[17px] text-foreground group-hover:text-orange-600 dark:group-hover:text-orange-400 group-hover:translate-x-1.5 transition-all duration-200 truncate">
-                                {getPlanDisplayName(plan)}
-                              </span>
-                              <ArrowRight className="w-3.5 h-3.5 text-orange-500 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 shrink-0" />
+                            <div className="flex min-w-0 items-center gap-1.5">
+                              {renderPlanLink(plan, "truncate text-base font-normal text-foreground transition-colors group-hover:text-orange-700 dark:group-hover:text-orange-400")}
+                              <ArrowRight aria-hidden className="size-3.5 shrink-0 text-orange-500 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100" />
                             </div>
-                            {category && (
-                              <div className={cn(
-                                "text-[12px] tracking-normal truncate mt-1.5 transition-colors",
-                                isUncategorized
-                                  ? "text-stone-300 dark:text-stone-600 text-[11px]"
-                                  : "text-fg-muted"
-                              )}>
-                                {category}
-                              </div>
-                            )}
+                            <div className={cn(
+                              "mt-1.5 truncate text-[12px] tracking-normal transition-colors",
+                              isUncategorized ? "text-stone-400 dark:text-stone-500" : "text-fg-muted"
+                            )}>
+                              {category}
+                            </div>
                           </div>
 
                           {/* 03: Division */}
-                          <div>
+                          <div className="min-w-0">
                             <span className={cn(
-                              "inline-flex items-center gap-2 px-3.5 py-1 rounded-sm text-[11px] font-mono font-medium tracking-wider uppercase border",
+                              "inline-flex max-w-full items-center gap-1.5 rounded-sm border px-2 py-1 font-mono text-[11px] font-medium uppercase tracking-wide xl:px-3.5",
                               groupBadge.softBg,
                               groupBadge.softText,
                               groupBadge.softBorder
@@ -1601,7 +1677,7 @@ export default function PlansOverview() {
                             {getPlanDisplayMembers(plan) ? (
                               <>
                                 <Users className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500 shrink-0" />
-                                <span className="truncate max-w-[140px]">{getPlanDisplayMembers(plan)}</span>
+                                <span className="truncate" title={getPlanDisplayMembers(plan)}>{getPlanDisplayMembers(plan)}</span>
                               </>
                             ) : (
                               <span className="text-stone-300 dark:text-stone-600 font-mono text-xs">—</span>
@@ -1648,8 +1724,8 @@ export default function PlansOverview() {
                               >
                                 {indexStr}
                               </span>
-                              <h3 className="font-medium text-[15px] text-foreground truncate">
-                                {getPlanDisplayName(plan)}
+                              <h3 className="min-w-0 text-[15px] font-medium text-foreground">
+                                {renderPlanLink(plan, "block truncate")}
                               </h3>
                             </div>
                             <span className={cn(

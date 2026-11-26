@@ -52,6 +52,7 @@ import { Input } from "@/components/ui/input";
 import { exportToDocx } from "@/lib/export-utils";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth-context";
+import { withPersonnelNames } from "@/lib/plan-personnel";
 import {
  Tooltip,
  TooltipContent,
@@ -94,7 +95,7 @@ export function PlanSidebar({
 }: PlanSidebarProps) {
  const { state, toggleSidebar, isMobile, isPinned, togglePin } = useSidebar();
  const { toast } = useToast();
- const { role } = useAuth();
+ const { role, memberNicknames, nicknameIndex } = useAuth();
  const pathname = usePathname();
  const router = useRouter();
  const [isMounted, setIsMounted] = useState(false);
@@ -169,7 +170,7 @@ export function PlanSidebar({
  const campPlans = plans.filter(p => p.campId === deleteCampTarget);
  if (campPlans.length > 0) {
  toast({ title: "備份中 / Backing up", description: `正在自動下載 ${campPlans.length} 份教案。` });
- for (const plan of campPlans) { await exportToDocx(plan); }
+ for (const plan of campPlans) { await exportToDocx(withPersonnelNames(plan, memberNicknames, nicknameIndex)); }
  }
  onCampDelete(deleteCampTarget);
  setDeleteCampTarget(null);

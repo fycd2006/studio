@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { RotationTableData, Station } from "@/types/plan";
+import { assignStationCell, assignTeam, editTeam, REST, rotationStop, stationForValue, stopText, teamKey } from "@/lib/rotation-itinerary";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Trash2, Plus, X, MapPin, User, UserPlus } from "lucide-react";
@@ -12,7 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+import { cn, stripHtml } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-context";
+import { keepAssigneeBindings, matchAssignee, splitPersonnel } from "@/lib/plan-personnel";
 import { useTranslation } from "@/lib/i18n-context";
 
 function CellInput({ 
@@ -52,7 +55,7 @@ function CellInput({
       onChange={(e) => setLocalValue(e.target.value)}
       onBlur={() => {
         setIsFocused(false);
-        onSave(localValue);
+        if (localValue !== (value || "")) onSave(localValue);
       }}
       onKeyDown={(e) => {
         if (e.key === 'Enter') {
@@ -77,6 +80,7 @@ interface AdminRotationTableProps {
 
 export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = true }: AdminRotationTableProps) {
   const { t } = useTranslation();
+  const { nicknameIndex } = useAuth();
   
   const addStation = () => {
     if (isReadOnly) return;
@@ -91,10 +95,6 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
     onUpdate({
       stations: [...table.stations, newStation],
       rounds: table.rounds.map(r => ({ cells: [...r.cells, ''] })),
-      teamOrders: table.teamOrders.map(t => ({ 
-        ...t, 
-        stations: [...(t.stations || new Array(table.stations.length).fill('')), ''] 
-      }))
     });
   };
 
@@ -105,7 +105,7 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
       rounds: table.rounds.map(r => ({ cells: r.cells.filter((_, i) => i !== idx) })),
       teamOrders: table.teamOrders.map(t => ({
         ...t,
-        stations: (t.stations || []).filter((_, i) => i !== idx)
+        stations: (t.stations || []).map(value => stationForValue(table.stations, value)?.id === table.stations[idx].id ? "" : value)
       }))
     });
   };
@@ -113,26 +113,29 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
   const updateStation = (idx: number, updates: Partial<Station>) => {
     if (isReadOnly) return;
     const newStations = [...table.stations];
-    newStations[idx] = { ...newStations[idx], ...updates };
-    onUpdate({ stations: newStations });
+    const current = newStations[idx];
+    const assignees = (value: string, role: "lead" | "assistant") => {
+      const prior = role === "lead" ? current.leadAssignees : current.assistantAssignees;
+      return keepAssigneeBindings(splitPersonnel(value), prior ?? []).map(entry => matchAssignee(entry, nicknameIndex));
+    };
+    newStations[idx] = {
+      ...current,
+      ...updates,
+      ...(updates.lead !== undefined ? { leadAssignees: assignees(updates.lead, "lead") } : {}),
+      ...(updates.assistant !== undefined ? { assistantAssignees: assignees(updates.assistant, "assistant") } : {}),
+    };
+    const teamOrders = table.teamOrders.map(team => ({
+      ...team, stations: (team.stations || []).map(value => stationForValue(table.stations, value)?.id || value),
+    }));
+    onUpdate(updates.name !== undefined ? { stations: newStations, teamOrders } : { stations: newStations });
   };
 
-  const updateRoundCell = (roundIdx: number, stationIdx: number, val: string) => {
-    if (isReadOnly) return;
-    const newRounds = [...table.rounds];
-    const newCells = [...newRounds[roundIdx].cells];
-    newCells[stationIdx] = val;
-    newRounds[roundIdx] = { ...newRounds[roundIdx], cells: newCells };
-    onUpdate({ rounds: newRounds });
-  };
-
-  const updateTeamOrder = (teamIdx: number, stationIdx: number, val: string) => {
-    if (isReadOnly) return;
-    const newTeams = [...table.teamOrders];
-    const stations = Array.isArray(newTeams[teamIdx].stations) ? [...newTeams[teamIdx].stations] : new Array(table.stations.length).fill('');
-    stations[stationIdx] = val;
-    newTeams[teamIdx] = { ...newTeams[teamIdx], stations };
-    onUpdate({ teamOrders: newTeams });
+  const addTeam = () => {
+    const existingNames = new Set(table.teamOrders.map(team => teamKey(team.name)));
+    let number = 1;
+    while (existingNames.has(String(number))) number++;
+    const team = { id: Math.random().toString(36).slice(2, 11), name: `第 ${number} 小隊`, stations: table.rounds.map(() => "") };
+    onUpdate({ teamOrders: [...table.teamOrders, team] });
   };
 
   const unifiedAddBtnStyle = "rounded-md font-mono text-xs uppercase tracking-wider gap-1.5 h-8 px-4 border border-orange-500/40 text-orange-600 dark:text-orange-400 hover:bg-orange-500/10 transition-all shadow-xs";
@@ -211,9 +214,9 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
             
             <tbody className="text-xs sm:text-sm divide-y divide-stone-200/60 dark:divide-white/5">
               {[
-                { label: t('LOCATION'), key: 'location' as keyof Station, icon: MapPin },
-                { label: t('LEAD'), key: 'lead' as keyof Station, icon: User },
-                { label: t('ASSISTANT'), key: 'assistant' as keyof Station, icon: UserPlus }
+                { label: t('LOCATION'), key: 'location' as const, icon: MapPin },
+                { label: t('LEAD'), key: 'lead' as const, icon: User },
+                { label: t('ASSISTANT'), key: 'assistant' as const, icon: UserPlus }
               ].map((row) => (
                 <tr key={row.label} className="hover:bg-stone-50/50 dark:hover:bg-white/[0.02] transition-colors">
                   <td className="w-[110px] md:w-[140px] p-2 font-mono text-[11px] text-fg-muted uppercase tracking-wider bg-stone-50/40 dark:bg-white/[0.01] border-r border-stone-200/60 dark:border-white/10">
@@ -225,7 +228,7 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
                   {table.stations.map((s, idx) => (
                     <td key={s.id} className="p-1 border-r border-stone-200/60 dark:border-white/10 last:border-r-0">
                       <CellInput 
-                        value={String(s[row.key] || '')} 
+                        value={stripHtml(s[row.key])}
                         readOnly={isReadOnly}
                         onSave={(val) => updateStation(idx, { [row.key]: val })} 
                         className="text-xs sm:text-sm h-8" 
@@ -254,7 +257,7 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
                       <CellInput 
                         value={round.cells[sIdx] || ''} 
                         readOnly={isReadOnly}
-                        onSave={(val) => updateRoundCell(rIdx, sIdx, val)} 
+                        onSave={(val) => onUpdate(assignStationCell(table, rIdx, sIdx, val))}
                         className="text-xs sm:text-sm text-foreground h-8" 
                       />
                     </td>
@@ -263,7 +266,7 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
                     <td className="w-10 p-0 text-center">
                       <button
                         className="h-7 w-7 text-stone-400 hover:text-rose-500 flex items-center justify-center mx-auto transition-colors cursor-pointer"
-                        onClick={() => onUpdate({ rounds: table.rounds.filter((_, i) => i !== rIdx) })}
+                        onClick={() => onUpdate({ rounds: table.rounds.filter((_, i) => i !== rIdx), teamOrders: table.teamOrders.map(team => ({ ...team, stations: (team.stations || []).filter((_, i) => i !== rIdx) })) })}
                         title="刪除輪次"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -280,7 +283,7 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
                       variant="outline"
                       size="sm"
                       className={unifiedAddBtnStyle}
-                      onClick={() => onUpdate({ rounds: [...table.rounds, { cells: new Array(table.stations.length).fill('') }] })}
+                      onClick={() => onUpdate({ rounds: [...table.rounds, { cells: new Array(table.stations.length).fill('') }], teamOrders: table.teamOrders.map(team => ({ ...team, stations: [...table.rounds.map((_, i) => team.stations?.[i] || ''), ''] })) })}
                     >
                       <Plus className="h-3.5 w-3.5 mr-1" /> {t('ADD_ROUND')}
                     </Button>
@@ -288,9 +291,15 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
                 </tr>
               )}
 
+            </tbody>
+          </table>
+        </div>
+        <div className="overflow-x-auto w-full">
+          <table className="w-full table-fixed min-w-[760px] border-collapse">
+            <tbody className="text-xs sm:text-sm divide-y divide-border">
               {/* Rotation Order Section Divider */}
               <tr className="bg-orange-500/[0.04] border-y border-orange-500/20">
-                <td colSpan={table.stations.length + 2} className="py-2.5 px-6">
+                <td colSpan={table.rounds.length + (isReadOnly ? 1 : 2)} className="py-2.5 px-6">
                   <span className="font-mono text-[11px] text-orange-700 dark:text-orange-400 tracking-wider uppercase font-medium">
                     // {t('ROTATION_ORDER')}
                   </span>
@@ -302,7 +311,7 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
                 <td className="w-[110px] md:w-[140px] p-1.5 text-center font-bold bg-stone-50/50 dark:bg-white/[0.02] border-r border-stone-200/60 dark:border-white/10">
                   小隊名稱
                 </td>
-                {table.stations.map((_, colIdx) => (
+                {table.rounds.map((_, colIdx) => (
                   <td key={colIdx} className="p-1.5 text-center border-r border-stone-200/60 dark:border-white/10 last:border-r-0 font-medium text-orange-600 dark:text-orange-400">
                     第 {colIdx + 1} 輪行程
                   </td>
@@ -310,35 +319,43 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
                 {!isReadOnly && <td className="w-10"></td>}
               </tr>
 
-              {table.teamOrders.map((team, tIdx) => (
+              {table.teamOrders.map((team) => (
                 <tr key={team.id} className="hover:bg-stone-50/50 dark:hover:bg-white/[0.02] transition-colors">
                   <td className="w-[110px] md:w-[140px] p-2 text-center bg-stone-50/40 dark:bg-white/[0.01] border-r border-stone-200/60 dark:border-white/10">
                     <CellInput 
                       value={team.name} 
                       readOnly={isReadOnly}
-                      onSave={(val) => {
-                        const newTeams = [...table.teamOrders];
-                        newTeams[tIdx] = { ...newTeams[tIdx], name: val };
-                        onUpdate({ teamOrders: newTeams });
-                      }} 
+                      onSave={(val) => val.trim() && onUpdate(editTeam(table, team, val.trim()))}
                       className="font-normal text-xs sm:text-sm text-foreground h-8" 
                     />
                   </td>
-                  {table.stations.map((_, oIdx) => (
-                    <td key={oIdx} className="p-1 text-center border-r border-stone-200/60 dark:border-white/10 last:border-r-0">
-                      <CellInput 
-                        value={(team.stations && team.stations[oIdx]) || ''} 
-                        readOnly={isReadOnly}
-                        onSave={(val) => updateTeamOrder(tIdx, oIdx, val)} 
-                        className="font-mono text-xs sm:text-sm text-orange-600 dark:text-orange-400 font-medium h-8" 
-                      />
-                    </td>
-                  ))}
+                  {table.rounds.map((_, round) => {
+                    const stop = rotationStop(table, team, round);
+                    const selected = stop.station?.id ?? (stop.label === "休息" ? REST : team.stations?.[round] || "");
+                    return (
+                      <td key={round} className="p-1 text-center border-r border-border last:border-r-0">
+                        {isReadOnly ? stopText(stop) : (
+                          <select aria-label={`${team.name} 第 ${round + 1} 輪關卡`} value={selected}
+                            onChange={e => onUpdate(assignTeam(table, team, round, e.target.value))}
+                            className="h-9 w-full rounded-md border border-input bg-card px-1 text-foreground focus-visible:ring-2 focus-visible:ring-ring">
+                            <option value="">待安排</option>
+                            <option value={REST}>休息</option>
+                            {selected && !stop.station && selected !== REST && <option value={selected}>{stopText(stop)}</option>}
+                            {table.stations.map((station, i) => (
+                              <option key={station.id} value={station.id}>
+                                {station.name || "未命名關卡"}{table.stations.filter(item => item.name === station.name).length > 1 ? `（第 ${i + 1} 關）` : ""}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </td>
+                    );
+                  })}
                   {!isReadOnly && (
                     <td className="w-10 p-0 text-center">
                       <button
                         className="h-7 w-7 text-stone-400 hover:text-rose-500 flex items-center justify-center mx-auto transition-colors cursor-pointer"
-                        onClick={() => onUpdate({ teamOrders: table.teamOrders.filter((_, i) => i !== tIdx) })}
+                        onClick={() => onUpdate(editTeam(table, team, null))}
                         title="刪除小隊順序"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -350,12 +367,12 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
               
               {!isReadOnly && (
                 <tr className="no-print">
-                  <td className="p-3 text-center bg-transparent" colSpan={table.stations.length + 2}>
+                  <td className="p-3 text-center bg-transparent" colSpan={table.rounds.length + (isReadOnly ? 1 : 2)}>
                     <Button
                       variant="outline"
                       size="sm"
                       className={unifiedAddBtnStyle}
-                      onClick={() => onUpdate({ teamOrders: [...table.teamOrders, { id: Math.random().toString(36).substr(2, 9), name: `Team ${table.teamOrders.length + 1}`, stations: new Array(table.stations.length).fill('') }] })}
+                      onClick={addTeam}
                     >
                       <Plus className="h-3.5 w-3.5 mr-1" /> {t('ADD_TEAM')}
                     </Button>

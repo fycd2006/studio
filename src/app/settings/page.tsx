@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth-context";
+import { withPersonnelNames } from "@/lib/plan-personnel";
 import { usePlans } from "@/hooks/use-plans";
 import { accessibleCamps } from "@/lib/camp-access";
 import { useTheme } from "next-themes";
@@ -38,11 +39,12 @@ import { Badge } from "@/components/ui/badge";
 import { cn, getUnifiedGroupBadgeParams } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { useSearchParams } from "next/navigation";
-import { campNicknameStorageKey } from "@/hooks/use-presence";
+import { MemberSettings } from "@/components/MemberSettings";
+import { VersionReleaseNotes } from "@/components/VersionReleaseNotes";
 import { VERSION_HISTORY } from "@/data/version-history";
 
 export default function SettingsPage() {
-  const { role, logout } = useAuth();
+  const { role, logout, memberNicknames, nicknameIndex } = useAuth();
   const {
     camps, defaultCampId, setDefaultCampId, activeCampId, setActiveCampId, deleteCamp, updateCamp, addCamp,
     activityTypes, addActivityType, removeActivityType,
@@ -54,7 +56,7 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const searchParams = useSearchParams();
 
-  const [profileName, setProfileName] = useState("");
+
   const [isDeleting, setIsDeleting] = useState<boolean | "downloading">(false);
   const [isAddingProject, setIsAddingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
@@ -66,7 +68,7 @@ export default function SettingsPage() {
   const [newGroupNameZh, setNewGroupNameZh] = useState("");
   const [newGroupNameEn, setNewGroupNameEn] = useState("");
   const [isVersionHistoryOpen, setIsVersionHistoryOpen] = useState(false);
-  const [currentVersion, setCurrentVersion] = useState(process.env.NEXT_PUBLIC_APP_VERSION || "dev");
+  const [currentVersion, setCurrentVersion] = useState(VERSION_HISTORY[0]?.version || "dev");
   const [activeTab, setActiveTab] = useState<"account" | "workspace" | "preferences" | "versions" | "danger">("account");
 
   const activeCamp = camps.find(c => c.id === activeCampId);
@@ -76,9 +78,7 @@ export default function SettingsPage() {
   // 都有濾，只有這裡漏了，於是 crew 在這裡看得到也點得進去（issue #9）。
   const visibleCamps = useMemo(() => accessibleCamps(camps, role), [camps, role]);
 
-  useEffect(() => {
-    setProfileName(localStorage.getItem(campNicknameStorageKey) ?? "");
-  }, []);
+
 
   useEffect(() => {
     if (searchParams.get('createProject') === '1' && isAdmin) {
@@ -232,44 +232,7 @@ export default function SettingsPage() {
                   {t('IDENTITY_GOVERNANCE')}
                 </h2>
               </div>
-              <div className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 rounded-xl p-6 sm:p-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-                  <div className="space-y-3">
-                    <label htmlFor="camp-nickname" className="block text-xs font-mono tracking-wider text-fg-muted">
-                      營隊綽號
-                    </label>
-                    <input
-                      id="camp-nickname"
-                      type="text"
-                      value={profileName}
-                      maxLength={40}
-                      onChange={(event) => setProfileName(event.target.value)}
-                      onBlur={() => {
-                        const nickname = profileName.trim();
-                        setProfileName(nickname);
-                        if (nickname) localStorage.setItem(campNicknameStorageKey, nickname);
-                        else localStorage.removeItem(campNicknameStorageKey);
-                      }}
-                      className="w-full bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 rounded-lg px-4 py-3 font-normal text-foreground focus:border-orange-500 dark:focus:border-orange-500 focus:outline-none transition-all text-sm"
-                    />
-                    <p className="text-[11px] font-mono text-fg-muted">
-                      綽號儲存在此瀏覽器，會顯示在協作狀態與新建立的版本紀錄。
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-5 p-6 bg-stone-50/60 dark:bg-white/[0.02] border border-stone-200/60 dark:border-white/5 rounded-lg">
-                    <div className="w-14 h-14 rounded-md bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
-                      <ShieldCheck className="w-7 h-7 text-orange-600 dark:text-orange-400" />
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-mono uppercase tracking-wider text-fg-muted">Clearance Level</p>
-                      <p className="text-xl font-normal text-foreground uppercase tracking-tight mt-0.5">{role}</p>
-                      <span className="inline-block mt-1 font-mono text-[10px] text-emerald-600 dark:text-emerald-400">
-                        {role === 'admin' ? '● 擁有完整系統編輯權限' : '○ 唯讀瀏覽權限'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <MemberSettings />
             </section>
           )}
 
@@ -926,7 +889,7 @@ export default function SettingsPage() {
                                 setIsDeleting("downloading");
                                 toast({ title: language === 'zh' ? '備份中' : 'Backing up', description: language === 'zh' ? '正在打包所有教案 (Word) 與清單 (Excel) 為 ZIP...' : 'Packaging files...' });
                                 try {
-                                  await exportProjectBackupZip(activeCampId, activeCamp?.name || 'Project', camps, plans, tables);
+                                  await exportProjectBackupZip(activeCampId, activeCamp?.name || 'Project', camps, plans.map(plan => withPersonnelNames(plan, memberNicknames, nicknameIndex)), tables);
                                   toast({ title: language === 'zh' ? '備份完成' : 'Backup completed', description: language === 'zh' ? 'ZIP 備份已下載，即將刪除專案。' : 'ZIP downloaded. Deleting...' });
                                 } catch (e) {
                                   console.error("Backup failed", e);
@@ -997,32 +960,8 @@ export default function SettingsPage() {
                 </Button>
               </div>
 
-              <div className="px-8 py-6 overflow-y-auto max-h-[calc(85vh-90px)] space-y-8">
-                {VERSION_HISTORY.map((entry) => (
-                  <div key={entry.id} className="relative pl-6">
-                    <div className="absolute left-0 top-1.5 w-2 h-2 rounded-full bg-orange-500 shadow-xs" />
-                    <div className="absolute left-[3px] top-4 bottom-[-32px] w-0.5 bg-stone-200 dark:bg-white/10" />
-
-                    <div className="flex items-center justify-between gap-3 mb-2">
-                      <div>
-                        <p className="font-mono text-xs text-fg-muted">{entry.date}</p>
-                        <h4 className="text-base font-normal text-foreground mt-0.5">{entry.title}</h4>
-                      </div>
-                      <span className="font-mono text-[10px] px-2.5 py-0.5 rounded-sm bg-orange-500/15 text-orange-700 dark:text-orange-400 border border-orange-500/30">
-                        v{entry.version}
-                      </span>
-                    </div>
-
-                    <ul className="space-y-2 mt-3">
-                      {entry.highlights.map((item, idx) => (
-                        <li key={`${entry.id}-${idx}`} className="flex items-start gap-2.5 text-xs text-fg-secondary leading-relaxed">
-                          <div className="w-1.5 h-1.5 rounded-full bg-stone-300 dark:bg-stone-600 shrink-0 mt-1.5" />
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
+              <div className="min-h-0 space-y-6 overflow-y-auto p-4 sm:p-6">
+                {VERSION_HISTORY.map(entry => <VersionReleaseNotes key={entry.id} entry={entry} />)}
               </div>
             </motion.div>
           </div>

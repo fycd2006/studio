@@ -18,7 +18,9 @@ import {
   Sparkles,
   Coffee
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, stripHtml } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-context";
+import { withPersonnelNames } from "@/lib/plan-personnel";
 import { useTranslation } from "@/lib/i18n-context";
 
 interface SmartRotationWizardModalProps {
@@ -44,10 +46,6 @@ interface StationItemState {
   originalAssistant: string;
 }
 
-function stripHtml(html: string = ""): string {
-  return html.replace(/<[^>]*>?/gm, "").trim();
-}
-
 export function SmartRotationWizardModal({
   isOpen,
   onClose,
@@ -56,6 +54,7 @@ export function SmartRotationWizardModal({
   defaultDay = "Day 1",
 }: SmartRotationWizardModalProps) {
   const { t } = useTranslation();
+  const { memberNicknames, nicknameIndex } = useAuth();
   const [day, setDay] = useState(defaultDay);
   const [teamCount, setTeamCount] = useState(4);
   const [targetStationCount, setTargetStationCount] = useState(3);
@@ -115,9 +114,8 @@ export function SmartRotationWizardModal({
   useEffect(() => {
     if (!isOpen) return;
     const initialItems: StationItemState[] = filteredPlans.map((p, idx) => {
-      const lead = stripHtml(p.leadMember) || stripHtml(p.members).split("、")[0] || stripHtml(p.members) || "";
-      const assistant = stripHtml(p.assistantMember) || "";
-      const loc = p.location || "";
+      const { leadMember: lead, assistantMember: assistant } = withPersonnelNames(p, memberNicknames, nicknameIndex);
+      const loc = stripHtml(p.location);
       return {
         planId: p.id,
         checked: idx < 3,
@@ -132,7 +130,7 @@ export function SmartRotationWizardModal({
     });
     setStationItems(initialItems);
     setTargetStationCount(Math.min(3, Math.max(1, filteredPlans.length)));
-  }, [filteredPlans, isOpen]);
+  }, [filteredPlans, isOpen, memberNicknames, nicknameIndex]);
 
   const checkedStations = useMemo(() => stationItems.filter((s) => s.checked), [stationItems]);
   const checkedCount = checkedStations.length;

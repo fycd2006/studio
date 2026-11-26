@@ -53,7 +53,7 @@ npm run dev
 | `npm run typecheck` | 型別檢查（主專案 + cypress 兩份 tsconfig，交接與發 PR 前必備） |
 | `npm run e2e` | 跑 Cypress E2E（自動起 Firebase emulator 與專用 dev server） |
 | `npm run e2e:open` | 同上，但開 Cypress GUI |
-| `npm run release` | 自動產生版更日誌 (Changelog) |
+| `npm run release -- <major\|minor\|patch> <notes.json>` | 準備版本號與更新日誌 |
 
 ---
 
@@ -187,3 +187,42 @@ CYPRESS_ENABLE_API_LOG=true npm run e2e -- --spec <那一支>
 4. **線上安全性保護**：
    - 請勿在未討論的情況下修改或發布 `firestore.rules`。
    - 請勿在客戶端程式碼硬編碼任何 Service Account 私鑰或憑證。
+
+## 個人帳號與成員管理
+
+在 Firebase Authentication 啟用 Email/Password 和 Google 登入，並把網站網域加入 Authorized domains。忘記密碼使用 Firebase 內建的密碼重設信，可在 Authentication 的 Templates 調整寄件名稱與信件內容。
+
+部署 Next.js 伺服器時，提供同一個 Firebase 專案的 Admin SDK 憑證。在支援 Application Default Credentials 的環境可直接使用執行身分，在其他主機可設定伺服器端秘密 `FIREBASE_ADMIN_SERVICE_ACCOUNT`（服務帳戶 JSON）。正式環境需設定 `CAMP_ADMIN_CODE` 和 `CAMP_CREW_CODE` 作為營隊通行碼。上述秘密僅供伺服器使用。發布帳號功能時，需同步部署本專案的 Firestore Rules。
+
+Firebase Emulator 模式會標示「模擬 Google 登入（本機測試）」，並提供自動化測試用的共用帳號。正式站會開啟 Google 帳戶選擇視窗，由 Google 驗證登入身分。首次登入需要綁定綽號與通行碼，之後沿用個人帳號。
+
+
+## 版本編號與更新日誌
+
+版本採用 [SemVer](https://semver.org/lang/zh-TW/) 的 `主版號.次版號.修訂號`。網站與 Git 標籤加上 `v`，`package.json` 和 lockfile 使用純數字版本。這次 v2 的完整版本號是 `v2.0.0`。
+
+| 變更內容 | 發布類型 | 範例 |
+| --- | --- | --- |
+| 登入、資料格式或既有流程出現不相容變更 | `major`，次版號與修訂號歸零 | v2.4.7 → v3.0.0 |
+| 相容的新功能或具實質影響的改善 | `minor`，修訂號歸零 | v2.4.7 → v2.5.0 |
+| 相容的錯誤修正或小幅調整 | `patch` | v2.4.7 → v2.4.8 |
+
+同批變更採用影響最高的發布類型。從最新正式版本遞增，已發布的版本號保留給原有內容。一般提交維持目前版本號。
+
+日誌最上方放版本號、發布日、更新標題和一段總結。正文依序使用「新發布」、「改善項目」、「修正項目」，每筆說明對應的功能與使用者可見的結果。各類沒有內容時保留空陣列，畫面與發布說明會略過空區塊。發布日期依台北時區。
+
+準備一份 JSON 格式的日誌，再執行 `npm run release -- <major|minor|patch> <notes.json>`。指令同步更新網站版本紀錄與兩個套件清單。
+
+```json
+{
+  "title": "一句話說明主要更新",
+  "summary": "用一段話交代這版對使用者的影響。",
+  "changes": {
+    "added": [],
+    "improved": ["在既有頁面改善的操作。"],
+    "fixed": ["已修正的問題與結果。"]
+  }
+}
+```
+
+用 `npm run release -- --check` 驗證版本一致性。用 `npm run --silent release -- --notes` 產生 GitHub Release 內文，將對應版本標籤指向發布提交。

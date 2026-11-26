@@ -82,7 +82,8 @@ export function useDoc<T = any>(
         setIsLoading(false)
 
         // trigger global error propagation
-        errorEmitter.emit('permission-error', contextualError);
+        // Revoking membership also cancels live queries. The account listener handles sign-out.
+        if (error.code !== 'permission-denied') errorEmitter.emit('permission-error', contextualError);
       }
     );
 

@@ -21,6 +21,8 @@ export const COLLECTIONS = [
   'planVersions',
   'planPresence',
   'userSettings',
+  'users',
+  'memberNames',
 ] as const;
 
 export type CollectionName = (typeof COLLECTIONS)[number];

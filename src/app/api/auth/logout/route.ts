@@ -6,5 +6,6 @@ export async function POST() {
     maxAge: 0,
     path: "/",
   });
+  response.cookies.delete("studio_test_session");
   return response;
 }

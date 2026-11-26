@@ -10,6 +10,8 @@ import { renderCanvasJsonToPng } from "@/lib/canvas-image";
 import { parseEditorHtml } from "@/lib/editor-html";
 import { useTranslation } from "@/lib/i18n-context";
 import { stripHtml } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-context";
+import { withPersonnelNames } from "@/lib/plan-personnel";
 import type { Group, LessonPlan } from "@/types/plan";
 
 const actionClass =
@@ -84,6 +86,8 @@ export function PlanPreviewDialog({ plan, group, onClose, trigger }: {
   trigger: HTMLButtonElement | null;
 }) {
   const { t, language } = useTranslation();
+  const { memberNicknames, nicknameIndex, memberDirectoryReady } = useAuth();
+  const personnel = withPersonnelNames(plan, memberNicknames, nicknameIndex, memberDirectoryReady);
   const heading = useRef<HTMLHeadingElement>(null);
   const zh = language === "zh";
   const title = stripHtml(plan.activityName) || (zh ? "未命名教案" : "Untitled lesson plan");
@@ -95,9 +99,9 @@ export function PlanPreviewDialog({ plan, group, onClose, trigger }: {
     [zh ? "組別" : "Group", groupLabel],
     [t("TIME_WINDOW"), stripHtml(plan.time)],
     [t("VENUE"), stripHtml(plan.location)],
-    [t("CASE_PERSONNEL"), stripHtml(plan.members)],
-    [t("LEAD"), stripHtml(plan.leadMember)],
-    [t("ASSISTANT"), stripHtml(plan.assistantMember)],
+    [t("CASE_PERSONNEL"), personnel.members],
+    [t("LEAD"), personnel.leadMember],
+    [t("ASSISTANT"), personnel.assistantMember],
   ];
   const sections = [
     [t("MISSION_OBJ"), plan.purpose],

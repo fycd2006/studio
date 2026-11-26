@@ -5,6 +5,9 @@ import { RotationTableData, LessonPlan, PropItem, Camp, Group } from "@/types/pl
 import { campItemBlocks, UNASSIGNED_USAGE_LABEL, type CampItemEdit } from "@/lib/camp-items";
 import type { CampUpdate } from "@/lib/plans-context";
 import { AdminTimer } from "@/components/AdminTimer";
+import { StationRotationView } from "@/components/StationRotationView";
+import { stationAssignees } from "@/lib/rotation-personnel";
+import { TeamRotationView } from "@/components/TeamRotationView";
 import { AdminRotationTable } from "@/components/AdminRotationTable";
 import { Button } from "@/components/ui/button";
 import { Clock, Table as TableIcon, Plus, Lock, Unlock, Undo2, Redo2, Package2, ZoomIn, ZoomOut, Maximize, MoreHorizontal, FileDown, Zap, Calendar, Pencil } from "lucide-react";
@@ -37,7 +40,15 @@ import { actionBarTheme } from "@/lib/actionbar-theme";
 import { usePathname, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useActionBarStore } from "@/store/action-bar-store";
+import { matchAssignee, splitPersonnel, withPersonnelNames } from "@/lib/plan-personnel";
 import { exportAdminExcel } from "@/lib/export-excel";
+
+const rotationViews = [
+  { id: "team", label: "小隊行程" },
+  { id: "station", label: "關主視圖" },
+  { id: "full", label: "完整總表" },
+] as const;
+type RotationView = (typeof rotationViews)[number]["id"];
 
 interface AdminSectionProps {
   tables: RotationTableData[];
@@ -155,7 +166,9 @@ export function AdminSection({
   }, []);
 
   const { t } = useTranslation();
-  const { role } = useAuth();
+  const { role, member, memberNicknames, nicknameIndex, memberDirectoryReady } = useAuth();
+  const resolvePersonnel = (plan: LessonPlan) =>
+    withPersonnelNames(plan, memberNicknames, nicknameIndex, memberDirectoryReady);
   const { toast } = useToast();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -163,6 +176,13 @@ export function AdminSection({
   const [isLocked, setIsLocked] = useState(true);
   const [selectedDay, setSelectedDay] = useState<string>("Day 1");
   const [activeMainTab, setActiveMainTab] = useState<MainTab>('timer');
+  const teamPreferenceKey = JSON.stringify(["rotation-team", member?.uid, activeCampId]);
+  const viewScope = JSON.stringify([teamPreferenceKey, role]);
+  const [rotationView, setRotationView] = useState<{ scope: string; view: RotationView } | null>(null);
+  const view = rotationView?.scope === viewScope ? rotationView.view : role === "admin" ? "full" : "team";
+  const compact = view !== "full";
+  const compactTable = activeMainTab === "tables" && compact;
+  const tableReadOnly = role !== "admin" || isLocked;
   const [activePropsTab, setActivePropsTab] = useState<'activity' | 'teaching' | 'all-props'>('activity');
   const [preview, setPreview] = useState<{ id: string; trigger: HTMLButtonElement } | null>(null);
   const [renamingPlanId, setRenamingPlanId] = useState<string | null>(null);
@@ -172,17 +192,33 @@ export function AdminSection({
     schedule: GeneratedSchedule,
     updatedPlans: Array<{ id: string; location: string; lead: string; assistant: string }>
   ) => {
-    onAddTable(schedule);
+    const plansById = new Map(plans.map(plan => [plan.id, plan]));
+    onAddTable({
+      ...schedule,
+      stations: schedule.stations.map(station => {
+        const plan = plansById.get(station.id);
+        return {
+          ...station,
+          leadAssignees: stationAssignees(station, "lead", plan, memberNicknames, nicknameIndex),
+          assistantAssignees: stationAssignees(station, "assistant", plan, memberNicknames, nicknameIndex),
+        };
+      }),
+    });
 
     updatedPlans.forEach((p) => {
-      const cleanLead = stripHtml(p.lead);
-      const cleanAsst = stripHtml(p.assistant);
-      const combined = [cleanLead, cleanAsst].filter(Boolean).join('、');
+      const original = plans.find(plan => plan.id === p.id);
+      if (!original) return;
+      const displayed = withPersonnelNames(original, memberNicknames, nicknameIndex);
+      const leadMember = stripHtml(p.lead);
+      const assistantMember = stripHtml(p.assistant);
+      const match = (name: string) => matchAssignee({ name, uid: null }, nicknameIndex);
+      const lead = splitPersonnel(leadMember).map(match);
+      const assistant = splitPersonnel(assistantMember).map(match);
       onUpdatePlan(p.id, {
-        location: p.location,
-        leadMember: cleanLead,
-        assistantMember: cleanAsst,
-        members: combined
+        ...(p.location !== stripHtml(original.location) ? { location: p.location } : {}),
+        ...(leadMember !== displayed.leadMember ? { leadMember: lead.map(entry => entry.name).join("、"), leadAssignees: lead } : {}),
+        ...(assistantMember !== displayed.assistantMember
+          ? { assistantMember: assistant.map(entry => entry.name).join("、"), assistantAssignees: assistant } : {}),
       });
     });
 
@@ -190,7 +226,7 @@ export function AdminSection({
       title: "⚡ 智能闖關表已生成",
       description: `已成功生成「${schedule.title}」，主副關主與地點已全域同步至教案庫。`,
     });
-  }, [onAddTable, onUpdatePlan, toast]);
+  }, [onAddTable, onUpdatePlan, toast, plans, memberNicknames, nicknameIndex]);
 
   // Zoom state for tables and props list
   const [zoom, setZoom] = useState(1);
@@ -219,7 +255,7 @@ export function AdminSection({
     }
     const campName = camps.find((c) => c.id === activeCampId)?.name || "專案";
     try {
-      exportAdminExcel(activeCampId, campName, camps, plans, tables);
+      exportAdminExcel(activeCampId, campName, camps, plans.map(plan => withPersonnelNames(plan, memberNicknames, nicknameIndex)), tables);
       toast({ title: "匯出成功", description: "Excel 檔案已開始下載。" });
     } catch (e) {
       console.error("Export excel failed", e);
@@ -573,7 +609,7 @@ export function AdminSection({
                         {isFirstInPlan && (
                           <td className={cn("text-xs sm:text-sm text-fg-muted align-top border-r border-stone-200/80 dark:border-white/10 whitespace-pre-wrap break-all", isLocked ? "px-4 py-3" : "p-0")} rowSpan={planItems.length}>
                             {isLocked ? (
-                              stripHtml(item.plan.members) || '-'
+                              resolvePersonnel(item.plan).members || '-'
                             ) : (
                               <PropInput
                                 value={stripHtml(item.plan.members)}
@@ -814,7 +850,7 @@ export function AdminSection({
               )}
             >
               {isLocked ? (
-                stripHtml(plan.members) || '-'
+                resolvePersonnel(plan).members || '-'
               ) : (
                 <PropInput
                   value={stripHtml(plan.members)}
@@ -1097,10 +1133,7 @@ export function AdminSection({
                   
                   {/* Left Cluster: Lock & Contextual Controls */}
                   <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-                    {/* Lock Toggle —— 計時頁只對 admin 顯示（issue #10 預期 1：
-                        「crew 看不到控制項」）。總表／道具頁刻意維持原行為：crew
-                        看得到，按下去跳「權限不足」，跟教案頁的作法一致。 */}
-                    {(role === 'admin' || activeMainTab !== 'timer') && (
+                    {!compactTable && (role === 'admin' || activeMainTab !== 'timer') && (
                     <Button
                       data-testid="admin-lock-toggle"
                       variant="ghost"
@@ -1128,7 +1161,7 @@ export function AdminSection({
                     )}
 
                     {/* 分隔線只有在它右邊真的有東西時才畫 —— 計時頁右邊是空的 */}
-                    {activeMainTab !== 'timer' && (
+                    {activeMainTab !== 'timer' && !compactTable && (
                       <div className={cn(actionBarTheme.separator, "mx-0.5")} />
                     )}
 
@@ -1139,7 +1172,7 @@ export function AdminSection({
                         <div className="flex items-center gap-1 bg-stone-200/60 dark:bg-white/10 rounded-lg px-2 py-0.5 border border-stone-300/60 dark:border-white/10">
                           <Calendar className="h-3.5 w-3.5 text-orange-500 shrink-0" />
                           <Select value={selectedDay} onValueChange={setSelectedDay}>
-                            <SelectTrigger className="h-7 w-16 sm:w-20 border-0 bg-transparent shadow-none font-mono text-xs text-foreground focus:ring-0 p-0 text-center font-medium">
+                            <SelectTrigger aria-label="闖關日期" className="h-7 w-16 sm:w-20 border-0 bg-transparent shadow-none font-mono text-xs text-foreground focus:ring-0 p-0 text-center font-medium">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="rounded-lg border border-stone-200/80 dark:border-white/10 shadow-2xl bg-white dark:bg-[#14191C] font-mono text-xs p-1">
@@ -1150,7 +1183,7 @@ export function AdminSection({
                           </Select>
                         </div>
 
-                        {!isLocked && (
+                        {!compact && !tableReadOnly && (
                           <>
                             <Button
                               onClick={() => setIsWizardOpen(true)}
@@ -1202,14 +1235,14 @@ export function AdminSection({
                   {/* Right Cluster: Tools & Export */}
                   <div className="flex items-center gap-1 sm:gap-2 shrink-0 ml-auto">
                     {/* Tables: Undo / Redo & Zoom */}
-                    {activeMainTab === 'tables' && (
+                    {activeMainTab === 'tables' && !compact && (
                       <>
                         <div className="hidden sm:flex items-center bg-stone-200/60 dark:bg-white/10 rounded-lg p-0.5 border border-stone-300/60 dark:border-white/10">
                           <Button 
                             variant="ghost" 
                             size="icon" 
                             onClick={onUndoTable} 
-                            disabled={!canUndoTable || isLocked} 
+                            disabled={!canUndoTable || tableReadOnly}
                             className="h-7 w-7 rounded-md text-foreground hover:bg-white dark:hover:bg-white/10 disabled:opacity-30 cursor-pointer"
                             title="復原 (Undo)"
                           >
@@ -1219,7 +1252,7 @@ export function AdminSection({
                             variant="ghost" 
                             size="icon" 
                             onClick={onRedoTable} 
-                            disabled={!canRedoTable || isLocked} 
+                            disabled={!canRedoTable || tableReadOnly}
                             className="h-7 w-7 rounded-md text-foreground hover:bg-white dark:hover:bg-white/10 disabled:opacity-30 cursor-pointer"
                             title="重做 (Redo)"
                           >
@@ -1261,7 +1294,7 @@ export function AdminSection({
 
                     {/* Export Dropdown —— 匯出的內容是輪替表與道具（handleExportExcel），
                         計時頁沒有可匯出的東西 */}
-                    {activeMainTab !== 'timer' && (
+                    {activeMainTab !== 'timer' && !compactTable && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -1285,10 +1318,10 @@ export function AdminSection({
                         {/* On mobile, also expose Undo/Redo/Zoom in the dropdown */}
                         {activeMainTab === 'tables' && (
                           <div className="sm:hidden border-t border-stone-200 dark:border-white/10 mt-1 pt-1">
-                            <DropdownMenuItem onSelect={onUndoTable} disabled={!canUndoTable || isLocked} className="cursor-pointer font-medium text-xs py-1.5 px-3 rounded-md gap-2">
+                            <DropdownMenuItem onSelect={onUndoTable} disabled={!canUndoTable || tableReadOnly} className="cursor-pointer font-medium text-xs py-1.5 px-3 rounded-md gap-2">
                               <Undo2 className="h-3.5 w-3.5" /> 復原 (Undo)
                             </DropdownMenuItem>
-                            <DropdownMenuItem onSelect={onRedoTable} disabled={!canRedoTable || isLocked} className="cursor-pointer font-medium text-xs py-1.5 px-3 rounded-md gap-2">
+                            <DropdownMenuItem onSelect={onRedoTable} disabled={!canRedoTable || tableReadOnly} className="cursor-pointer font-medium text-xs py-1.5 px-3 rounded-md gap-2">
                               <Redo2 className="h-3.5 w-3.5" /> 重做 (Redo)
                             </DropdownMenuItem>
                             <DropdownMenuItem onSelect={handleFitAll} className="cursor-pointer font-medium text-xs py-1.5 px-3 rounded-md gap-2">
@@ -1307,7 +1340,7 @@ export function AdminSection({
             <div className="w-full flex-1 relative">
               <TabsContent value="timer" className="m-0 h-full w-full">
                 <AdminTimer
-                  isLocked={isLocked}
+                  isLocked={tableReadOnly}
                   autoEnterSaverMode={shouldAutoEnterSaver}
                   tables={tables}
                   plans={plans}
@@ -1318,39 +1351,53 @@ export function AdminSection({
                 />
               </TabsContent>
 
-              <TabsContent value="tables" className="m-0 data-[state=active]:flex flex-col space-y-6 md:space-y-8 pb-32">
-
-                <div
-                  className="w-full flex flex-col space-y-12"
-                  style={{ touchAction: 'pan-x pan-y' }}
-                  onTouchStart={handleTouchStart}
-                  onTouchMove={handleTouchMove}
-                  onTouchEnd={handleTouchEnd}
-                >
-                  <div
-                    className="w-full space-y-12 origin-top-left"
-                    style={{ zoom }}
-                  >
-                    {filteredTables.length > 0 ? (
-                      filteredTables.map((table) => (
-                        <AdminRotationTable
-                          key={table.id}
-                          table={table}
-                          isReadOnly={isLocked}
-                          onUpdate={(updates) => onUpdateTable(table.id, updates)}
-                          onDelete={() => onDeleteTable(table.id)}
-                        />
-                      ))
-                    ) : (
-                      <div className="flex flex-col items-center justify-center py-24 text-center space-y-4">
-                        <div className="w-14 h-14 rounded-lg bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 flex items-center justify-center text-fg-muted shadow-xs">
-                          <TableIcon className="h-6 w-6" />
-                        </div>
-                        <p className="text-xs font-mono text-fg-muted tracking-widest uppercase">目前無輪替表資料</p>
-                      </div>
-                    )}
-                  </div>
+              <TabsContent value="tables" className="m-0 data-[state=active]:flex flex-col space-y-4 pb-32">
+                <div role="group" aria-label="闖關表視圖" className="mx-auto grid w-full max-w-2xl grid-cols-3 gap-1 rounded-lg border border-border bg-muted/50 p-1 sm:w-auto">
+                  {rotationViews.map(option => (
+                    <Button key={option.id} type="button" variant="ghost" size="sm" aria-pressed={view === option.id}
+                      onClick={() => setRotationView({ scope: viewScope, view: option.id })}
+                      className={cn("h-11 min-w-0 px-2 sm:px-4", view === option.id && "bg-card text-foreground shadow-xs")}>
+                      {option.label}
+                    </Button>
+                  ))}
                 </div>
+                {view === "station" ? (
+                  <StationRotationView key={teamPreferenceKey} tables={filteredTables} plans={plans} />
+                ) : view === "team" ? (
+                  <TeamRotationView key={teamPreferenceKey} tables={filteredTables} storageKey={teamPreferenceKey} />
+                ) : (
+                  <div
+                    className="w-full flex flex-col space-y-12"
+                    style={{ touchAction: 'pan-x pan-y' }}
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                  >
+                    <div
+                      className="w-full space-y-12 origin-top-left"
+                      style={{ zoom }}
+                    >
+                      {filteredTables.length > 0 ? (
+                        filteredTables.map((table) => (
+                          <AdminRotationTable
+                            key={table.id}
+                            table={table}
+                            isReadOnly={tableReadOnly}
+                            onUpdate={(updates) => onUpdateTable(table.id, updates)}
+                            onDelete={() => onDeleteTable(table.id)}
+                          />
+                        ))
+                      ) : (
+                        <div className="flex flex-col items-center justify-center py-24 text-center space-y-4">
+                          <div className="w-14 h-14 rounded-lg bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 flex items-center justify-center text-fg-muted shadow-xs">
+                            <TableIcon className="h-6 w-6" />
+                          </div>
+                          <p className="text-xs font-mono text-fg-muted tracking-widest uppercase">目前無輪替表資料</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="props" className="m-0 data-[state=active]:flex flex-col flex-1 min-h-0 pb-0">

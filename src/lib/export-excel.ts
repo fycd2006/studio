@@ -1,3 +1,5 @@
+import { stripHtml } from "@/lib/utils";
+import { rotationStop, stopText } from "@/lib/rotation-itinerary";
 import { LessonPlan, Camp, RotationTableData, CampItem } from "@/types/plan";
 import { campItemBlocks, UNASSIGNED_USAGE_LABEL } from "@/lib/camp-items";
 import { exportToDocxBlob } from "@/lib/export-utils";
@@ -226,9 +228,9 @@ function addRotationSheet(XLSX: XLSXModule, wb: any, sheetName: string, campTabl
         "關卡數": "",
         "小隊數": "",
         "關卡名稱": `${idx + 1}. ${station.name}`,
-        "地點": station.location,
-        "關主": station.lead,
-        "副關": station.assistant || "",
+        "地點": stripHtml(station.location),
+        "關主": stripHtml(station.lead),
+        "副關": stripHtml(station.assistant),
       });
     });
 
@@ -247,7 +249,7 @@ function addRotationSheet(XLSX: XLSXModule, wb: any, sheetName: string, campTabl
           "闖關表名稱": team.name,
           "關卡數": "",
           "小隊數": "",
-          "關卡名稱": team.stations?.join(" → ") || "",
+          "關卡名稱": table.rounds.map((_, i) => stopText(rotationStop(table, team, i))).join(" → "),
         });
       });
     }

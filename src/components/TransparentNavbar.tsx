@@ -58,7 +58,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
   const router = useRouter();
   const { toast } = useToast();
   const { t, language } = useTranslation();
-  const { role } = useAuth();
+  const { role, member } = useAuth();
   const { camps, activeCampId, activePlanId, groups: allGroups, addPlan } = usePlans();
   const { activeViewers } = usePresence(activePlanId);
   const lastScrollY = useRef(0);
@@ -275,6 +275,7 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                       key={viewer.uid}
                       className="w-6 h-6 rounded-full bg-primary text-white text-[9px] font-bold flex items-center justify-center border border-canvas-dark shadow-sm"
                       title={viewer.name}
+                      aria-label={viewer.name}
                     >
                       {initials}
                     </div>
@@ -369,7 +370,12 @@ export function TransparentNavbar({ groups }: NavbarProps) {
                     className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg font-medium text-sm text-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-all btn-tactile"
                   >
                     <Settings className="w-4 h-4 text-primary" />
-                    <span>{t('SETTINGS')}</span>
+                    <span className="shrink-0">{t('SETTINGS')}</span>
+                    {member?.nickname && (
+                      <span className="ml-auto min-w-0 truncate text-xs text-fg-muted" title={member.nickname}>
+                        {member.nickname}
+                      </span>
+                    )}
                   </Link>
 
                   <div className="pt-1">
