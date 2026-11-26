@@ -20,11 +20,13 @@ export function MemberSettings() {
   const [groupIds, setGroupIds] = useState<string[] | null>(null);
   const selectedGroups = (groupIds ?? savedGroups ?? []).filter(id => groups.some(group => group.id === id));
   const [nickname, setNickname] = useState("");
+  const [realName, setRealName] = useState("");
   const [code, setCode] = useState("");
   const [members, setMembers] = useState<Member[]>([]);
   const [feedback, setFeedback] = useState<{ text: string; error?: boolean }>();
   const [busy, setBusy] = useState(false);
   useEffect(() => setNickname(member?.nickname || ""), [member?.nickname]);
+  useEffect(() => setRealName(member?.realName || ""), [member?.realName]);
   useEffect(() => setGroupIds(null), [activeCampId, savedGroups]);
   useEffect(() => {
     if (role !== "admin") {
@@ -66,11 +68,22 @@ export function MemberSettings() {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          void save({ action: "nickname", nickname });
+          void save({ action: "profile", realName, nickname });
         }}
         className="flex flex-wrap items-end gap-3 py-4 sm:py-5"
       >
-        <label className="block min-w-0 flex-[1_1_12rem] space-y-1.5 text-sm font-medium sm:max-w-sm">
+        <label className="block min-w-0 flex-[1_1_11rem] space-y-1.5 text-sm font-medium sm:max-w-[14rem]">
+          <span>本名</span>
+          <Input
+            id="camp-real-name"
+            required
+            maxLength={40}
+            placeholder="請輸入真實姓名"
+            value={realName}
+            onChange={(e) => setRealName(e.target.value)}
+          />
+        </label>
+        <label className="block min-w-0 flex-[1_1_11rem] space-y-1.5 text-sm font-medium sm:max-w-[14rem]">
           <span>營隊綽號</span>
           <Input
             id="camp-nickname"
@@ -80,8 +93,19 @@ export function MemberSettings() {
             onChange={(e) => setNickname(e.target.value)}
           />
         </label>
-        <Button type="submit" variant="outline" className="h-11 md:h-10" disabled={busy || nickname.trim() === member?.nickname}>
-          儲存綽號
+        <Button
+          type="submit"
+          variant="outline"
+          className="h-11 md:h-10"
+          disabled={
+            busy ||
+            !realName.trim() ||
+            !nickname.trim() ||
+            (realName.trim() === (member?.realName || "") &&
+              nickname.trim() === (member?.nickname || ""))
+          }
+        >
+          儲存個人資料
         </Button>
       </form>
       {camp && (role === "admin" || !camp.isLocked) && (
@@ -141,7 +165,12 @@ export function MemberSettings() {
                 className="flex flex-wrap items-center justify-between gap-3 py-3"
               >
                 <div className="min-w-0">
-                  <strong className="text-sm font-medium">{row.nickname}</strong>
+                  <strong className="text-sm font-medium">
+                    {row.nickname}
+                    {row.realName && (
+                      <span className="ml-1.5 font-normal text-muted-foreground">（{row.realName}）</span>
+                    )}
+                  </strong>
                   <p className="break-all text-sm text-muted-foreground">{row.email}</p>
                   <small className="text-xs text-muted-foreground">
                     加入於 {new Date(row.createdAt).toLocaleDateString("zh-TW")}{" "}

@@ -26,6 +26,7 @@ export function AccountLogin() {
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [nickname, setNickname] = useState("");
+  const [realName, setRealName] = useState("");
   const [code, setCode] = useState("");
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState<"form" | "google" | null>(null);
@@ -83,6 +84,7 @@ export function AccountLogin() {
       if (needsBinding) {
         await updateAccount(auth.currentUser, {
           action: "join",
+          realName,
           nickname,
           code,
         });
@@ -111,7 +113,7 @@ export function AccountLogin() {
           address,
           password,
         );
-        await updateAccount(user, { action: "join", nickname, code });
+        await updateAccount(user, { action: "join", realName, nickname, code });
         return;
       }
       if (isTestLogin && !address.includes("@")) {
@@ -175,8 +177,10 @@ export function AccountLogin() {
         </div>
       </div>}
       {binding && <>
+        <label className="block space-y-1.5 text-sm font-medium"><span>本名</span>
+          <Input required maxLength={40} placeholder="請輸入真實姓名" value={realName} onChange={(e) => setRealName(e.target.value)} /></label>
         <label className="block space-y-1.5 text-sm font-medium"><span>營隊綽號</span>
-          <Input required maxLength={40} value={nickname} onChange={(e) => setNickname(e.target.value)} /></label>
+          <Input required maxLength={40} placeholder="教案與闖關表將顯示此綽號" value={nickname} onChange={(e) => setNickname(e.target.value)} /></label>
         <label className="block space-y-1.5 text-sm font-medium"><span>營隊通行碼</span>
           <Input required type="password" value={code} onChange={(e) => setCode(e.target.value)} /></label>
       </>}

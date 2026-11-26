@@ -187,7 +187,7 @@ export function PlanEditor({
   versions = [], onSaveVersion, onRestoreVersion, onDeleteVersion, onAutoSave, getFullVersionState, onUpdateVersionName, activityTypes = []
 }: PlanEditorProps) {
   const { t, language } = useTranslation();
-  const { memberNicknames, nicknameIndex, accountHints, memberDirectoryReady } = useAuth();
+  const { memberNicknames, memberRealNames, nicknameIndex, accountHints, memberDirectoryReady } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const { lockField, unlockField, forceTakeoverField, isLockedByOther, getLockInfo } = usePresence(plan.id);
@@ -1260,6 +1260,7 @@ export function PlanEditor({
                                         label={t("LEAD")}
                                         value={personnel.lead}
                                         nicknames={memberNicknames}
+                                        realNames={memberRealNames}
                                         byName={nicknameIndex}
                                         accountHints={accountHints}
                                         directoryReady={memberDirectoryReady}
@@ -1280,6 +1281,7 @@ export function PlanEditor({
                                         label={t("ASSISTANT")}
                                         value={personnel.assistant}
                                         nicknames={memberNicknames}
+                                        realNames={memberRealNames}
                                         byName={nicknameIndex}
                                         accountHints={accountHints}
                                         directoryReady={memberDirectoryReady}

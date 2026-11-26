@@ -9,14 +9,14 @@ import { useEffect } from "react";
 import { doc, runTransaction } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 import { useAuth } from "@/lib/auth-context";
-import { matchAssignee, readPlanPersonnel } from "@/lib/plan-personnel";
+import { readPlanPersonnel, resolveAssigneeWithNickname } from "@/lib/plan-personnel";
 import type { LessonPlan } from "@/types/plan";
 
 export default function PlanEditorPage() {
  const { id } = useParams() as { id: string };
  const router = useRouter();
  const db = useFirestore();
- const { nicknameIndex, memberDirectoryReady } = useAuth();
+ const { memberNicknames, nicknameIndex, memberDirectoryReady } = useAuth();
  
  const { 
  plans, 
@@ -58,14 +58,14 @@ export default function PlanEditorPage() {
      const updates: Partial<LessonPlan> = {};
      for (const role of ["lead", "assistant"] as const) {
        const entries = role === "lead" ? lead : assistant;
-       const matched = entries.map(entry => matchAssignee(entry, nicknameIndex));
-       if (!matched.some((entry, index) => entry.uid !== entries[index].uid)) continue;
+       const matched = entries.map(entry => resolveAssigneeWithNickname(entry, memberNicknames, nicknameIndex));
+       if (!matched.some((entry, index) => entry.uid !== entries[index].uid || entry.name !== entries[index].name)) continue;
        updates[role === "lead" ? "leadAssignees" : "assistantAssignees"] = matched;
        updates[role === "lead" ? "leadMember" : "assistantMember"] = matched.map(entry => entry.name).join("、");
      }
      if (Object.keys(updates).length) transaction.update(ref, updates);
    }).catch(error => console.warn("無法配對舊教案的關主人員", error));
- }, [db, loadedPlanId, memberDirectoryReady, nicknameIndex]);
+ }, [db, loadedPlanId, memberDirectoryReady, memberNicknames, nicknameIndex]);
 
   if (!plan) {
     return (

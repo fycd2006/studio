@@ -2,6 +2,7 @@ export type MemberRole = "admin" | "crew";
 export interface Member {
   uid: string;
   email: string;
+  realName?: string;
   nickname: string;
   role: MemberRole;
   status: "active" | "disabled";

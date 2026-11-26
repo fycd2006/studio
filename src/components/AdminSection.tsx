@@ -40,7 +40,7 @@ import { actionBarTheme } from "@/lib/actionbar-theme";
 import { usePathname, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useActionBarStore } from "@/store/action-bar-store";
-import { matchAssignee, splitPersonnel, withPersonnelNames } from "@/lib/plan-personnel";
+import { resolveAssigneeWithNickname, splitPersonnel, withPersonnelNames } from "@/lib/plan-personnel";
 import { exportAdminExcel } from "@/lib/export-excel";
 
 const rotationViews = [
@@ -211,7 +211,7 @@ export function AdminSection({
       const displayed = withPersonnelNames(original, memberNicknames, nicknameIndex);
       const leadMember = stripHtml(p.lead);
       const assistantMember = stripHtml(p.assistant);
-      const match = (name: string) => matchAssignee({ name, uid: null }, nicknameIndex);
+      const match = (name: string) => resolveAssigneeWithNickname({ name, uid: null }, memberNicknames, nicknameIndex);
       const lead = splitPersonnel(leadMember).map(match);
       const assistant = splitPersonnel(assistantMember).map(match);
       onUpdatePlan(p.id, {

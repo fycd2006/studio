@@ -14,6 +14,7 @@ import { updateAccount } from "@/lib/update-account";
 interface AccountState {
   member: Member | null;
   memberNicknames: ReadonlyMap<string, string>;
+  memberRealNames: ReadonlyMap<string, string>;
   nicknameIndex: ReadonlyMap<string, readonly string[]> | undefined;
   accountHints: ReadonlyMap<string, string>;
   memberDirectoryReady: boolean;
@@ -97,11 +98,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     () => memberId ? collection(firestore, "memberNames") : null,
     [firestore, memberId],
   );
-  const { data: directory } = useCollection<{ nickname: string; emailHint?: string }>(directoryRef);
+  const { data: directory } = useCollection<{ nickname: string; realName?: string; emailHint?: string }>(directoryRef);
   const currentNickname = member?.nickname;
+  const currentRealName = member?.realName?.trim();
   const needsNicknameSync = Boolean(
     directory && memberId && currentNickname && !directory.some(
-      entry => entry.id === memberId && typeof entry.emailHint === "string",
+      entry =>
+        entry.id === memberId &&
+        typeof entry.emailHint === "string" &&
+        (!currentRealName || entry.realName === currentRealName),
     ),
   );
   useEffect(() => {
@@ -122,9 +127,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     return names;
   }, [directory, memberId, currentNickname]);
+  const memberRealNames = useMemo(() => {
+    const names = new Map<string, string>();
+    if (memberId) {
+      for (const entry of directory ?? []) {
+        if (entry.realName) names.set(entry.id, entry.realName);
+      }
+      if (currentRealName) names.set(memberId, currentRealName);
+    }
+    return names;
+  }, [directory, memberId, currentRealName]);
   const nicknameIndex = useMemo(
-    () => directory ? indexMemberNicknames(memberNicknames) : undefined,
-    [directory, memberNicknames],
+    () => directory ? indexMemberNicknames(memberNicknames, memberRealNames) : undefined,
+    [directory, memberNicknames, memberRealNames],
   );
   const accountHints = useMemo(() => new Map(
     (directory ?? []).flatMap(entry => entry.emailHint ? [[entry.id, entry.emailHint]] : []),
@@ -154,6 +169,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         member,
         memberNicknames,
+        memberRealNames,
         nicknameIndex,
         accountHints,
         memberDirectoryReady: nicknameIndex !== undefined,

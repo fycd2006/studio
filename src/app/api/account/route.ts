@@ -6,10 +6,15 @@ import { DEFAULT_GROUPS } from "@/types/plan";
 const fail = (error: string, status: number) =>
   NextResponse.json({ error }, { status });
 
-function directoryEntry(nickname: string, email?: string) {
+function directoryEntry(nickname: string, email?: string, realName?: string) {
   const [local, domain] = (email ?? "").split("@");
   const emailHint = local && domain ? `${local.slice(0, 1)}•••@${domain}` : "";
-  return { nickname, emailHint };
+  const cleanRealName = realName?.trim();
+  return {
+    nickname,
+    ...(cleanRealName ? { realName: cleanRealName } : {}),
+    emailHint,
+  };
 }
 
 function adminCredentialFailure() {
@@ -46,6 +51,8 @@ export async function POST(request: Request) {
   const memberName = db.collection("memberNames").doc(identity.uid);
   const nickname =
     typeof body.nickname === "string" ? body.nickname.trim() : "";
+  const realName =
+    typeof body.realName === "string" ? body.realName.trim() : "";
   const adminCode = process.env.CAMP_ADMIN_CODE || (process.env.NODE_ENV === "production" ? "" : "ntutfycdcamp");
   const crewCode = process.env.CAMP_CREW_CODE || (process.env.NODE_ENV === "production" ? "" : "cdcamp");
   try {
@@ -56,10 +63,12 @@ export async function POST(request: Request) {
         if (!identity.email) return fail("請使用 Email 或 Google 登入", 403);
         if (profile) {
           if (typeof profile.nickname === "string" && profile.nickname.trim()) {
-            tx.set(memberName, directoryEntry(profile.nickname, profile.email ?? identity.email));
+            tx.set(memberName, directoryEntry(profile.nickname, profile.email ?? identity.email, profile.realName));
           }
           return NextResponse.json({ ok: true });
         }
+        if (!realName || realName.length > 40)
+          return fail("請輸入 1 至 40 字的本名", 400);
         if (!nickname || nickname.length > 40)
           return fail("請輸入 1 至 40 字的綽號", 400);
         if (!adminCode || !crewCode) return fail("營隊通行碼尚未設定，請聯絡管理員。", 503);
@@ -73,20 +82,32 @@ export async function POST(request: Request) {
         tx.create(self, {
           uid: identity.uid,
           email: identity.email,
+          realName,
           nickname,
           role,
           status: "active",
           createdAt: Date.now(),
         });
-        tx.set(memberName, directoryEntry(nickname, identity.email));
+        tx.set(memberName, directoryEntry(nickname, identity.email, realName));
       } else if (!profile) return fail("請先完成首次綁定", 403);
-      else if (body.action === "nickname" && nickname && nickname.length <= 40) {
+      else if (body.action === "profile") {
+        if (!realName || realName.length > 40)
+          return fail("請輸入 1 至 40 字的本名", 400);
+        if (!nickname || nickname.length > 40)
+          return fail("請輸入 1 至 40 字的綽號", 400);
+        tx.update(self, { realName, nickname });
+        tx.set(memberName, directoryEntry(nickname, profile.email ?? identity.email, realName));
+      } else if (body.action === "nickname" && nickname && nickname.length <= 40) {
         tx.update(self, { nickname });
-        tx.set(memberName, directoryEntry(nickname, profile.email ?? identity.email));
+        tx.set(memberName, directoryEntry(nickname, profile.email ?? identity.email, profile.realName));
       } else if (body.action === "sync-nickname" && profile.nickname) {
         const current = (await tx.get(memberName)).data();
-        if (typeof current?.emailHint !== "string") {
-          tx.set(memberName, directoryEntry(profile.nickname, profile.email ?? identity.email));
+        const savedRealName = typeof profile.realName === "string" ? profile.realName.trim() : "";
+        if (
+          typeof current?.emailHint !== "string" ||
+          (savedRealName && current?.realName !== savedRealName)
+        ) {
+          tx.set(memberName, directoryEntry(profile.nickname, profile.email ?? identity.email, savedRealName));
         }
       } else if (body.action === "camp-groups") {
         const { campId, groupIds } = body;

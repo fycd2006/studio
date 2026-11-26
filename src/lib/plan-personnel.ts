@@ -26,13 +26,24 @@ export function keepAssigneeBindings(names: string[], previous: PlanAssignee[]) 
   });
 }
 
-export function indexMemberNicknames(nicknames: ReadonlyMap<string, string>) {
+export function indexMemberNicknames(
+  nicknames: ReadonlyMap<string, string>,
+  realNames?: ReadonlyMap<string, string>,
+) {
   const byName = new Map<string, string[]>();
-  for (const [uid, name] of nicknames) {
-    const key = nicknameKey(name);
+  const add = (rawName: string, uid: string) => {
+    const key = nicknameKey(rawName);
+    if (!key) return;
     const matches = byName.get(key);
-    if (matches) matches.push(uid);
-    else byName.set(key, [uid]);
+    if (matches) {
+      if (!matches.includes(uid)) matches.push(uid);
+    } else {
+      byName.set(key, [uid]);
+    }
+  };
+  for (const [uid, name] of nicknames) add(name, uid);
+  if (realNames) {
+    for (const [uid, realName] of realNames) add(realName, uid);
   }
   return byName;
 }
@@ -81,6 +92,17 @@ export function matchAssignee(
   if (assignee.uid) return assignee;
   const matches = byName?.get(nicknameKey(assignee.name));
   return matches?.length === 1 ? { ...assignee, uid: matches[0] } : assignee;
+}
+
+export function resolveAssigneeWithNickname(
+  assignee: PlanAssignee,
+  nicknames?: ReadonlyMap<string, string>,
+  byName?: ReadonlyMap<string, readonly string[]>,
+): PlanAssignee {
+  const matched = matchAssignee(assignee, byName);
+  return matched.uid
+    ? { uid: matched.uid, name: nicknames?.get(matched.uid) ?? matched.name }
+    : matched;
 }
 
 export function assigneeLabel(

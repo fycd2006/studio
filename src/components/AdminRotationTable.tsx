@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import { cn, stripHtml } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
-import { keepAssigneeBindings, matchAssignee, splitPersonnel } from "@/lib/plan-personnel";
+import { keepAssigneeBindings, resolveAssigneeWithNickname, splitPersonnel } from "@/lib/plan-personnel";
 import { useTranslation } from "@/lib/i18n-context";
 
 function CellInput({ 
@@ -80,7 +80,7 @@ interface AdminRotationTableProps {
 
 export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = true }: AdminRotationTableProps) {
   const { t } = useTranslation();
-  const { nicknameIndex } = useAuth();
+  const { memberNicknames, nicknameIndex } = useAuth();
   
   const addStation = () => {
     if (isReadOnly) return;
@@ -116,13 +116,17 @@ export function AdminRotationTable({ table, onUpdate, onDelete, isReadOnly = tru
     const current = newStations[idx];
     const assignees = (value: string, role: "lead" | "assistant") => {
       const prior = role === "lead" ? current.leadAssignees : current.assistantAssignees;
-      return keepAssigneeBindings(splitPersonnel(value), prior ?? []).map(entry => matchAssignee(entry, nicknameIndex));
+      return keepAssigneeBindings(splitPersonnel(value), prior ?? []).map(entry =>
+        resolveAssigneeWithNickname(entry, memberNicknames, nicknameIndex),
+      );
     };
+    const nextLead = updates.lead !== undefined ? assignees(updates.lead, "lead") : undefined;
+    const nextAssistant = updates.assistant !== undefined ? assignees(updates.assistant, "assistant") : undefined;
     newStations[idx] = {
       ...current,
       ...updates,
-      ...(updates.lead !== undefined ? { leadAssignees: assignees(updates.lead, "lead") } : {}),
-      ...(updates.assistant !== undefined ? { assistantAssignees: assignees(updates.assistant, "assistant") } : {}),
+      ...(nextLead ? { lead: nextLead.map(entry => entry.name).join("、"), leadAssignees: nextLead } : {}),
+      ...(nextAssistant ? { assistant: nextAssistant.map(entry => entry.name).join("、"), assistantAssignees: nextAssistant } : {}),
     };
     const teamOrders = table.teamOrders.map(team => ({
       ...team, stations: (team.stations || []).map(value => stationForValue(table.stations, value)?.id || value),
