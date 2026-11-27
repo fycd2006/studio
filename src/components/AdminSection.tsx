@@ -10,7 +10,7 @@ import { stationAssignees } from "@/lib/rotation-personnel";
 import { TeamRotationView } from "@/components/TeamRotationView";
 import { AdminRotationTable } from "@/components/AdminRotationTable";
 import { Button } from "@/components/ui/button";
-import { Clock, Table as TableIcon, Plus, Lock, Unlock, Undo2, Redo2, Package2, ZoomIn, ZoomOut, Maximize, MoreHorizontal, FileDown, Zap, Calendar, Pencil } from "lucide-react";
+import { Clock, Table as TableIcon, Plus, Lock, Unlock, Undo2, Redo2, Package2, ZoomIn, ZoomOut, Maximize, MoreHorizontal, FileDown, Zap, Calendar, Pencil, Users, Flag } from "lucide-react";
 import { SmartRotationWizardModal } from "@/components/SmartRotationWizardModal";
 import { GeneratedSchedule } from "@/lib/rotation-scheduler";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -1352,14 +1352,24 @@ export function AdminSection({
               </TabsContent>
 
               <TabsContent value="tables" className="m-0 data-[state=active]:flex flex-col space-y-4 pb-32">
-                <div role="group" aria-label="闖關表視圖" className="mx-auto grid w-full max-w-2xl grid-cols-3 gap-1 rounded-lg border border-border bg-muted/50 p-1 sm:w-auto">
-                  {rotationViews.map(option => (
-                    <Button key={option.id} type="button" variant="ghost" size="sm" aria-pressed={view === option.id}
-                      onClick={() => setRotationView({ scope: viewScope, view: option.id })}
-                      className={cn("h-11 min-w-0 px-2 sm:px-4", view === option.id && "bg-card text-foreground shadow-xs")}>
-                      {option.label}
-                    </Button>
-                  ))}
+                <div role="group" aria-label="闖關表視圖" className="mx-auto grid w-full max-w-2xl grid-cols-3 gap-1 rounded-xl border border-stone-200/80 dark:border-white/10 bg-white/80 dark:bg-white/[0.04] p-1 backdrop-blur-md shadow-xs sm:w-auto">
+                  {rotationViews.map(option => {
+                    const Icon = option.id === "full" ? TableIcon : option.id === "team" ? Users : Flag;
+                    const active = view === option.id;
+                    return (
+                      <Button key={option.id} type="button" variant="ghost" size="sm" aria-pressed={active}
+                        onClick={() => setRotationView({ scope: viewScope, view: option.id })}
+                        className={cn(
+                          "h-10 min-w-0 gap-1.5 rounded-lg px-2 text-xs sm:px-4 transition-all",
+                          active
+                            ? "bg-white dark:bg-white/15 text-orange-600 dark:text-orange-400 font-semibold shadow-xs border border-stone-200/80 dark:border-white/10"
+                            : "text-fg-muted hover:text-foreground",
+                        )}>
+                        <Icon className="size-3.5 shrink-0" aria-hidden="true" />
+                        <span className="truncate">{option.label}</span>
+                      </Button>
+                    );
+                  })}
                 </div>
                 {view === "station" ? (
                   <StationRotationView key={teamPreferenceKey} tables={filteredTables} plans={plans} />

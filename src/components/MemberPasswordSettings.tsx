@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { AlertCircle, CircleCheck, Eye, EyeOff, KeyRound } from "lucide-react";
 import { FirebaseError } from "firebase/app";
 import {
   EmailAuthProvider,
@@ -34,6 +35,7 @@ const passwordErrors: Record<string, string> = {
 export function MemberPasswordSettings({ user }: { user: User }) {
   const { auth } = useFirebase();
   const [passwordAdded, setPasswordAdded] = useState(false);
+  const [showPasswords, setShowPasswords] = useState(false);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<{ text: string; error?: boolean }>();
   const email = user.email;
@@ -98,8 +100,22 @@ export function MemberPasswordSettings({ user }: { user: User }) {
   }
 
   return (
-    <section aria-labelledby="member-password-title" className="space-y-3 py-4 sm:py-5">
-      <h3 id="member-password-title" className="text-sm font-medium">{heading}</h3>
+    <section aria-labelledby="member-password-title" className="space-y-4 px-4 py-5 sm:px-6">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <KeyRound className="size-4 text-orange-500" aria-hidden="true" />
+          <h3 id="member-password-title" className="text-sm font-semibold text-foreground">{heading}</h3>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowPasswords(prev => !prev)}
+          aria-pressed={showPasswords}
+          className="inline-flex min-h-9 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          {showPasswords ? <EyeOff className="size-3.5" aria-hidden="true" /> : <Eye className="size-3.5" aria-hidden="true" />}
+          <span>{showPasswords ? "隱藏密碼" : "顯示密碼"}</span>
+        </button>
+      </div>
       {!hasPassword && (
         <p className="text-sm text-muted-foreground">
           驗證 Google 帳戶後，可為目前的營隊帳號加上密碼。
@@ -110,17 +126,17 @@ export function MemberPasswordSettings({ user }: { user: User }) {
           {hasPassword && (
             <label className="block space-y-1.5 text-sm font-medium sm:max-w-sm">
               <span>目前密碼</span>
-              <Input name="current-password" type="password" autoComplete="current-password" required />
+              <Input name="current-password" type={showPasswords ? "text" : "password"} autoComplete="current-password" required />
             </label>
           )}
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block space-y-1.5 text-sm font-medium">
               <span>新密碼</span>
-              <Input name="new-password" type="password" autoComplete="new-password" minLength={6} required />
+              <Input name="new-password" type={showPasswords ? "text" : "password"} autoComplete="new-password" minLength={6} required />
             </label>
             <label className="block space-y-1.5 text-sm font-medium">
               <span>確認新密碼</span>
-              <Input name="confirm-password" type="password" autoComplete="new-password" minLength={6} required />
+              <Input name="confirm-password" type={showPasswords ? "text" : "password"} autoComplete="new-password" minLength={6} required />
             </label>
           </div>
           <Button type="submit" variant="outline" className="h-11 md:h-10" disabled={busy}>
@@ -129,8 +145,11 @@ export function MemberPasswordSettings({ user }: { user: User }) {
         </fieldset>
       </form>
       {feedback && (
-        <p role={feedback.error ? "alert" : "status"} className={feedback.error ? "rounded-md border border-rose-500/25 bg-rose-500/5 px-3 py-2 text-sm text-rose-700 dark:text-rose-300" : "text-sm text-muted-foreground"}>
-          {feedback.text}
+        <p role={feedback.error ? "alert" : "status"} className={feedback.error
+          ? "flex items-start gap-2 rounded-lg border border-rose-500/25 bg-rose-500/10 px-3 py-2 text-sm text-rose-700 dark:text-rose-300"
+          : "flex items-start gap-2 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-300"}>
+          {feedback.error ? <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" /> : <CircleCheck className="mt-0.5 size-4 shrink-0" aria-hidden="true" />}
+          <span>{feedback.text}</span>
         </p>
       )}
     </section>

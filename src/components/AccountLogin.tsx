@@ -1,6 +1,6 @@
 "use client";
 import { useState, type FormEvent } from "react";
-import { Eye, EyeOff, LoaderCircle, ArrowRight, CircleCheck } from "lucide-react";
+import { AlertCircle, Eye, EyeOff, LoaderCircle, ArrowRight, CircleCheck } from "lucide-react";
 import { FirebaseError } from "firebase/app";
 import {
   createUserWithEmailAndPassword,
@@ -25,6 +25,7 @@ export function AccountLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
+  const [showCode, setShowCode] = useState(false);
   const [nickname, setNickname] = useState("");
   const [realName, setRealName] = useState("");
   const [code, setCode] = useState("");
@@ -40,9 +41,17 @@ export function AccountLogin() {
       : binding
         ? "註冊營隊帳號"
         : "登入營隊";
+  const subtitle = needsBinding
+    ? "請補填本名、綽號與營隊通行碼以完成綁定"
+    : mode === "reset"
+      ? "輸入註冊信箱，系統將寄送密碼重設連結"
+      : binding
+        ? "建立個人帳號後即可跨裝置同步教案與行程"
+        : "使用 Google 或個人帳號進入營隊工作台";
   function change(next: typeof mode) {
     setMode(next);
     setShow(false);
+    setShowCode(false);
     setSent(false);
     setMessage("");
     setPassword("");
@@ -133,20 +142,30 @@ export function AccountLogin() {
   const workingLabel = binding ? "正在綁定帳號…" : mode === "reset" ? "正在寄送…" : "正在登入…";
   return (
     <form onSubmit={submit} aria-labelledby="account-title" className="space-y-4">
-      <h2 id="account-title" className="border-b border-border pb-4 text-2xl font-medium leading-tight tracking-tight">{title}</h2>
+      <div className="border-b border-border/80 pb-4">
+        <h2 id="account-title" className="text-2xl font-medium leading-tight tracking-tight">{title}</h2>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{subtitle}</p>
+      </div>
       {needsBinding && user?.email && (
-        <p className="break-all text-sm text-muted-foreground">
-          登入帳號 <span className="font-medium text-foreground">{user.email}</span>
+        <p className="break-all rounded-lg border border-border/70 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+          登入帳號：<span className="font-medium text-foreground">{user.email}</span>
         </p>
       )}
       {login && <>
-        <Button type="button" variant="outline" className="h-11 w-full gap-3 bg-card hover:bg-muted hover:text-foreground"
+        <Button type="button" variant="outline" className="h-11 w-full gap-2.5 rounded-lg border-border/80 bg-background/80 hover:bg-muted/80 hover:text-foreground"
           disabled={busy || isLoading} onClick={() => void perform(async () => {
             const provider = new GoogleAuthProvider();
             provider.setCustomParameters({ prompt: "select_account" });
             await signInWithPopup(auth, provider);
           }, "google")}>
-          {pending === "google" ? progress : <span aria-hidden className="font-sans text-lg font-bold text-blue-600 dark:text-blue-400">G</span>}
+          {pending === "google" ? progress : (
+            <svg aria-hidden="true" className="size-4 shrink-0" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17Z" />
+              <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.14C3.26 21.3 7.31 24 12 24Z" />
+              <path fill="#FBBC05" d="M5.28 14.24c-.24-.72-.38-1.49-.38-2.24s.14-1.52.38-2.24V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.99-3.14Z" />
+              <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96Z" />
+            </svg>
+          )}
           {pending === "google" ? "等待 Google 登入…" : isTestLogin ? "模擬 Google 登入（本機測試）" : "使用 Google 帳戶登入"}
         </Button>
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -182,13 +201,24 @@ export function AccountLogin() {
         <label className="block space-y-1.5 text-sm font-medium"><span>營隊綽號</span>
           <Input required maxLength={40} placeholder="教案與闖關表將顯示此綽號" value={nickname} onChange={(e) => setNickname(e.target.value)} /></label>
         <label className="block space-y-1.5 text-sm font-medium"><span>營隊通行碼</span>
-          <Input required type="password" value={code} onChange={(e) => setCode(e.target.value)} /></label>
+          <div className="relative">
+            <Input required className="pr-12" type={showCode ? "text" : "password"} value={code} onChange={(e) => setCode(e.target.value)} />
+            <button type="button" aria-label="顯示通行碼" aria-pressed={showCode}
+              className="absolute inset-y-0 right-0 grid w-11 place-items-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+              onClick={() => setShowCode(!showCode)}>
+              {showCode ? <EyeOff aria-hidden size={18} /> : <Eye aria-hidden size={18} />}
+            </button>
+          </div>
+        </label>
       </>}
       {(message || notice) && <div role={sent ? "status" : "alert"} data-testid="login-error"
-        className={sent ? "flex gap-2 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-900 dark:bg-emerald-950 dark:text-emerald-100" : "rounded-lg bg-rose-50 p-3 text-sm text-rose-900 dark:bg-rose-950 dark:text-rose-100"}>
-        {sent && <CircleCheck className="mt-0.5 size-4 shrink-0" aria-hidden />}{message || notice}
+        className={sent
+          ? "flex items-start gap-2 rounded-lg border border-emerald-500/25 bg-emerald-50/90 p-3 text-sm text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-100"
+          : "flex items-start gap-2 rounded-lg border border-rose-500/25 bg-rose-50/90 p-3 text-sm text-rose-900 dark:bg-rose-950/60 dark:text-rose-100"}>
+        {sent ? <CircleCheck className="mt-0.5 size-4 shrink-0" aria-hidden /> : <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />}
+        <span>{message || notice}</span>
       </div>}
-      <Button type="submit" data-testid="login-submit" className="h-11 w-full bg-orange-700 text-white hover:bg-orange-800 dark:bg-orange-700 dark:hover:bg-orange-800"
+      <Button type="submit" data-testid="login-submit" className="h-11 w-full rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-[0_4px_16px_rgba(249,115,22,0.28)] hover:from-orange-600 hover:to-orange-700"
         disabled={busy || isLoading}>
         {pending === "form" ? <>{progress}{workingLabel}</> : <>{mode === "reset" ? "寄送重設信" : title}<ArrowRight aria-hidden size={16} /></>}
       </Button>

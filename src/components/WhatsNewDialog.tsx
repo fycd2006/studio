@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { VERSION_HISTORY, VersionHistoryEntry } from "@/data/version-history";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { Sparkles, X } from "lucide-react";
 import { VersionReleaseNotes } from "@/components/VersionReleaseNotes";
 
 export function WhatsNewDialog() {
@@ -81,20 +81,25 @@ export function WhatsNewDialog() {
             className="relative w-full max-w-lg bg-white/95 dark:bg-[#14191C]/95 backdrop-blur-3xl rounded-xl shadow-2xl overflow-hidden border border-stone-200/80 dark:border-white/10 flex flex-col max-h-[85vh]"
           >
             <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3 sm:px-6">
-              <h2 className="text-lg font-semibold text-foreground">最新更新</h2>
+              <div className="flex items-center gap-2.5">
+                <span className="flex size-8 items-center justify-center rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400">
+                  <Sparkles className="size-4" aria-hidden="true" />
+                </span>
+                <h2 className="text-lg font-semibold text-foreground">最新更新</h2>
+              </div>
               <Button variant="ghost" size="icon" aria-label="關閉更新通知" onClick={handleDismiss}>
                 <X className="size-4" />
               </Button>
             </div>
             <div className="min-h-0 space-y-6 overflow-y-auto p-4 sm:p-6">
-              {missedVersions.map(entry => <VersionReleaseNotes key={entry.id} entry={entry} />)}
+              {missedVersions.map((entry, index) => <VersionReleaseNotes key={entry.id} entry={entry} defaultOpen={index === 0} />)}
             </div>
 
             {/* Footer */}
             <div className="p-6 pt-4 bg-white/50 dark:bg-[#0B1012]/50 backdrop-blur-md border-t border-stone-200/80 dark:border-white/10">
               <Button
                 onClick={handleDismiss}
-                className="w-full h-12 rounded-lg bg-foreground text-background font-bold text-sm shadow-xl shadow-black/10 dark:shadow-white/5 hover:opacity-90 active:scale-[0.98] transition-all"
+                className="w-full h-12 rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold text-sm shadow-lg shadow-orange-500/20 active:scale-[0.98] transition-all"
               >
                 開始體驗 / Let's Go
               </Button>

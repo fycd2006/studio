@@ -172,7 +172,7 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <div className="w-full rounded-lg border border-border bg-card px-5 pb-4 pt-6 text-card-foreground shadow-xl sm:px-7 sm:pb-5 sm:pt-7">
+        <div className="w-full rounded-2xl border border-white/35 dark:border-white/15 bg-white/92 dark:bg-[#111619]/92 backdrop-blur-xl px-5 pb-5 pt-6 text-card-foreground shadow-2xl sm:px-7 sm:pb-6 sm:pt-7">
           <AccountLogin />
         </div>
 
