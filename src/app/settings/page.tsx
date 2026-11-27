@@ -1,11 +1,10 @@
 "use client"
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth-context";
 import { withPersonnelNames } from "@/lib/plan-personnel";
 import { usePlans } from "@/hooks/use-plans";
-import { accessibleCamps } from "@/lib/camp-access";
 import { useTheme } from "next-themes";
 import { useTranslation } from "@/lib/i18n-context";
 import {
@@ -14,41 +13,26 @@ import {
   User,
   Layout,
   LogOut,
-  ShieldCheck,
   ShieldAlert,
-  ChevronRight,
   Globe,
-  Calendar,
   Clock,
-  MapPin,
-  Tent,
-  Lock,
-  Unlock,
-  Pencil,
-  Check,
-  Plus,
-  List,
-  Trash2,
   X,
-  Star,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { exportProjectBackupZip } from "@/lib/export-excel";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { cn, getUnifiedGroupBadgeParams } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { useSearchParams } from "next/navigation";
 import { MemberSettings } from "@/components/MemberSettings";
+import { WorkspaceSettings } from "@/components/WorkspaceSettings";
 import { VersionReleaseNotes } from "@/components/VersionReleaseNotes";
 import { VERSION_HISTORY } from "@/data/version-history";
 
 export default function SettingsPage() {
   const { role, logout, memberNicknames, nicknameIndex } = useAuth();
   const {
-    camps, defaultCampId, setDefaultCampId, activeCampId, setActiveCampId, deleteCamp, updateCamp, addCamp,
-    activityTypes, addActivityType, removeActivityType,
-    groups, addGroup, updateGroup, deleteGroup,
+    camps, activeCampId, deleteCamp,
     plans, tables
   } = usePlans();
   const { theme, setTheme } = useTheme();
@@ -59,14 +43,8 @@ export default function SettingsPage() {
 
   const [isDeleting, setIsDeleting] = useState<boolean | "downloading">(false);
   const [isAddingProject, setIsAddingProject] = useState(false);
-  const [newProjectName, setNewProjectName] = useState("");
-  const [editingCampId, setEditingCampId] = useState<string | null>(null);
-  const [editingCampName, setEditingCampName] = useState("");
   const [deleteInput, setDeleteInput] = useState("");
 
-  const [newActivityType, setNewActivityType] = useState("");
-  const [newGroupNameZh, setNewGroupNameZh] = useState("");
-  const [newGroupNameEn, setNewGroupNameEn] = useState("");
   const [isVersionHistoryOpen, setIsVersionHistoryOpen] = useState(false);
   const [currentVersion, setCurrentVersion] = useState(VERSION_HISTORY[0]?.version || "dev");
   const [activeTab, setActiveTab] = useState<"account" | "workspace" | "preferences" | "versions" | "danger">("account");
@@ -74,14 +52,13 @@ export default function SettingsPage() {
   const activeCamp = camps.find(c => c.id === activeCampId);
   const isAdmin = role === 'admin';
 
-  // crew 看不到被鎖定的專案。這張清單原本直接渲染 camps —— 教案總覽與側欄
-  // 都有濾，只有這裡漏了，於是 crew 在這裡看得到也點得進去（issue #9）。
-  const visibleCamps = useMemo(() => accessibleCamps(camps, role), [camps, role]);
-
-
-
   useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'account' || tab === 'workspace' || tab === 'preferences' || tab === 'versions' || (tab === 'danger' && isAdmin)) {
+      setActiveTab(tab);
+    }
     if (searchParams.get('createProject') === '1' && isAdmin) {
+      setActiveTab("workspace");
       setIsAddingProject(true);
     }
   }, [searchParams, isAdmin]);
@@ -103,54 +80,6 @@ export default function SettingsPage() {
 
     readCurrentVersion();
   }, []);
-
-  const timelineFields = [
-    { startKey: "meeting1StartDate" as const, endKey: "meeting1EndDate" as const, label: "一收", icon: Clock, type: "single" },
-    { startKey: "meeting2StartDate" as const, endKey: "meeting2EndDate" as const, label: "二收", icon: Clock, type: "single" },
-    { startKey: "meeting3StartDate" as const, endKey: "meeting3EndDate" as const, label: "三收", icon: Clock, type: "single" },
-    { startKey: "trainingStartDate" as const, endKey: "trainingEndDate" as const, label: "營隊集訓", icon: Clock, type: "range" },
-    { startKey: "siteStartDate" as const, endKey: "siteEndDate" as const, label: "駐站", icon: MapPin, type: "single" },
-    { startKey: "campStartDate" as const, endKey: "campEndDate" as const, label: "營期", icon: Tent, type: "range" },
-  ];
-
-  const handleUpdate = (updates: Partial<typeof activeCamp>) => {
-    if (!activeCampId) return;
-    updateCamp(activeCampId, updates as any);
-  };
-
-  const handleCreateProject = () => {
-    const name = newProjectName.trim();
-    if (!name) {
-      toast({ title: t('ENTER_PROJECT_NAME_REQUIRED'), description: t('PROJECT_NAME_REQUIRED_DESC'), variant: "destructive" });
-      return;
-    }
-    addCamp(name);
-    setNewProjectName("");
-    setIsAddingProject(false);
-    toast({ title: t('PROJECT_CREATED'), description: t('PROJECT_CREATED_DESC', { name }) });
-  };
-
-  const beginRenameCamp = (id: string, currentName: string) => {
-    setEditingCampId(id);
-    setEditingCampName(currentName);
-  };
-
-  const cancelRenameCamp = () => {
-    setEditingCampId(null);
-    setEditingCampName("");
-  };
-
-  const submitRenameCamp = (id: string) => {
-    const name = editingCampName.trim();
-    if (!name) {
-      toast({ title: t('NAME_CANNOT_BE_EMPTY'), description: t('ENTER_NEW_PROJECT_NAME'), variant: "destructive" });
-      return;
-    }
-    updateCamp(id, { name });
-    setEditingCampId(null);
-    setEditingCampName("");
-    toast({ title: t('PROJECT_RENAMED'), description: t('PROJECT_RENAMED_DESC', { name }) });
-  };
 
   const tabItems = [
     { key: "account" as const, label: t('TAB_ACCOUNT'), icon: User },
@@ -238,481 +167,10 @@ export default function SettingsPage() {
 
           {/* TAB: WORKSPACE */}
           {activeTab === "workspace" && (
-            <div className="space-y-12">
-              
-              {/* 1. PROJECT DIRECTORY */}
-              <section className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="architectural-tag">01</span>
-                    <h2 className="text-sm font-mono uppercase tracking-widest text-foreground font-medium flex items-center gap-2">
-                      <Layout className="w-4 h-4 text-orange-500" />
-                      {t('PROJECT_DIRECTORY')}
-                    </h2>
-                  </div>
-                  {isAdmin && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-9 px-4 rounded-md font-mono text-xs uppercase tracking-wider border-orange-500/40 text-orange-600 dark:text-orange-400 hover:bg-orange-500/10 transition-all gap-1.5"
-                      onClick={() => {
-                        setIsAddingProject((prev) => !prev);
-                        if (isAddingProject) setNewProjectName("");
-                      }}
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      {isAddingProject ? t('COLLAPSE') : t('NEW_PROJECT')}
-                    </Button>
-                  )}
-                </div>
-
-                {isAdmin && isAddingProject && (
-                  <div className="rounded-2xl bg-white/90 dark:bg-white/[0.04] p-5 border border-orange-500/30 shadow-lg backdrop-blur-md">
-                    <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-                      <Input
-                        placeholder={t('CREATE_PROJECT_PLACEHOLDER')}
-                        value={newProjectName}
-                        onChange={(e) => setNewProjectName(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") handleCreateProject();
-                          if (e.key === "Escape") {
-                            setIsAddingProject(false);
-                            setNewProjectName("");
-                          }
-                        }}
-                        className="h-10 bg-stone-50 dark:bg-white/5 text-foreground border-stone-200/80 dark:border-white/10 rounded-lg"
-                        autoFocus
-                      />
-                      <div className="flex items-center gap-2 shrink-0">
-                        <Button className="h-10 px-5 font-mono text-xs bg-orange-500 hover:bg-orange-600 text-white rounded-lg shadow-xs" onClick={handleCreateProject}>
-                          <Check className="w-4 h-4 mr-1.5" /> {t('CREATE')}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          className="h-10 px-4 font-mono text-xs text-fg-muted hover:bg-stone-100 dark:hover:bg-white/5 rounded-lg"
-                          onClick={() => {
-                            setIsAddingProject(false);
-                            setNewProjectName("");
-                          }}
-                        >
-                          <X className="w-4 h-4 mr-1.5" /> {t('CANCEL')}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 rounded-xl overflow-hidden">
-                  <div className="divide-y divide-stone-200/60 dark:divide-white/5">
-                    {visibleCamps.length === 0 && (
-                      <div
-                        data-testid="settings-camps-empty"
-                        className="p-10 sm:p-14 flex flex-col items-center justify-center text-center"
-                      >
-                        <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-stone-100 dark:bg-white/5 border border-stone-200/60 dark:border-white/10 text-stone-400 mb-4">
-                          <Lock className="w-5 h-5" />
-                        </div>
-                        <h4 className="text-base font-normal text-foreground">
-                          {t('NO_ACCESSIBLE_PROJECTS')}
-                        </h4>
-                        <p className="text-xs font-mono text-fg-muted mt-1.5 max-w-sm">
-                          {t('NO_ACCESSIBLE_PROJECTS_DESC')}
-                        </p>
-                      </div>
-                    )}
-                    {visibleCamps.map((camp, idx) => {
-                      const isCurrent = activeCampId === camp.id;
-                      const isDefault = defaultCampId === camp.id;
-                      const idxStr = String(idx + 1).padStart(2, '0');
-                      return (
-                        <div
-                          key={camp.id}
-                          data-testid={`settings-camp-row-${camp.id}`}
-                          className={cn(
-                            "p-5 sm:p-6 flex items-center justify-between hover:bg-orange-500/[0.02] dark:hover:bg-orange-500/[0.04] transition-colors cursor-pointer group",
-                            isCurrent && "bg-orange-500/[0.03] dark:bg-orange-500/[0.05]"
-                          )}
-                          onClick={() => {
-                            if (editingCampId === camp.id) return;
-                            if (activeCampId === camp.id) return;
-                            setActiveCampId(camp.id);
-                            toast({ title: t('SWITCHING_PROJECT'), description: t('SWITCHING_PROJECT_DESC', { name: camp.name }) });
-                            setTimeout(() => {
-                              window.location.reload();
-                            }, 150);
-                          }}
-                        >
-                          <div className="flex items-center gap-4 sm:gap-6 min-w-0">
-                            <span className="font-mono text-xs text-fg-muted group-hover:text-orange-500 transition-colors w-6">
-                              {idxStr}
-                            </span>
-                            <div className={cn(
-                              "w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border transition-colors",
-                              isCurrent
-                                ? "bg-orange-500/15 border-orange-500/30 text-orange-600 dark:text-orange-400"
-                                : "bg-stone-100 dark:bg-white/5 border-stone-200/60 dark:border-white/10 text-stone-400 group-hover:text-orange-500"
-                            )}>
-                              <ShieldCheck className="w-5 h-5" />
-                            </div>
-                            <div className="min-w-0">
-                              {editingCampId === camp.id ? (
-                                <Input
-                                  value={editingCampName}
-                                  onChange={(e) => setEditingCampName(e.target.value)}
-                                  onClick={(e) => e.stopPropagation()}
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter") submitRenameCamp(camp.id);
-                                    if (e.key === "Escape") cancelRenameCamp();
-                                  }}
-                                  className="h-9 w-[220px] sm:w-[280px] bg-white dark:bg-white/10 text-foreground border-orange-500 rounded-lg"
-                                  autoFocus
-                                />
-                              ) : (
-                                <h4 className="font-normal text-base sm:text-lg text-foreground truncate group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
-                                  {camp.name}
-                                </h4>
-                              )}
-                              <p className="text-xs font-mono text-fg-muted mt-0.5">
-                                {t('ESTABLISHED')}: {camp.campStartDate || t('CONTINUOUS')}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-3 shrink-0">
-                            {isAdmin && (
-                              <>
-                                {editingCampId === camp.id ? (
-                                  <>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8 rounded-lg text-emerald-600 hover:bg-emerald-500/10"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        submitRenameCamp(camp.id);
-                                      }}
-                                      title={t('SAVE_NAME')}
-                                    >
-                                      <Check className="w-4 h-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8 rounded-lg text-stone-400 hover:bg-stone-100 dark:hover:bg-white/5"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        cancelRenameCamp();
-                                      }}
-                                      title={t('CANCEL')}
-                                    >
-                                      <X className="w-4 h-4" />
-                                    </Button>
-                                  </>
-                                ) : (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 rounded-lg text-stone-400 hover:text-foreground hover:bg-stone-100 dark:hover:bg-white/5"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      beginRenameCamp(camp.id, camp.name);
-                                    }}
-                                    title={t('EDIT_NAME')}
-                                  >
-                                    <Pencil className="w-3.5 h-3.5" />
-                                  </Button>
-                                )}
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className={cn(
-                                    "h-8 w-8 rounded-lg transition-colors",
-                                    camp.isLocked
-                                      ? "bg-rose-500/10 text-rose-600 dark:text-rose-400"
-                                      : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                                  )}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    updateCamp(camp.id, { isLocked: !camp.isLocked });
-                                  }}
-                                  title={camp.isLocked ? (language === 'zh' ? '解鎖專案' : 'Unlock Project') : (language === 'zh' ? '鎖定專案' : 'Lock Project')}
-                                >
-                                  {camp.isLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className={cn(
-                                    "h-8 w-8 rounded-lg transition-colors",
-                                    isDefault
-                                      ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
-                                      : "text-stone-400 hover:text-amber-500 hover:bg-stone-100 dark:hover:bg-white/5"
-                                  )}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setDefaultCampId(camp.id);
-                                    toast({
-                                      title: t('DEFAULT_PROJECT_SET'),
-                                      description: t('DEFAULT_PROJECT_SET_DESC', { name: camp.name }),
-                                    });
-                                  }}
-                                  title={isDefault ? t('DEFAULT_PROJECT') : t('SET_AS_DEFAULT_PROJECT')}
-                                >
-                                  <Star className={cn("w-3.5 h-3.5", isDefault && "fill-current")} />
-                                </Button>
-                              </>
-                            )}
-                            {isDefault && (
-                              <span className="font-mono text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-sm bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1 shrink-0">
-                                <Star className="w-2.5 h-2.5 fill-amber-500 text-amber-500" />
-                                {t('DEFAULT_PROJECT')}
-                              </span>
-                            )}
-                            {isCurrent && (
-                              <span className="font-mono text-[10px] uppercase tracking-wider px-3 py-0.5 rounded-sm bg-orange-500/15 text-orange-700 dark:text-orange-400 border border-orange-500/30 shrink-0">
-                                {t('ACTIVE_CORE')}
-                              </span>
-                            )}
-                            <ChevronRight className={cn(
-                              "w-4 h-4 text-stone-300 dark:text-stone-600 group-hover:text-orange-500 group-hover:translate-x-1 transition-all",
-                              isCurrent && "text-orange-500"
-                            )} />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </section>
-
-              {/* 2. TIMELINE SCHEDULE */}
-              {isAdmin && activeCamp && (
-                <section className="space-y-6">
-                  <div className="flex items-center gap-2">
-                    <span className="architectural-tag">02</span>
-                    <h2 className="text-sm font-mono uppercase tracking-widest text-foreground font-medium flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-orange-500" />
-                      {t('TIMELINE_SETUP')}
-                    </h2>
-                  </div>
-                  <div className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 rounded-xl p-6 sm:p-8">
-                    <div className="divide-y divide-stone-200/60 dark:divide-white/5">
-                      {timelineFields.map((field) => {
-                        const Icon = field.icon;
-                        return (
-                          <div key={field.label} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 first:pt-0 last:pb-0 group">
-                            <label className="flex items-center gap-3 text-xs font-mono uppercase tracking-wider text-fg-muted min-w-[140px] group-hover:text-foreground transition-colors">
-                              <Icon className="w-4 h-4 text-orange-500" />
-                              <span>{field.label}</span>
-                            </label>
-                            <div className="w-full sm:w-auto sm:min-w-[340px]">
-                              {field.type === "single" ? (
-                                <input
-                                  type="date"
-                                  value={(activeCamp as any)[field.startKey] || ""}
-                                  onChange={(e) => handleUpdate({ [field.startKey]: e.target.value })}
-                                  className="w-full bg-stone-50 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 hover:border-orange-500/50 focus:border-orange-500 rounded-lg px-4 py-2 font-mono text-xs outline-none transition-all text-foreground text-center cursor-pointer"
-                                />
-                              ) : (
-                                <div className="flex items-center w-full bg-stone-50 dark:bg-white/5 rounded-xl border border-stone-200/80 dark:border-white/10 hover:border-orange-500/50 focus-within:border-orange-500 transition-all">
-                                  <input
-                                    type="date"
-                                    value={(activeCamp as any)[field.startKey] || ""}
-                                    onChange={(e) => handleUpdate({ [field.startKey]: e.target.value })}
-                                    className="flex-1 w-full min-w-0 bg-transparent border-none rounded-l-lg px-3 py-2 font-mono text-xs outline-none text-foreground text-center cursor-pointer"
-                                  />
-                                  <span className="text-stone-300 dark:text-stone-600 font-mono text-xs px-1">➔</span>
-                                  <input
-                                    type="date"
-                                    value={(activeCamp as any)[field.endKey] || ""}
-                                    onChange={(e) => handleUpdate({ [field.endKey]: e.target.value })}
-                                    className="flex-1 w-full min-w-0 bg-transparent border-none rounded-r-lg px-3 py-2 font-mono text-xs outline-none text-foreground text-center cursor-pointer"
-                                  />
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </section>
-              )}
-
-              {/* 3. GROUP MANAGEMENT */}
-              {isAdmin && (
-                <section className="space-y-6">
-                  <div className="flex items-center gap-2">
-                    <span className="architectural-tag">03</span>
-                    <h2 className="text-sm font-mono uppercase tracking-widest text-foreground font-medium flex items-center gap-2">
-                      <List className="w-4 h-4 text-orange-500" />
-                      {language === 'zh' ? '組別架構管理' : 'Division Structure Management'}
-                    </h2>
-                  </div>
-                  <div className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 rounded-xl p-6 sm:p-8">
-                    {/* Desktop Headers */}
-                    <div className="hidden md:grid md:grid-cols-[1.2fr_1.5fr_1fr_auto] gap-4 pb-3 border-b border-stone-200/60 dark:border-white/5 mb-3 px-2 text-[10px] font-mono tracking-widest text-fg-muted uppercase">
-                      <div>{language === 'zh' ? '中文名稱' : 'Chinese Name'}</div>
-                      <div>{language === 'zh' ? '英文名稱' : 'English Name'}</div>
-                      <div>{language === 'zh' ? '路由 / 縮寫' : 'Route / Slug'}</div>
-                      <div className="text-right w-10">{language === 'zh' ? '操作' : 'Action'}</div>
-                    </div>
-
-                    <div className="space-y-3 mb-6">
-                      {groups.map((group) => {
-                        const isDefault = group.slug === 'activity' || group.slug === 'teaching' || group.slug === 'admin';
-                        const badgeParams = getUnifiedGroupBadgeParams(group.slug, group.nameZh);
-                        return (
-                          <div
-                            key={group.id}
-                            className="flex flex-col md:grid md:grid-cols-[1.2fr_1.5fr_1fr_auto] gap-3 md:gap-4 md:items-center p-3 rounded-lg bg-stone-50/50 dark:bg-white/[0.02] border border-stone-200/60 dark:border-white/5"
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className={cn("w-2 h-2 rounded-full shrink-0 shadow-xs", badgeParams.colorDot)} />
-                              <Input
-                                placeholder={language === 'zh' ? '中文名稱' : 'Chinese Name'}
-                                value={group.nameZh}
-                                onChange={(e) => updateGroup(group.id, { nameZh: e.target.value })}
-                                className="bg-white dark:bg-white/5 border-stone-200/80 dark:border-white/10 rounded-lg h-9 text-xs font-normal"
-                              />
-                            </div>
-                            <Input
-                              placeholder="English Name"
-                              value={group.nameEn}
-                              onChange={(e) => updateGroup(group.id, { nameEn: e.target.value })}
-                              className="bg-white dark:bg-white/5 border-stone-200/80 dark:border-white/10 rounded-lg h-9 text-xs font-normal"
-                            />
-                            {isDefault ? (
-                              <div className="flex items-center px-3 py-1.5 h-9">
-                                <span className={cn(
-                                  "inline-flex items-center gap-1.5 px-3 py-0.5 rounded-sm text-[10px] font-mono tracking-wider uppercase border",
-                                  badgeParams.softBg,
-                                  badgeParams.softText,
-                                  badgeParams.softBorder
-                                )}>
-                                  /{group.slug}
-                                </span>
-                              </div>
-                            ) : (
-                              <Input
-                                placeholder="Slug"
-                                value={group.slug}
-                                onChange={(e) => updateGroup(group.id, { slug: e.target.value })}
-                                className="bg-white dark:bg-white/5 border-stone-200/80 dark:border-white/10 rounded-lg h-9 font-mono text-xs"
-                              />
-                            )}
-                            <div className="flex justify-end w-full md:w-10">
-                              {!isDefault ? (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-stone-400 hover:bg-rose-500/10 hover:text-rose-500 rounded-lg transition-colors"
-                                  onClick={() => deleteGroup(group.id)}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              ) : (
-                                <div className="h-8 w-8" />
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {/* Add Group Row */}
-                    <div className="p-4 rounded-lg bg-orange-500/[0.04] border border-orange-500/20 flex flex-col md:grid md:grid-cols-[1.2fr_1.5fr_1fr_auto] gap-3 md:gap-4 md:items-center">
-                      <Input
-                        placeholder={language === 'zh' ? '新增中文名稱' : 'New Chinese Name'}
-                        value={newGroupNameZh}
-                        onChange={(e) => setNewGroupNameZh(e.target.value)}
-                        className="bg-white dark:bg-white/5 border-stone-200/80 dark:border-white/10 rounded-lg h-9 text-xs"
-                      />
-                      <Input
-                        placeholder="New English Name"
-                        value={newGroupNameEn}
-                        onChange={(e) => setNewGroupNameEn(e.target.value)}
-                        className="bg-white dark:bg-white/5 border-stone-200/80 dark:border-white/10 rounded-lg h-9 text-xs"
-                      />
-                      <div className="flex items-center px-1">
-                        <span className="text-[11px] font-mono text-fg-muted italic">
-                          {language === 'zh' ? '自動產生 Slug' : 'Auto Slug'}
-                        </span>
-                      </div>
-                      <Button
-                        onClick={() => {
-                          if (newGroupNameZh.trim() && newGroupNameEn.trim()) {
-                            addGroup({ nameZh: newGroupNameZh.trim(), nameEn: newGroupNameEn.trim() });
-                            setNewGroupNameZh("");
-                            setNewGroupNameEn("");
-                          }
-                        }}
-                        size="sm"
-                        className="bg-orange-500 hover:bg-orange-600 text-white font-mono text-xs rounded-lg h-9 px-4 shadow-xs"
-                      >
-                        {language === 'zh' ? '新增組別' : 'Add'}
-                      </Button>
-                    </div>
-                  </div>
-                </section>
-              )}
-
-              {/* 4. ACTIVITY TYPES */}
-              {isAdmin && (
-                <section className="space-y-6">
-                  <div className="flex items-center gap-2">
-                    <span className="architectural-tag">04</span>
-                    <h2 className="text-sm font-mono uppercase tracking-widest text-foreground font-medium flex items-center gap-2">
-                      <List className="w-4 h-4 text-orange-500" />
-                      {language === 'zh' ? '活動類別標籤' : 'Activity Category Tags'}
-                    </h2>
-                  </div>
-                  <div className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-stone-200/80 dark:border-white/10 rounded-xl p-6 sm:p-8">
-                    <div className="flex flex-wrap gap-2.5 mb-6">
-                      {activityTypes?.map((type) => (
-                        <span
-                          key={type}
-                          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-sm bg-stone-100 dark:bg-white/5 border border-stone-200/80 dark:border-white/10 text-xs font-mono text-foreground"
-                        >
-                          <span>{type}</span>
-                          <button
-                            onClick={() => removeActivityType(type)}
-                            className="text-stone-400 hover:text-rose-500 transition-colors cursor-pointer"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                    <div className="flex items-center gap-3 max-w-md">
-                      <Input
-                        placeholder={language === 'zh' ? '新增活動類型 (例如: 晚會活動)' : 'Add activity type'}
-                        value={newActivityType}
-                        onChange={(e) => setNewActivityType(e.target.value)}
-                        className="bg-stone-50 dark:bg-white/5 border-stone-200/80 dark:border-white/10 rounded-lg h-10 text-xs"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && newActivityType.trim()) {
-                            addActivityType(newActivityType.trim());
-                            setNewActivityType("");
-                          }
-                        }}
-                      />
-                      <Button
-                        onClick={() => {
-                          if (newActivityType.trim()) {
-                            addActivityType(newActivityType.trim());
-                            setNewActivityType("");
-                          }
-                        }}
-                        className="h-10 px-5 font-mono text-xs bg-orange-500 hover:bg-orange-600 text-white rounded-lg shadow-xs shrink-0"
-                      >
-                        {language === 'zh' ? '新增' : 'Add'}
-                      </Button>
-                    </div>
-                  </div>
-                </section>
-              )}
-            </div>
+            <WorkspaceSettings
+              initialAddingProject={isAddingProject}
+              onAddingProjectHandled={() => setIsAddingProject(false)}
+            />
           )}
 
           {/* TAB: PREFERENCES */}

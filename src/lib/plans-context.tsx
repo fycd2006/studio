@@ -84,6 +84,7 @@ const normalizeSlug = (raw: string) =>
     .replace(/^-|-$/g, '') || 'group';
 
 const DEFAULT_GROUP_TYPES = ['活動組', '教學組'];
+const DEFAULT_ACTIVITY_TYPES = ['劇本', '大地遊戲', '科學闖關', '科學實驗', '手作課程', '相見歡', '起床遊戲'];
 
 function getAuthorColor(uid: string) {
   let hash = 0;
@@ -153,7 +154,7 @@ interface PlansContextType {
   addActivityType: (newType: string) => void;
   removeActivityType: (typeToRemove: string) => void;
   groups: Group[];
-  addGroup: (input: { nameZh: string; nameEn: string; slug?: string }) => void;
+  addGroup: (input: { nameZh: string; nameEn?: string; slug?: string }) => void;
   updateGroup: (id: string, updates: Partial<Group>) => void;
   deleteGroup: (id: string) => void;
   groupTypes: string[];
@@ -781,33 +782,37 @@ export function PlansProvider({ children }: { children: ReactNode }) {
     undoTable, redoTable, canUndoTable: tableHistory.past.length > 0, canRedoTable: tableHistory.future.length > 0,
     viewMode, setViewMode,
     isSaving: false,
-    activityTypes: settings?.activityTypes || ['劇本', '大地遊戲', '科學闖關', '科學實驗', '手作課程', '相見歡', '起床遊戲'],
+    activityTypes: settings?.activityTypes || DEFAULT_ACTIVITY_TYPES,
     addActivityType: (newType: string) => {
       if (!db) return;
-      const current = settings?.activityTypes || ['劇本', '大地遊戲', '科學闖關', '科學實驗', '手作課程', '相見歡', '起床遊戲'];
-      if (!current.includes(newType)) {
+      const clean = newType.trim();
+      if (!clean) return;
+      const current = settings?.activityTypes || DEFAULT_ACTIVITY_TYPES;
+      if (!current.includes(clean)) {
         setDocumentNonBlocking(doc(db, 'userSettings', 'global'), { 
-          activityTypes: [...current, newType], 
+          activityTypes: [...current, clean], 
           updatedAt: Date.now() 
         }, { merge: true });
       }
     },
     removeActivityType: (typeToRemove: string) => {
       if (!db) return;
-      const current = settings?.activityTypes || [];
+      const current = settings?.activityTypes || DEFAULT_ACTIVITY_TYPES;
       setDocumentNonBlocking(doc(db, 'userSettings', 'global'), {
         activityTypes: current.filter(t => t !== typeToRemove),
         updatedAt: Date.now()
       }, { merge: true });
     },
     groups,
-    addGroup: (input: { nameZh: string; nameEn: string; slug?: string }) => {
+    addGroup: (input: { nameZh: string; nameEn?: string; slug?: string }) => {
       if (!db) return;
       const nameZh = input.nameZh.trim();
-      const nameEn = input.nameEn.trim();
-      if (!nameZh || !nameEn) return;
+      const nameEn = (input.nameEn || '').trim() || nameZh;
+      if (!nameZh) return;
 
-      const baseSlug = input.slug?.trim() ? normalizeSlug(input.slug) : normalizeSlug(nameEn);
+      const baseSlug = input.slug?.trim()
+        ? normalizeSlug(input.slug)
+        : normalizeSlug((input.nameEn || '').trim() || nameZh);
       const current = settings?.groups || [];
       const existingSlugs = new Set([...DEFAULT_GROUPS, ...current].map(g => g.slug));
 
