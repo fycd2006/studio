@@ -10,7 +10,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { TransparentNavbar } from "@/components/TransparentNavbar";
 import { TimerAlarmHost } from "@/components/TimerAlarmHost";
-import { InAppBrowserBanner } from "@/components/InAppBrowserBanner";
+import { InAppBrowserBanner, ExternalBrowserRedirector } from "@/components/InAppBrowserBanner";
 import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
 import { useTranslation } from "@/lib/i18n-context";
 import { cn } from "@/lib/utils";
@@ -31,6 +31,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (isAuthPage) {
     return (
       <>
+        <ExternalBrowserRedirector />
         {children}
         <Toaster />
       </>
@@ -39,6 +40,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      <ExternalBrowserRedirector />
       {/* 全站響鈴。放在這裡（而不是 AppShellInternal 裡面）有兩個理由：
           auth 頁已經在上面被 return 掉了，所以登入畫面不會響；
           而它在 AppShellInternal 的載入 early return 之上，所以還在轉圈的

@@ -3,14 +3,24 @@
 import { useEffect, useState } from "react";
 import { Check, Compass, Copy, ExternalLink, X } from "lucide-react";
 import {
-  buildAndroidChromeIntentUrl,
+  buildAndroidDefaultBrowserIntentUrl,
+  buildIosSafariUrl,
+  buildKakaoExternalUrl,
   buildLineExternalUrl,
   detectBrowserEnv,
   stripExternalRedirectParam,
-  tryAutoRedirectLineExternal,
+  tryAutoRedirectExternalBrowser,
   type BrowserEnv,
 } from "@/lib/browser-env";
 import { Button } from "@/components/ui/button";
+
+export function ExternalBrowserRedirector() {
+  useEffect(() => {
+    tryAutoRedirectExternalBrowser();
+  }, []);
+
+  return null;
+}
 
 interface InAppBrowserBannerProps {
   variant?: "login" | "floating";
@@ -22,13 +32,13 @@ export function InAppBrowserBanner({ variant = "login" }: InAppBrowserBannerProp
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    tryAutoRedirectLineExternal();
+    tryAutoRedirectExternalBrowser();
     setEnv(detectBrowserEnv());
   }, []);
 
   if (!env?.isInAppBrowser || dismissed) return null;
 
-  const recommendedBrowser = env.isIOS ? "Safari" : "Chrome";
+  const recommendedBrowser = env.isIOS ? "Safari" : "預設瀏覽器";
   const currentHref = typeof window !== "undefined" ? window.location.href : "";
 
   const handleCopy = async () => {
@@ -39,7 +49,6 @@ export function InAppBrowserBanner({ variant = "login" }: InAppBrowserBannerProp
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2500);
     } catch {
-      // Fallback for restricted WebViews
       const textarea = document.createElement("textarea");
       textarea.value = cleanUrl;
       textarea.style.position = "fixed";
@@ -54,6 +63,64 @@ export function InAppBrowserBanner({ variant = "login" }: InAppBrowserBannerProp
         document.body.removeChild(textarea);
       }
     }
+  };
+
+  const renderPrimaryAction = () => {
+    if (!currentHref) return null;
+
+    if (env.isLine) {
+      return (
+        <Button
+          type="button"
+          size="sm"
+          className="h-8 gap-1.5 rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-3 text-xs font-semibold text-white shadow-xs hover:from-orange-600 hover:to-orange-700"
+          onClick={() => {
+            window.location.href = buildLineExternalUrl(currentHref);
+          }}
+        >
+          <ExternalLink className="size-3.5" aria-hidden="true" />
+          用預設瀏覽器開啟
+        </Button>
+      );
+    }
+
+    if (env.isKakaoTalk) {
+      return (
+        <a
+          href={buildKakaoExternalUrl(currentHref)}
+          className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-3 text-xs font-semibold text-white shadow-xs transition-colors hover:from-orange-600 hover:to-orange-700"
+        >
+          <ExternalLink className="size-3.5" aria-hidden="true" />
+          用預設瀏覽器開啟
+        </a>
+      );
+    }
+
+    if (env.isAndroid && !env.isWeChat) {
+      return (
+        <a
+          href={buildAndroidDefaultBrowserIntentUrl(currentHref)}
+          className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-3 text-xs font-semibold text-white shadow-xs transition-colors hover:from-orange-600 hover:to-orange-700"
+        >
+          <ExternalLink className="size-3.5" aria-hidden="true" />
+          用預設瀏覽器開啟
+        </a>
+      );
+    }
+
+    if (env.isIOS && !env.isWeChat) {
+      return (
+        <a
+          href={buildIosSafariUrl(currentHref)}
+          className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-3 text-xs font-semibold text-white shadow-xs transition-colors hover:from-orange-600 hover:to-orange-700"
+        >
+          <ExternalLink className="size-3.5" aria-hidden="true" />
+          用 Safari 開啟
+        </a>
+      );
+    }
+
+    return null;
   };
 
   const card = (
@@ -88,28 +155,7 @@ export function InAppBrowserBanner({ variant = "login" }: InAppBrowserBannerProp
             開啟以順利登入與獲得最佳體驗。
           </p>
           <div className="flex flex-wrap items-center gap-2 pt-1.5">
-            {env.isLine && currentHref && (
-              <Button
-                type="button"
-                size="sm"
-                className="h-8 gap-1.5 rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-3 text-xs font-semibold text-white shadow-xs hover:from-orange-600 hover:to-orange-700"
-                onClick={() => {
-                  window.location.href = buildLineExternalUrl(currentHref);
-                }}
-              >
-                <ExternalLink className="size-3.5" aria-hidden="true" />
-                用外部瀏覽器開啟
-              </Button>
-            )}
-            {!env.isLine && env.isAndroid && currentHref && (
-              <a
-                href={buildAndroidChromeIntentUrl(currentHref)}
-                className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-3 text-xs font-semibold text-white shadow-xs transition-colors hover:from-orange-600 hover:to-orange-700"
-              >
-                <ExternalLink className="size-3.5" aria-hidden="true" />
-                以 Chrome 開啟
-              </a>
-            )}
+            {renderPrimaryAction()}
             <Button
               type="button"
               variant="outline"
@@ -131,7 +177,7 @@ export function InAppBrowserBanner({ variant = "login" }: InAppBrowserBannerProp
             </Button>
           </div>
           <p className="pt-0.5 text-[11px] text-amber-800/75 dark:text-amber-200/70">
-            或點選右上角／右下角「⋯」→「以預設瀏覽器開啟」
+            若未自動跳轉，請點選右上角或右下角「⋯」→「以預設瀏覽器開啟」
           </p>
         </div>
       </div>
