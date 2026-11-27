@@ -87,7 +87,7 @@ export function ImageNodeView({
         className={cn(
           "group/img relative block transition-shadow",
           wrapperAlignClass,
-          selected && isEditable && "rounded-lg ring-2 ring-orange-500/85 ring-offset-2 ring-offset-background",
+          selected && isEditable && "rounded-lg ring-2 ring-orange-500/60 ring-offset-2 ring-offset-background",
         )}
       >
         <img
@@ -105,20 +105,20 @@ export function ImageNodeView({
 
         {isEditable && selected && (
           <>
-            {/* Left & Right resize handles */}
+            {/* Left & Right resize pills */}
             <div
               role="separator"
               aria-orientation="vertical"
               aria-label="向左調整圖片寬度"
               onPointerDown={(e) => startResize(e, -1)}
-              className="absolute inset-y-3 left-1.5 z-20 w-1.5 cursor-ew-resize rounded-full bg-orange-500/90 opacity-90 shadow-xs transition-transform hover:scale-x-125"
+              className="absolute left-1.5 top-1/2 z-20 h-10 w-1.5 -translate-y-1/2 cursor-ew-resize rounded-full bg-orange-500/90 shadow-md ring-1 ring-white/80 transition-transform hover:scale-110"
             />
             <div
               role="separator"
               aria-orientation="vertical"
               aria-label="向右調整圖片寬度"
               onPointerDown={(e) => startResize(e, 1)}
-              className="absolute inset-y-3 right-1.5 z-20 w-1.5 cursor-ew-resize rounded-full bg-orange-500/90 opacity-90 shadow-xs transition-transform hover:scale-x-125"
+              className="absolute right-1.5 top-1/2 z-20 h-10 w-1.5 -translate-y-1/2 cursor-ew-resize rounded-full bg-orange-500/90 shadow-md ring-1 ring-white/80 transition-transform hover:scale-110"
             />
 
             {/* Floating Image Toolbar anchored cleanly inside bottom edge so sticky header never clips it */}

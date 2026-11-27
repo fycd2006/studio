@@ -192,7 +192,7 @@ export function O2RichEditor({
       attributes: {
         "data-rich-text-editor": "true",
         class:
-          "tiptap w-full max-w-none outline-none px-3 py-2 text-[15px] leading-relaxed text-foreground break-words min-h-[var(--editor-min-height,140px)]",
+          "tiptap w-full max-w-none outline-none focus:outline-none focus-visible:outline-none px-3 py-2 text-[15px] leading-relaxed text-foreground break-words min-h-[var(--editor-min-height,140px)]",
       },
       handleDrop: (view, event, _slice, moved) => {
         if (moved || readOnlyRef.current) return false;
@@ -463,7 +463,7 @@ export function O2RichEditor({
           readOnly
             ? "border-transparent bg-transparent"
             : isFocused
-              ? "border-orange-500/45 bg-white/95 ring-2 ring-orange-500/12 dark:border-orange-400/45 dark:bg-white/[0.03]"
+              ? "border-orange-500/40 bg-white/95 ring-2 ring-orange-500/20 dark:border-amber-400/40 dark:bg-white/[0.03] dark:ring-amber-400/20"
               : "border-transparent bg-transparent hover:border-stone-200/80 hover:bg-stone-50/45 dark:hover:border-white/10 dark:hover:bg-white/[0.015]",
         )}
       >

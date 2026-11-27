@@ -1343,7 +1343,7 @@ function PlanEditorInner({
                         className={cn(
                           "flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition-colors",
                           active
-                            ? "bg-orange-500/12 font-medium text-orange-700 dark:text-orange-300"
+                            ? "bg-orange-500/10 font-medium text-orange-700 dark:text-orange-300"
                             : "text-muted-foreground hover:bg-stone-100 hover:text-foreground dark:hover:bg-white/5",
                         )}
                       >

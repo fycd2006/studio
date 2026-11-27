@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Editor } from "@tiptap/react";
 import {
@@ -174,6 +174,7 @@ export function SlashCommandMenu({
 }) {
   const [slash, setSlash] = useState<SlashState | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const filteredItems = useMemo(() => {
     if (!slash) return [];
@@ -190,6 +191,13 @@ export function SlashCommandMenu({
   useEffect(() => {
     setSelectedIndex(0);
   }, [slash?.query]);
+
+  useEffect(() => {
+    if (!slash) return;
+    menuRef.current
+      ?.querySelector<HTMLElement>('[aria-selected="true"]')
+      ?.scrollIntoView({ block: "nearest" });
+  }, [selectedIndex, slash]);
 
   useEffect(() => {
     if (!editor) return;
@@ -326,6 +334,7 @@ export function SlashCommandMenu({
 
   return createPortal(
     <div
+      ref={menuRef}
       data-editor-floating
       data-editor-format-control=""
       role="listbox"
@@ -355,7 +364,7 @@ export function SlashCommandMenu({
               className={cn(
                 "flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors",
                 active
-                  ? "bg-orange-500/12 text-orange-700 dark:text-orange-300"
+                  ? "bg-orange-500/10 text-orange-700 dark:text-orange-300"
                   : "text-foreground hover:bg-stone-100 dark:hover:bg-white/5",
               )}
             >
