@@ -12,6 +12,7 @@ export function ImageNodeView({
   node,
   selected,
   editor,
+  getPos,
   updateAttributes,
   deleteNode,
 }: NodeViewProps) {
@@ -23,7 +24,7 @@ export function ImageNodeView({
   const title = node.attrs.title ? String(node.attrs.title) : undefined;
   const width = node.attrs.width ? String(node.attrs.width) : "75%";
   const align = (node.attrs.align as "left" | "center" | "right") || "center";
-  const rounded = Boolean(node.attrs.rounded ?? true);
+  const rounded = node.attrs.rounded !== false;
   const shadow = Boolean(node.attrs.shadow ?? false);
 
   const wrapperAlignClass =
@@ -32,6 +33,16 @@ export function ImageNodeView({
       : align === "right"
         ? "ml-auto mr-0"
         : "mx-auto";
+
+  const selectThisImage = () => {
+    if (!isEditable) return;
+    if (typeof getPos === "function") {
+      const pos = getPos();
+      if (typeof pos === "number") {
+        editor.chain().focus().setNodeSelection(pos).run();
+      }
+    }
+  };
 
   const startResize = (event: React.PointerEvent<HTMLDivElement>, direction: -1 | 1) => {
     if (!isEditable) return;
@@ -72,10 +83,11 @@ export function ImageNodeView({
       <div
         ref={containerRef}
         style={{ width, maxWidth: "100%" }}
+        onClick={selectThisImage}
         className={cn(
           "group/img relative block transition-shadow",
           wrapperAlignClass,
-          selected && isEditable && "ring-2 ring-orange-500/80 ring-offset-2 ring-offset-background rounded-lg",
+          selected && isEditable && "rounded-lg ring-2 ring-orange-500/85 ring-offset-2 ring-offset-background",
         )}
       >
         <img
@@ -99,22 +111,26 @@ export function ImageNodeView({
               aria-orientation="vertical"
               aria-label="向左調整圖片寬度"
               onPointerDown={(e) => startResize(e, -1)}
-              className="absolute inset-y-3 left-1.5 w-1.5 cursor-ew-resize rounded-full bg-orange-500/85 opacity-90 shadow-xs transition-transform hover:scale-x-125"
+              className="absolute inset-y-3 left-1.5 z-20 w-1.5 cursor-ew-resize rounded-full bg-orange-500/90 opacity-90 shadow-xs transition-transform hover:scale-x-125"
             />
             <div
               role="separator"
               aria-orientation="vertical"
               aria-label="向右調整圖片寬度"
               onPointerDown={(e) => startResize(e, 1)}
-              className="absolute inset-y-3 right-1.5 w-1.5 cursor-ew-resize rounded-full bg-orange-500/85 opacity-90 shadow-xs transition-transform hover:scale-x-125"
+              className="absolute inset-y-3 right-1.5 z-20 w-1.5 cursor-ew-resize rounded-full bg-orange-500/90 opacity-90 shadow-xs transition-transform hover:scale-x-125"
             />
 
-            {/* Floating Image Toolbar */}
+            {/* Floating Image Toolbar anchored cleanly inside bottom edge so sticky header never clips it */}
             <div
               data-editor-floating
               contentEditable={false}
-              onMouseDown={(e) => e.preventDefault()}
-              className="absolute -top-11 left-1/2 z-30 flex -translate-x-1/2 items-center gap-0.5 whitespace-nowrap rounded-xl border border-stone-200/80 bg-white/95 p-1 text-foreground shadow-lg backdrop-blur-xl dark:border-white/15 dark:bg-[#14191C]/95"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onClick={(e) => e.stopPropagation()}
+              className="absolute bottom-2.5 left-1/2 z-30 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-0.5 overflow-x-auto whitespace-nowrap rounded-xl border border-stone-200/80 bg-white/95 p-1 text-foreground shadow-lg backdrop-blur-xl no-scrollbar dark:border-white/15 dark:bg-[#14191C]/95"
             >
               {WIDTH_PRESETS.map((preset) => (
                 <Button

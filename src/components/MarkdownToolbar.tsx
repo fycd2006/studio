@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
   AlignCenter,
@@ -11,6 +11,9 @@ import {
   CheckSquare,
   ChevronDown,
   Eraser,
+  Heading1,
+  Heading2,
+  Heading3,
   Image as ImageIcon,
   Italic,
   Link as LinkIcon,
@@ -23,10 +26,13 @@ import {
   Strikethrough,
   Table as TableIcon,
   Underline,
+  Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useToast } from "@/hooks/use-toast";
+import { maxEmbeddedImageBytes, prepareClipboardImage, utf8Length } from "@/lib/editor-image";
 import { cn } from "@/lib/utils";
 import { useActiveEditor } from "./editor/editor-context";
 
@@ -51,6 +57,10 @@ const controlClass = "h-8 shrink-0 gap-1 rounded-lg px-2 text-xs";
 const selectedClass = "bg-orange-100 text-orange-800 dark:bg-orange-400/20 dark:text-orange-200";
 const ignoreAutoFocus = (event: Event) => event.preventDefault();
 
+function Divider() {
+  return <span className="mx-1 h-4 w-px shrink-0 bg-stone-200 dark:bg-white/10" aria-hidden="true" />;
+}
+
 function normalizeFontLabel(rawFamily: string | undefined | null): string {
   if (!rawFamily) return "預設字型";
   const first = rawFamily.split(",")[0].replace(/["']/g, "").trim().toLowerCase();
@@ -66,38 +76,43 @@ function parseFontSizePx(rawSize: string | undefined | null): number {
 }
 
 export function MarkdownToolbar({ className }: { className?: string }) {
-  const { activeEditor } = useActiveEditor();
+  const { activeEditor, primaryEditor, getPasteBudgetForEditor } = useActiveEditor();
+  const { toast } = useToast();
+  const editor = activeEditor ?? primaryEditor;
+
   const [, setTick] = useState(0);
   const [popover, setPopover] = useState<string | null>(null);
   const [sizeInput, setSizeInput] = useState("");
   const [url, setUrl] = useState("");
   const [linkText, setLinkText] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!activeEditor) return;
+    if (!editor) return;
     const refresh = () => setTick((t) => (t + 1) % 10_000);
-    activeEditor.on("selectionUpdate", refresh);
-    activeEditor.on("transaction", refresh);
-    activeEditor.on("focus", refresh);
+    editor.on("selectionUpdate", refresh);
+    editor.on("transaction", refresh);
+    editor.on("focus", refresh);
     return () => {
-      activeEditor.off("selectionUpdate", refresh);
-      activeEditor.off("transaction", refresh);
-      activeEditor.off("focus", refresh);
+      editor.off("selectionUpdate", refresh);
+      editor.off("transaction", refresh);
+      editor.off("focus", refresh);
     };
-  }, [activeEditor]);
+  }, [editor]);
 
-  const textStyleAttrs = (activeEditor?.getAttributes("textStyle") || {}) as {
+  const textStyleAttrs = (editor?.getAttributes("textStyle") || {}) as {
     fontFamily?: string;
     fontSize?: string;
     color?: string;
   };
-  const highlightAttrs = (activeEditor?.getAttributes("highlight") || {}) as { color?: string };
+  const highlightAttrs = (editor?.getAttributes("highlight") || {}) as { color?: string };
 
   const currentFont = normalizeFontLabel(textStyleAttrs.fontFamily);
   const currentSize = parseFontSizePx(textStyleAttrs.fontSize);
   const currentColor = textStyleAttrs.color;
   const currentHighlight = highlightAttrs.color;
-  const disabled = !activeEditor || !activeEditor.isEditable;
+  const disabled = !editor || !editor.isEditable;
 
   const popup = (name: string) => ({
     open: popover === name,
@@ -128,19 +143,50 @@ export function MarkdownToolbar({ className }: { className?: string }) {
   };
 
   const run = (fn: () => void, close = true) => {
-    if (!activeEditor || !activeEditor.isEditable) return;
+    if (!editor || !editor.isEditable) return;
     fn();
     if (close) setPopover(null);
   };
 
   const changeSize = (nextSize: number) => {
     if (!Number.isInteger(nextSize) || nextSize < 8 || nextSize > 120) return;
-    run(() => activeEditor?.chain().focus().setFontSize(`${nextSize}px`).run());
+    run(() => editor?.chain().focus().setFontSize(`${nextSize}px`).run());
+  };
+
+  const handleImageFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !editor || !editor.isEditable) return;
+    setIsUploading(true);
+    try {
+      const budget = getPasteBudgetForEditor(editor);
+      const compressed = await prepareClipboardImage(
+        file,
+        Math.min(maxEmbeddedImageBytes, Math.max(0, budget - 512)),
+      );
+      if (utf8Length(compressed.src) > budget) {
+        throw new Error("Exceeds size");
+      }
+      editor
+        .chain()
+        .focus()
+        .setImage({ src: compressed.src, alt: file.name || "圖片", width: "75%", align: "center" } as never)
+        .run();
+      setPopover(null);
+    } catch {
+      toast({
+        title: "無法插入圖片",
+        description: "圖片大小超過文件剩餘容量，請壓縮後再試。",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const insertMedia = (event: React.FormEvent, isImage: boolean) => {
     event.preventDefault();
-    if (!activeEditor) return;
+    if (!editor) return;
     let resolved: URL;
     try {
       resolved = new URL(url.trim(), window.location.href);
@@ -153,7 +199,7 @@ export function MarkdownToolbar({ className }: { className?: string }) {
 
     if (isImage) {
       run(() =>
-        activeEditor
+        editor
           .chain()
           .focus()
           .setImage({ src: resolved.href, alt: "", width: "75%", align: "center" } as never)
@@ -162,7 +208,7 @@ export function MarkdownToolbar({ className }: { className?: string }) {
     } else if (linkText.trim()) {
       const text = linkText.trim();
       run(() =>
-        activeEditor
+        editor
           .chain()
           .focus()
           .insertContent({
@@ -173,7 +219,7 @@ export function MarkdownToolbar({ className }: { className?: string }) {
           .run(),
       );
     } else {
-      run(() => activeEditor.chain().focus().extendMarkRange("link").setLink({ href: resolved.href }).run());
+      run(() => editor.chain().focus().extendMarkRange("link").setLink({ href: resolved.href }).run());
     }
   };
 
@@ -181,26 +227,26 @@ export function MarkdownToolbar({ className }: { className?: string }) {
     {
       icon: Bold,
       label: "粗體",
-      active: Boolean(activeEditor?.isActive("bold")),
-      onClick: () => run(() => activeEditor?.chain().focus().toggleBold().run(), false),
+      active: Boolean(editor?.isActive("bold")),
+      onClick: () => run(() => editor?.chain().focus().toggleBold().run(), false),
     },
     {
       icon: Italic,
       label: "斜體",
-      active: Boolean(activeEditor?.isActive("italic")),
-      onClick: () => run(() => activeEditor?.chain().focus().toggleItalic().run(), false),
+      active: Boolean(editor?.isActive("italic")),
+      onClick: () => run(() => editor?.chain().focus().toggleItalic().run(), false),
     },
     {
       icon: Underline,
       label: "底線",
-      active: Boolean(activeEditor?.isActive("underline")),
-      onClick: () => run(() => activeEditor?.chain().focus().toggleUnderline().run(), false),
+      active: Boolean(editor?.isActive("underline")),
+      onClick: () => run(() => editor?.chain().focus().toggleUnderline().run(), false),
     },
     {
       icon: Strikethrough,
       label: "刪除線",
-      active: Boolean(activeEditor?.isActive("strike")),
-      onClick: () => run(() => activeEditor?.chain().focus().toggleStrike().run(), false),
+      active: Boolean(editor?.isActive("strike")),
+      onClick: () => run(() => editor?.chain().focus().toggleStrike().run(), false),
     },
   ];
 
@@ -208,44 +254,44 @@ export function MarkdownToolbar({ className }: { className?: string }) {
     {
       icon: List,
       label: "項目符號",
-      active: Boolean(activeEditor?.isActive("bulletList")),
-      onClick: () => run(() => activeEditor?.chain().focus().toggleBulletList().run(), false),
+      active: Boolean(editor?.isActive("bulletList")),
+      onClick: () => run(() => editor?.chain().focus().toggleBulletList().run(), false),
     },
     {
       icon: ListOrdered,
       label: "編號清單",
-      active: Boolean(activeEditor?.isActive("orderedList")),
-      onClick: () => run(() => activeEditor?.chain().focus().toggleOrderedList().run(), false),
+      active: Boolean(editor?.isActive("orderedList")),
+      onClick: () => run(() => editor?.chain().focus().toggleOrderedList().run(), false),
     },
     {
       icon: CheckSquare,
       label: "核取清單",
-      active: Boolean(activeEditor?.isActive("taskList")),
-      onClick: () => run(() => activeEditor?.chain().focus().toggleTaskList().run(), false),
+      active: Boolean(editor?.isActive("taskList")),
+      onClick: () => run(() => editor?.chain().focus().toggleTaskList().run(), false),
     },
     {
       icon: AlignLeft,
       label: "靠左對齊",
-      active: Boolean(activeEditor?.isActive({ textAlign: "left" })),
-      onClick: () => run(() => activeEditor?.chain().focus().setTextAlign("left").run(), false),
+      active: Boolean(editor?.isActive({ textAlign: "left" })),
+      onClick: () => run(() => editor?.chain().focus().setTextAlign("left").run(), false),
     },
     {
       icon: AlignCenter,
       label: "置中對齊",
-      active: Boolean(activeEditor?.isActive({ textAlign: "center" })),
-      onClick: () => run(() => activeEditor?.chain().focus().setTextAlign("center").run(), false),
+      active: Boolean(editor?.isActive({ textAlign: "center" })),
+      onClick: () => run(() => editor?.chain().focus().setTextAlign("center").run(), false),
     },
     {
       icon: AlignRight,
       label: "靠右對齊",
-      active: Boolean(activeEditor?.isActive({ textAlign: "right" })),
-      onClick: () => run(() => activeEditor?.chain().focus().setTextAlign("right").run(), false),
+      active: Boolean(editor?.isActive({ textAlign: "right" })),
+      onClick: () => run(() => editor?.chain().focus().setTextAlign("right").run(), false),
     },
     {
       icon: AlignJustify,
       label: "左右對齊",
-      active: Boolean(activeEditor?.isActive({ textAlign: "justify" })),
-      onClick: () => run(() => activeEditor?.chain().focus().setTextAlign("justify").run(), false),
+      active: Boolean(editor?.isActive({ textAlign: "justify" })),
+      onClick: () => run(() => editor?.chain().focus().setTextAlign("justify").run(), false),
     },
   ];
 
@@ -278,10 +324,105 @@ export function MarkdownToolbar({ className }: { className?: string }) {
       onPointerDown={preserveSelection}
       className={cn(
         "flex w-full items-center gap-0.5 overflow-x-auto whitespace-nowrap rounded-lg no-scrollbar",
-        disabled && "opacity-60",
+        disabled && "opacity-55",
         className,
       )}
     >
+      {/* Quick Insert Block Menu (Mouse-friendly alternative to /) */}
+      <Popover {...popup("insertBlock")}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={disabled}
+            className="h-8 shrink-0 gap-1 rounded-lg bg-orange-500/10 px-2.5 text-xs font-semibold text-orange-700 hover:bg-orange-500/15 dark:text-orange-300"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            <span>插入</span>
+            <ChevronDown className="h-3 w-3 opacity-70" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent {...popoverProps} className="grid w-44 gap-0.5 p-1.5">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 justify-start gap-2 text-xs"
+            onClick={() => run(() => editor?.chain().focus().setHeading({ level: 1 }).run())}
+          >
+            <Heading1 className="size-3.5 text-orange-500" /> 大標題 H1
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 justify-start gap-2 text-xs"
+            onClick={() => run(() => editor?.chain().focus().setHeading({ level: 2 }).run())}
+          >
+            <Heading2 className="size-3.5 text-orange-500" /> 次標題 H2
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 justify-start gap-2 text-xs"
+            onClick={() => run(() => editor?.chain().focus().setHeading({ level: 3 }).run())}
+          >
+            <Heading3 className="size-3.5 text-orange-500" /> 小標題 H3
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 justify-start gap-2 text-xs"
+            onClick={() => run(() => editor?.chain().focus().toggleTaskList().run())}
+          >
+            <CheckSquare className="size-3.5 text-orange-500" /> 核取清單
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 justify-start gap-2 text-xs"
+            onClick={() => run(() => editor?.chain().focus().toggleCallout({ tone: "tip" }).run())}
+          >
+            <AlertCircle className="size-3.5 text-orange-500" /> 重點提醒框
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 justify-start gap-2 text-xs"
+            onClick={() => run(() => editor?.chain().focus().toggleBlockquote().run())}
+          >
+            <Quote className="size-3.5 text-orange-500" /> 引言區塊
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 justify-start gap-2 text-xs"
+            onClick={() =>
+              run(() => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: false }).run())
+            }
+          >
+            <TableIcon className="size-3.5 text-orange-500" /> 表格 3 × 3
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 justify-start gap-2 text-xs"
+            onClick={() => run(() => editor?.chain().focus().setHorizontalRule().run())}
+          >
+            <Minus className="size-3.5 text-orange-500" /> 分隔線
+          </Button>
+        </PopoverContent>
+      </Popover>
+
+      <Divider />
+
       <Popover {...popup("heading")}>
         <PopoverTrigger asChild>
           <Button type="button" variant="ghost" size="sm" className={controlClass} disabled={disabled}>
@@ -294,7 +435,7 @@ export function MarkdownToolbar({ className }: { className?: string }) {
             variant="ghost"
             size="sm"
             className="justify-start"
-            onClick={() => run(() => activeEditor?.chain().focus().setParagraph().run())}
+            onClick={() => run(() => editor?.chain().focus().setParagraph().run())}
           >
             一般段落
           </Button>
@@ -305,7 +446,7 @@ export function MarkdownToolbar({ className }: { className?: string }) {
               variant="ghost"
               size="sm"
               className="justify-start"
-              onClick={() => run(() => activeEditor?.chain().focus().setHeading({ level }).run())}
+              onClick={() => run(() => editor?.chain().focus().setHeading({ level }).run())}
             >
               標題 {level}
             </Button>
@@ -339,8 +480,8 @@ export function MarkdownToolbar({ className }: { className?: string }) {
               onClick={() =>
                 run(() =>
                   value
-                    ? activeEditor?.chain().focus().setFontFamily(value).run()
-                    : activeEditor?.chain().focus().unsetFontFamily().run(),
+                    ? editor?.chain().focus().setFontFamily(value).run()
+                    : editor?.chain().focus().unsetFontFamily().run(),
                 )
               }
             >
@@ -427,6 +568,8 @@ export function MarkdownToolbar({ className }: { className?: string }) {
         <Plus className="h-3.5 w-3.5" />
       </Button>
 
+      <Divider />
+
       {inlineButtons.map(({ icon: Icon, label, active, onClick }) => (
         <Button
           key={label}
@@ -466,13 +609,13 @@ export function MarkdownToolbar({ className }: { className?: string }) {
           <div className="space-y-1.5">
             <p className="text-xs font-medium">文字顏色</p>
             {colorChoices(textColors, "字色", (color) =>
-              run(() => activeEditor?.chain().focus().setColor(color).run()),
+              run(() => editor?.chain().focus().setColor(color).run()),
             )}
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              onClick={() => run(() => activeEditor?.chain().focus().unsetColor().run())}
+              onClick={() => run(() => editor?.chain().focus().unsetColor().run())}
             >
               恢復預設字色
             </Button>
@@ -480,19 +623,21 @@ export function MarkdownToolbar({ className }: { className?: string }) {
           <div className="space-y-1.5">
             <p className="text-xs font-medium">醒目提示</p>
             {colorChoices(highlightColors, "底色", (color) =>
-              run(() => activeEditor?.chain().focus().setHighlight({ color }).run()),
+              run(() => editor?.chain().focus().setHighlight({ color }).run()),
             )}
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              onClick={() => run(() => activeEditor?.chain().focus().unsetHighlight().run())}
+              onClick={() => run(() => editor?.chain().focus().unsetHighlight().run())}
             >
               清除底色
             </Button>
           </div>
         </PopoverContent>
       </Popover>
+
+      <Divider />
 
       {listAndAlignButtons.map(({ icon: Icon, label, active, onClick }) => (
         <Button
@@ -511,16 +656,18 @@ export function MarkdownToolbar({ className }: { className?: string }) {
         </Button>
       ))}
 
+      <Divider />
+
       <Button
         type="button"
         variant="ghost"
         size="icon"
         disabled={disabled}
-        className={cn(iconClass, activeEditor?.isActive("callout") && selectedClass)}
+        className={cn(iconClass, editor?.isActive("callout") && selectedClass)}
         aria-label="重點提醒框"
         title="重點提醒框"
-        aria-pressed={Boolean(activeEditor?.isActive("callout"))}
-        onClick={() => run(() => activeEditor?.chain().focus().toggleCallout({ tone: "tip" }).run(), false)}
+        aria-pressed={Boolean(editor?.isActive("callout"))}
+        onClick={() => run(() => editor?.chain().focus().toggleCallout({ tone: "tip" }).run(), false)}
       >
         <AlertCircle className="h-4 w-4" />
       </Button>
@@ -530,11 +677,11 @@ export function MarkdownToolbar({ className }: { className?: string }) {
         variant="ghost"
         size="icon"
         disabled={disabled}
-        className={cn(iconClass, activeEditor?.isActive("blockquote") && selectedClass)}
+        className={cn(iconClass, editor?.isActive("blockquote") && selectedClass)}
         aria-label="引言"
         title="引言"
-        aria-pressed={Boolean(activeEditor?.isActive("blockquote"))}
-        onClick={() => run(() => activeEditor?.chain().focus().toggleBlockquote().run(), false)}
+        aria-pressed={Boolean(editor?.isActive("blockquote"))}
+        onClick={() => run(() => editor?.chain().focus().toggleBlockquote().run(), false)}
       >
         <Quote className="h-4 w-4" />
       </Button>
@@ -547,7 +694,7 @@ export function MarkdownToolbar({ className }: { className?: string }) {
         className={iconClass}
         aria-label="分隔線"
         title="分隔線"
-        onClick={() => run(() => activeEditor?.chain().focus().setHorizontalRule().run(), false)}
+        onClick={() => run(() => editor?.chain().focus().setHorizontalRule().run(), false)}
       >
         <Minus className="h-4 w-4" />
       </Button>
@@ -582,7 +729,7 @@ export function MarkdownToolbar({ className }: { className?: string }) {
               size="sm"
               onClick={() =>
                 run(() =>
-                  activeEditor
+                  editor
                     ?.chain()
                     .focus()
                     .insertTable({ rows, cols: columns, withHeaderRow: false })
@@ -596,50 +743,98 @@ export function MarkdownToolbar({ className }: { className?: string }) {
         </PopoverContent>
       </Popover>
 
-      {[false, true].map((isImage) => {
-        const label = isImage ? "插入圖片" : "插入連結";
-        const Icon = isImage ? ImageIcon : LinkIcon;
-        return (
-          <Popover key={label} {...popup(isImage ? "image" : "link")}>
-            <PopoverTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                disabled={disabled}
-                className={iconClass}
-                aria-label={label}
-                title={label}
-              >
-                <Icon className="h-4 w-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent {...popoverProps} className="w-56 p-3">
-              <form className="space-y-2" onSubmit={(event) => insertMedia(event, isImage)}>
-                <Input
-                  value={url}
-                  onChange={(event) => setUrl(event.target.value)}
-                  type="url"
-                  required
-                  aria-label={`${label}網址`}
-                  placeholder="https://"
-                />
-                {!isImage && (
-                  <Input
-                    value={linkText}
-                    onChange={(event) => setLinkText(event.target.value)}
-                    aria-label="連結文字"
-                    placeholder="連結文字"
-                  />
-                )}
-                <Button type="submit" size="sm">
-                  {label}
-                </Button>
-              </form>
-            </PopoverContent>
-          </Popover>
-        );
-      })}
+      <Popover {...popup("link")}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            disabled={disabled}
+            className={iconClass}
+            aria-label="插入連結"
+            title="插入連結"
+          >
+            <LinkIcon className="h-4 w-4" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent {...popoverProps} className="w-60 p-3">
+          <form className="space-y-2" onSubmit={(event) => insertMedia(event, false)}>
+            <Input
+              value={url}
+              onChange={(event) => setUrl(event.target.value)}
+              type="url"
+              required
+              aria-label="插入連結網址"
+              placeholder="https://"
+            />
+            <Input
+              value={linkText}
+              onChange={(event) => setLinkText(event.target.value)}
+              aria-label="連結文字"
+              placeholder="連結文字"
+            />
+            <Button type="submit" size="sm">
+              插入連結
+            </Button>
+          </form>
+        </PopoverContent>
+      </Popover>
+
+      <Popover {...popup("image")}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            disabled={disabled}
+            className={iconClass}
+            aria-label="插入圖片"
+            title="插入圖片"
+          >
+            <ImageIcon className="h-4 w-4" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent {...popoverProps} className="w-64 space-y-2.5 p-3">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => void handleImageFileSelect(e)}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={isUploading}
+            onClick={() => fileInputRef.current?.click()}
+            className="h-8 w-full gap-1.5 rounded-lg border-dashed border-orange-500/45 bg-orange-500/5 text-xs font-medium text-orange-700 hover:bg-orange-500/10 dark:text-orange-300"
+          >
+            <Upload className="size-3.5" aria-hidden="true" />
+            {isUploading ? "處理圖片中…" : "從裝置選擇圖片上傳"}
+          </Button>
+          <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+            <span className="h-px flex-1 bg-border" />
+            或網址
+            <span className="h-px flex-1 bg-border" />
+          </div>
+          <form className="space-y-2" onSubmit={(event) => insertMedia(event, true)}>
+            <Input
+              value={url}
+              onChange={(event) => setUrl(event.target.value)}
+              type="url"
+              required
+              aria-label="插入圖片網址"
+              placeholder="https://"
+            />
+            <Button type="submit" size="sm" className="w-full">
+              插入圖片
+            </Button>
+          </form>
+        </PopoverContent>
+      </Popover>
+
+      <Divider />
 
       <Button
         type="button"
@@ -649,7 +844,7 @@ export function MarkdownToolbar({ className }: { className?: string }) {
         className={iconClass}
         aria-label="清除格式"
         title="清除格式"
-        onClick={() => run(() => activeEditor?.chain().focus().unsetAllMarks().clearNodes().run(), false)}
+        onClick={() => run(() => editor?.chain().focus().unsetAllMarks().clearNodes().run(), false)}
       >
         <Eraser className="h-4 w-4" />
       </Button>

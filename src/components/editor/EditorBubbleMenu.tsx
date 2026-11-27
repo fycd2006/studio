@@ -48,6 +48,7 @@ export function EditorBubbleMenu({ editor }: { editor: Editor | null }) {
   return (
     <BubbleMenu
       editor={editor}
+      appendTo={() => document.body}
       shouldShow={({ editor: currentEditor, state }) => {
         if (!currentEditor.isEditable) return false;
         const { from, to } = state.selection;
@@ -56,16 +57,17 @@ export function EditorBubbleMenu({ editor }: { editor: Editor | null }) {
         const selectedText = state.doc.textBetween(from, to, "").trim();
         return selectedText.length > 0;
       }}
-      options={{ placement: "top", offset: 8 }}
+      options={{ strategy: "fixed", placement: "top", offset: 8 }}
     >
       <div
+        data-editor-floating
         data-editor-format-control=""
         onMouseDown={(e) => {
           if (!(e.target instanceof Element && e.target.closest("input"))) {
             e.preventDefault();
           }
         }}
-        className="flex items-center gap-0.5 rounded-xl border border-stone-200/80 bg-white/95 p-1 text-foreground shadow-xl backdrop-blur-xl dark:border-white/15 dark:bg-[#14191C]/95"
+        className="z-[120] flex items-center gap-0.5 rounded-xl border border-stone-200/80 bg-white/95 p-1 text-foreground shadow-xl backdrop-blur-xl dark:border-white/15 dark:bg-[#14191C]/95"
       >
         <Button
           type="button"
@@ -151,7 +153,7 @@ export function EditorBubbleMenu({ editor }: { editor: Editor | null }) {
           <PopoverContent
             data-editor-format-control=""
             align="center"
-            className="w-60 rounded-xl border border-stone-200/80 bg-white/95 p-2.5 shadow-xl backdrop-blur-xl dark:border-white/15 dark:bg-[#14191C]/95"
+            className="z-[130] w-60 rounded-xl border border-stone-200/80 bg-white/95 p-2.5 shadow-xl backdrop-blur-xl dark:border-white/15 dark:bg-[#14191C]/95"
           >
             <form onSubmit={applyLink} className="flex gap-1.5">
               <Input

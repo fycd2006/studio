@@ -144,7 +144,7 @@ const SectionHeader = ({ title, icon: Icon, tag, actions }: {
   tag?: string;
   actions?: React.ReactNode;
 }) => (
-  <div className="flex items-center justify-between gap-3 mb-4 pt-4 md:pt-8 first:pt-0 border-b hairline-divider pb-3 transition-colors">
+  <div className="flex items-center justify-between gap-3 mb-2.5 pt-2 md:pt-4 first:pt-0 border-b hairline-divider pb-2 transition-colors">
     <div className="flex items-center gap-2.5">
       <h3 className="text-base sm:text-lg font-sans font-medium text-foreground tracking-tight transition-colors">
         {title}
@@ -1313,7 +1313,10 @@ function PlanEditorInner({
         </TooltipProvider>
         )}
 
-        <div className="w-full flex items-start justify-center gap-6 px-0 sm:px-4 md:px-6 xl:px-8 pt-3 sm:pt-6">
+        <div className={cn(
+          "w-full flex items-start justify-center gap-6 px-0 sm:px-4 md:px-6 xl:px-8 pt-3 sm:pt-6",
+          !showHistoryBar && "mx-auto max-w-[1160px]"
+        )}>
           {/* Desktop Left Outline / TOC */}
           {!showHistoryBar && isOutlineOpen && (
             <aside
@@ -1599,7 +1602,7 @@ function PlanEditorInner({
                                   onFocus={() => handleFocus('purpose')}
                                   onBlur={() => handleBlur('purpose')}
                                   placeholder="描述活動目標與宗旨，或輸入 / 插入區塊…"
-                                  minHeight="120px"
+                                  minHeight="88px"
                                   readOnly={isInteractionLocked}
                                 />
                               </FieldContainer>
@@ -1621,6 +1624,7 @@ function PlanEditorInner({
                                     onFocus={() => handleFocus('process')}
                                     onBlur={() => handleBlur('process')}
                                     placeholder="詳細描述活動流程，或輸入 / 插入表格與核取清單…"
+                                    minHeight="150px"
                                     readOnly={isInteractionLocked}
                                   />
                                 </FieldContainer>
@@ -1662,6 +1666,7 @@ function PlanEditorInner({
                                    onFocus={() => handleFocus('content')}
                                    onBlur={() => handleBlur('content')}
                                    placeholder="撰寫教案內容（支援貼上圖片，或輸入 / 插入區塊）…"
+                                   minHeight="150px"
                                    readOnly={isInteractionLocked}
                                  />
                                </FieldContainer>
@@ -1759,7 +1764,7 @@ function PlanEditorInner({
                                     onFocus={() => handleFocus('openingClosingRemarks')}
                                     onBlur={() => handleBlur('openingClosingRemarks')}
                                     placeholder="開場與結語，或輸入 / 插入區塊…"
-                                    minHeight="120px"
+                                    minHeight="88px"
                                     readOnly={isInteractionLocked}
                                   />
                                 </FieldContainer>
@@ -1781,7 +1786,7 @@ function PlanEditorInner({
                                   onFocus={() => handleFocus('remarks')}
                                   onBlur={() => handleBlur('remarks')}
                                   placeholder="加入備註（選填），或輸入 / 插入區塊…"
-                                  minHeight="120px"
+                                  minHeight="88px"
                                   readOnly={isInteractionLocked}
                                 />
                               </FieldContainer>

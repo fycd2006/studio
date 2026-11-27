@@ -55,11 +55,11 @@ export const CustomImage = Image.extend({
     };
   },
 
-  renderHTML({ HTMLAttributes }) {
-    const align = (HTMLAttributes["data-align"] as string) || "center";
-    const width = (HTMLAttributes.width as string) || "75%";
-    const rounded = HTMLAttributes.rounded !== false;
-    const shadow = Boolean(HTMLAttributes.shadow);
+  renderHTML({ node, HTMLAttributes }) {
+    const align = String(node.attrs.align || HTMLAttributes["data-align"] || "center");
+    const width = String(node.attrs.width || "75%");
+    const rounded = node.attrs.rounded !== false;
+    const shadow = Boolean(node.attrs.shadow);
     const margin =
       align === "left"
         ? "12px auto 12px 0px"
@@ -176,6 +176,8 @@ export function mergeCellRight(editor: Editor): boolean {
 
   const rightCellRelPos = map.positionAt(rect.top, rect.right, table);
   const rightCellPos = tableStart + rightCellRelPos;
+  if (rightCellPos === $cell.pos) return false;
+
   const selection = CellSelection.create(state.doc, $cell.pos, rightCellPos);
   view.dispatch(state.tr.setSelection(selection));
   return editor.chain().focus().mergeCells().run();

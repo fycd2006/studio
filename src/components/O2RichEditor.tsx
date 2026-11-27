@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { TextStyleKit } from "@tiptap/extension-text-style";
@@ -9,12 +10,28 @@ import TextAlign from "@tiptap/extension-text-align";
 import { TableKit } from "@tiptap/extension-table";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import { Placeholder } from "@tiptap/extensions";
-import { Grid } from "lucide-react";
+import {
+  ArrowDownToLine,
+  ArrowRightToLine,
+  Columns2,
+  Grid,
+  Merge,
+  Split,
+  Trash2,
+  Upload,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { parseEditorHtml } from "@/lib/editor-html";
 import { maxEmbeddedImageBytes, prepareClipboardImage, utf8Length } from "@/lib/editor-image";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useActiveEditor } from "./editor/editor-context";
@@ -50,21 +67,25 @@ export function O2RichEditor({
   onFocus: onFocusProp,
   onBlur: onBlurProp,
   placeholder,
-  minHeight = "220px",
+  minHeight = "140px",
   readOnly = false,
   simplified = false,
   getPasteBudget,
   fieldName,
 }: O2RichEditorProps) {
   const { toast } = useToast();
-  const { setActiveEditor } = useActiveEditor();
+  const { setActiveEditor, registerEditor } = useActiveEditor();
+  const fallbackId = useId();
+  const registrationKey = fieldName || fallbackId;
   const containerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isFocused, setIsFocused] = useState(false);
   const [tableMenuPos, setTableMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [tableActionsOpen, setTableActionsOpen] = useState(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [imageUrlInput, setImageUrlInput] = useState("");
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const isInternalChange = useRef(false);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -103,6 +124,33 @@ export function O2RichEditor({
     };
   }, []);
 
+  const insertImageFileWithView = useCallback(
+    async (file: File, view: NonNullable<ReturnType<typeof useEditor>>["view"], insertPos?: number) => {
+      const budget =
+        getPasteBudgetRef.current?.() ?? Math.max(0, 900_000 - utf8Length(view.dom.innerHTML));
+      const compressed = await prepareClipboardImage(
+        file,
+        Math.min(maxEmbeddedImageBytes, Math.max(0, budget - 512)),
+      );
+      if (utf8Length(compressed.src) > budget) {
+        throw new Error("Exceeds document size");
+      }
+      const node = view.state.schema.nodes.image?.create({
+        src: compressed.src,
+        alt: file.name || "圖片",
+        width: "75%",
+        align: "center",
+      });
+      if (!node) return;
+      if (typeof insertPos === "number") {
+        view.dispatch(view.state.tr.insert(insertPos, node));
+      } else {
+        view.dispatch(view.state.tr.replaceSelectionWith(node));
+      }
+    },
+    [],
+  );
+
   const editor = useEditor({
     immediatelyRender: false,
     editable: !readOnly,
@@ -133,7 +181,7 @@ export function O2RichEditor({
       TaskList,
       TaskItem.configure({ nested: true }),
       Placeholder.configure({
-        placeholder: placeholder || (simplified ? "輸入內容…" : "輸入內容，或輸入 / 開啟指令選單…"),
+        placeholder: placeholder || (simplified ? "輸入內容…" : "輸入內容，或輸入 / 開啟區塊選單…"),
       }),
       CustomImage.configure({
         allowBase64: true,
@@ -144,7 +192,30 @@ export function O2RichEditor({
       attributes: {
         "data-rich-text-editor": "true",
         class:
-          "tiptap w-full max-w-none outline-none px-4 py-3 text-[15px] leading-relaxed text-foreground break-words min-h-[var(--editor-min-height,220px)]",
+          "tiptap w-full max-w-none outline-none px-3 py-2 text-[15px] leading-relaxed text-foreground break-words min-h-[var(--editor-min-height,140px)]",
+      },
+      handleDrop: (view, event, _slice, moved) => {
+        if (moved || readOnlyRef.current) return false;
+        const files = Array.from(event.dataTransfer?.files ?? []).filter((f) =>
+          f.type.startsWith("image/"),
+        );
+        if (!files.length) return false;
+        event.preventDefault();
+        const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
+        void (async () => {
+          try {
+            for (const file of files) {
+              await insertImageFileWithView(file, view, coords?.pos);
+            }
+          } catch {
+            toast({
+              title: "無法插入圖片",
+              description: "圖片大小超過文件剩餘容量，請壓縮後再試。",
+              variant: "destructive",
+            });
+          }
+        })();
+        return true;
       },
       handlePaste: (view, event) => {
         if (readOnlyRef.current) {
@@ -170,21 +241,7 @@ export function O2RichEditor({
         void (async () => {
           try {
             if (file) {
-              const compressed = await prepareClipboardImage(
-                file,
-                Math.min(maxEmbeddedImageBytes, Math.max(0, budget() - 512)),
-              );
-              const node = view.state.schema.nodes.image?.create({
-                src: compressed.src,
-                alt: "貼上的圖片",
-                width: "75%",
-                align: "center",
-              });
-              if (node && utf8Length(compressed.src) <= budget()) {
-                view.dispatch(view.state.tr.replaceSelectionWith(node));
-              } else {
-                throw new Error("Exceeds document size");
-              }
+              await insertImageFileWithView(file, view);
               return;
             }
 
@@ -259,6 +316,16 @@ export function O2RichEditor({
 
   useEffect(() => {
     if (!editor) return;
+    registerEditor(registrationKey, editor, () =>
+      getPasteBudgetRef.current?.() ?? Math.max(0, 900_000 - utf8Length(editor.view.dom.innerHTML)),
+    );
+    return () => {
+      registerEditor(registrationKey, null);
+    };
+  }, [editor, registrationKey, registerEditor]);
+
+  useEffect(() => {
+    if (!editor) return;
     if (editor.isEditable !== !readOnly) {
       editor.setEditable(!readOnly);
     }
@@ -279,7 +346,7 @@ export function O2RichEditor({
     }
   }, [editor, value]);
 
-  // Track active table cell position for the floating Table Action menu
+  // Track active table bounds for the portaled Table Floating Toolbar
   useEffect(() => {
     if (!editor) return;
 
@@ -292,16 +359,21 @@ export function O2RichEditor({
       const anchor = sel?.anchorNode;
       const el = anchor instanceof HTMLElement ? anchor : anchor?.parentElement;
       const cell = el?.closest<HTMLTableCellElement>("td, th");
-      if (!cell || !editor.view.dom.contains(cell)) {
+      const table = cell?.closest<HTMLTableElement>("table");
+      if (!cell || !table || !editor.view.dom.contains(cell)) {
         if (!tableActionsOpen) setTableMenuPos(null);
         return;
       }
-      const rect = cell.getBoundingClientRect();
-      const topLimit = window.innerWidth >= 768 ? 94 : 52;
-      const top = Math.max(topLimit, rect.top - 10);
+      const rect = table.getBoundingClientRect();
+      const topLimit = window.innerWidth >= 768 ? 96 : 54;
+      const top = Math.max(topLimit, rect.top - 40);
+      const visible = rect.bottom > topLimit + 10 && rect.top < window.innerHeight - 60;
       setTableMenuPos(
-        rect.bottom > topLimit + 6 && top < window.innerHeight - 55
-          ? { top, left: Math.max(8, Math.min(window.innerWidth - 34, rect.right - 32)) }
+        visible
+          ? {
+              top,
+              left: Math.max(12, Math.min(window.innerWidth - 310, rect.left)),
+            }
           : null,
       );
     };
@@ -339,8 +411,27 @@ export function O2RichEditor({
     }
   };
 
+  const handleUploadImageFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !editor) return;
+    setIsUploadingImage(true);
+    try {
+      await insertImageFileWithView(file, editor.view);
+      setIsImageModalOpen(false);
+    } catch {
+      toast({
+        title: "無法上傳圖片",
+        description: "圖片大小超過文件剩餘容量，請選擇較小的圖片。",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
   return (
-    <div ref={containerRef} className="w-full space-y-2 text-left">
+    <div ref={containerRef} className="w-full space-y-1.5 text-left">
       {label && (
         <div className="flex items-center px-1">
           <label className="text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-slate-400">
@@ -352,11 +443,12 @@ export function O2RichEditor({
       <div
         style={{ "--editor-min-height": minHeight } as React.CSSProperties}
         className={cn(
-          "group relative overflow-visible rounded-xl border transition-all duration-200",
-          "bg-white/65 dark:bg-white/[0.025]",
-          isFocused && !readOnly
-            ? "border-orange-500/50 ring-2 ring-orange-500/15 dark:border-orange-400/50"
-            : "border-stone-200/80 hover:border-stone-300/90 dark:border-white/10 dark:hover:border-white/20",
+          "group relative overflow-visible rounded-xl border transition-all duration-150",
+          readOnly
+            ? "border-transparent bg-transparent"
+            : isFocused
+              ? "border-orange-500/45 bg-white/95 ring-2 ring-orange-500/12 dark:border-orange-400/45 dark:bg-white/[0.03]"
+              : "border-transparent bg-transparent hover:border-stone-200/80 hover:bg-stone-50/45 dark:hover:border-white/10 dark:hover:bg-white/[0.015]",
         )}
       >
         <EditorContent editor={editor} />
@@ -371,179 +463,262 @@ export function O2RichEditor({
           </>
         )}
 
-        {/* Quick Image URL Modal triggered by Slash Command */}
-        <Popover open={isImageModalOpen} onOpenChange={setIsImageModalOpen}>
-          <PopoverTrigger asChild>
-            <span className="sr-only" aria-hidden="true" />
-          </PopoverTrigger>
-          <PopoverContent
+        {/* Centered Image Insert Dialog (Local Upload + URL) */}
+        <Dialog open={isImageModalOpen} onOpenChange={setIsImageModalOpen}>
+          <DialogContent
             data-editor-format-control=""
-            align="start"
-            className="w-72 rounded-xl border border-stone-200/80 bg-white/95 p-3 shadow-xl backdrop-blur-xl dark:border-white/15 dark:bg-[#14191C]/95"
+            className="max-w-sm rounded-2xl border-stone-200/80 bg-white/95 backdrop-blur-xl dark:border-white/15 dark:bg-[#14191C]/95"
           >
-            <form onSubmit={handleInsertImageUrl} className="space-y-2">
-              <p className="text-xs font-medium text-foreground">輸入圖片網址</p>
-              <Input
-                type="url"
-                required
-                placeholder="https://..."
-                value={imageUrlInput}
-                onChange={(e) => setImageUrlInput(e.target.value)}
-                className="h-8 text-xs"
-                autoFocus
+            <DialogHeader>
+              <DialogTitle className="text-base">插入圖片</DialogTitle>
+              <DialogDescription className="text-xs">
+                選擇本機照片自動壓縮插入，或貼上公開圖片網址。
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 pt-1">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => void handleUploadImageFile(e)}
               />
-              <div className="flex justify-end gap-1.5">
-                <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setIsImageModalOpen(false)}>
-                  取消
-                </Button>
-                <Button type="submit" size="sm" className="h-7 text-xs">
-                  插入圖片
-                </Button>
-              </div>
-            </form>
-          </PopoverContent>
-        </Popover>
-
-        {/* Floating Table Operations Menu */}
-        {tableMenuPos && !readOnly && editor && (
-          <div
-            data-editor-floating
-            style={{ top: tableMenuPos.top, left: tableMenuPos.left }}
-            className="fixed z-50"
-          >
-            <Popover open={tableActionsOpen} onOpenChange={setTableActionsOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  aria-label="表格操作"
-                  title="表格操作"
-                  onMouseDown={(e) => e.preventDefault()}
-                  className="h-7 w-7 rounded-lg border-stone-200/90 bg-white/95 shadow-md backdrop-blur-md hover:border-orange-500/40 dark:border-white/15 dark:bg-[#14191C]/95"
-                >
-                  <Grid className="size-3.5 text-orange-600 dark:text-orange-400" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                data-editor-format-control=""
-                align="end"
-                className="grid w-44 gap-0.5 rounded-xl border border-stone-200/80 bg-white/95 p-1.5 shadow-xl backdrop-blur-xl dark:border-white/15 dark:bg-[#14191C]/95"
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isUploadingImage}
+                onClick={() => fileInputRef.current?.click()}
+                className="h-10 w-full gap-2 rounded-xl border-dashed border-orange-500/45 bg-orange-500/5 text-xs font-medium text-orange-700 hover:bg-orange-500/10 dark:text-orange-300"
               >
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 justify-start text-xs"
-                  onClick={() => {
-                    editor.chain().focus().addRowBefore().run();
-                    setTableActionsOpen(false);
-                  }}
-                >
-                  上方插入列
+                <Upload className="size-4" aria-hidden="true" />
+                {isUploadingImage ? "正在壓縮處理圖片…" : "從裝置選擇圖片上傳"}
+              </Button>
+
+              <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                <span className="h-px flex-1 bg-border" />
+                或貼上網址
+                <span className="h-px flex-1 bg-border" />
+              </div>
+
+              <form onSubmit={handleInsertImageUrl} className="flex gap-2">
+                <Input
+                  type="url"
+                  required
+                  placeholder="https://example.com/image.jpg"
+                  value={imageUrlInput}
+                  onChange={(e) => setImageUrlInput(e.target.value)}
+                  className="h-9 text-xs"
+                />
+                <Button type="submit" size="sm" className="h-9 shrink-0 px-3 text-xs">
+                  插入
                 </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 justify-start text-xs"
-                  onClick={() => {
-                    editor.chain().focus().addRowAfter().run();
-                    setTableActionsOpen(false);
-                  }}
+              </form>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Portaled Floating Table Toolbar */}
+        {tableMenuPos &&
+          !readOnly &&
+          editor &&
+          typeof document !== "undefined" &&
+          createPortal(
+            <div
+              data-editor-floating
+              data-editor-format-control=""
+              style={{ top: tableMenuPos.top, left: tableMenuPos.left }}
+              onMouseDown={(e) => e.preventDefault()}
+              className="fixed z-[110] flex items-center gap-0.5 rounded-xl border border-stone-200/90 bg-white/95 p-1 text-foreground shadow-lg backdrop-blur-xl dark:border-white/15 dark:bg-[#14191C]/95"
+            >
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                title="下方插入列"
+                onClick={() => editor.chain().focus().addRowAfter().run()}
+                className="h-7 gap-1 rounded-lg px-2 text-[11px]"
+              >
+                <ArrowDownToLine className="size-3.5 text-orange-500" />
+                <span>+列</span>
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                title="右方插入欄"
+                onClick={() => editor.chain().focus().addColumnAfter().run()}
+                className="h-7 gap-1 rounded-lg px-2 text-[11px]"
+              >
+                <ArrowRightToLine className="size-3.5 text-orange-500" />
+                <span>+欄</span>
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                title="合併右側儲存格"
+                onClick={() => mergeCellRight(editor)}
+                className="h-7 w-7 rounded-lg"
+              >
+                <Merge className="size-3.5" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                title="分割儲存格"
+                onClick={() => editor.chain().focus().splitCell().run()}
+                className="h-7 w-7 rounded-lg"
+              >
+                <Split className="size-3.5" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                title="刪除表格"
+                onClick={() => editor.chain().focus().deleteTable().run()}
+                className="h-7 w-7 rounded-lg text-rose-600 hover:bg-rose-500/10 hover:text-rose-700"
+              >
+                <Trash2 className="size-3.5" />
+              </Button>
+
+              <div className="mx-0.5 h-4 w-px bg-border" />
+
+              <Popover open={tableActionsOpen} onOpenChange={setTableActionsOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    aria-label="表格操作"
+                    title="更多表格操作"
+                    className="h-7 gap-1 rounded-lg px-2 text-[11px] font-medium"
+                  >
+                    <Grid className="size-3.5 text-orange-600 dark:text-orange-400" />
+                    <Columns2 className="size-3 text-muted-foreground" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  data-editor-format-control=""
+                  align="start"
+                  className="z-[125] grid w-44 gap-0.5 rounded-xl border border-stone-200/80 bg-white/95 p-1.5 shadow-xl backdrop-blur-xl dark:border-white/15 dark:bg-[#14191C]/95"
                 >
-                  下方插入列
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 justify-start text-xs"
-                  onClick={() => {
-                    editor.chain().focus().addColumnBefore().run();
-                    setTableActionsOpen(false);
-                  }}
-                >
-                  左方插入欄
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 justify-start text-xs"
-                  onClick={() => {
-                    editor.chain().focus().addColumnAfter().run();
-                    setTableActionsOpen(false);
-                  }}
-                >
-                  右方插入欄
-                </Button>
-                <div className="my-0.5 h-px bg-border" />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 justify-start text-xs"
-                  onClick={() => {
-                    mergeCellRight(editor);
-                    setTableActionsOpen(false);
-                  }}
-                >
-                  合併右側儲存格
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 justify-start text-xs"
-                  onClick={() => {
-                    editor.chain().focus().splitCell().run();
-                    setTableActionsOpen(false);
-                  }}
-                >
-                  分割儲存格
-                </Button>
-                <div className="my-0.5 h-px bg-border" />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 justify-start text-xs text-rose-600 hover:bg-rose-500/10 hover:text-rose-700"
-                  onClick={() => {
-                    editor.chain().focus().deleteRow().run();
-                    setTableActionsOpen(false);
-                  }}
-                >
-                  刪除目前列
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 justify-start text-xs text-rose-600 hover:bg-rose-500/10 hover:text-rose-700"
-                  onClick={() => {
-                    editor.chain().focus().deleteColumn().run();
-                    setTableActionsOpen(false);
-                  }}
-                >
-                  刪除目前欄
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 justify-start text-xs text-rose-600 hover:bg-rose-500/10 hover:text-rose-700"
-                  onClick={() => {
-                    editor.chain().focus().deleteTable().run();
-                    setTableActionsOpen(false);
-                  }}
-                >
-                  刪除表格
-                </Button>
-              </PopoverContent>
-            </Popover>
-          </div>
-        )}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 justify-start text-xs"
+                    onClick={() => {
+                      editor.chain().focus().addRowBefore().run();
+                      setTableActionsOpen(false);
+                    }}
+                  >
+                    上方插入列
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 justify-start text-xs"
+                    onClick={() => {
+                      editor.chain().focus().addRowAfter().run();
+                      setTableActionsOpen(false);
+                    }}
+                  >
+                    下方插入列
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 justify-start text-xs"
+                    onClick={() => {
+                      editor.chain().focus().addColumnBefore().run();
+                      setTableActionsOpen(false);
+                    }}
+                  >
+                    左方插入欄
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 justify-start text-xs"
+                    onClick={() => {
+                      editor.chain().focus().addColumnAfter().run();
+                      setTableActionsOpen(false);
+                    }}
+                  >
+                    右方插入欄
+                  </Button>
+                  <div className="my-0.5 h-px bg-border" />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 justify-start text-xs"
+                    onClick={() => {
+                      mergeCellRight(editor);
+                      setTableActionsOpen(false);
+                    }}
+                  >
+                    合併右側儲存格
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 justify-start text-xs"
+                    onClick={() => {
+                      editor.chain().focus().splitCell().run();
+                      setTableActionsOpen(false);
+                    }}
+                  >
+                    分割儲存格
+                  </Button>
+                  <div className="my-0.5 h-px bg-border" />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 justify-start text-xs text-rose-600 hover:bg-rose-500/10 hover:text-rose-700"
+                    onClick={() => {
+                      editor.chain().focus().deleteRow().run();
+                      setTableActionsOpen(false);
+                    }}
+                  >
+                    刪除目前列
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 justify-start text-xs text-rose-600 hover:bg-rose-500/10 hover:text-rose-700"
+                    onClick={() => {
+                      editor.chain().focus().deleteColumn().run();
+                      setTableActionsOpen(false);
+                    }}
+                  >
+                    刪除目前欄
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 justify-start text-xs text-rose-600 hover:bg-rose-500/10 hover:text-rose-700"
+                    onClick={() => {
+                      editor.chain().focus().deleteTable().run();
+                      setTableActionsOpen(false);
+                    }}
+                  >
+                    刪除表格
+                  </Button>
+                </PopoverContent>
+              </Popover>
+            </div>,
+            document.body,
+          )}
       </div>
     </div>
   );

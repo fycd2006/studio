@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import type { Editor } from "@tiptap/react";
 import {
   AlertCircle,
@@ -130,7 +131,7 @@ const SLASH_ITEMS: SlashCommandItem[] = [
   {
     id: "image",
     label: "插入圖片",
-    description: "透過網址插入照片或圖片",
+    description: "從裝置上傳圖片或貼上網址",
     keywords: ["img", "image", "photo", "圖片", "照片"],
     icon: ImageIcon,
     run: (editor, range, onInsertImage) => {
@@ -139,6 +140,23 @@ const SLASH_ITEMS: SlashCommandItem[] = [
     },
   },
 ];
+
+function extractSlashTrigger(textBefore: string): { query: string; triggerLen: number } | null {
+  const idx = Math.max(textBefore.lastIndexOf("/"), textBefore.lastIndexOf("\uff0f"));
+  if (idx === -1) return null;
+
+  const query = textBefore.slice(idx + 1);
+  if (/\s/.test(query)) return null;
+
+  if (idx > 0) {
+    const prev = textBefore[idx - 1];
+    const isWhitespace = /\s/.test(prev);
+    const isCjkOrPunct = /[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/.test(prev);
+    if (!isWhitespace && !isCjkOrPunct) return null;
+  }
+
+  return { query, triggerLen: textBefore.length - idx };
+}
 
 interface SlashState {
   query: string;
@@ -177,50 +195,76 @@ export function SlashCommandMenu({
     if (!editor) return;
 
     const evaluate = () => {
-      if (!editor.isEditable || !editor.isFocused) {
+      const domFocused =
+        typeof document !== "undefined" &&
+        document.activeElement &&
+        editor.view.dom.contains(document.activeElement);
+      if (!editor.isEditable || (!editor.isFocused && !editor.view.hasFocus() && !domFocused)) {
         setSlash(null);
         return;
       }
+
       const { selection } = editor.state;
       if (!selection.empty) {
         setSlash(null);
         return;
       }
+
       const { $from } = selection;
       if ($from.parent.type.name === "codeBlock") {
         setSlash(null);
         return;
       }
+
       const textBefore = $from.parent.textBetween(0, $from.parentOffset, "\ufffc", "\ufffc");
-      const match = textBefore.match(/(?:^|\s)\/([^\s]*)$/);
-      if (!match) {
+      const parsed = extractSlashTrigger(textBefore);
+      if (!parsed) {
         setSlash(null);
         return;
       }
-      const query = match[1] ?? "";
-      const from = $from.pos - query.length - 1;
+
+      const from = $from.pos - parsed.triggerLen;
       const to = $from.pos;
+
       try {
         const coords = editor.view.coordsAtPos($from.pos);
+        const menuHeight = 300;
         const left = Math.max(12, Math.min(window.innerWidth - 276, coords.left));
         const spaceBelow = window.innerHeight - coords.bottom;
-        const top = spaceBelow > 290 ? coords.bottom + 8 : Math.max(12, coords.top - 290);
-        setSlash({ query, range: { from, to }, top, left });
+        const top =
+          spaceBelow > menuHeight
+            ? coords.bottom + 8
+            : Math.max(12, coords.top - menuHeight - 8);
+        setSlash({ query: parsed.query, range: { from, to }, top, left });
       } catch {
         setSlash(null);
       }
     };
 
-    const onBlur = () => setSlash(null);
+    const onBlur = ({ event }: { event: FocusEvent }) => {
+      const next = event?.relatedTarget as Node | null;
+      if (next instanceof Element && next.closest("[data-editor-floating]")) return;
+      window.setTimeout(() => {
+        const active = document.activeElement;
+        if (active instanceof Element && active.closest("[data-editor-floating]")) return;
+        setSlash(null);
+      }, 120);
+    };
 
     editor.on("update", evaluate);
     editor.on("selectionUpdate", evaluate);
+    editor.on("focus", evaluate);
     editor.on("blur", onBlur);
+    window.addEventListener("scroll", evaluate, true);
+    window.addEventListener("resize", evaluate);
 
     return () => {
       editor.off("update", evaluate);
       editor.off("selectionUpdate", evaluate);
+      editor.off("focus", evaluate);
       editor.off("blur", onBlur);
+      window.removeEventListener("scroll", evaluate, true);
+      window.removeEventListener("resize", evaluate);
     };
   }, [editor]);
 
@@ -242,7 +286,7 @@ export function SlashCommandMenu({
         event.preventDefault();
         event.stopPropagation();
         setSelectedIndex((prev) => (prev - 1 + filteredItems.length) % filteredItems.length);
-      } else if (event.key === "Enter") {
+      } else if (event.key === "Enter" && !event.isComposing) {
         event.preventDefault();
         event.stopPropagation();
         const item = filteredItems[selectedIndex] ?? filteredItems[0];
@@ -263,9 +307,11 @@ export function SlashCommandMenu({
     };
   }, [editor, slash, filteredItems, selectedIndex, onInsertImage]);
 
-  if (!editor || !slash || filteredItems.length === 0) return null;
+  if (!editor || !slash || filteredItems.length === 0 || typeof document === "undefined") {
+    return null;
+  }
 
-  return (
+  return createPortal(
     <div
       data-editor-floating
       data-editor-format-control=""
@@ -273,7 +319,7 @@ export function SlashCommandMenu({
       aria-label="插入區塊指令"
       style={{ top: slash.top, left: slash.left }}
       onMouseDown={(e) => e.preventDefault()}
-      className="fixed z-[90] max-h-72 w-64 overflow-y-auto rounded-xl border border-stone-200/80 bg-white/95 p-1.5 shadow-xl backdrop-blur-xl dark:border-white/15 dark:bg-[#14191C]/95"
+      className="fixed z-[120] max-h-72 w-64 overflow-y-auto rounded-xl border border-stone-200/80 bg-white/95 p-1.5 shadow-xl backdrop-blur-xl dark:border-white/15 dark:bg-[#14191C]/95"
     >
       <div className="px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
         插入區塊
@@ -318,6 +364,7 @@ export function SlashCommandMenu({
           );
         })}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
