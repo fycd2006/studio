@@ -91,12 +91,21 @@ export function MarkdownToolbar({ className }: { className?: string }) {
   useEffect(() => {
     if (!editor) return;
     const refresh = () => setTick((t) => (t + 1) % 10_000);
+    const onTransaction = ({
+      transaction,
+    }: {
+      transaction: { docChanged: boolean; selectionSet: boolean; storedMarksSet: boolean };
+    }) => {
+      if (transaction.docChanged || transaction.selectionSet || transaction.storedMarksSet) {
+        refresh();
+      }
+    };
     editor.on("selectionUpdate", refresh);
-    editor.on("transaction", refresh);
+    editor.on("transaction", onTransaction);
     editor.on("focus", refresh);
     return () => {
       editor.off("selectionUpdate", refresh);
-      editor.off("transaction", refresh);
+      editor.off("transaction", onTransaction);
       editor.off("focus", refresh);
     };
   }, [editor]);

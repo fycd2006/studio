@@ -352,7 +352,9 @@ export function O2RichEditor({
 
     const updateTableOverlay = () => {
       if (!editor.isEditable || !editor.isActive("table")) {
-        if (!tableActionsOpen) setTableMenuPos(null);
+        if (!tableActionsOpen) {
+          setTableMenuPos((prev) => (prev === null ? prev : null));
+        }
         return;
       }
       const sel = window.getSelection();
@@ -361,31 +363,45 @@ export function O2RichEditor({
       const cell = el?.closest<HTMLTableCellElement>("td, th");
       const table = cell?.closest<HTMLTableElement>("table");
       if (!cell || !table || !editor.view.dom.contains(cell)) {
-        if (!tableActionsOpen) setTableMenuPos(null);
+        if (!tableActionsOpen) {
+          setTableMenuPos((prev) => (prev === null ? prev : null));
+        }
         return;
       }
       const rect = table.getBoundingClientRect();
       const topLimit = window.innerWidth >= 768 ? 96 : 54;
-      const top = Math.max(topLimit, rect.top - 40);
+      const top = Math.round(Math.max(topLimit, rect.top - 40));
+      const left = Math.round(Math.max(12, Math.min(window.innerWidth - 310, rect.left)));
       const visible = rect.bottom > topLimit + 10 && rect.top < window.innerHeight - 60;
-      setTableMenuPos(
-        visible
-          ? {
-              top,
-              left: Math.max(12, Math.min(window.innerWidth - 310, rect.left)),
-            }
-          : null,
-      );
+      const nextPos = visible ? { top, left } : null;
+
+      setTableMenuPos((prev) => {
+        if (!prev && !nextPos) return prev;
+        if (prev && nextPos && prev.top === nextPos.top && prev.left === nextPos.left) {
+          return prev;
+        }
+        return nextPos;
+      });
+    };
+
+    const handleTransaction = ({
+      transaction,
+    }: {
+      transaction: { docChanged: boolean; selectionSet: boolean };
+    }) => {
+      if (transaction.docChanged || transaction.selectionSet) {
+        updateTableOverlay();
+      }
     };
 
     editor.on("selectionUpdate", updateTableOverlay);
-    editor.on("transaction", updateTableOverlay);
+    editor.on("transaction", handleTransaction);
     window.addEventListener("scroll", updateTableOverlay, true);
     window.addEventListener("resize", updateTableOverlay);
 
     return () => {
       editor.off("selectionUpdate", updateTableOverlay);
-      editor.off("transaction", updateTableOverlay);
+      editor.off("transaction", handleTransaction);
       window.removeEventListener("scroll", updateTableOverlay, true);
       window.removeEventListener("resize", updateTableOverlay);
     };

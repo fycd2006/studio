@@ -21,7 +21,33 @@ import { cn } from "@/lib/utils";
 const bubbleBtnClass = "h-7 w-7 rounded-md";
 const bubbleActiveClass = "bg-orange-500/15 text-orange-700 dark:text-orange-300";
 
-export function EditorBubbleMenu({ editor }: { editor: Editor | null }) {
+type BubbleMenuComponentProps = React.ComponentProps<typeof BubbleMenu>;
+
+const BUBBLE_APPEND_TO: NonNullable<BubbleMenuComponentProps["appendTo"]> = () => document.body;
+
+const BUBBLE_OPTIONS: BubbleMenuComponentProps["options"] = {
+  strategy: "fixed",
+  placement: "top",
+  offset: 8,
+};
+
+const BUBBLE_SHOULD_SHOW: NonNullable<BubbleMenuComponentProps["shouldShow"]> = ({
+  editor: currentEditor,
+  state,
+}) => {
+  if (!currentEditor.isEditable) return false;
+  const { from, to } = state.selection;
+  if (from === to) return false;
+  if (currentEditor.isActive("image") || currentEditor.isActive("codeBlock")) return false;
+  const selectedText = state.doc.textBetween(from, to, "").trim();
+  return selectedText.length > 0;
+};
+
+export const EditorBubbleMenu = React.memo(function EditorBubbleMenu({
+  editor,
+}: {
+  editor: Editor | null;
+}) {
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
 
@@ -48,16 +74,9 @@ export function EditorBubbleMenu({ editor }: { editor: Editor | null }) {
   return (
     <BubbleMenu
       editor={editor}
-      appendTo={() => document.body}
-      shouldShow={({ editor: currentEditor, state }) => {
-        if (!currentEditor.isEditable) return false;
-        const { from, to } = state.selection;
-        if (from === to) return false;
-        if (currentEditor.isActive("image") || currentEditor.isActive("codeBlock")) return false;
-        const selectedText = state.doc.textBetween(from, to, "").trim();
-        return selectedText.length > 0;
-      }}
-      options={{ strategy: "fixed", placement: "top", offset: 8 }}
+      appendTo={BUBBLE_APPEND_TO}
+      shouldShow={BUBBLE_SHOULD_SHOW}
+      options={BUBBLE_OPTIONS}
     >
       <div
         data-editor-floating
@@ -183,4 +202,4 @@ export function EditorBubbleMenu({ editor }: { editor: Editor | null }) {
       </div>
     </BubbleMenu>
   );
-}
+});

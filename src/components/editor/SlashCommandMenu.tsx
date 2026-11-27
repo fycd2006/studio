@@ -229,13 +229,26 @@ export function SlashCommandMenu({
       try {
         const coords = editor.view.coordsAtPos($from.pos);
         const menuHeight = 300;
-        const left = Math.max(12, Math.min(window.innerWidth - 276, coords.left));
+        const left = Math.round(Math.max(12, Math.min(window.innerWidth - 276, coords.left)));
         const spaceBelow = window.innerHeight - coords.bottom;
-        const top =
+        const top = Math.round(
           spaceBelow > menuHeight
             ? coords.bottom + 8
-            : Math.max(12, coords.top - menuHeight - 8);
-        setSlash({ query: parsed.query, range: { from, to }, top, left });
+            : Math.max(12, coords.top - menuHeight - 8),
+        );
+        setSlash((prev) => {
+          if (
+            prev &&
+            prev.query === parsed.query &&
+            prev.range.from === from &&
+            prev.range.to === to &&
+            prev.top === top &&
+            prev.left === left
+          ) {
+            return prev;
+          }
+          return { query: parsed.query, range: { from, to }, top, left };
+        });
       } catch {
         setSlash(null);
       }
