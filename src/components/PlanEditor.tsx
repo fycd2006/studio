@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ResponsiveActivitySelectV3 } from "@/components/responsive-activity-select-v3";
 import { O2RichEditor } from "@/components/O2RichEditor";
 import { MarkdownToolbar } from "@/components/MarkdownToolbar";
+import { ActiveEditorProvider, useActiveEditor } from "@/components/editor/editor-context";
 import { PropsTable } from "@/components/PropsTable";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ import {
   Check,
   Pencil,
   Palette,
+  PanelLeft,
   ChevronUp,
   ChevronDown,
   Cloud
@@ -182,12 +184,30 @@ interface PlanEditorProps {
   activityTypes?: string[];
 }
 
-export function PlanEditor({
+function stripPlainText(html?: string | null): string {
+  if (!html) return "";
+  return html
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function PlanEditor(props: PlanEditorProps) {
+  return (
+    <ActiveEditorProvider>
+      <PlanEditorInner {...props} />
+    </ActiveEditorProvider>
+  );
+}
+
+function PlanEditorInner({
   plan, groups, onUpdate, isSaving, onUndo, onRedo, canUndo, canRedo,
   versions = [], onSaveVersion, onRestoreVersion, onDeleteVersion, onAutoSave, getFullVersionState, onUpdateVersionName, activityTypes = []
 }: PlanEditorProps) {
   const { t, language } = useTranslation();
   const { memberNicknames, memberRealNames, nicknameIndex, accountHints, memberDirectoryReady } = useAuth();
+  const { activeEditor } = useActiveEditor();
   const router = useRouter();
   const { toast } = useToast();
   const { lockField, unlockField, forceTakeoverField, isLockedByOther, getLockInfo } = usePresence(plan.id);
@@ -418,6 +438,26 @@ export function PlanEditor({
   const [localPlan, setLocalPlan] = useState<LessonPlan>(plan);
   const pendingUpdatesRef = useRef<Partial<LessonPlan>>({});
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [syncStatus, setSyncStatus] = useState<"saved" | "dirty" | "saving">("saved");
+  const savedAckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [isOutlineOpen, setIsOutlineOpen] = useState(true);
+  const [activeSectionId, setActiveSectionId] = useState("section-meta");
+
+  const markFlushedSaved = useCallback(() => {
+    setSyncStatus("saving");
+    if (savedAckTimerRef.current) clearTimeout(savedAckTimerRef.current);
+    savedAckTimerRef.current = setTimeout(() => {
+      savedAckTimerRef.current = null;
+      setSyncStatus("saved");
+    }, 450);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (savedAckTimerRef.current) clearTimeout(savedAckTimerRef.current);
+    };
+  }, []);
 
   // Local history stack
   const [localHistory, setLocalHistory] = useState<{ past: LessonPlan[], future: LessonPlan[] }>({ past: [], future: [] });
@@ -438,8 +478,9 @@ export function PlanEditor({
     if (Object.keys(pendingUpdatesRef.current).length > 0) {
       onUpdate(plan.id, pendingUpdatesRef.current);
       pendingUpdatesRef.current = {};
+      markFlushedSaved();
     }
-  }, [plan.id, onUpdate]);
+  }, [plan.id, onUpdate, markFlushedSaved]);
 
   const handleFocus = useCallback((field: string) => {
     lockField(field);
@@ -486,6 +527,7 @@ export function PlanEditor({
       recordHistory();
     }
     setLocalPlan(prev => mergePlanUpdate(prev, updates));
+    setSyncStatus("dirty");
 
     // Merge into pending
     pendingUpdatesRef.current = { ...pendingUpdatesRef.current, ...updates };
@@ -506,6 +548,7 @@ export function PlanEditor({
     }
     onUpdate(plan.id, pendingUpdatesRef.current);
     pendingUpdatesRef.current = {};
+    markFlushedSaved();
   };
 
   const handleLocalUndo = () => {
@@ -526,6 +569,25 @@ export function PlanEditor({
       future: localHistory.future.slice(1)
     }));
     handlePlanUpdateImmediate({ ...next, leadAssignees: next.leadAssignees ?? null, assistantAssignees: next.assistantAssignees ?? null });
+  };
+
+  const canSmartUndo = Boolean(activeEditor?.isFocused && activeEditor.can().undo()) || localHistory.past.length > 0;
+  const canSmartRedo = Boolean(activeEditor?.isFocused && activeEditor.can().redo()) || localHistory.future.length > 0;
+
+  const handleSmartUndo = () => {
+    if (activeEditor?.isFocused && activeEditor.can().undo()) {
+      activeEditor.chain().focus().undo().run();
+      return;
+    }
+    handleLocalUndo();
+  };
+
+  const handleSmartRedo = () => {
+    if (activeEditor?.isFocused && activeEditor.can().redo()) {
+      activeEditor.chain().focus().redo().run();
+      return;
+    }
+    handleLocalRedo();
   };
 
   const handleLocalUndoRef = useRef(handleLocalUndo);
@@ -566,7 +628,9 @@ export function PlanEditor({
       const field = element.dataset.editorField as keyof LessonPlan;
       const richText = element.querySelector<HTMLElement>("[data-rich-text-editor]");
       if (richText && typeof current[field] === "string") {
-        Object.assign(current, { [field]: richText.innerHTML.replace(/\u200b/g, "") });
+        const clone = richText.cloneNode(true) as HTMLElement;
+        clone.querySelectorAll("[data-editor-floating]").forEach((node) => node.remove());
+        Object.assign(current, { [field]: clone.innerHTML.replace(/\u200b/g, "") });
       }
     }
     return current;
@@ -813,6 +877,97 @@ export function PlanEditor({
     ? (language === 'zh' ? currentGroup.nameZh : currentGroup.nameEn)
     : (currentPlan.category === 'teaching' ? t('TEACHING_PLAN') : t('ACTIVITY_PLAN'));
 
+  const outlineItems = useMemo(() => {
+    const items = [
+      {
+        id: "section-meta",
+        label: "基本屬性",
+        done: Boolean(stripPlainText(currentPlan.activityName) || currentPlan.scheduledName || personnel.lead.length),
+      },
+      {
+        id: "section-purpose",
+        label: t("MISSION_OBJ"),
+        done: Boolean(stripPlainText(currentPlan.purpose)),
+      },
+      ...(!isScriptMode
+        ? [
+            {
+              id: "section-process",
+              label: t("PROCEDURES"),
+              done: Boolean(stripPlainText(currentPlan.process)),
+            },
+          ]
+        : []),
+      {
+        id: "section-blueprint",
+        label: t("VISUAL_BLUEPRINT"),
+        done: Boolean(stripPlainText(currentPlan.content) || currentPlan.canvasData),
+      },
+      {
+        id: "section-props",
+        label: t("MATERIALS"),
+        done: (currentPlan.props?.length ?? 0) > 0,
+      },
+      ...(!isScriptMode
+        ? [
+            {
+              id: "section-remarks",
+              label: t("OPENING_CLOSING") || "開場與結語",
+              done: Boolean(stripPlainText(currentPlan.openingClosingRemarks)),
+            },
+          ]
+        : []),
+      {
+        id: "section-notes",
+        label: "備註",
+        done: Boolean(stripPlainText(currentPlan.remarks)),
+      },
+    ];
+    return items;
+  }, [currentPlan, isScriptMode, personnel.lead.length, t]);
+
+  const totalCharCount = useMemo(() => {
+    const combined = [
+      currentPlan.purpose,
+      isScriptMode ? "" : currentPlan.process,
+      currentPlan.content,
+      isScriptMode ? "" : currentPlan.openingClosingRemarks,
+      currentPlan.remarks,
+    ]
+      .map((part) => stripPlainText(part))
+      .join("");
+    return combined.replace(/\s+/g, "").length;
+  }, [currentPlan, isScriptMode]);
+
+  useEffect(() => {
+    if (typeof IntersectionObserver === "undefined") return;
+    const elements = outlineItems
+      .map((item) => document.getElementById(item.id))
+      .filter((el): el is HTMLElement => Boolean(el));
+    if (!elements.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible[0]?.target.id) {
+          setActiveSectionId(visible[0].target.id);
+        }
+      },
+      { rootMargin: "-20% 0px -65% 0px", threshold: 0 },
+    );
+    elements.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [outlineItems, isHistoryMode]);
+
+  const scrollToSection = (sectionId: string) => {
+    setActiveSectionId(sectionId);
+    document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const effectiveSaving = isSaving || syncStatus === "saving";
+
   return (
     <div ref={planEditorRef} className={cn(
       "flex flex-row font-body transition-colors relative w-full min-h-[100dvh] bg-background text-foreground"
@@ -918,7 +1073,7 @@ export function PlanEditor({
                 {/* Editable Document Title (Google Docs style) */}
                 <input
                   data-testid="editor-title-input"
-                  value={(currentPlan.activityName || "").replace(/<[^>]*>?/gm, '')}
+                  value={stripPlainText(currentPlan.activityName)}
                   onChange={(e) => handlePlanUpdate({ activityName: e.target.value })}
                   className="text-sm sm:text-base font-bold font-headline tracking-tight bg-transparent hover:bg-stone-200/50 dark:hover:bg-white/5 focus:bg-white dark:focus:bg-stone-900 border border-transparent hover:border-stone-300/70 dark:hover:border-white/15 focus:border-orange-500/50 rounded-lg px-2 py-0.5 transition-all text-foreground truncate max-w-[140px] sm:max-w-[240px] md:max-w-[380px] lg:max-w-[500px] focus:outline-none placeholder:text-muted-foreground/40"
                   placeholder={t('ENTER_TITLE')}
@@ -928,22 +1083,42 @@ export function PlanEditor({
 
                 {/* Cloud Save Status */}
                 <div className="flex items-center gap-1.5 shrink-0 pl-1" data-testid="editor-save-status">
-                  {isSaving ? (
-                    <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+                  {effectiveSaving ? (
+                    <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2 py-0.5 text-xs text-amber-600 dark:text-amber-400">
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       <span className="hidden md:inline font-mono text-[11px]">儲存中...</span>
                     </div>
+                  ) : syncStatus === "dirty" ? (
+                    <div className="inline-flex items-center gap-1.5 rounded-full bg-stone-200/70 dark:bg-white/10 px-2 py-0.5 text-xs text-stone-600 dark:text-stone-300" title="尚有變更待同步">
+                      <span className="size-1.5 rounded-full bg-amber-500" />
+                      <span className="hidden md:inline font-mono text-[11px]">編輯中...</span>
+                    </div>
                   ) : (
-                    <div className="flex items-center gap-1.5 text-xs text-stone-400 dark:text-stone-500" title="所有變更已自動儲存至雲端">
-                      <Cloud className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500" />
+                    <div className="inline-flex items-center gap-1.5 text-xs text-stone-400 dark:text-stone-500" title="所有變更已自動儲存至雲端">
+                      <Cloud className="w-3.5 h-3.5 text-emerald-500/80" />
                       <span className="hidden lg:inline text-[11px] font-mono">已儲存至雲端</span>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Right: History, Export, and Collapse Chevron */}
+              {/* Right: Outline, History, Export, and Collapse Chevron */}
               <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  title={isOutlineOpen ? "收合章節大綱" : "展開章節大綱"}
+                  onClick={() => setIsOutlineOpen((prev) => !prev)}
+                  className={cn(
+                    "hidden xl:inline-flex h-8 px-2.5 rounded-lg text-xs font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-200/70 dark:hover:bg-white/10 gap-1.5",
+                    isOutlineOpen && "bg-orange-500/10 text-orange-600 dark:text-orange-400"
+                  )}
+                >
+                  <PanelLeft className="w-4 h-4" />
+                  <span>大綱</span>
+                </Button>
+
                 <Button
                   variant="ghost"
                   size="sm"
@@ -1031,8 +1206,8 @@ export function PlanEditor({
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={handleLocalUndo}
-                      disabled={localHistory.past.length === 0 || isHistoryMode}
+                      onClick={handleSmartUndo}
+                      disabled={!canSmartUndo || isHistoryMode}
                       className="h-8 w-8 rounded-lg text-stone-600 dark:text-stone-300 hover:bg-stone-200/70 dark:hover:bg-white/10 shrink-0 disabled:opacity-40"
                       aria-label="復原"
                     >
@@ -1047,8 +1222,8 @@ export function PlanEditor({
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={handleLocalRedo}
-                      disabled={localHistory.future.length === 0 || isHistoryMode}
+                      onClick={handleSmartRedo}
+                      disabled={!canSmartRedo || isHistoryMode}
                       className="h-8 w-8 rounded-lg text-stone-600 dark:text-stone-300 hover:bg-stone-200/70 dark:hover:bg-white/10 shrink-0 disabled:opacity-40"
                       aria-label="重做"
                     >
@@ -1138,8 +1313,68 @@ export function PlanEditor({
         </TooltipProvider>
         )}
 
-        <div className="w-full flex flex-col items-center px-0 sm:px-4 md:px-6 xl:px-8 pt-3 sm:pt-6">
-          <div className="w-full md:max-w-none flex flex-col items-center">
+        <div className="w-full flex items-start justify-center gap-6 px-0 sm:px-4 md:px-6 xl:px-8 pt-3 sm:pt-6">
+          {/* Desktop Left Outline / TOC */}
+          {!showHistoryBar && isOutlineOpen && (
+            <aside
+              aria-label="教案章節大綱"
+              className="hidden xl:flex w-52 shrink-0 flex-col gap-3 sticky top-28 self-start pt-4"
+            >
+              <div className="rounded-xl border border-stone-200/80 dark:border-white/10 bg-white/70 dark:bg-white/[0.02] backdrop-blur-md p-3 space-y-2.5">
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
+                    章節大綱
+                  </span>
+                  <span className="font-mono text-[10px] text-muted-foreground">
+                    {outlineItems.filter((item) => item.done).length}/{outlineItems.length}
+                  </span>
+                </div>
+                <nav className="space-y-0.5">
+                  {outlineItems.map((item) => {
+                    const active = activeSectionId === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => scrollToSection(item.id)}
+                        className={cn(
+                          "flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition-colors",
+                          active
+                            ? "bg-orange-500/12 font-medium text-orange-700 dark:text-orange-300"
+                            : "text-muted-foreground hover:bg-stone-100 hover:text-foreground dark:hover:bg-white/5",
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "size-1.5 shrink-0 rounded-full transition-colors",
+                            item.done
+                              ? "bg-orange-500"
+                              : "bg-stone-300 dark:bg-stone-700",
+                          )}
+                        />
+                        <span className="truncate">{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </nav>
+                <div className="border-t border-stone-200/70 dark:border-white/10 pt-2 px-1 space-y-1 text-[11px] text-muted-foreground">
+                  <div className="flex items-center justify-between">
+                    <span>內文字數</span>
+                    <span className="font-mono text-foreground">{totalCharCount}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>道具項目</span>
+                    <span className="font-mono text-foreground">{currentPlan.props?.length ?? 0}</span>
+                  </div>
+                  <p className="pt-1 text-[10px] leading-relaxed text-muted-foreground/80">
+                    提示：在段落輸入 <kbd className="rounded border px-1 font-mono text-[10px]">/</kbd> 開啟區塊指令
+                  </p>
+                </div>
+              </div>
+            </aside>
+          )}
+
+          <div className="w-full min-w-0 flex-1 flex flex-col items-center">
             <main className="flex-1 w-full flex flex-col items-center relative shrink-0 overflow-visible pb-32 sm:pb-40">
               <div
                 className="relative"
@@ -1182,134 +1417,188 @@ export function PlanEditor({
                         {isHistoryMode && previousVersion && !previousPlan && (
                           <p role="status" className="text-sm text-muted-foreground">無法載入前一版本，以下顯示所選版本內容。</p>
                         )}
-                        <div ref={previewContentRef} className="space-y-6 md:space-y-12">
-                          <section>
-                            <SectionHeader title="活動類型" icon={Layers} tag="ACTIVITY TYPE" />
-                            {isHistoryMode ? (
-                              <DiffHighlighter type="text" oldValue={(previousPlan ?? previewPlan)?.scheduledName} newValue={previewPlan?.scheduledName} />
-                            ) : (
-                              <ResponsiveActivitySelectV3
-                                value={currentPlan.scheduledName || ""}
-                                onValueChange={(val) => handlePlanUpdate({ scheduledName: val })}
-                                options={activityTypes}
-                                disabled={isInteractionLocked}
-                              />
+                        <div ref={previewContentRef} className="space-y-8 md:space-y-10">
+                          {/* Document Header + Notion-style Compact Properties Card */}
+                          <section id="section-meta" className="scroll-mt-28 space-y-5">
+                            {!isScriptMode && (
+                              <div>
+                                {isHistoryMode ? (
+                                  <div className="text-2xl sm:text-3xl font-bold tracking-tight">
+                                    <DiffHighlighter type="markdown" oldValue={(previousPlan ?? previewPlan)?.activityName} newValue={previewPlan?.activityName} />
+                                  </div>
+                                ) : (
+                                  <FieldContainer field="activityName" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
+                                    <input
+                                      type="text"
+                                      aria-label={t('SUBJECT')}
+                                      value={stripPlainText(currentPlan.activityName)}
+                                      onChange={(e) => handlePlanUpdate({ activityName: e.target.value })}
+                                      onFocus={() => handleFocus('activityName')}
+                                      onBlur={() => handleBlur('activityName')}
+                                      placeholder="輸入教案名稱 / Enter subject title"
+                                      readOnly={isInteractionLocked}
+                                      className="w-full border-0 border-b border-transparent bg-transparent px-1 py-1 text-2xl sm:text-3xl font-bold font-headline tracking-tight text-foreground outline-none transition-colors hover:border-stone-200 focus:border-orange-500/60 placeholder:text-muted-foreground/35 dark:hover:border-white/10"
+                                    />
+                                  </FieldContainer>
+                                )}
+                              </div>
                             )}
+
+                            <div className="rounded-xl border border-stone-200/80 dark:border-white/10 bg-stone-50/75 dark:bg-white/[0.025] p-3.5 sm:p-4 space-y-3">
+                              {/* Property Row: Activity Type */}
+                              <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+                                <div className="flex w-28 shrink-0 items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                                  <Layers className="size-3.5 text-orange-500" aria-hidden="true" />
+                                  <span>活動類型</span>
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  {isHistoryMode ? (
+                                    <DiffHighlighter type="text" oldValue={(previousPlan ?? previewPlan)?.scheduledName} newValue={previewPlan?.scheduledName} />
+                                  ) : (
+                                    <ResponsiveActivitySelectV3
+                                      value={currentPlan.scheduledName || ""}
+                                      onValueChange={(val) => handlePlanUpdate({ scheduledName: val })}
+                                      options={activityTypes}
+                                      disabled={isInteractionLocked}
+                                    />
+                                  )}
+                                </div>
+                              </div>
+
+                              {!isScriptMode && (
+                                <>
+                                  <div className="border-t border-stone-200/60 dark:border-white/5 pt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+                                    <div className="space-y-1.5">
+                                      <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                                        <span>{t('LEAD')}</span>
+                                      </div>
+                                      {isHistoryMode ? (
+                                        <DiffHighlighter
+                                          type="text"
+                                          oldValue={previousPersonnel?.leadMember ?? ''}
+                                          newValue={previewPersonnel?.leadMember ?? ''}
+                                        />
+                                      ) : (
+                                        <FieldContainer field="leadMember" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
+                                          <PlanAssigneeInput
+                                            label={t("LEAD")}
+                                            value={personnel.lead}
+                                            nicknames={memberNicknames}
+                                            realNames={memberRealNames}
+                                            byName={nicknameIndex}
+                                            accountHints={accountHints}
+                                            directoryReady={memberDirectoryReady}
+                                            disabled={isInteractionLocked || isLockedByOther("leadMember")}
+                                            onUpdate={entries => updatePersonnel("lead", entries)}
+                                            onFocus={() => handleFocus("leadMember")}
+                                            onBlur={() => handleBlur("leadMember")}
+                                          />
+                                        </FieldContainer>
+                                      )}
+                                    </div>
+                                    <div className="space-y-1.5">
+                                      <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-stone-400" />
+                                        <span>{t('ASSISTANT')}</span>
+                                      </div>
+                                      {isHistoryMode ? (
+                                        <DiffHighlighter
+                                          type="text"
+                                          oldValue={previousPersonnel?.assistantMember ?? ''}
+                                          newValue={previewPersonnel?.assistantMember ?? ''}
+                                        />
+                                      ) : (
+                                        <FieldContainer field="assistantMember" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
+                                          <PlanAssigneeInput
+                                            label={t("ASSISTANT")}
+                                            value={personnel.assistant}
+                                            nicknames={memberNicknames}
+                                            realNames={memberRealNames}
+                                            byName={nicknameIndex}
+                                            accountHints={accountHints}
+                                            directoryReady={memberDirectoryReady}
+                                            disabled={isInteractionLocked || isLockedByOther("assistantMember")}
+                                            onUpdate={entries => updatePersonnel("assistant", entries)}
+                                            onFocus={() => handleFocus("assistantMember")}
+                                            onBlur={() => handleBlur("assistantMember")}
+                                          />
+                                        </FieldContainer>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div className="border-t border-stone-200/60 dark:border-white/5 pt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+                                    <div className="flex items-center gap-2.5">
+                                      <div className="flex w-20 shrink-0 items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                                        <Clock className="size-3.5 text-orange-500" aria-hidden="true" />
+                                        <span>{t('TIME_WINDOW')}</span>
+                                      </div>
+                                      <div className="min-w-0 flex-1">
+                                        {isHistoryMode ? (
+                                          <DiffHighlighter type="text" oldValue={(previousPlan ?? previewPlan)?.time} newValue={previewPlan?.time} />
+                                        ) : (
+                                          <FieldContainer field="time" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
+                                            <input
+                                              type="text"
+                                              aria-label={t('TIME_WINDOW')}
+                                              value={stripPlainText(currentPlan.time)}
+                                              onChange={(e) => handlePlanUpdate({ time: e.target.value })}
+                                              onFocus={() => handleFocus('time')}
+                                              onBlur={() => handleBlur('time')}
+                                              placeholder="20min"
+                                              readOnly={isInteractionLocked}
+                                              className="h-9 w-full rounded-lg border border-stone-200/80 bg-white px-3 text-sm text-foreground outline-none transition-colors hover:border-stone-300 focus:border-orange-500/60 placeholder:text-muted-foreground/40 dark:border-white/10 dark:bg-white/5"
+                                            />
+                                          </FieldContainer>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2.5">
+                                      <div className="flex w-20 shrink-0 items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                                        <MapPin className="size-3.5 text-orange-500" aria-hidden="true" />
+                                        <span>{t('VENUE')}</span>
+                                      </div>
+                                      <div className="min-w-0 flex-1">
+                                        {isHistoryMode ? (
+                                          <DiffHighlighter type="text" oldValue={(previousPlan ?? previewPlan)?.location} newValue={previewPlan?.location} />
+                                        ) : (
+                                          <FieldContainer field="location" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
+                                            <input
+                                              type="text"
+                                              aria-label={t('VENUE')}
+                                              value={stripPlainText(currentPlan.location)}
+                                              onChange={(e) => handlePlanUpdate({ location: e.target.value })}
+                                              onFocus={() => handleFocus('location')}
+                                              onBlur={() => handleBlur('location')}
+                                              placeholder="3F Main Hall"
+                                              readOnly={isInteractionLocked}
+                                              className="h-9 w-full rounded-lg border border-stone-200/80 bg-white px-3 text-sm text-foreground outline-none transition-colors hover:border-stone-300 focus:border-orange-500/60 placeholder:text-muted-foreground/40 dark:border-white/10 dark:bg-white/5"
+                                            />
+                                          </FieldContainer>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </>
+                              )}
+                            </div>
                           </section>
 
-                          {!isScriptMode && (
-                            <section>
-                              <SectionHeader title={t('SUBJECT')} icon={Target} tag="SUBJECT" />
-                              {isHistoryMode ? (
-                                <DiffHighlighter type="markdown" oldValue={(previousPlan ?? previewPlan)?.activityName} newValue={previewPlan?.activityName} />
-                              ) : (
-                                <FieldContainer field="activityName" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
-                                  <O2RichEditor
-                                    getPasteBudget={remainingPasteBytes}
-                                    value={currentPlan.activityName}
-                                    onChange={(val) => handlePlanUpdate({ activityName: val })}
-                                    onFocus={() => handleFocus('activityName')}
-                                    onBlur={() => handleBlur('activityName')}
-                                    placeholder="輸入教案名稱 / Enter subject title"
-                                    minHeight="38px"
-                                    readOnly={isInteractionLocked}
-                                    simplified={true}
-                                  />
-                                </FieldContainer>
-                              )}
-                            </section>
-                          )}
-
-                          {!isScriptMode && (
-                            <section>
-                              <SectionHeader title={t('CASE_PERSONNEL')} icon={Users} tag="CREW" />
-                              {isHistoryMode ? (
-                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-                                  <div>
-                                    <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-                                      <span>{t('LEAD')}</span>
-                                    </div>
-                                    <DiffHighlighter
-                                      type="text"
-                                      oldValue={previousPersonnel?.leadMember ?? ''}
-                                      newValue={previewPersonnel?.leadMember ?? ''}
-                                    />
-                                  </div>
-                                  <div>
-                                    <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-stone-400" />
-                                      <span>{t('ASSISTANT')}</span>
-                                    </div>
-                                    <DiffHighlighter
-                                      type="text"
-                                      oldValue={previousPersonnel?.assistantMember ?? ''}
-                                      newValue={previewPersonnel?.assistantMember ?? ''}
-                                    />
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-                                  <div>
-                                    <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-                                      <span>{t('LEAD')}</span>
-                                    </div>
-                                    <FieldContainer field="leadMember" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
-                                      <PlanAssigneeInput
-                                        label={t("LEAD")}
-                                        value={personnel.lead}
-                                        nicknames={memberNicknames}
-                                        realNames={memberRealNames}
-                                        byName={nicknameIndex}
-                                        accountHints={accountHints}
-                                        directoryReady={memberDirectoryReady}
-                                        disabled={isInteractionLocked || isLockedByOther("leadMember")}
-                                        onUpdate={entries => updatePersonnel("lead", entries)}
-                                        onFocus={() => handleFocus("leadMember")}
-                                        onBlur={() => handleBlur("leadMember")}
-                                      />
-                                    </FieldContainer>
-                                  </div>
-                                  <div>
-                                    <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-stone-400" />
-                                      <span>{t('ASSISTANT')}</span>
-                                    </div>
-                                    <FieldContainer field="assistantMember" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
-                                      <PlanAssigneeInput
-                                        label={t("ASSISTANT")}
-                                        value={personnel.assistant}
-                                        nicknames={memberNicknames}
-                                        realNames={memberRealNames}
-                                        byName={nicknameIndex}
-                                        accountHints={accountHints}
-                                        directoryReady={memberDirectoryReady}
-                                        disabled={isInteractionLocked || isLockedByOther("assistantMember")}
-                                        onUpdate={entries => updatePersonnel("assistant", entries)}
-                                        onFocus={() => handleFocus("assistantMember")}
-                                        onBlur={() => handleBlur("assistantMember")}
-                                      />
-                                    </FieldContainer>
-                                  </div>
-                                </div>
-                              )}
-                            </section>
-                          )}
-
-                          <section>
+                          <section id="section-purpose" className="scroll-mt-28">
                             <SectionHeader title={t('MISSION_OBJ')} icon={Target} tag="MISSION" />
                             {isHistoryMode ? (
                               <DiffHighlighter type="markdown" oldValue={(previousPlan ?? previewPlan)?.purpose} newValue={previewPlan?.purpose} />
                             ) : (
                               <FieldContainer field="purpose" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
                                 <O2RichEditor
+                                  fieldName="purpose"
                                   getPasteBudget={remainingPasteBytes}
                                   value={currentPlan.purpose || ""}
                                   onChange={(val) => handlePlanUpdate({ purpose: val })}
                                   onFocus={() => handleFocus('purpose')}
                                   onBlur={() => handleBlur('purpose')}
-                                  placeholder="描述活動目標與宗旨... / Describe mission objectives..."
+                                  placeholder="描述活動目標與宗旨，或輸入 / 插入區塊…"
                                   minHeight="120px"
                                   readOnly={isInteractionLocked}
                                 />
@@ -1318,64 +1607,20 @@ export function PlanEditor({
                           </section>
 
                           {!isScriptMode && (
-                            <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                              <div className="space-y-2">
-                                <SectionHeader title={t('TIME_WINDOW')} icon={Clock} tag="DURATION" />
-                                {isHistoryMode ? (
-                                  <DiffHighlighter type="text" oldValue={(previousPlan ?? previewPlan)?.time} newValue={previewPlan?.time} />
-                                ) : (
-                                  <FieldContainer field="time" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
-                                    <O2RichEditor
-                                      getPasteBudget={remainingPasteBytes}
-                                      value={currentPlan.time}
-                                      onChange={(val) => handlePlanUpdate({ time: val })}
-                                      onFocus={() => handleFocus('time')}
-                                      onBlur={() => handleBlur('time')}
-                                      placeholder="20min"
-                                      minHeight="38px"
-                                      readOnly={isInteractionLocked}
-                                      simplified={true}
-                                    />
-                                  </FieldContainer>
-                                )}
-                              </div>
-                              <div className="space-y-2">
-                                <SectionHeader title={t('VENUE')} icon={MapPin} tag="VENUE" />
-                                {isHistoryMode ? (
-                                  <DiffHighlighter type="text" oldValue={(previousPlan ?? previewPlan)?.location} newValue={previewPlan?.location} />
-                                ) : (
-                                  <FieldContainer field="location" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
-                                    <O2RichEditor
-                                      getPasteBudget={remainingPasteBytes}
-                                      value={currentPlan.location}
-                                      onChange={(val) => handlePlanUpdate({ location: val })}
-                                      onFocus={() => handleFocus('location')}
-                                      onBlur={() => handleBlur('location')}
-                                      placeholder="3F Main Hall"
-                                      minHeight="38px"
-                                      readOnly={isInteractionLocked}
-                                      simplified={true}
-                                    />
-                                  </FieldContainer>
-                                )}
-                              </div>
-                            </section>
-                          )}
-
-                          {!isScriptMode && (
-                            <section>
+                            <section id="section-process" className="scroll-mt-28">
                               <SectionHeader title={t('PROCEDURES')} icon={Layout} tag="WORKFLOW" />
                               {isHistoryMode ? (
                                 <DiffHighlighter type="markdown" oldValue={(previousPlan ?? previewPlan)?.process} newValue={previewPlan?.process} />
                               ) : (
                                 <FieldContainer field="process" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
                                   <O2RichEditor
+                                    fieldName="process"
                                     getPasteBudget={remainingPasteBytes}
                                     value={currentPlan.process}
                                     onChange={(val) => handlePlanUpdate({ process: val })}
                                     onFocus={() => handleFocus('process')}
                                     onBlur={() => handleBlur('process')}
-                                    placeholder="詳細描述活動流程... / Describe the procedures..."
+                                    placeholder="詳細描述活動流程，或輸入 / 插入表格與核取清單…"
                                     readOnly={isInteractionLocked}
                                   />
                                 </FieldContainer>
@@ -1383,7 +1628,7 @@ export function PlanEditor({
                             </section>
                           )}
 
-                           <section className="flex w-full flex-col">
+                           <section id="section-blueprint" className="scroll-mt-28 flex w-full flex-col">
                              <SectionHeader title={t('VISUAL_BLUEPRINT')} actions={!isHistoryMode && (
                                <div role="group" aria-label={language === 'zh' ? '教案內容檢視' : 'Lesson content view'}
                                  className="flex items-center gap-0.5 rounded-lg border bg-muted/35 p-0.5">
@@ -1410,12 +1655,13 @@ export function PlanEditor({
                                (previousPlan && previousPlan.canvasData !== previewPlan?.canvasData)) && (blueprintMode === 'text' && !isHistoryMode ? (
                                <FieldContainer field="content" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
                                  <O2RichEditor
+                                   fieldName="content"
                                    getPasteBudget={remainingPasteBytes}
                                    value={currentPlan.content}
                                    onChange={(val) => handlePlanUpdate({ content: val })}
                                    onFocus={() => handleFocus('content')}
                                    onBlur={() => handleBlur('content')}
-                                   placeholder="撰寫教案內容... (支援貼上圖片) / Write lesson content here..."
+                                   placeholder="撰寫教案內容（支援貼上圖片，或輸入 / 插入區塊）…"
                                    readOnly={isInteractionLocked}
                                  />
                                </FieldContainer>
@@ -1479,7 +1725,7 @@ export function PlanEditor({
                             </section>
                           )}
 
-                          <section className="w-full flex flex-col">
+                          <section id="section-props" className="scroll-mt-28 w-full flex flex-col">
                             <SectionHeader title={t('MATERIALS')} icon={Package} tag="MATERIALS & PROPS" />
                             {isHistoryMode ? (
                               <DiffHighlighter type="table" oldValue={(previousPlan ?? previewPlan)?.props} newValue={previewPlan?.props} />
@@ -1499,19 +1745,20 @@ export function PlanEditor({
                           </section>
 
                           {!isScriptMode && (
-                            <section>
+                            <section id="section-remarks" className="scroll-mt-28">
                               <SectionHeader title={t('OPENING_CLOSING') || "開場與結語"} icon={StickyNote} tag="REMARKS" />
                               {isHistoryMode ? (
                                 <DiffHighlighter type="markdown" oldValue={(previousPlan ?? previewPlan)?.openingClosingRemarks} newValue={previewPlan?.openingClosingRemarks} />
                               ) : (
                                 <FieldContainer field="openingClosingRemarks" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
                                   <O2RichEditor
+                                    fieldName="openingClosingRemarks"
                                     getPasteBudget={remainingPasteBytes}
                                     value={currentPlan.openingClosingRemarks || ""}
                                     onChange={(val) => handlePlanUpdate({ openingClosingRemarks: val })}
                                     onFocus={() => handleFocus('openingClosingRemarks')}
                                     onBlur={() => handleBlur('openingClosingRemarks')}
-                                    placeholder="開場與結語... / Opening & closing..."
+                                    placeholder="開場與結語，或輸入 / 插入區塊…"
                                     minHeight="120px"
                                     readOnly={isInteractionLocked}
                                   />
@@ -1520,19 +1767,20 @@ export function PlanEditor({
                             </section>
                           )}
 
-                          <section>
+                          <section id="section-notes" className="scroll-mt-28">
                             <SectionHeader title="備註" icon={StickyNote} tag="OPERATIONAL NOTES" />
                             {isHistoryMode ? (
                               <DiffHighlighter type="markdown" oldValue={(previousPlan ?? previewPlan)?.remarks} newValue={previewPlan?.remarks} />
                             ) : (
                               <FieldContainer field="remarks" isLockedByOther={isLockedByOther} getLockInfo={getLockInfo} onTakeover={handleTakeover}>
                                 <O2RichEditor
+                                  fieldName="remarks"
                                   getPasteBudget={remainingPasteBytes}
                                   value={currentPlan.remarks || ""}
                                   onChange={(val) => handlePlanUpdate({ remarks: val })}
                                   onFocus={() => handleFocus('remarks')}
                                   onBlur={() => handleBlur('remarks')}
-                                  placeholder="加入備註 (選填)... / Add remarks (Optional)..."
+                                  placeholder="加入備註（選填），或輸入 / 插入區塊…"
                                   minHeight="120px"
                                   readOnly={isInteractionLocked}
                                 />
@@ -1582,8 +1830,8 @@ export function PlanEditor({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={handleLocalUndo}
-                disabled={localHistory.past.length === 0 || isHistoryMode}
+                onClick={handleSmartUndo}
+                disabled={!canSmartUndo || isHistoryMode}
                 className="h-8 w-8 rounded-lg text-stone-600 dark:text-stone-300 hover:bg-stone-200/70 dark:hover:bg-white/10 shrink-0 disabled:opacity-40"
                 aria-label="復原"
               >
@@ -1593,8 +1841,8 @@ export function PlanEditor({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={handleLocalRedo}
-                disabled={localHistory.future.length === 0 || isHistoryMode}
+                onClick={handleSmartRedo}
+                disabled={!canSmartRedo || isHistoryMode}
                 className="h-8 w-8 rounded-lg text-stone-600 dark:text-stone-300 hover:bg-stone-200/70 dark:hover:bg-white/10 shrink-0 disabled:opacity-40"
                 aria-label="重做"
               >
