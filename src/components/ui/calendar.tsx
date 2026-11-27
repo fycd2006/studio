@@ -10,68 +10,75 @@ import { buttonVariants } from "@/components/ui/button"
 export type CalendarProps = React.ComponentProps<typeof DayPicker>
 
 function Calendar({
- className,
- classNames,
- showOutsideDays = true,
- ...props
+  className,
+  classNames,
+  showOutsideDays = true,
+  ...props
 }: CalendarProps) {
- return (
- <DayPicker
- showOutsideDays={showOutsideDays}
- className={cn("p-3", className)}
- classNames={{
- months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
- month: "space-y-4",
- caption: "flex justify-center pt-1 relative items-center",
- caption_label: "text-sm font-medium",
- nav: "space-x-1 flex items-center",
- nav_button: cn(
- buttonVariants({ variant: "outline" }),
- "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
- ),
- nav_button_previous: "absolute left-1",
- nav_button_next: "absolute right-1",
- table: "w-full  space-y-1",
- head_row: "flex",
- head_cell:
- "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
- row: "flex w-full mt-2",
- cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
- day: cn(
- buttonVariants({ variant: "ghost" }),
- "h-9 w-9 p-0 font-normal aria-selected:opacity-100"
- ),
- day_range_end: "day-range-end",
- day_selected:
- "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
- day_today: "bg-accent text-accent-foreground",
- day_outside:
- "day-outside text-muted-foreground aria-selected:bg-accent/50 aria-selected:text-muted-foreground",
- day_disabled: "text-muted-foreground opacity-50",
- day_range_middle:
- "aria-selected:bg-accent aria-selected:text-accent-foreground",
- day_hidden: "invisible",
- ...classNames,
- }}
- components={{
-    Chevron: ({ orientation, className, ...props }) => {
-      switch (orientation) {
-        case "left":
-          return <ChevronLeft className={cn("h-4 w-4", className)} {...props} />;
-        case "right":
-          return <ChevronRight className={cn("h-4 w-4", className)} {...props} />;
-        case "up":
-          return <ChevronUp className={cn("h-4 w-4", className)} {...props} />;
-        case "down":
-          return <ChevronDown className={cn("h-4 w-4", className)} {...props} />;
-        default:
-          return <></>;
-      }
-    },
-  }}
- {...props}
- />
- )
+  return (
+    <DayPicker
+      showOutsideDays={showOutsideDays}
+      className={cn("p-3", className)}
+      classNames={{
+        root: "relative",
+        months: "relative flex flex-col gap-4 sm:flex-row sm:gap-6",
+        month: "space-y-3",
+        month_caption: "relative flex h-8 items-center justify-center pt-1",
+        caption_label: "text-sm font-medium text-foreground",
+        nav: "pointer-events-none absolute inset-x-0 top-1 z-10 flex items-center justify-between px-1",
+        button_previous: cn(
+          buttonVariants({ variant: "ghost" }),
+          "pointer-events-auto h-7 w-7 rounded-lg p-0 text-muted-foreground hover:bg-stone-100 hover:text-foreground dark:hover:bg-white/10",
+        ),
+        button_next: cn(
+          buttonVariants({ variant: "ghost" }),
+          "pointer-events-auto h-7 w-7 rounded-lg p-0 text-muted-foreground hover:bg-stone-100 hover:text-foreground dark:hover:bg-white/10",
+        ),
+        month_grid: "w-full border-collapse",
+        weekdays: "flex",
+        weekday:
+          "w-9 rounded-md text-center text-[0.75rem] font-normal text-muted-foreground",
+        weeks: "mt-1 flex flex-col gap-1",
+        week: "flex w-full",
+        day: "relative h-9 w-9 p-0 text-center text-sm focus-within:relative focus-within:z-20",
+        day_button:
+          "inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md text-sm font-normal transition-colors hover:bg-orange-500/15 hover:text-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40 dark:hover:text-orange-200",
+        selected:
+          "[&>button]:bg-orange-500 [&>button]:font-medium [&>button]:text-white [&>button]:hover:bg-orange-600 [&>button]:hover:text-white",
+        range_start:
+          "rounded-l-md bg-orange-500/15 [&>button]:rounded-md [&>button]:bg-orange-500 [&>button]:font-medium [&>button]:text-white [&>button]:hover:bg-orange-600",
+        range_end:
+          "rounded-r-md bg-orange-500/15 [&>button]:rounded-md [&>button]:bg-orange-500 [&>button]:font-medium [&>button]:text-white [&>button]:hover:bg-orange-600",
+        range_middle:
+          "rounded-none bg-orange-500/15 [&>button]:rounded-none [&>button]:bg-transparent [&>button]:font-normal [&>button]:text-orange-900 [&>button]:hover:bg-orange-500/25 dark:[&>button]:text-orange-100",
+        today:
+          "[&>button]:font-semibold [&>button]:ring-1 [&>button]:ring-orange-500/50",
+        outside:
+          "text-muted-foreground/45 [&>button]:text-muted-foreground/45",
+        disabled:
+          "text-muted-foreground/30 opacity-50 [&>button]:cursor-not-allowed",
+        hidden: "invisible",
+        ...classNames,
+      }}
+      components={{
+        Chevron: ({ orientation, className: iconClassName, ...chevronProps }) => {
+          switch (orientation) {
+            case "left":
+              return <ChevronLeft className={cn("h-4 w-4", iconClassName)} {...chevronProps} />;
+            case "right":
+              return <ChevronRight className={cn("h-4 w-4", iconClassName)} {...chevronProps} />;
+            case "up":
+              return <ChevronUp className={cn("h-4 w-4", iconClassName)} {...chevronProps} />;
+            case "down":
+              return <ChevronDown className={cn("h-4 w-4", iconClassName)} {...chevronProps} />;
+            default:
+              return <></>;
+          }
+        },
+      }}
+      {...props}
+    />
+  )
 }
 Calendar.displayName = "Calendar"
 

@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { format } from "date-fns";
+import { zhTW } from "date-fns/locale";
+import type { DateRange } from "react-day-picker";
 import {
   Calendar,
   Check,
@@ -30,16 +33,283 @@ import { useTranslation } from "@/lib/i18n-context";
 import { useToast } from "@/hooks/use-toast";
 import { cn, getUnifiedGroupBadgeParams } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Camp, Group } from "@/types/plan";
 
 const cardClass =
   "overflow-hidden rounded-xl border border-stone-200/80 dark:border-white/10 bg-white/80 dark:bg-white/[0.03] backdrop-blur-md text-card-foreground shadow-xs";
 
+const popoverContentClass =
+  "w-auto overflow-hidden rounded-xl border border-stone-200/80 bg-white/95 p-0 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-[#14191C]/95";
+
 function parseLocalDate(iso?: string): Date | null {
   if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null;
   const [y, m, d] = iso.split("-").map(Number);
   return new Date(y, m - 1, d);
+}
+
+function formatLocalDate(date: Date): string {
+  return format(date, "yyyy-MM-dd");
+}
+
+function useIsDesktopSm(): boolean {
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 640px)");
+    const update = () => setIsDesktop(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  return isDesktop;
+}
+
+function TimelineSingleDatePicker({
+  label,
+  value,
+  fallbackMonth,
+  onSelectDate,
+  onClear,
+}: {
+  label: string;
+  value: string;
+  fallbackMonth: Date;
+  onSelectDate: (iso: string) => void;
+  onClear: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [month, setMonth] = useState<Date>(() => parseLocalDate(value) ?? fallbackMonth);
+  const selectedDate = useMemo(() => parseLocalDate(value) ?? undefined, [value]);
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (nextOpen) {
+      setMonth(parseLocalDate(value) ?? fallbackMonth);
+    }
+  };
+
+  return (
+    <Popover open={open} onOpenChange={handleOpenChange}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label={label}
+          className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-stone-200/80 bg-stone-50 px-3.5 py-2 text-left font-mono text-xs transition-all hover:border-orange-500/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/30 dark:border-white/10 dark:bg-white/5"
+        >
+          <span className={cn("truncate", value ? "text-foreground" : "font-sans text-muted-foreground")}>
+            {value || "點選日期"}
+          </span>
+          <Calendar className="size-3.5 shrink-0 text-stone-400" aria-hidden="true" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className={popoverContentClass}>
+        <div className="flex items-center justify-between gap-3 border-b border-stone-200/70 px-3.5 py-2.5 text-xs dark:border-white/10">
+          <span className="font-medium text-muted-foreground">點選{label}日期</span>
+          {value && (
+            <span className="rounded-md bg-orange-500/10 px-2 py-0.5 font-mono text-[11px] font-medium text-orange-700 dark:text-orange-300">
+              {value}
+            </span>
+          )}
+        </div>
+        <CalendarPicker
+          mode="single"
+          locale={zhTW}
+          month={month}
+          onMonthChange={setMonth}
+          selected={selectedDate}
+          onSelect={(day) => {
+            if (!day) return;
+            onSelectDate(formatLocalDate(day));
+            setOpen(false);
+          }}
+        />
+        <div className="flex items-center justify-between border-t border-stone-200/70 px-3 py-2 dark:border-white/10">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+            onClick={() => setMonth(new Date())}
+          >
+            回到本月
+          </Button>
+          {value && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs text-muted-foreground hover:text-rose-600"
+              onClick={() => {
+                onClear();
+                setOpen(false);
+              }}
+            >
+              清除日期
+            </Button>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function TimelineRangeDatePicker({
+  label,
+  startVal,
+  endVal,
+  fallbackMonth,
+  onSelectRange,
+  onClear,
+}: {
+  label: string;
+  startVal: string;
+  endVal: string;
+  fallbackMonth: Date;
+  onSelectRange: (startIso: string, endIso: string) => void;
+  onClear: () => void;
+}) {
+  const isDesktop = useIsDesktopSm();
+  const [open, setOpen] = useState(false);
+  const [month, setMonth] = useState<Date>(() => parseLocalDate(startVal) ?? fallbackMonth);
+  const [pendingStart, setPendingStart] = useState<Date | null>(null);
+  const [hoveredDay, setHoveredDay] = useState<Date | null>(null);
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    setPendingStart(null);
+    setHoveredDay(null);
+    if (nextOpen) {
+      setMonth(parseLocalDate(startVal) ?? fallbackMonth);
+    }
+  };
+
+  const displayedRange = useMemo<DateRange | undefined>(() => {
+    if (pendingStart) {
+      if (hoveredDay) {
+        const [from, to] = hoveredDay < pendingStart ? [hoveredDay, pendingStart] : [pendingStart, hoveredDay];
+        return { from, to };
+      }
+      return { from: pendingStart, to: undefined };
+    }
+    const from = parseLocalDate(startVal);
+    if (!from) return undefined;
+    const to = parseLocalDate(endVal) ?? from;
+    return to < from ? { from: to, to: from } : { from, to };
+  }, [pendingStart, hoveredDay, startVal, endVal]);
+
+  const handleDayClick = (day: Date) => {
+    if (!pendingStart) {
+      setPendingStart(day);
+      setHoveredDay(null);
+      return;
+    }
+    const [startDate, endDate] = day < pendingStart ? [day, pendingStart] : [pendingStart, day];
+    onSelectRange(formatLocalDate(startDate), formatLocalDate(endDate));
+    setPendingStart(null);
+    setHoveredDay(null);
+    setOpen(false);
+  };
+
+  const displayLabel = startVal
+    ? endVal && endVal !== startVal
+      ? `${startVal} ➔ ${endVal}`
+      : startVal
+    : "";
+
+  return (
+    <Popover open={open} onOpenChange={handleOpenChange}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label={`${label}日期區間`}
+          className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-stone-200/80 bg-stone-50 px-3.5 py-2 text-left font-mono text-xs transition-all hover:border-orange-500/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/30 dark:border-white/10 dark:bg-white/5"
+        >
+          <span className={cn("truncate", displayLabel ? "text-foreground" : "font-sans text-muted-foreground")}>
+            {displayLabel || "點選開始與結束日期"}
+          </span>
+          <Calendar className="size-3.5 shrink-0 text-stone-400" aria-hidden="true" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className={popoverContentClass}>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-200/70 px-3.5 py-2.5 text-xs dark:border-white/10">
+          {pendingStart ? (
+            <span className="font-medium text-orange-600 dark:text-orange-400">
+              已選開始日 {formatLocalDate(pendingStart)} · 請點選結束日期（再點同一天可設為單日）
+            </span>
+          ) : (
+            <>
+              <span className="font-medium text-muted-foreground">點選兩個日期設定{label}區間</span>
+              {displayLabel && (
+                <span className="rounded-md bg-orange-500/10 px-2 py-0.5 font-mono text-[11px] font-medium text-orange-700 dark:text-orange-300">
+                  {displayLabel}
+                </span>
+              )}
+            </>
+          )}
+        </div>
+        <CalendarPicker
+          mode="range"
+          locale={zhTW}
+          numberOfMonths={isDesktop ? 2 : 1}
+          month={month}
+          onMonthChange={setMonth}
+          selected={displayedRange}
+          onSelect={() => {}}
+          onDayClick={handleDayClick}
+          onDayMouseEnter={(day) => {
+            if (pendingStart) setHoveredDay(day);
+          }}
+          onDayMouseLeave={() => {
+            if (pendingStart) setHoveredDay(null);
+          }}
+        />
+        <div className="flex items-center justify-between border-t border-stone-200/70 px-3 py-2 dark:border-white/10">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+            onClick={() => setMonth(new Date())}
+          >
+            回到本月
+          </Button>
+          {pendingStart ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs text-orange-600 hover:bg-orange-500/10 dark:text-orange-400"
+              onClick={() => {
+                setPendingStart(null);
+                setHoveredDay(null);
+              }}
+            >
+              重選
+            </Button>
+          ) : (
+            (startVal || endVal) && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs text-muted-foreground hover:text-rose-600"
+                onClick={() => {
+                  onClear();
+                  setOpen(false);
+                }}
+              >
+                清除日期
+              </Button>
+            )
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 function describeDateStatus(startIso?: string, endIso?: string) {
@@ -312,6 +582,23 @@ export function WorkspaceSettings({
   const filledMilestoneCount = activeCamp
     ? timelineFields.filter(f => Boolean(activeCamp[f.startKey])).length
     : 0;
+
+  const defaultCalendarMonth = useMemo(() => {
+    if (!activeCamp) return new Date();
+    const candidates = [
+      activeCamp.meeting1StartDate,
+      activeCamp.meeting2StartDate,
+      activeCamp.meeting3StartDate,
+      activeCamp.trainingStartDate,
+      activeCamp.siteStartDate,
+      activeCamp.campStartDate,
+    ];
+    for (const iso of candidates) {
+      const parsed = parseLocalDate(iso);
+      if (parsed) return parsed;
+    }
+    return new Date();
+  }, [activeCamp]);
 
   const markGroupSaved = () => {
     setGroupSaved(true);
@@ -793,41 +1080,30 @@ export function WorkspaceSettings({
                       )}
                     </div>
                     <div className="flex w-full items-center gap-2 sm:w-auto sm:min-w-[340px]">
-                      {field.type === "single" ? (
-                        <input
-                          type="date"
-                          aria-label={field.label}
-                          value={startVal}
-                          onChange={(e) => updateCampTimeline({ [field.startKey]: e.target.value })}
-                          className="w-full cursor-pointer rounded-lg border border-stone-200/80 bg-stone-50 px-3.5 py-2 text-center font-mono text-xs text-foreground outline-none transition-all hover:border-orange-500/50 focus:border-orange-500 dark:border-white/10 dark:bg-white/5"
-                        />
-                      ) : (
-                        <div className="flex w-full items-center rounded-xl border border-stone-200/80 bg-stone-50 transition-all hover:border-orange-500/50 focus-within:border-orange-500 dark:border-white/10 dark:bg-white/5">
-                          <input
-                            type="date"
-                            aria-label={`${field.label}開始日期`}
+                      <div className="min-w-0 flex-1">
+                        {field.type === "single" ? (
+                          <TimelineSingleDatePicker
+                            label={field.label}
                             value={startVal}
-                            onChange={(e) => {
-                              const nextStart = e.target.value;
-                              if (nextStart && (!endVal || endVal < nextStart)) {
-                                updateCampTimeline({ [field.startKey]: nextStart, [field.endKey]: nextStart });
-                              } else {
-                                updateCampTimeline({ [field.startKey]: nextStart });
-                              }
-                            }}
-                            className="w-full min-w-0 flex-1 cursor-pointer rounded-l-lg border-none bg-transparent px-3 py-2 text-center font-mono text-xs text-foreground outline-none"
+                            fallbackMonth={defaultCalendarMonth}
+                            onSelectDate={(iso) => updateCampTimeline({ [field.startKey]: iso })}
+                            onClear={() => updateCampTimeline({ [field.startKey]: "" })}
                           />
-                          <span className="px-1 font-mono text-xs text-stone-400">➔</span>
-                          <input
-                            type="date"
-                            aria-label={`${field.label}結束日期`}
-                            min={startVal || undefined}
-                            value={endVal}
-                            onChange={(e) => updateCampTimeline({ [field.endKey]: e.target.value })}
-                            className="w-full min-w-0 flex-1 cursor-pointer rounded-r-lg border-none bg-transparent px-3 py-2 text-center font-mono text-xs text-foreground outline-none"
+                        ) : (
+                          <TimelineRangeDatePicker
+                            label={field.label}
+                            startVal={startVal}
+                            endVal={endVal}
+                            fallbackMonth={defaultCalendarMonth}
+                            onSelectRange={(nextStart, nextEnd) =>
+                              updateCampTimeline({ [field.startKey]: nextStart, [field.endKey]: nextEnd })
+                            }
+                            onClear={() =>
+                              updateCampTimeline({ [field.startKey]: "", [field.endKey]: "" })
+                            }
                           />
-                        </div>
-                      )}
+                        )}
+                      </div>
                       {hasValue && (
                         <Button
                           type="button"
