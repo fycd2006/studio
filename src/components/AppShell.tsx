@@ -5,11 +5,15 @@ import { Toaster } from "@/components/ui/toaster";
 import { usePlans } from "@/hooks/use-plans";
 import { useAuth } from "@/lib/auth-context";
 import { usePathname } from "next/navigation";
-import { Loader2, X } from "lucide-react";
+import { Loader2, RefreshCw, Sparkles, X } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { TransparentNavbar } from "@/components/TransparentNavbar";
 import { TimerAlarmHost } from "@/components/TimerAlarmHost";
+import { InAppBrowserBanner } from "@/components/InAppBrowserBanner";
+import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
 import { useTranslation } from "@/lib/i18n-context";
+import { cn } from "@/lib/utils";
 
 /** Routes that should NOT render the navbar */
 const AUTH_ROUTES = ["/login", "/signup"];
@@ -61,6 +65,9 @@ function AppShellInternal({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
   const { t } = useTranslation();
   const [hasVersionUpdate, setHasVersionUpdate] = React.useState(false);
+  const [latestVersion, setLatestVersion] = React.useState<string | null>(null);
+  const [isUpdateDismissed, setIsUpdateDismissed] = React.useState(false);
+  const [isReloading, setIsReloading] = React.useState(false);
 
   // V2 Broadcast System States
   const activeCamp = planData.camps.find(c => c.id === planData.activeCampId);
@@ -135,6 +142,9 @@ function AppShellInternal({ children }: { children: React.ReactNode }) {
         const data = await res.json();
         const latestBuildId = String(data?.buildId || '');
         if (latestBuildId && latestBuildId !== currentBuildId) {
+          if (isMounted && typeof data?.version === 'string' && data.version) {
+            setLatestVersion(data.version);
+          }
           markUpdateAvailable();
         }
       } catch {
@@ -218,25 +228,76 @@ function AppShellInternal({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      {hasVersionUpdate && (
-        <div 
-          className="fixed inset-x-0 z-[70] px-3 sm:px-6 md:px-8 pointer-events-none transition-all duration-300"
-          style={{ top: showBroadcast ? "92px" : "60px" }}
-        >
-          <div className="mx-auto mt-2 max-w-[1200px] rounded-xl border border-amber-300/70 bg-amber-50 text-amber-900 px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm flex items-center justify-between gap-3 pointer-events-auto">
-            <p className="text-xs sm:text-sm font-semibold">
-              {t('UPDATE_AVAILABLE_DESC')}
-            </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="shrink-0 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs sm:text-sm font-bold px-3 py-1.5 transition-colors"
-            >
-              {t('REFRESH_NOW')}
-            </button>
-          </div>
-        </div>
-      )}
-      
+      <AnimatePresence>
+        {hasVersionUpdate && !isUpdateDismissed && (
+          <motion.div
+            initial={{ opacity: 0, y: -12, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -12, scale: 0.98 }}
+            transition={{ duration: 0.22, ease: "easeOut" }}
+            role="status"
+            aria-live="polite"
+            className="pointer-events-none fixed inset-x-3 z-[70] sm:inset-x-6"
+            style={{ top: showBroadcast ? "96px" : "68px" }}
+          >
+            <div className="pointer-events-auto mx-auto flex max-w-lg items-center gap-3 rounded-2xl border border-orange-500/25 bg-white/92 px-3.5 py-2.5 shadow-[0_12px_36px_rgba(0,0,0,0.12)] backdrop-blur-xl dark:bg-[#14191C]/92 dark:shadow-[0_12px_36px_rgba(0,0,0,0.45)] sm:px-4 sm:py-3">
+              <div className="relative flex size-9 shrink-0 items-center justify-center rounded-xl bg-orange-500/12 text-orange-600 dark:text-orange-400">
+                <Sparkles className="size-4" aria-hidden="true" />
+                <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-orange-500 ring-2 ring-white dark:ring-[#14191C]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="truncate text-xs font-semibold text-foreground sm:text-sm">
+                    有新版本可用
+                  </p>
+                  {latestVersion && (
+                    <span className="shrink-0 rounded-md bg-orange-500/10 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-orange-600 dark:text-orange-400">
+                      v{latestVersion}
+                    </span>
+                  )}
+                </div>
+                <p className="truncate text-[11px] text-muted-foreground sm:text-xs">
+                  {t('UPDATE_AVAILABLE_DESC')}
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <button
+                  type="button"
+                  disabled={isReloading}
+                  onClick={() => {
+                    setIsReloading(true);
+                    if ('serviceWorker' in navigator) {
+                      navigator.serviceWorker.getRegistration().then((reg) => {
+                        if (reg?.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                      }).catch(() => {}).finally(() => {
+                        window.location.reload();
+                      });
+                    } else {
+                      window.location.reload();
+                    }
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 px-3.5 py-2 text-xs font-semibold text-white shadow-xs transition-all hover:from-orange-600 hover:to-orange-700 active:scale-[0.98] disabled:opacity-70"
+                >
+                  <RefreshCw className={cn("size-3.5", isReloading && "animate-spin")} aria-hidden="true" />
+                  {isReloading ? "更新中…" : t('REFRESH_NOW')}
+                </button>
+                <button
+                  type="button"
+                  aria-label="稍後再說"
+                  onClick={() => setIsUpdateDismissed(true)}
+                  className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-stone-100 hover:text-foreground dark:hover:bg-white/10"
+                >
+                  <X className="size-4" aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <InAppBrowserBanner variant="floating" />
+      <PwaInstallPrompt suppressed={hasVersionUpdate && !isUpdateDismissed} />
+
       {/* Main Content Area — pb-28 on all viewports for Fluid Glass bottom dock clearance */}
       <main 
         style={{ paddingTop: showBroadcast ? "32px" : "0px" }}

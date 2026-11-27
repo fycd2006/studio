@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ntut-cd-camp-v6';
+const CACHE_NAME = 'ntut-cd-camp-v7';
 const STATIC_ASSETS = [
   '/offline.html',
   '/beep.wav',
@@ -43,12 +43,14 @@ self.addEventListener('fetch', function(event) {
   // Only handle same-origin requests.
   if (url.origin !== self.location.origin) return;
 
-  // Skip Firestore, Firebase Auth, and analytics requests (always network)
+  // Skip Firestore, Firebase Auth, analytics, API, and auth proxy requests (always network)
   if (url.hostname.includes('firestore') || 
       url.hostname.includes('firebase') ||
       url.hostname.includes('googleapis') ||
       url.hostname.includes('google-analytics') ||
-      url.pathname.startsWith('/api/')) {
+      url.pathname.startsWith('/api/') ||
+      url.pathname.startsWith('/__/auth/') ||
+      url.pathname.startsWith('/__/firebase/')) {
     return;
   }
 

@@ -35,6 +35,21 @@ const nextConfig: NextConfig = {
     ];
   },
 
+  async rewrites() {
+    const firebaseAuthHost =
+      process.env.FIREBASE_AUTH_PROXY_DOMAIN || 'studio-7846089055-c3167.firebaseapp.com';
+    return [
+      {
+        source: '/__/auth/:path*',
+        destination: `https://${firebaseAuthHost}/__/auth/:path*`,
+      },
+      {
+        source: '/__/firebase/init.json',
+        destination: `https://${firebaseAuthHost}/__/firebase/init.json`,
+      },
+    ];
+  },
+
   images: {
     remotePatterns: [
       {

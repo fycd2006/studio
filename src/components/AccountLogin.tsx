@@ -14,6 +14,8 @@ import { useFirebase } from "@/firebase/provider";
 import { useAuth } from "@/lib/auth-context";
 import { updateAccount } from "@/lib/update-account";
 import { isEmulatorEnabled } from "@/firebase/emulator";
+import { detectBrowserEnv } from "@/lib/browser-env";
+import { InAppBrowserBanner } from "@/components/InAppBrowserBanner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -77,6 +79,7 @@ export function AccountLogin() {
           "auth/operation-not-allowed": source === "google"
             ? "Google 登入尚未啟用，請聯絡管理員。"
             : "這項帳號功能尚未啟用，請聯絡管理員。",
+          "auth/operation-not-supported-in-this-environment": "目前瀏覽器環境不支援 Google 驗證，請改用 Safari 或 Chrome 開啟。",
         };
         setMessage(
           messages[error.code] || "無法完成操作，請檢查連線或聯絡管理員。",
@@ -146,6 +149,7 @@ export function AccountLogin() {
         <h2 id="account-title" className="text-2xl font-medium leading-tight tracking-tight">{title}</h2>
         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{subtitle}</p>
       </div>
+      <InAppBrowserBanner variant="login" />
       {needsBinding && user?.email && (
         <p className="break-all rounded-lg border border-border/70 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
           登入帳號：<span className="font-medium text-foreground">{user.email}</span>
@@ -154,6 +158,10 @@ export function AccountLogin() {
       {login && <>
         <Button type="button" variant="outline" className="h-11 w-full gap-2.5 rounded-lg border-border/80 bg-background/80 hover:bg-muted/80 hover:text-foreground"
           disabled={busy || isLoading} onClick={() => void perform(async () => {
+            const env = detectBrowserEnv();
+            if (env.isInAppBrowser) {
+              throw new Error(`Google 安全性政策禁止於 ${env.inAppName} 內建瀏覽器登入，請點上方「用外部瀏覽器開啟」改用 ${env.isIOS ? "Safari" : "Chrome"}，或直接使用下方 Email 密碼登入。`);
+            }
             const provider = new GoogleAuthProvider();
             provider.setCustomParameters({ prompt: "select_account" });
             await signInWithPopup(auth, provider);
